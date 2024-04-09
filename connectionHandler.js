@@ -56,11 +56,7 @@ exports.processRequest = async function (req, res) {
   if (parsedurl.pathname === '/longpoll.js') {
     console.log(req.url)
     console.log('User polling (js)')
-    const initialID = /* latestMessageID */ Number(req.url.slice(13, req.url.length))
-    while (initialID >= latestMessageID) {
-      // console.log(initialID, latestMessageID);
-      await sleep(25)
-    }
+    const initialID = /* latestMessageID */ Number(req.url.slice(13, req.url.length);
     res.write('latestMessageID = ' + JSON.stringify(latestMessageID) + '; addMessage(' + JSON.stringify(messages.slice(initialID, messages.length)) + '); addLongpoll(latestMessageID);')
   } else if (parsedurl.pathname === '/longpoll-xhr') {
     /* console.log(req.url);
