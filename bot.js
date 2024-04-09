@@ -8,10 +8,6 @@ const cachelength = 100 // Length of message history
 const msghistory = {}
 const client = new Discord.Client({ partials: ['MESSAGE'], shards: "auto", intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES, Discord.Intents.FLAGS.MESSAGE_CONTENT] })
 
-setInterval(function () { // TODO: See if this is needed
-  client.user.setActivity('for people at https://discross.cloud', { type: 'WATCHING' })
-}, 20000)
-
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 client.on('ready', () => {
