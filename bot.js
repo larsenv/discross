@@ -6,7 +6,7 @@ const connectionHandler = require('./connectionHandler.js')
 const cachelength = 100 // Length of message history
 
 const msghistory = {}
-const client = new Discord.Client({ partials: ['MESSAGE'] }) // Allows me to recieve "uncached" (actually manually cached by me) message events
+const client = new Discord.Client({ partials: ['MESSAGE'], shards: "auto", intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES, Discord.Intents.FLAGS.MESSAGE_CONTENT] })
 
 setInterval(function () { // TODO: See if this is needed
   client.user.setActivity('for people at https://discross.cloud', { type: 'WATCHING' })
