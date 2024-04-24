@@ -1,11 +1,13 @@
 const fs = require('fs')
 const url = require('url')
 const mime = require('mime-types').lookup
-
+const { SnowTransfer } = require('snowtransfer');
 const bot = require('./bot.js')
 const connectionHandler = require('./connectionHandler.js')
 
 const options = {}
+
+process.on("unhandledRejection", (err) => console.log(err));
 
 try { // Use HTTPS if keys are available
   options.key = fs.readFileSync('secrets/key.pem')
@@ -23,16 +25,16 @@ auth.setHTTPS(usinghttps) // Determines whether cookies have the Secure; option
 
 var indexpage = require('./pages/index.js')
 var loginpage = require('./pages/login.js')
-var guestpage = require('./pages/guest.js')
+//var guestpage = require('./pages/guest.js')
 var registerpage = require('./pages/register.js')
 var forgotpage = require('./pages/forgot.js')
 var channelpage = require('./pages/channel.js')
 var serverpage = require('./pages/server.js')
-var sendpage = require('./pages/send.js')
+var sendpage = require('./pages/send.js');
 
 bot.startBot()
 
-function strReplace (string, needle, replacement) {
+function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || '')
 };
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
@@ -41,7 +43,7 @@ function strReplace (string, needle, replacement) {
 const server = http.createServer(options)
 connectionHandler.startWsServer(server)
 
-async function servePage (filename, res, type, textToReplace, replacement) { // textToReplace and replacement allow for dynamic pages (not used anymore as far as I know)
+async function servePage(filename, res, type, textToReplace, replacement) { // textToReplace and replacement allow for dynamic pages (not used anymore as far as I know)
   if (!type) {
     type = mime(filename)
   }
@@ -69,7 +71,6 @@ async function servePage (filename, res, type, textToReplace, replacement) { // 
 }
 
 server.on('request', async (req, res) => {
-  console.log(req.url)
   if (req.method === 'POST') {
     let body = '' // https://itnext.io/how-to-handle-the-post-request-body-in-node-js-without-using-a-framework-cd2038b93190
     req.on('data', chunk => {
@@ -91,9 +92,9 @@ server.on('request', async (req, res) => {
     } else if (args[1] === 'logout') {
       const discordID = await auth.checkAuth(req, res, true) // True = no redirect to login page
       if (discordID) {
-        auth.logout(discordID)
+        /*if (typeof discordID !== "object")*/ auth.logout(discordID)
       }
-      res.writeHead(302, { Location: '/' })
+      res.writeHead(302, { Location: '/'/*, 'Set-Cookie': 'sessionID=' + "-" + '; SameSite=Strict; ' + (usinghttps ? 'Secure;' : '') + ' Expires=' + new Date() */ })
       res.end()
     } else if (args[1] === 'server') {
       const discordID = await auth.checkAuth(req, res)
@@ -107,9 +108,9 @@ server.on('request', async (req, res) => {
       }
     } else if (args[1] === 'login.html') {
       loginpage.processLogin(bot, req, res, args)
-    } else if (args[1] === 'guest.html') {
+    } /*else if (args[1] === 'guest.html') {
       guestpage.processGuestLogin(bot, req, res, args)
-    } else if (args[1] === 'register.html') {
+    }*/ else if (args[1] === 'register.html') {
       registerpage.processRegister(bot, req, res, args)
     } else if (args[1] === 'forgot.html') {
       forgotpage.processForgot(bot, req, res, args)
@@ -117,6 +118,34 @@ server.on('request', async (req, res) => {
       indexpage.processIndex(bot, req, res, args)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
       connectionHandler.processRequest(req, res)
+    } else if (args[1] === "discord") {
+      const discordID = await auth.checkAuth(req, res);
+      if (discordID) {
+        try {
+          const query = new URLSearchParams(req.url.split("?")[1]);
+          const oauthClient = new SnowTransfer(`${query.get("token_type")} ${query.get("access_token")}`);
+          const user = await oauthClient.user.getSelf();
+          if (user && (user.id === discordID)) {
+            const guilds = await oauthClient.user.getGuilds();
+            const filteredServers = guilds.filter(e => bot.client.guilds.cache.has(e.id));
+            const readyServers = filteredServers.map(function (e) {
+              return { serverID: e.id, discordID: discordID }
+            });
+            auth.insertServers(readyServers);
+            res.writeHead(302, { Location: "/server/" });
+            res.write("");
+            res.end();
+          } else {
+            res.writeHead(302, { Location: "/" });
+            res.write("");
+            res.end();
+          }
+        } catch {
+          res.writeHead(302, { Location: "/" });
+          res.write("");
+          res.end();
+        }
+      }
     } else {
       let filename = 'pages/static' + parsedurl.pathname
       filename = strReplace(filename, '..', '') // Attempt to stop private files from being served

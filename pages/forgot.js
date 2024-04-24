@@ -9,10 +9,10 @@ const forgot_template = minify(fs.readFileSync('pages/templates/forgot.html', 'u
 const error_template = minify(fs.readFileSync('pages/templates/login/error.html', 'utf-8'));
 
 function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement||"");
+  return string.split(needle).join(replacement || "");
 };
 
-exports.processForgot = async function(bot, req, res, args) {
+exports.processForgot = async function (bot, req, res, args) {
   parsedurl = url.parse(req.url, true);
   response = forgot_template;
   if (parsedurl.query.errortext) {
