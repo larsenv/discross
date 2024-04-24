@@ -1,5 +1,6 @@
 <!doctype html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
@@ -18,7 +19,7 @@
             position: relative;
             top: 4px;
             text-align: left;
-            font-weight: 400!important
+            font-weight: 400 !important
         }
 
         th.join {
@@ -46,7 +47,7 @@
         }
 
         a {
-          color: #647dcd;
+            color: #647dcd;
         }
     </style>
 </head>
@@ -57,15 +58,17 @@
             <tr>
                 <td valign="top" style="vertical-align: top;">
                     <div class="links">
-                        <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.png" alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
-                        <br><img src="/resources/images/menuspacer.png" alt=" " height="14px" width="32px"></div>
+                        <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.png" alt="Menu"
+                                style="position: fixed; top: 32px;left: 12px;"></a>
+                        <br><img src="/resources/images/menuspacer.png" alt=" " height="14px" width="32px">
+                    </div>
                     <br>
                 </td>
                 <td>
                     <div id="msgcontainer">
                         {$MESSAGES}
                     </div>
-                    <div id = "myList"></div> <!-- TODO: Remove -->
+                    <div id="myList"></div> <!-- TODO: Remove -->
                     <br>
                     <a id="end" name="end"></a>
                     <form action="../send">
@@ -73,20 +76,25 @@
                             <tbody>
                                 <tr>
                                     <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
-                                        <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.png" alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
+                                        <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.png"
+                                                alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
                                     </td>
                                     <td>
                                         <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                                         <input type="hidden" id="lite" name="lite" value="False">
-                                        <div style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
+                                        <div
+                                            style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
                                             {$INPUT}
                                         </div>
                                     </td>
                                     <td style="width: 55px;">
-                                        <input type="submit" style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;" value="Send">
+                                        <input type="submit"
+                                            style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                            value="Send">
                                     </td>
                                     <td valign="middle" style="vertical-align: middle; width: 48px;">
-                                        <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.png" alt="Refresh"></a>
+                                        <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.png"
+                                                alt="Refresh"></a>
                                     </td>
 
                                 </tr>
