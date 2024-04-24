@@ -18,7 +18,7 @@ try { // Use HTTPS if keys are available
 }
 
 const usinghttps = !!options.key
-const http = require('http')
+const http = usinghttps ? require('https') : require('http')
 
 var auth = require('./authentication.js')
 auth.setHTTPS(usinghttps) // Determines whether cookies have the Secure; option
