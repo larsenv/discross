@@ -4,20 +4,24 @@
     <table>
         <tbody>
             <tr>
-                <td valign="top"><font color="#303338">- </font> </td>
+                <td valign="top">
+                    <font color="#303338">- </font>
+                </td>
                 <td valign="top" align="left">
                     <div class="content">
 
                         <div>
-                          <font onclick="document.getElementById('message').value += {$TAG}" class="name" color="#ffffff" face="Arial, Helvetica, sans-serif">{$MESSAGE_AUTHOR}</font>
-                          <font class="date" size="1" face="Arial, Helvetica, sans-serif" color="#888888">{$MESSAGE_DATE}</font><br>
+                            <font onclick="document.getElementById('message').value += {$TAG}" class="name"
+                                color="#ffffff" face="Arial, Helvetica, sans-serif">{$MESSAGE_AUTHOR}</font>
+                            <font class="date" size="1" face="Arial, Helvetica, sans-serif" color="#888888">
+                                {$MESSAGE_DATE}</font><br>
                         </div>
 
                         <div class="messagecontent">
-                          
+
                             <font size="2" face="Arial, Helvetica, sans-serif" color="#dddddd">
-                              {$MESSAGE_CONTENT}
-                          </div>
+                                {$MESSAGE_CONTENT}
+                        </div>
                     </div>
                 </td>
             </tr>

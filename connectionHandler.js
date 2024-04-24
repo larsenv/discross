@@ -10,11 +10,11 @@ const messages = []
 // let latestMessage = ''
 let latestMessageID = 0
 
-function sleep (ms) {
+function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-function sendToAll (message, channel) {
+function sendToAll(message, channel) {
   for (const i in sockets) {
     console.log(listenChannels[i], channel)
     if (listenChannels[i] === channel) {
@@ -25,7 +25,7 @@ function sendToAll (message, channel) {
 
 exports.sendToAll = sendToAll
 
-function processMessage (connectionType, isAuthed, listenChannel, message) {
+function processMessage(connectionType, isAuthed, listenChannel, message) {
   console.log('received: %s', message)
   const split = message.split(' ')
   const action = split[0]
@@ -56,7 +56,7 @@ exports.processRequest = async function (req, res) {
   if (parsedurl.pathname === '/longpoll.js') {
     console.log(req.url)
     console.log('User polling (js)')
-    const initialID = /* latestMessageID */ Number(req.url.slice(13, req.url.length);
+    const initialID = /* latestMessageID */ Number(req.url.slice(13, req.url.length));
     res.write('latestMessageID = ' + JSON.stringify(latestMessageID) + '; addMessage(' + JSON.stringify(messages.slice(initialID, messages.length)) + '); addLongpoll(latestMessageID);')
   } else if (parsedurl.pathname === '/longpoll-xhr') {
     /* console.log(req.url);
@@ -91,7 +91,7 @@ exports.processRequest = async function (req, res) {
 exports.startWsServer = function (server) {
   wss = new WebSocket.Server({ server })
 
-  wss.on('connection', function connection (ws) {
+  wss.on('connection', function connection(ws) {
     var index = sockets.length
     sockets.push(ws)
     listenChannels.push('')
@@ -100,14 +100,14 @@ exports.startWsServer = function (server) {
     var isAuthed = true // false; TODO: Fix
     var listenChannel = ''
 
-    ws.on('message', function incoming (message) {
+    ws.on('message', function incoming(message) {
       const response = processMessage('websockets', isAuthed, listenChannel, message)
       listenChannel = response.isAuthed
       listenChannels[index] = response.listenChannel
       isAuthed = response.isAuthed
     })
 
-    ws.on('close', function close () {
+    ws.on('close', function close() {
       console.log('A client disconnected.')
       const index = sockets.indexOf(ws)
       if (index > -1) {

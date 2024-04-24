@@ -9,13 +9,13 @@ const register_template = minify(fs.readFileSync('pages/templates/register.html'
 const error_template = minify(fs.readFileSync('pages/templates/login/error.html', 'utf-8'));
 
 function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement||"");
+  return string.split(needle).join(replacement || "");
 };
 
-exports.processRegister = async function(bot, req, res, args) {
+exports.processRegister = async function (bot, req, res, args) {
   discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
   if (discordID) {
-    res.writeHead(302, {"Location": "/server/"});
+    res.writeHead(302, { "Location": "/server/" });
     res.write('Logged in! Click <a href="/server/">here</a> to continue.');
   } else {
     parsedurl = url.parse(req.url, true);
