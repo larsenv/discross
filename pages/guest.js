@@ -1,4 +1,4 @@
-var url = require('url');
+/*var url = require('url');
 var fs = require('fs');
 var minify = require('html-minifier').minify;
 var escape = require('escape-html');
@@ -9,14 +9,14 @@ const guest_login_template = minify(fs.readFileSync('pages/templates/guest.html'
 const error_template = minify(fs.readFileSync('pages/templates/login/error.html', 'utf-8'));
 
 function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement||"");
+  return string.split(needle).join(replacement || "");
 };
 
-exports.processGuestLogin = async function(bot, req, res, args) {
+exports.processGuestLogin = async function (bot, req, res, args) {
   discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
   if (discordID) {
     // res.writeHead(200, {'Content-Type': 'text/html'});
-    res.writeHead(303, {"Location": "/server/", "Content-Type": "text/html"});
+    res.writeHead(303, { "Location": "/server/", "Content-Type": "text/html" });
     res.write('Logged in! Click <a href="/server/">here</a> to continue.');
   } else {
     parsedurl = url.parse(req.url, true);
@@ -34,4 +34,4 @@ exports.processGuestLogin = async function(bot, req, res, args) {
     res.write(response);
   }
   res.end();
-}
+}*/

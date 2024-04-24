@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt')
-const sqlite3 = require('sqlite3').verbose()
-const uuidv4 = require('uuid/v4')
+const sqlite3 = require('better-sqlite3')
+const { v4: uuidv4 } = require('uuid')
 const { parse } = require('querystring')
 const passStrength = require('owasp-password-strength-test')
 const he = require('he') // Encodes HTML attributes
@@ -19,58 +19,47 @@ exports.setHTTPS = function (ishttps) { // Called from index.js
   https = ishttps
 }
 
-const db = new sqlite3.Database('secrets/database.db', (err) => {
-  if (err) {
-    console.error(err.message)
-  }
-  console.log('Connected to the database.')
-})
+const db = new sqlite3('secrets/database.db');
+console.log("Connected to the database.");
 
-async function querySingle (sql, params = []) {
-  return await new Promise((resolve, reject) => {
-    db.get(sql, params, (err, result) => {
-      if (err) {
-        console.log('Error running sql: ' + sql)
-        console.log(err)
-        reject(err)
-      } else {
-        resolve(result)
-      }
-    })
-  })
+function queryRun(sql, params = []) {
+  return db.prepare(sql).run(...params);
 }
 
-async function queryAll (sql, params = []) {
-  return await new Promise((resolve, reject) => {
-    db.all(sql, params, (err, result) => {
-      if (err) {
-        console.log('Error running sql: ' + sql)
-        console.log(err)
-        reject(err)
-      } else {
-        resolve(result)
-      }
-    })
-  })
+function querySingle(sql, params = []) {
+  return db.prepare(sql).get(...params);
 }
 
-function unixTime () {
+function queryAll(sql, params = []) {
+  return db.prepare(sql).all(...params);
+}
+
+//for the oauth thing
+exports.insertServers = function (items) {
+  const serversQuery = db.prepare("INSERT OR IGNORE INTO servers VALUES (@serverID, @discordID)");
+  const transaction = db.transaction(function (items) {
+    for (const item of items) serversQuery.run(item);
+  });
+  return transaction(items);
+};
+
+function unixTime() {
   return Math.floor(new Date() / 1000)
 }
 
 exports.createUser = async function (discordID, username, password) {
-  let match = await querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username])
+  let match = querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username])
   if (match) {
     return { status: 'error', reason: 'An account with that username exists!' }
   }
-  match = await querySingle('SELECT DISTINCT * FROM users WHERE discordID=?', [discordID])
+  match = querySingle('SELECT DISTINCT * FROM users WHERE discordID=?', [discordID])
   if (match) {
     return { status: 'error', reason: "There's already an account linked to that Discord account!\nTry resetting your password on the login page." }
   }
   const tested = passStrength.test(password)
   if (tested.strong) {
     const hashedPassword = await bcrypt.hash(password, saltRounds)
-    await querySingle('INSERT INTO users VALUES (?,?,?)', [discordID, username, hashedPassword])
+    queryRun('INSERT INTO users VALUES (?,?,?)', [discordID, username, hashedPassword])
     return { status: 'success' }
   } else {
     return { status: 'error', reason: tested.errors.join('\n') }
@@ -78,7 +67,7 @@ exports.createUser = async function (discordID, username, password) {
 }
 
 exports.login = async function (username, password) {
-  const match = await querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username])
+  const match = querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username])
   if (!match) {
     return { status: 'error', reason: "That account doesn't exist!" }
   } else {
@@ -86,7 +75,7 @@ exports.login = async function (username, password) {
     if (correctPassword) {
       const sessionID = uuidv4()
       const expiresAt = unixTime() + expiryTime
-      await querySingle('INSERT INTO sessions VALUES (?,?,?)', [match.discordID, sessionID, unixTime() + expiryTime])
+      queryRun('INSERT INTO sessions VALUES (?,?,?)', [match.discordID, sessionID, unixTime() + expiryTime])
       return { status: 'success', sessionID: sessionID, expires: expiresAt }
     } else {
       return { status: 'error', reason: 'Incorrect password!' }
@@ -96,8 +85,8 @@ exports.login = async function (username, password) {
 
 exports.checkSession = async function (sessionID) {
   const time = unixTime()
-  querySingle('DELETE FROM sessions WHERE NOT expires > ?', [time]) // Clean the database (not awaited because it's not urgent)
-  const match = await querySingle('SELECT DISTINCT * FROM sessions WHERE sessionID=? AND expires > ?', [sessionID, time])
+  queryRun('DELETE FROM sessions WHERE NOT expires > ?', [time]) // Clean the database (not awaited because it's not urgent)
+  const match = querySingle('SELECT DISTINCT * FROM sessions WHERE sessionID=? AND expires > ?', [sessionID, time])
   if (!match) {
     return false
   } else {
@@ -110,11 +99,13 @@ exports.checkSession = async function (sessionID) {
 }
 
 exports.logout = async function (discordID) {
-  await querySingle('DELETE FROM sessions WHERE discordID=?', [discordID])
+  //if (typeof discordID == "object") return;
+  queryRun('DELETE FROM sessions WHERE discordID=?', [discordID])
 }
 
 exports.getUsername = async function (discordID) {
-  const match = await querySingle('SELECT DISTINCT username FROM users WHERE discordID=?', [discordID])
+  if (typeof discordID === "object") return discordID[1]
+  const match = querySingle('SELECT DISTINCT username FROM users WHERE discordID=?', [discordID])
   if (match) {
     return match.username
   } else {
@@ -124,21 +115,21 @@ exports.getUsername = async function (discordID) {
 
 exports.createVerificationCode = async function (discordID) {
   const time = unixTime()
-  querySingle('DELETE FROM verificationcodes WHERE NOT expires > ?', [time]) // Clean the database (not awaited because it's not urgent)
-  const match = await querySingle('SELECT DISTINCT code FROM verificationcodes WHERE discordID=? AND expires > ?', [discordID, time])
+  queryRun('DELETE FROM verificationcodes WHERE NOT expires > ?', [time]) // Clean the database (not awaited because it's not urgent)
+  const match = querySingle('SELECT DISTINCT code FROM verificationcodes WHERE discordID=? AND expires > ?', [discordID, time])
   if (match) {
     return match.code
   } else {
     const generatedCode = uuidv4().slice(0, 8) + 'a' + uuidv4().slice(9, 10) // Puts an "a" into it so it isn't stored as a number. I know that this makes 2 UUIDs.
-    await querySingle('INSERT INTO verificationcodes VALUES (?,?,?)', [discordID, generatedCode, time + codeExpiryTime])
+    queryRun('INSERT INTO verificationcodes VALUES (?,?,?)', [discordID, generatedCode, time + codeExpiryTime])
     return generatedCode
   }
 }
 
 exports.checkVerificationCode = async function (code) {
   const time = unixTime()
-  querySingle('DELETE FROM verificationcodes WHERE NOT expires > ?', [time]) // Clean the database (not awaited because it's not urgent)
-  const match = await querySingle('SELECT DISTINCT discordID FROM verificationcodes WHERE code=? AND expires > ?', [code, time])
+  queryRun('DELETE FROM verificationcodes WHERE NOT expires > ?', [time]) // Clean the database (not awaited because it's not urgent)
+  const match = querySingle('SELECT DISTINCT discordID FROM verificationcodes WHERE code=? AND expires > ?', [code, time])
   if (match) {
     return match.discordID
   } else {
@@ -146,14 +137,15 @@ exports.checkVerificationCode = async function (code) {
   }
 }
 
-async function setup () {
-  await querySingle('CREATE TABLE IF NOT EXISTS users (discordID TEXT, username STRING, hashedPassword STRING)')
-  await querySingle('CREATE TABLE IF NOT EXISTS sessions (discordID TEXT, sessionID STRING, expires INT)')
-  await querySingle('CREATE TABLE IF NOT EXISTS webhooks (serverID TEXT, webhookID TEXT, token STRING)')
-  await querySingle('CREATE TABLE IF NOT EXISTS verificationcodes (discordID TEXT, code STRING, expires INT)')
+function setup() {
+  queryRun('CREATE TABLE IF NOT EXISTS users (discordID TEXT, username STRING, hashedPassword STRING)')
+  queryRun('CREATE TABLE IF NOT EXISTS sessions (discordID TEXT, sessionID STRING, expires INT)')
+  queryRun('CREATE TABLE IF NOT EXISTS webhooks (serverID TEXT, webhookID TEXT, token STRING)')
+  queryRun('CREATE TABLE IF NOT EXISTS verificationcodes (discordID TEXT, code STRING, expires INT)')
+  queryRun('CREATE TABLE IF NOT EXISTS servers (serverID TEXT, discordID TEXT, unique (serverID, discordID))')
 }
 
-setup()
+setup();
 
 exports.checkAuth = async function (req, res, noRedirect) {
   const cookies = req.headers.cookie
@@ -166,20 +158,20 @@ exports.checkAuth = async function (req, res, noRedirect) {
   })
 
   if (cookiedict.sessionID) {
-    if (cookiedict.sessionID === 'guest') {
+    /*if (cookiedict.sessionID === 'guest') {
       return ['guest', cookiedict.guestUsername]
+    } else {*/
+    const session = await exports.checkSession(cookiedict.sessionID)
+    if (session) {
+      return session
     } else {
-      const session = await exports.checkSession(cookiedict.sessionID)
-      if (session) {
-        return session
-      } else {
-        if (!noRedirect) {
-          res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
-          res.end()
-        }
-        return false
+      if (!noRedirect) {
+        res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
+        res.end()
       }
+      return false
     }
+    //}
   } else {
     if (!noRedirect) {
       res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
@@ -210,7 +202,7 @@ exports.handleLoginRegister = async function (req, res, body) {
         res.end()
       }
     }
-  } else if (req.url === '/guest') {
+  } /*else if (req.url === '/guest') {
     const params = parse(body)
     if (params.username !== '') {
       res.writeHead(303, { 'Set-Cookie': ['guestUsername=' + encodeURIComponent(params.username), 'sessionID=guest; SameSite=Strict; ' + (https ? 'Secure;' : '')], Location: '/server/', 'Content-Type': 'text/html' })
@@ -220,7 +212,7 @@ exports.handleLoginRegister = async function (req, res, body) {
       res.write('Please input a username')
       res.end()
     }
-  } else if (req.url === '/register') {
+  } */else if (req.url === '/register') {
     const params = parse(body)
     if (params.username && params.password && params.confirm && params.token) {
       if (params.confirm !== params.password) {
@@ -255,9 +247,10 @@ exports.handleLoginRegister = async function (req, res, body) {
         res.end()
         return
       }
-      querySingle('DELETE FROM users WHERE discordID = ?', [id])
-      querySingle('DELETE FROM sessions WHERE discordID = ?', [id])
-      querySingle('DELETE FROM verificationcodes WHERE discordID = ?', [id])
+      queryRun('DELETE FROM users WHERE discordID = ?', [id])
+      queryRun('DELETE FROM sessions WHERE discordID = ?', [id])
+      queryRun('DELETE FROM verificationcodes WHERE discordID = ?', [id])
+      queryRun('DELETE FROM servers WHERE discordID = ?', [id])
       res.writeHead(303, { Location: '/register.html' })
       res.end()
     } else {
@@ -266,6 +259,8 @@ exports.handleLoginRegister = async function (req, res, body) {
     }
   }
 }
+
+exports.dbQueryRun = queryRun
 
 exports.dbQuerySingle = querySingle
 

@@ -6,26 +6,26 @@ authkey = "authpls";
 // nocache
 
 // https://stackoverflow.com/a/15339941
-function Xhr(){ /* returns cross-browser XMLHttpRequest, or null if unable */
-    try {
-        return new XMLHttpRequest();
-    }catch(e){}
-    try {
-        return new ActiveXObject("Msxml3.XMLHTTP");
-    }catch(e){}
-    try {
-        return new ActiveXObject("Msxml2.XMLHTTP.6.0");
-    }catch(e){}
-    try {
-        return new ActiveXObject("Msxml2.XMLHTTP.3.0");
-    }catch(e){}
-    try {
-        return new ActiveXObject("Msxml2.XMLHTTP");
-    }catch(e){}
-    try {
-        return new ActiveXObject("Microsoft.XMLHTTP");
-    }catch(e){}
-    return null;
+function Xhr() { /* returns cross-browser XMLHttpRequest, or null if unable */
+  try {
+    return new XMLHttpRequest();
+  } catch (e) { }
+  try {
+    return new ActiveXObject("Msxml3.XMLHTTP");
+  } catch (e) { }
+  try {
+    return new ActiveXObject("Msxml2.XMLHTTP.6.0");
+  } catch (e) { }
+  try {
+    return new ActiveXObject("Msxml2.XMLHTTP.3.0");
+  } catch (e) { }
+  try {
+    return new ActiveXObject("Msxml2.XMLHTTP");
+  } catch (e) { }
+  try {
+    return new ActiveXObject("Microsoft.XMLHTTP");
+  } catch (e) { }
+  return null;
 }
 
 function addMessage(text) {
@@ -80,12 +80,12 @@ function send(message) {
 
 
 
-    addScript('/api.js?uid=' + 
-    time + 
-    '&message=' + 
-    message
-     + '&authkey=' + 
-    authkey,
+    addScript('/api.js?uid=' +
+      time +
+      '&message=' +
+      message
+      + '&authkey=' +
+      authkey,
       'apiScript');
   }
 }
@@ -118,7 +118,7 @@ function longpoll_xhr(id) {
 
 function setup_xhr() {
   xhttp = Xhr();
-  xhttp.onreadystatechange = function() {
+  xhttp.onreadystatechange = function () {
     // alert("test " + xhttp.responseText);
     if (xhttp.readyState == 4) {
       // alert(xhttp.status);
@@ -140,7 +140,7 @@ xhttp2 = Xhr();
 
 
 
-    if (window.WebSocket || window.MozWebSocket) {
+if (window.WebSocket || window.MozWebSocket) {
 
 
 
@@ -148,67 +148,67 @@ xhttp2 = Xhr();
 
 
 
-        if (!window.WebSocket) {
+  if (!window.WebSocket) {
 
 
 
 
-          window.WebSocket = window.MozWebSocket;
+    window.WebSocket = window.MozWebSocket;
 
 
 
 
-        }
+  }
 
 
 
 
 
-        connectiontype = "websocket";
-        // Let us open a web socket
-        ws = new WebSocket("wss://" + location.host + "/");
+  connectiontype = "websocket";
+  // Let us open a web socket
+  ws = new WebSocket("wss://" + location.host + "/");
 
-        ws.onopen = function() {
-          auth();
-          // Web Socket is connected, send data using send()
-          // ws.send("Message to send");
-          // alert("Message is sent...");
-        };
-        ws.onmessage = function (evt) { 
-          var received_msg = evt.data;
-          addMessage(received_msg);
-        };
-        ws.onclose = function() { 
-          // websocket is closed.
-          if (xhttp2) {
-            connectiontype = "longpoll";
-            // addLongpoll(latest_message_id);
-            isxhr = true;
-            setup_xhr();
-            longpoll_xhr(latest_message_id);
-          } else {
-            connectiontype = "longpoll";
-            isxhr = false
-            addLongpoll(latest_message_id);
-            // setup_xhr();
-            // longpoll_xhr(latest_message_id);
-          }
-        };
+  ws.onopen = function () {
+    auth();
+    // Web Socket is connected, send data using send()
+    // ws.send("Message to send");
+    // alert("Message is sent...");
+  };
+  ws.onmessage = function (evt) {
+    var received_msg = evt.data;
+    addMessage(received_msg);
+  };
+  ws.onclose = function () {
+    // websocket is closed.
+    if (xhttp2) {
+      connectiontype = "longpoll";
+      // addLongpoll(latest_message_id);
+      isxhr = true;
+      setup_xhr();
+      longpoll_xhr(latest_message_id);
     } else {
-        // The browser doesn't support WebSocket maybe
-        if (xhttp2) {
-          connectiontype = "longpoll";
-          // addLongpoll(latest_message_id);
-          isxhr = true;
-          setup_xhr();
-          longpoll_xhr(latest_message_id);
-        } else {
-          connectiontype = "longpoll";
-          isxhr = false
-          addLongpoll(latest_message_id);
-          // setup_xhr();
-          // longpoll_xhr(latest_message_id);
-        }
+      connectiontype = "longpoll";
+      isxhr = false
+      addLongpoll(latest_message_id);
+      // setup_xhr();
+      // longpoll_xhr(latest_message_id);
     }
+  };
+} else {
+  // The browser doesn't support WebSocket maybe
+  if (xhttp2) {
+    connectiontype = "longpoll";
+    // addLongpoll(latest_message_id);
+    isxhr = true;
+    setup_xhr();
+    longpoll_xhr(latest_message_id);
+  } else {
+    connectiontype = "longpoll";
+    isxhr = false
+    addLongpoll(latest_message_id);
+    // setup_xhr();
+    // longpoll_xhr(latest_message_id);
+  }
+}
 
 // }
