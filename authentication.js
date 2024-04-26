@@ -188,11 +188,11 @@ exports.handleLoginRegister = async function (req, res, body) {
       const result = await exports.login(params.username, params.password)
       if (result.status === 'success') {
         if (params.redirect) {
-          res.writeHead(200, { 'Set-Cookie': ['sessionID=deleted; expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly', 'sessionID=' + result.sessionID + '; SameSite=Strict; ' + (https ? 'Secure;' : '') + ' Expires=' + new Date(result.expires * 1000)], Location: params.redirect + '#end', 'Content-Type': 'text/html' })
-          res.write('<head><script>document.cookie = ' + "'" + 'sessionID =' + result.sessionID + "'" + ';' + '</script>' + '<meta http-equiv="refresh" content="0; URL=' + he.encode(params.redirect) + '" />' + 'Logged in. Click <a href="' + he.encode(params.redirect) + '">here</a> to continue</head>')
+          res.writeHead(200, { 'Set-Cookie': ['sessionID=deleted; expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly', 'sessionID=' + result.sessionID + '; Expires=' + new Date(result.expires * 1000) + '; path=/'], Location: params.redirect + '#end', 'Content-Type': 'text/html' })
+          res.write('<head><script>document.cookie = ' + "'" + 'sessionID =' + result.sessionID + '; Expires=' + new Date(result.expires * 1000) + '; path=/' + "'" + ';' + '</script>' + '<meta http-equiv="refresh" content="0; URL=' + he.encode(params.redirect) + '" />' + 'Logged in. Click <a href="' + he.encode(params.redirect) + '">here</a> to continue</head>')
         } else {
-          res.writeHead(200, { 'Set-Cookie': ['sessionID=deleted; expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly', 'sessionID=' + result.sessionID + '; SameSite=Strict; ' + (https ? 'Secure;' : '') + ' Expires=' + new Date(result.expires * 1000)], Location: params.redirect + '#end', 'Content-Type': 'text/html' })
-          res.write('<head><script>document.cookie = ' + "'" + 'sessionID =' + result.sessionID + "'" + ';' + '</script>' + '<meta http-equiv="refresh" content="0; URL=' + he.encode(params.redirect) + '" />' + 'Logged in. Click <a href="' + he.encode(params.redirect) + '">here</a> to continue</head>')
+          res.writeHead(200, { 'Set-Cookie': ['sessionID=deleted; expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly', 'sessionID=' + result.sessionID + '; Expires=' + new Date(result.expires * 1000) + '; path=/'], Location: params.redirect + '#end', 'Content-Type': 'text/html' })
+          res.write('<head><script>document.cookie = ' + "'" + 'sessionID =' + result.sessionID + '; Expires=' + new Date(result.expires * 1000) + '; path=/' + "'" + ';' + '</script>' + '<meta http-equiv="refresh" content="0; URL=' + he.encode(params.redirect) + '" />' + 'Logged in. Click <a href="' + he.encode(params.redirect) + '">here</a> to continue</head>')
         }
         res.end()
       } else {
