@@ -166,7 +166,7 @@ exports.checkAuth = async function (req, res, noRedirect) {
       return session
     } else {
       if (!noRedirect) {
-        res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
+        res.writeHead(301, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
         res.end()
       }
       return false
@@ -188,17 +188,15 @@ exports.handleLoginRegister = async function (req, res, body) {
       const result = await exports.login(params.username, params.password)
       if (result.status === 'success') {
         if (params.redirect) {
-          res.writeHead(303, { 'Set-Cookie': 'sessionID=' + result.sessionID + '; SameSite=Strict; ' + (https ? 'Secure;' : '') + ' Expires=' + new Date(result.expires * 1000), Location: params.redirect + '#end', 'Content-Type': 'text/html' })
-          res.write('Logged in! Click <a href="' + he.encode(params.redirect) + '">here</a> to continue.')
+          res.writeHead(200, { 'Set-Cookie': ['sessionID=deleted; expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly', 'sessionID=' + result.sessionID + '; SameSite=Strict; ' + (https ? 'Secure;' : '') + ' Expires=' + new Date(result.expires * 1000)], Location: params.redirect + '#end', 'Content-Type': 'text/html' })
+          res.write('<head><script>document.cookie = ' + "'" + 'sessionID =' + result.sessionID + "'" + ';' + '</script>' + '<meta http-equiv="refresh" content="0; URL=' + he.encode(params.redirect) + '" />' + 'Logged in. Click <a href="' + he.encode(params.redirect) + '">here</a> to continue</head>')
         } else {
-          res.writeHead(303, { 'Set-Cookie': 'sessionID=' + result.sessionID + '; SameSite=Strict; ' + (https ? 'Secure;' : '') + ' Expires=' + new Date(result.expires * 1000), Location: '/server/', 'Content-Type': 'text/html' })
-          res.write('Logged in! Click <a href="/server/">here</a> to continue.')
+          res.writeHead(200, { 'Set-Cookie': ['sessionID=deleted; expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly', 'sessionID=' + result.sessionID + '; SameSite=Strict; ' + (https ? 'Secure;' : '') + ' Expires=' + new Date(result.expires * 1000)], Location: params.redirect + '#end', 'Content-Type': 'text/html' })
+          res.write('<head><script>document.cookie = ' + "'" + 'sessionID =' + result.sessionID + "'" + ';' + '</script>' + '<meta http-equiv="refresh" content="0; URL=' + he.encode(params.redirect) + '" />' + 'Logged in. Click <a href="' + he.encode(params.redirect) + '">here</a> to continue</head>')
         }
-        res.write('test')
         res.end()
       } else {
-        res.writeHead(303, { Location: '/login.html?errortext=' + encodeURIComponent(result.reason), 'Content-Type': 'text/html' })
-        res.write('test')
+        res.writeHead(301, { Location: '/login.html?errortext=' + encodeURIComponent(result.reason), 'Content-Type': 'text/html' })
         res.end()
       }
     }
@@ -216,22 +214,22 @@ exports.handleLoginRegister = async function (req, res, body) {
     const params = parse(body)
     if (params.username && params.password && params.confirm && params.token) {
       if (params.confirm !== params.password) {
-        res.writeHead(303, { Location: "/register.html?errortext=Password+confirmation+doesn't+match+password!", 'Content-Type': 'text/html' })
+        res.writeHead(301, { Location: "/register.html?errortext=Password+confirmation+doesn't+match+password!", 'Content-Type': 'text/html' })
         res.end()
         return
       }
       const id = await exports.checkVerificationCode(params.token)
       if (!id) {
-        res.writeHead(303, { Location: '/register.html?errortext=Invalid+verification+code!%0AType+%5Econnect+on+a+server+with+the+Discross+bot.', 'Content-Type': 'text/html' })
+        res.writeHead(301, { Location: '/register.html?errortext=Invalid+verification+code!%0AType+%5Econnect+on+a+server+with+the+Discross+bot.', 'Content-Type': 'text/html' })
         res.end()
         return
       }
       const result = await exports.createUser(id, params.username, params.password)
       if (result.status === 'success') {
-        res.writeHead(303, { Location: '/login.html' })
+        res.writeHead(301, { Location: '/login.html' })
         res.end()
       } else {
-        res.writeHead(303, { Location: '/register.html?errortext=' + encodeURIComponent(result.reason) })
+        res.writeHead(301, { Location: '/register.html?errortext=' + encodeURIComponent(result.reason) })
         res.end()
       }
     } else {
@@ -243,7 +241,7 @@ exports.handleLoginRegister = async function (req, res, body) {
     if (params.token) {
       const id = await exports.checkVerificationCode(params.token)
       if (!id) {
-        res.writeHead(303, { Location: '/forgot.html?errortext=Invalid+verification+code!%0AType+%5Econnect+on+a+server+with+the+Discross+bot.' })
+        res.writeHead(301, { Location: '/forgot.html?errortext=Invalid+verification+code!%0AType+%5Econnect+on+a+server+with+the+Discross+bot.' })
         res.end()
         return
       }

@@ -27,7 +27,7 @@ exports.sendToAll = sendToAll
 
 function processMessage(connectionType, isAuthed, listenChannel, message) {
   console.log('received: %s', message)
-  const split = message.split(' ')
+  const split = message
   const action = split[0]
   const params = message.slice(action.length + 1, message.length)
   console.log('Action: ' + action + ', params: ' + params)
