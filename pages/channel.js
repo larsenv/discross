@@ -59,7 +59,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         } else {
           final = strReplace(template, "{$INPUT}", input_disabled_template);
         }
-        final = strReplace(final, "{$MESSAGES}", no_message_history_template); // You do not have permission... message
+        final = strReplace(final, "{$MESSAGES}", no_message_history_template);
 
         res.write(final); //write a response to the client
         res.end(); //end the response

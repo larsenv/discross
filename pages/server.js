@@ -55,7 +55,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
         cachedMembers[discordID][server.id] = member;
       }
       if (/*(isGuest && guestServers.includes(server.id)) ||*/ (member && member.user)) {
-        serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.iconURL());
+        serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.iconURL().replace("https://cdn.discordapp.com/icons/", "http://discross.rc24.xyz/ico/").replace(".webp", ".png").replace(".gif", ".png").replace("a_", ""));
         serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
         serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", server.name);
         serverList += serverHTML;

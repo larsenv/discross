@@ -96,6 +96,22 @@ server.on('request', async (req, res) => {
       }
       res.writeHead(302, { Location: '/'/*, 'Set-Cookie': 'sessionID=' + "-" + '; SameSite=Strict; ' + (usinghttps ? 'Secure;' : '') + ' Expires=' + new Date() */ })
       res.end()
+    } else if (args[1] === 'ico') {
+      https = require('https')
+      console.log("https://cdn.discordapp.com/" + "ico" + "/" + args[2] + "/" + args[3]);
+      https.get("https://cdn.discordapp.com/" + "icons" + "/" + args[2] + "/" + args[3], (re1) => {
+        res.writeHead(200, {"Content-Type": "image/png"});
+        
+        re1.on("data", (chunk) => {
+          res.write(chunk);
+        });
+        
+        re1.on("end", () => {
+          res.end();
+        });
+      }).on("error", (error) => {
+        console.log("oh look");
+      });
     } else if (args[1] === 'server') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
