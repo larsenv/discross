@@ -98,7 +98,6 @@ server.on('request', async (req, res) => {
       res.end()
     } else if (args[1] === 'ico') {
       https = require('https')
-      console.log("https://cdn.discordapp.com/" + "ico" + "/" + args[2] + "/" + args[3]);
       https.get("https://cdn.discordapp.com/" + "icons" + "/" + args[2] + "/" + args[3], (re1) => {
         res.writeHead(200, {"Content-Type": "image/png"});
         
