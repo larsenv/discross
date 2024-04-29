@@ -183,12 +183,12 @@ if (window.WebSocket || window.MozWebSocket) {
     if (xhttp2) {
       connectiontype = "longpoll";
       // addLongpoll(latest_message_id);
-      isxhr = true;
-      setup_xhr();
-      longpoll_xhr(latest_message_id);
+      isxhr = false;
+      // setup_xhr();
+      // longpoll_xhr(latest_message_id);
     } else {
       connectiontype = "longpoll";
-      isxhr = false
+      isxhr = false;
       addLongpoll(latest_message_id);
       // setup_xhr();
       // longpoll_xhr(latest_message_id);
@@ -199,12 +199,12 @@ if (window.WebSocket || window.MozWebSocket) {
   if (xhttp2) {
     connectiontype = "longpoll";
     // addLongpoll(latest_message_id);
-    isxhr = true;
-    setup_xhr();
-    longpoll_xhr(latest_message_id);
+    isxhr = false;
+    // setup_xhr();
+    // longpoll_xhr(latest_message_id);
   } else {
     connectiontype = "longpoll";
-    isxhr = false
+    isxhr = false;
     addLongpoll(latest_message_id);
     // setup_xhr();
     // longpoll_xhr(latest_message_id);
