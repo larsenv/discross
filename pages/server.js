@@ -1,5 +1,6 @@
 var fs = require('fs');
-var { minify } = require('@minify-html/node');
+var HTMLMinifier = require('@bhavingajjar/html-minify');
+var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var auth = require('../authentication.js');
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
@@ -8,14 +9,14 @@ const { ChannelType, PermissionFlagsBits } = require('discord.js');
 // Is that a bad idea?
 
 // Templates for viewing the channels in a server
-const server_template = minify(fs.readFileSync('pages/templates/server.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server.html', 'utf-8'));
 
-const text_channel_template = minify(fs.readFileSync('pages/templates/channellist/textchannel.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
-const category_channel_template = minify(fs.readFileSync('pages/templates/channellist/categorychannel.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const text_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8'));
+const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
 
-const server_icon_template = minify(fs.readFileSync('pages/templates/server/server_icon.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
-const invalid_server_template = minify(fs.readFileSync('pages/templates/server/invalid_server.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const invalid_server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/invalid_server.html', 'utf-8'));
 
 const cachedMembers = {}; // TODO: Find a better way
 
