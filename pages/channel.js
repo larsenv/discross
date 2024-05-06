@@ -1,5 +1,6 @@
 var fs = require('fs');
-var { minify } = require('@minify-html/node');
+var HTMLMinifier = require('@bhavingajjar/html-minify');
+var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes
@@ -9,17 +10,17 @@ const { PermissionFlagsBits } = require('discord.js');
 // Is that a bad idea?
 
 // Templates for viewing the messages in a channel
-const channel_template = minify(fs.readFileSync('pages/templates/channel.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
 
-const message_template = minify(fs.readFileSync('pages/templates/message/message.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
-const first_message_content_template = minify(fs.readFileSync('pages/templates/message/first_message_content.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
-const merged_message_content_template = minify(fs.readFileSync('pages/templates/message/merged_message_content.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
-const mention_template = minify(fs.readFileSync('pages/templates/message/mention.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message.html', 'utf-8'));
+const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
+const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
+const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
 
-const input_template = minify(fs.readFileSync('pages/templates/channel/input.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
-const input_disabled_template = minify(fs.readFileSync('pages/templates/channel/input_disabled.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
+const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
 
-const no_message_history_template = minify(fs.readFileSync('pages/templates/channel/no_message_history.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'));
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");

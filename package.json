@@ -4,7 +4,7 @@
   "description": "A webhook bridge to send messages on Discord through a webpage",
   "main": "index.js",
   "dependencies": {
-    "@minify-html/node": "^0.15.0",
+    "@bhavingajjar/html-minify": "^1.0.0",
     "bcrypt": "^5.1.1",
     "better-sqlite3": "^9.5.0",
     "discord.js": "^14.14.1",
