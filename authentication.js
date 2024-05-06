@@ -189,10 +189,10 @@ exports.handleLoginRegister = async function (req, res, body) {
       if (result.status === 'success') {
         if (params.redirect) {
           res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; Expires=' + new Date(result.expires * 1000) + '; path=/;'], Location: params.redirect + '#end', 'Content-Type': 'text/html' })
-          res.write('<head><meta http-equiv="refresh" content="0; URL=' + he.encode(params.redirect) + '" />' + 'Logged in. Click <a href="' + he.encode(params.redirect) + '">here</a> to continue</head>')
+          res.write('<head><meta http-equiv="refresh" content="0; URL=' + he.encode(params.redirect) + '" />' + 'Logged in. Click <a href="discross.rc24.xyz' + he.encode(params.redirect) + '">here</a> to continue</head>')
         } else {
           res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; Expires=' + new Date(result.expires * 1000) + '; path=/;'], Location: '/server/' + '#end', 'Content-Type': 'text/html' })
-          res.write('<head><meta http-equiv="refresh" content="0; URL=discross.rc24.xyz/server/" />' + 'Logged in. Click <a href="/server/">here</a> to continue</head>')
+          res.write('<head><meta http-equiv="refresh" content="0; URL=discross.rc24.xyz/server/" />' + 'Logged in. Click <a href="discross.rc24.xyz/server/">here</a> to continue</head>')
         }
         res.end()
       } else {
