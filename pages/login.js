@@ -25,7 +25,7 @@ exports.processLogin = async function (bot, req, res, args) {
     if (parsedurl.query.redirect) {
       response = strReplace(response, "{$REDIRECT_URL}", strReplace(parsedurl.query.redirect, '"', "%22"));
     } else {
-      response = strReplace(response, "{$REDIRECT_URL}", "discross.rc24.xyz/server/");
+      response = strReplace(response, "{$REDIRECT_URL}", "/server/");
     }
     if (parsedurl.query.errortext) {
       response = strReplace(response, "{$ERROR}", strReplace(error_template, "{$ERROR_MESSAGE}", strReplace(escape(parsedurl.query.errortext), "\n", "<br>")));
