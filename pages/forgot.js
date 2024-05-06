@@ -1,12 +1,12 @@
 var url = require('url');
 var fs = require('fs');
-var minify = require('html-minifier').minify;
+var { minify } = require('@minify-html/node');
 var escape = require('escape-html');
 
 var auth = require('../authentication.js');
 
-const forgot_template = minify(fs.readFileSync('pages/templates/forgot.html', 'utf-8'));
-const error_template = minify(fs.readFileSync('pages/templates/login/error.html', 'utf-8'));
+const forgot_template = minify(fs.readFileSync('pages/templates/forgot.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const error_template = minify(fs.readFileSync('pages/templates/login/error.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");

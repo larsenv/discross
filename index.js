@@ -1,9 +1,12 @@
+const path = require('path')
 const fs = require('fs')
 const url = require('url')
 const mime = require('mime-types').lookup
-const { SnowTransfer } = require('snowtransfer');
+const { SnowTransfer } = require('snowtransfer')
 const bot = require('./bot.js')
 const connectionHandler = require('./connectionHandler.js')
+const sharp = require("sharp")
+const sanitizer = require("path-sanitizer")
 
 const options = {}
 
@@ -23,16 +26,16 @@ const http = usinghttps ? require('https') : require('http')
 var auth = require('./authentication.js')
 auth.setHTTPS(usinghttps) // Determines whether cookies have the Secure; option
 
-var indexpage = require('./pages/index.js')
-var loginpage = require('./pages/login.js')
-//var guestpage = require('./pages/guest.js')
-var registerpage = require('./pages/register.js')
-var forgotpage = require('./pages/forgot.js')
-var channelpage = require('./pages/channel.js')
-var serverpage = require('./pages/server.js')
+var indexpage = require('./pages/index.js');
+var loginpage = require('./pages/login.js');
+//var guestpage = require('./pages/guest.js');
+var registerpage = require('./pages/register.js');
+var forgotpage = require('./pages/forgot.js');
+var channelpage = require('./pages/channel.js');
+var serverpage = require('./pages/server.js');
 var sendpage = require('./pages/send.js');
 
-bot.startBot()
+bot.startBot();
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || '')
@@ -52,6 +55,7 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
   }
   fs.readFile(filename, function (err, data) {
     if (err) {
+      //try to find something
       if (filename.endsWith('index.html')) {
         res.writeHead(404, { 'Content-Type': type })
         return res.end('404 Not Found')
@@ -96,21 +100,6 @@ server.on('request', async (req, res) => {
       }
       res.writeHead(302, { Location: '/'/*, 'Set-Cookie': 'sessionID=' + "-" + '; SameSite=Strict; ' + (usinghttps ? 'Secure;' : '') + ' Expires=' + new Date() */ })
       res.end()
-    } else if (args[1] === 'ico') {
-      https = require('https')
-      https.get("https://cdn.discordapp.com/" + "icons" + "/" + args[2] + "/" + args[3], (re1) => {
-        res.writeHead(200, {"Content-Type": "image/png"});
-        
-        re1.on("data", (chunk) => {
-          res.write(chunk);
-        });
-        
-        re1.on("end", () => {
-          res.end();
-        });
-      }).on("error", (error) => {
-        console.log("oh look");
-      });
     } else if (args[1] === 'server') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
@@ -144,9 +133,21 @@ server.on('request', async (req, res) => {
             const guilds = await oauthClient.user.getGuilds();
             const filteredServers = guilds.filter(e => bot.client.guilds.cache.has(e.id));
             const readyServers = filteredServers.map(function (e) {
-              return { serverID: e.id, discordID: discordID }
+              return { serverID: e.id, discordID: discordID, icon: e.icon }
             });
+            //insert onto sqlite
             auth.insertServers(readyServers);
+            //GIFs
+            for (const server of readyServers) {
+              if (server.icon) {
+                await fs.promises.mkdir(path.resolve(`pages/static/ico/server`, sanitizer(server.serverID)), { recursive: true });
+                if (server.icon.startsWith("a_")) {
+                  fs.promises.writeFile(path.resolve(`pages/static/ico/server`, sanitizer(`${server.serverID}/${server.icon.substring(2)}.gif`)), await (await fetch(`https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.gif?size=128`)).arrayBuffer());
+                } else {
+                  await sharp(await (await fetch(`https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.png?size=128`)).arrayBuffer()).toFile(path.resolve(`pages/static/ico/server/`, sanitizer(`${server.serverID}/${server.icon}.gif`)))
+                }
+              }
+            }
             res.writeHead(302, { Location: "/server/" });
             res.write("");
             res.end();
@@ -162,8 +163,7 @@ server.on('request', async (req, res) => {
         }
       }
     } else {
-      let filename = 'pages/static' + parsedurl.pathname
-      filename = strReplace(filename, '..', '') // Attempt to stop private files from being served
+      const filename = path.resolve("pages/static", sanitizer(parsedurl.pathname));
       await servePage(filename, res)
     }
   }
