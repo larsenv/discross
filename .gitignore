@@ -4,3 +4,5 @@ secrets
 secrets-old
 start.sh
 getssl
+pages/static/ico/server/*
+!pages/static/ico/server/.gitkeep

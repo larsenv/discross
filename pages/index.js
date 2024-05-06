@@ -1,13 +1,13 @@
 var fs = require('fs');
-var minify = require('html-minifier').minify;
+var { minify } = require('@minify-html/node');
 var escape = require('escape-html');
 
 var auth = require('../authentication.js');
 
-const index_template = minify(fs.readFileSync('pages/templates/index.html', 'utf-8'));
+const index_template = minify(fs.readFileSync('pages/templates/index.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
 
-const logged_in_template = minify(fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8'));
-const logged_out_template = minify(fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8'));
+const logged_in_template = minify(fs.readFileSync('pages/templates/index/logged_in.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
+const logged_out_template = minify(fs.readFileSync('pages/templates/index/logged_out.html'), { preserve_brace_template_syntax: true, ensure_spec_compliant_unquoted_attribute_values: true, do_not_minify_doctype: true, keep_spaces_between_attributes: true }).toString('utf-8');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
