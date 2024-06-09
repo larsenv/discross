@@ -3,6 +3,9 @@ var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var auth = require('../authentication.js');
+const path = require('path')
+const sharp = require("sharp")
+const sanitizer = require("path-sanitizer")
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
@@ -57,6 +60,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           cachedMembers[discordID][server.id] = member;
         }
         if (/*(isGuest && guestServers.includes(server.id)) ||*/ (member && member.user)) {
+          fs.promises.writeFile(path.resolve(`pages/static/ico/server`, sanitizer(`${server.serverID}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif`)), await (await fetch(`https://cdn.discordapp.com/icons/${server.serverID}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif?size=128`)).arrayBuffer());
           serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
           serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
           serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", '"' + server.name + '"');
@@ -86,7 +90,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             //} else {
             // username = "Guest";
             //}
-            // username = 
+            // username =
             if (!(/*(isGuest && guestServers.includes(server.id)) ||*/ member.user)) {
               server = undefined;
             }
