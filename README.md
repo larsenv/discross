@@ -1,5 +1,4 @@
-<p align="center" dir="auto"><a href="https://discross.rc24.xyz/" rel="nofollow">![Discross_logo](https://github.com/user-attachments/assets/6839908d-c843-4e48-8f32-44b803080f0c)</a></p>
-
+<p align="center" dir="auto"><a href="https://discross.rc24.xyz/" rel="nofollow"><img src="https://github.com/user-attachments/assets/6839908d-c843-4e48-8f32-44b803080f0c" alt="Discross Logo" style="max-width: 100%;"></a></p>
 **Discross** is a webhook bridge to send messages on Discord aiming to support all platforms that support HTML.
 
 ## Usage
@@ -63,6 +62,8 @@ Paste the link into a new tab and press "Authorize"
 node .
 ```
 
-Go to [localhost:4000](http://localhost:4000)
+Open Discord and type ^connect in the same server you invited the bot in
+The bot will send you a verification code in DMs
+Go to [localhost:4000](http://localhost:4000) and use it to register
 
 # Discross is made by [circuit10](https://github.com/Heath123)
