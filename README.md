@@ -1,6 +1,6 @@
 <p align="center" dir="auto"><a href="https://discross.rc24.xyz/" rel="nofollow"><img src="https://github.com/user-attachments/assets/6839908d-c843-4e48-8f32-44b803080f0c" alt="Discross Logo" style="max-width: 100%;"></a></p>
 
-**Discross** is a webhook bridge to send messages on Discord aiming to support all platforms that support HTML.
+**Discross** is a webhook bridge to send messages on Discord aimed at supporting all platforms that support HTML.
 
 ## Usage
 
