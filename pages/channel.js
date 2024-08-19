@@ -1,4 +1,3 @@
-var url = require('url')
 var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
@@ -6,7 +5,6 @@ var escape = require('escape-html');
 var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes
 const { PermissionFlagsBits } = require('discord.js');
-const { log } = require('console');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
