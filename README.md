@@ -52,8 +52,6 @@ In the application menu go to "Bot" and click on "Reset Token"
 
 Copy the token and paste it into token.txt. Keep this token secure and never share it publicly, as it provides full access to your bot.
 
-Copy the token and paste it into token.txt
-
 Now invite the bot onto your server
 
 Go to "OAuth2"
