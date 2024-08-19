@@ -1,3 +1,4 @@
+var url = require('url')
 var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
@@ -5,6 +6,7 @@ var escape = require('escape-html');
 var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes
 const { PermissionFlagsBits } = require('discord.js');
+const { log } = require('console');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
@@ -165,6 +167,10 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
+
+      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='));
+      const whiteThemeCookieValue = whiteThemeCookie?.split('=')[1]
+      whiteThemeCookieValue == 1 ? template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : template = strReplace(template, "{$WHITE_THEME_ENABLED}", "")
 
       if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
         final = strReplace(template, "{$INPUT}", input_template);
