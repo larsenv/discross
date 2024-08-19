@@ -123,8 +123,6 @@ server.on('request', async (req, res) => {
       indexpage.processIndex(bot, req, res, args)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
       connectionHandler.processRequest(req, res)
-    } else if (args[1] == "switchtheme") {
-      
     } else if (args[1] === "discord") {
       const discordID = await auth.checkAuth(req, res);
       if (discordID) {
