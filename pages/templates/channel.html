@@ -13,8 +13,54 @@
     <meta name="theme-color" content="#ffffff">
     <title>Discross - #general</title>
     <style>
-        body {
-            background: #303338;
+        html,
+        body,
+        #wrapper {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        .light-theme #wrapper {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+        }
+
+        .light-theme #wrapper * {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            -webkit-text-fill-color: #000000 !important;
+        }
+
+        .light-theme #wrapper form>table {
+            border-spacing: 0px;
+        }
+
+        .light-theme #wrapper form>table td:nth-child(2) {
+            border-radius: 50px 0px 0px 50px;
+            -webkit-border-radius: 50px 0px 0px 50px;
+            -moz-border-radius: 50px 0px 0px 50px;
+            border: 10px solid #000000;
+            border-right: none;
+            padding-left: 10px;
+        }
+
+        .light-theme #wrapper form>table td:nth-child(3) {
+            border-radius: 0px 50px 50px 0px;
+            -webkit-border-radius: 0px 50px 50px 0px;
+            -moz-border-radius: 0px 50px 50px 0px;
+            border: 10px solid #000000;
+            border-left: 5px solid #000000;
+            padding-left: 15px;
+        }
+
+        .light-theme #wrapper form>table td:nth-child(2) * {
+            all: unset !important
+        }
+
+        .light-theme #wrapper form>table td:nth-child(3) * {
+            all: unset !important;
         }
 
         br.nodisp {
@@ -59,60 +105,69 @@
     </style>
 </head>
 
-<body bgcolor="#303338">
-    <table>
-        <tbody>
-            <tr>
-                <td valign="top" style="vertical-align: top;">
-                    <div class="links">
-                        <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif" alt="Menu"
-                                style="position: fixed; top: 32px;left: 12px;"></a>
-                        <br><img src="/resources/images/menuspacer.gif" alt=" " height="14px" width="32px" />
-                    </div>
-                    <br>
-                </td>
-                <td>
-                    <div id="msgcontainer">
-                        {$MESSAGES}
-                    </div>
-                    <div id="myList"></div> <!-- TODO: Remove -->
-                    <br>
-                    <a id="end" name="end"></a>
-                    <form action="../send">
-                        <table>
-                            <tbody>
-                                <tr>
-                                    <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
-                                        <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif"
-                                                alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
-                                    </td>
-                                    <td>
-                                        <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                                        <input type="hidden" id="lite" name="lite" value="False">
-                                        <div
-                                            style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
-                                            {$INPUT}
-                                        </div>
-                                    </td>
-                                    <td style="width: 55px;">
-                                        <input type="submit"
-                                            style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
-                                            value="Send">
-                                    </td>
-                                    <td valign="middle" style="vertical-align: middle; width: 48px;">
-                                        <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif"
-                                                alt="Refresh"></a>
-                                    </td>
+<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+        <table>
+            <tbody>
+                <tr>
+                    <td valign="top" style="vertical-align: top;">
+                        <div class="links">
+                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif" alt="Menu"
+                                    style="position: fixed; top: 32px;left: 12px;"></a>
+                            <br><img src="/resources/images/menuspacer.gif" alt=" " height="14px" width="32px" />
+                        </div>
+                        <br>
+                    </td>
+                    <td>
+                        <div id="msgcontainer">
+                            {$MESSAGES}
+                        </div>
+                        <div id="myList"></div> <!-- TODO: Remove -->
+                        <br>
+                        <a id="end" name="end"></a>
+                        <form action="../send">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
+                                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif"
+                                                    alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                                            <input type="hidden" id="lite" name="lite" value="False">
+                                            <div
+                                                style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
+                                                {$INPUT}
+                                            </div>
+                                        </td>
+                                        <td style="width: 55px;">
+                                            <input type="submit"
+                                                style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                                value="Send">
+                                        </td>
+                                        <td valign="middle" style="vertical-align: middle; width: 48px;">
+                                            <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif"
+                                                    alt="Refresh"></a>
+                                        </td>
+                        </form>
+                    <td valign="middle" style="vertical-align: middle; width: 48px;">
+                        <form action="/switchtheme" method="post">
+                            <button type="submit" style="background: none; border: none;">
+                                <img src="/resources/images/themeswitch.gif" alt="Switch theme">
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
-                                </tr>
-                            </tbody>
-                        </table>
-                    </form>
-                </td>
-            </tr>
+        </td>
+        </tr>
         </tbody>
-    </table>
-    <script src="/connection.js"></script>
+        </table>
+        <script src="/connection.js"></script>
+    </div>
 </body>
 
 </html>
