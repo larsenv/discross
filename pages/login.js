@@ -32,6 +32,10 @@ exports.processLogin = async function (bot, req, res, args) {
     } else {
       response = strReplace(response, "{$ERROR}", "");
     }
+
+    const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='));
+    const whiteThemeCookieValue = whiteThemeCookie?.split('=')[1]
+    if (whiteThemeCookieValue == 1) response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"")
     res.write(response);
   }
   res.end();
