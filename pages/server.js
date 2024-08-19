@@ -138,7 +138,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
     const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='));
     const whiteThemeCookieValue = whiteThemeCookie?.split('=')[1]
-    whiteThemeCookieValue == 1 ? template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : template = strReplace(template, "{$WHITE_THEME_ENABLED}", "")
+    whiteThemeCookieValue == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
 
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(response);
