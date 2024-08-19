@@ -34,6 +34,7 @@ var forgotpage = require('./pages/forgot.js');
 var channelpage = require('./pages/channel.js');
 var serverpage = require('./pages/server.js');
 var sendpage = require('./pages/send.js');
+var themeSwitch = require('./pages/themeToggle.js')
 
 bot.startBot();
 
@@ -81,7 +82,7 @@ server.on('request', async (req, res) => {
       body += chunk.toString() // convert Buffer to string
     })
     req.on('end', () => {
-      auth.handleLoginRegister(req, res, body)
+      url.parse(req.url,true).pathname == "/switchtheme" ? themeSwitch.toggleTheme(req, res) : auth.handleLoginRegister(req, res, body)
     })
   } else {
     const parsedurl = url.parse(req.url, true)
@@ -122,6 +123,8 @@ server.on('request', async (req, res) => {
       indexpage.processIndex(bot, req, res, args)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
       connectionHandler.processRequest(req, res)
+    } else if (args[1] == "switchtheme") {
+      
     } else if (args[1] === "discord") {
       const discordID = await auth.checkAuth(req, res);
       if (discordID) {
