@@ -29,6 +29,7 @@ Platforms that are confirmed to work, to some extent:
 * Windows XP
 * Xbox 360
 * Xbox One
+* Kindle
 
 ## Hosting
 
