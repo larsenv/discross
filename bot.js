@@ -26,11 +26,11 @@ client.on('messageCreate', async function (msg) {
 
   // console.log(msghistory[msg.channel.id.toString()].length);
   if (msg.content === '^connect') {
-    if (msg.webhookID) {
-      msg.reply("you're already using Discross!")
+    if (msg.webhookId) {
+      msg.reply("You're already using Discross!")
     } else {
       msg.author.send('Verification code:\n`' + (await auth.createVerificationCode(msg.author.id)) + '`')
-      msg.reply('you have been sent a direct message with your verification code.')
+      msg.reply('You have been sent a direct message with your verification code.')
     }
   }
 
