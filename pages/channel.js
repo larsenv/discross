@@ -38,6 +38,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     }
 
     if (chnl) {
+      botMember = await chnl.guild.members.fetch(bot.client.user.id)
       member = await chnl.guild.members.fetch(discordID);
       user = member.user;
       username = user.tag;
@@ -45,8 +46,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         username = member.displayName + " (@" + user.tag + ")";
       }
 
-      if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) {
-        res.write("You don't have permission to do that!");
+      if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) || !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) {
+        res.write("You (or the bot) don't have permission to do that!");
         res.end();
         return;
       }
@@ -170,7 +171,10 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       const whiteThemeCookieValue = whiteThemeCookie?.split('=')[1]
       whiteThemeCookieValue == 1 ? template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : template = strReplace(template, "{$WHITE_THEME_ENABLED}", "")
 
-      if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
+      if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
+        final = strReplace(template, "{$INPUT}", input_disabled_template);
+        final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
+      } else if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
         final = strReplace(template, "{$INPUT}", input_template);
       } else {
         final = strReplace(template, "{$INPUT}", input_disabled_template);
@@ -185,7 +189,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       res.write("Invalid channel!"); //write a response to the client
       res.end(); //end the response
     }
-  } catch {
+  } catch (error) {
+    console.log(error)
     res.writeHead(302, { "Location": "/server/" });
     res.end();
   }
