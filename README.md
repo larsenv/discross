@@ -1,10 +1,15 @@
-<p align="center" dir="auto"><a href="https://discross.rc24.xyz/" rel="nofollow"><img src="https://github.com/user-attachments/assets/6839908d-c843-4e48-8f32-44b803080f0c" alt="Discross Logo" style="max-width: 100%;"></a></p>
+<p align="center" dir="auto"><a href="https://discross.rc24.xyz/" rel="nofollow"><img src="./pages/static/resources/logo_full.png" alt="Discross Logo" style="max-width: 100%;"></a></p>
 
 **Discross** is a webhook bridge to send messages on Discord aimed at supporting all platforms that support HTML.
 
-## Usage
+# Try it!
 
-1. Go to [discross.rc24.xyz](https://discross.rc24.xyz/) and use the [link](https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8) to add Discross to your server.
+We have opened the [official Discross Discord server!](https://discord.gg/YrPG9krvVF) Come and say hi!
+You can try out Discross there without having to invite the bot to your own server.
+
+## Usage
+0. Use the [link](https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8) to add Discross to your server. Not necessary if you're already on a server with the bot.
+1. Go to [discross.rc24.xyz](https://discross.rc24.xyz/)
 2. Type `^connect` to get your verification code
 3. Register on the website with that code
 4. Click the "update your server list" button to authorize Discross with your Discord account
@@ -12,6 +17,9 @@
 ### Supported platforms
 Platforms that are confirmed to work, to some extent:
 
+* iPad
+* iPhone
+* Kindle
 * Nintendo 3DS
 * Nintendo DS
 * Nintendo DSi
@@ -29,7 +37,12 @@ Platforms that are confirmed to work, to some extent:
 * Windows XP
 * Xbox 360
 * Xbox One
-* Kindle
+
+## Screenshots!
+
+<img src="./pages/static/screenshots/IE6.png" alt="Discross on Internet Explorer 6" style="max-width: 100%;">
+<img src="./pages/static/screenshots/PSP.bmp" alt="Discross on PSP" style="max-width: 100%;">
+<img src="./pages/static/screenshots/Kindle.png" alt="Discross on Kindle" style="max-width: 100%;">
 
 ## Hosting
 
@@ -43,8 +56,10 @@ Make sure the following are installed:
 git clone https://github.com/larsenv/discross.git
 cd discross
 mkdir secrets
+cd secrets
 touch database.db
 touch token.txt
+cd ..
 ```
 
 Go to [discord.dev](https://discord.com/developers/applications) and create a new application
@@ -81,4 +96,4 @@ The bot will send you a verification code in DMs
 
 Go to [localhost:4000](http://localhost:4000) and use it to register
 
-# Discross is made by [circuit10](https://github.com/Heath123) (Heath123 is circuit10's GitHub username)
+### Discross is made by [circuit10](https://github.com/Heath123) (Heath123 is circuit10's GitHub username)
