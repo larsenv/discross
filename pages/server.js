@@ -20,6 +20,7 @@ const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/tem
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
 const invalid_server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/invalid_server.html', 'utf-8'));
+const no_images_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8'));
 
 const cachedMembers = {}; // TODO: Find a better way
 
@@ -60,7 +61,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           cachedMembers[discordID][server.id] = member;
         }
         if (/*(isGuest && guestServers.includes(server.id)) ||*/ (member && member.user)) {
-         if (server.icon) fs.promises.writeFile(path.resolve(`pages/static/ico/server`, sanitizer(`${server.serverID}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif`)), await (await fetch(`https://cdn.discordapp.com/icons/${server.serverID}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif?size=128`)).arrayBuffer());
+          if (server.icon) fs.promises.writeFile(path.resolve(`pages/static/ico/server`, sanitizer(`${server.serverID}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif`)), await (await fetch(`https://cdn.discordapp.com/icons/${server.serverID}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif?size=128`)).arrayBuffer());
           serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
           serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
           serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", '"' + server.name + '"');
@@ -136,10 +137,11 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
     response = response.replace("{$CHANNEL_LIST}", channelList);
 
-    const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='));
-    const whiteThemeCookieValue = whiteThemeCookie?.split('=')[1]
-    whiteThemeCookieValue == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
-
+    const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+    whiteThemeCookie == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
+    const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+    imagesCookie == 1 ? response = strReplace(response, "{$IMAGES_WARNING}", "") : response = strReplace(response, "{$IMAGES_WARNING}", no_images_warning_template)
+    
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(response);
     res.end();
