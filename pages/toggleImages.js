@@ -1,5 +1,3 @@
-// Exact same as themeToggle.js. This needs to be changed.
-
 exports.toggleImages = async function toggleImages(req, res) {
     try {
         const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
