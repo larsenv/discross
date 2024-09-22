@@ -34,7 +34,10 @@ var forgotpage = require('./pages/forgot.js');
 var channelpage = require('./pages/channel.js');
 var serverpage = require('./pages/server.js');
 var sendpage = require('./pages/send.js');
-var themeSwitch = require('./pages/themeToggle.js')
+var { toggleTheme } = require('./pages/themeToggle.js')
+var { imageProxy } = require('./pages/imageProxy.js')
+var { fileProxy } = require('./pages/fileProxy.js')
+var { toggleImages } = require('./pages/toggleImages.js')
 
 bot.startBot();
 
@@ -82,13 +85,19 @@ server.on('request', async (req, res) => {
       body += chunk.toString() // convert Buffer to string
     })
     req.on('end', () => {
-      url.parse(req.url,true).pathname == "/switchtheme" ? themeSwitch.toggleTheme(req, res) : auth.handleLoginRegister(req, res, body)
+      const parsedurl = url.parse(req.url, true).pathname
+      if (parsedurl == "/switchtheme") {
+        toggleTheme(req, res)
+      } else if (parsedurl == "/toggleImages") {
+        toggleImages(req, res)
+      } else {
+        auth.handleLoginRegister(req, res, body)
+      }
     })
   } else {
     const parsedurl = url.parse(req.url, true)
 
     const args = strReplace(parsedurl.pathname, '?', '/').split('/') // Split by / or ?
-
     if (args[1] === 'send') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
@@ -163,6 +172,13 @@ server.on('request', async (req, res) => {
           res.end();
         }
       }
+    } else if (args[1] === 'imageProxy') {
+      const fullImageUrl = `https://cdn.discordapp.com/${args[2] == "emoji" ? "emojis" : "attachments"}/${args[2] == "emoji" ? parsedurl.path.slice(18) : parsedurl.path.slice(12)}`
+      await imageProxy(res, fullImageUrl);
+    } else if (args[1] === 'fileProxy') {
+      const filePath = parsedurl.path.slice(11)
+      const fullFileUrl = `https://cdn.discordapp.com/attachments/${filePath}`
+      await fileProxy(res, fullFileUrl);
     } else {
       const filename = path.resolve("pages/static", sanitizer(parsedurl.pathname));
       await servePage(filename, res)
