@@ -94,7 +94,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               currentmessage = currentmessage.replace("{$PROFILE_URL}", url);
             }
             currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", lastdate.toLocaleTimeString('en-US') + " " + lastdate.toDateString());
-            currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("@" + lastauthor.tag)));
+            currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
             response += currentmessage;
             currentmessage = "";
           }
