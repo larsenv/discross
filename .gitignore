@@ -5,5 +5,4 @@ secrets-old
 start.sh
 getssl
 pages/static/ico/server/*
-pages/static/resources/twemoji/*
 !pages/static/ico/server/.gitkeep
