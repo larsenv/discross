@@ -4,6 +4,10 @@ var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes
+const path = require('path');
+const sharp = require("sharp");
+const emojiRegex = require("./twemojiRegex").default;
+const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
@@ -22,13 +26,24 @@ const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templ
 
 const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'));
 
+const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'));
+
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 };
 
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0.00 Bytes';
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const formattedSize = (bytes / Math.pow(1024, i)).toFixed(2);
+  return `${formattedSize} ${sizes[i]}`;
+}
+
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
+  const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   try {
     try {
       response = "";
@@ -106,6 +121,24 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
         messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        if (item?.attachments) {
+          let urls = new Array()
+          item.attachments.forEach(attachment => {
+            let url
+            if (attachment.name.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))$/) && imagesCookie == 1) {
+              url = "/imageProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
+            } else {
+              url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
+              messagetext = messagetext.concat(file_download_template)
+              messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.slice(0, 25) + ".." + attachment.name.slice(-4) : attachment.name)
+              messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size))
+            }
+            urls.push(url)
+          });
+          urls.forEach(url => {
+            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) ? messagetext = messagetext.concat(`<br><img src="${url}" width="30%"  alt="image">`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
+          });
+        }
         if (item.mentions) {
           item.mentions.members.forEach(function (user) {
             if (user) {
@@ -166,10 +199,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
-
-      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='));
-      const whiteThemeCookieValue = whiteThemeCookie?.split('=')[1]
-      whiteThemeCookieValue == 1 ? template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : template = strReplace(template, "{$WHITE_THEME_ENABLED}", "")
+      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+      whiteThemeCookie == 1 ? template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : template = strReplace(template, "{$WHITE_THEME_ENABLED}", "")
 
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
         final = strReplace(template, "{$INPUT}", input_disabled_template);
@@ -179,6 +210,35 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       } else {
         final = strReplace(template, "{$INPUT}", input_disabled_template);
       }
+
+      if (response.match?.(emojiRegex) && imagesCookie == 1) {
+        const unicode_emoji_matches = [...response.match?.(emojiRegex)]
+        unicode_emoji_matches.forEach(match => {
+          const points = [];
+          let char = 0;
+          let previous = 0;                  // This whole code block was "inspired" by the official Twitter Twemoji parser.
+          let i = 0;                         // I would have done it myself but my code wasn't ready for skin tones/emoji variation
+          let output                         // The Regex I wouldn't have done myself, so thanks for that too!
+          while (i < match.length) {
+            char = match.charCodeAt(i++);
+            if (previous) {
+              points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
+              previous = 0;
+            } else if (char > 0xd800 && char <= 0xdbff) {
+              previous = char;
+            } else {
+              points.push(char.toString(16));
+            }
+            output = points.join("-")
+          }
+          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 3%;vertical-align:top;" alt="emoji">`)
+        });
+      }       
+      
+      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
+      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
+      })
       final = strReplace(final, "{$MESSAGES}", response);
 
       res.writeHead(200, { "Content-Type": "text/html" });
