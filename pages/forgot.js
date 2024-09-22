@@ -22,7 +22,7 @@ exports.processForgot = async function (bot, req, res, args) {
     response = strReplace(response, "{$ERROR}", "");
   }
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  whiteThemeCookie == 1 ? template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : template = strReplace(template, "{$WHITE_THEME_ENABLED}", "")
+  whiteThemeCookie == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
   res.write(response);
   res.end();
 }
