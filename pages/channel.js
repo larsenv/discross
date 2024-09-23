@@ -6,7 +6,7 @@ var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes
 const path = require('path');
 const sharp = require("sharp");
-const emojiRegex = require("./twemojiRegex").default;
+const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 
