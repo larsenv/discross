@@ -136,7 +136,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             urls.push(url)
           });
           urls.forEach(url => {
-            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) ? messagetext = messagetext.concat(`<br><img src="${url}" width="30%"  alt="image">`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
+            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><img src="${url}" width="30%"  alt="image">`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
         if (item.mentions) {
