@@ -163,7 +163,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           }
           output = points.join("-")
         }
-        response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 3%;vertical-align:top;" alt="emoji">`)
+        response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 6%;vertical-align:top;" alt="emoji">`)
       });
     }       
     
