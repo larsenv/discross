@@ -143,7 +143,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
     imagesCookie == 1 ? response = strReplace(response, "{$IMAGES_WARNING}", "") : response = strReplace(response, "{$IMAGES_WARNING}", no_images_warning_template)
 
-          if (response.match?.(emojiRegex) && imagesCookie == 1) {
+    if (response.match?.(emojiRegex) && imagesCookie == 1) {
       const unicode_emoji_matches = [...response.match?.(emojiRegex)]
       unicode_emoji_matches.forEach(match => {
         const points = [];
