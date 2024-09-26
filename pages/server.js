@@ -138,7 +138,11 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
     response = response.replace("{$CHANNEL_LIST}", channelList);
 
-    response = response.replace("{$DISCORD_NAME}", server.name);
+    if (server) {
+        response = response.replace("{$DISCORD_NAME}", server.name + "<br><br><br>");
+    } else {
+        response = response.replace("{$DISCORD_NAME}", "");
+    }
 
     const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
     whiteThemeCookie == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
