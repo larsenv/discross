@@ -6,6 +6,7 @@ var auth = require('../authentication.js');
 const path = require('path')
 const sharp = require("sharp")
 const sanitizer = require("path-sanitizer")
+const emojiRegex = require("./twemojiRegex").regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
