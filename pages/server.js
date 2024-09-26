@@ -139,7 +139,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     response = response.replace("{$CHANNEL_LIST}", channelList);
 
     if (server) {
-        response = response.replace("{$DISCORD_NAME}", '<font color="#999999" size="6" face="Arial, Helvetica, sans-serif">' + server.name + "</font>");
+        response = response.replace("{$DISCORD_NAME}", '<font color="#999999" size="6" face="Arial, Helvetica, sans-serif">' + server.name + "</font><br>");
     } else {
         response = response.replace("{$DISCORD_NAME}", "");
     }
