@@ -72,7 +72,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
         auth.dbQueryRun("DELETE FROM servers WHERE serverID=?", [id]);
       }
     }
-
+    
     response = server_template.replace("{$SERVER_LIST}", serverList);
 
     let server = args[2] ? bot.client.guilds.cache.get(args[2]) : "-";
@@ -137,6 +137,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     }
 
     response = response.replace("{$CHANNEL_LIST}", channelList);
+
+    response = response.replace("{$DISCORD_NAME}", server.name);
 
     const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
     whiteThemeCookie == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
