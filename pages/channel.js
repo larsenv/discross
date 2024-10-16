@@ -130,13 +130,13 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             } else {
               url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
               messagetext = messagetext.concat(file_download_template)
-              messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.slice(0, 25) + ".." + attachment.name.slice(-4) : attachment.name)
+              messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name)
               messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size))
             }
             urls.push(url)
           });
           urls.forEach(url => {
-            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><img src="${url}" width="30%"  alt="image">`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
+            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
         if (item.mentions) {
