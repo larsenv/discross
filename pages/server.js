@@ -6,6 +6,7 @@ var auth = require('../authentication.js');
 const path = require('path')
 const sharp = require("sharp")
 const sanitizer = require("path-sanitizer")
+const emojiRegex = require("./twemojiRegex").regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
@@ -71,7 +72,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
         auth.dbQueryRun("DELETE FROM servers WHERE serverID=?", [id]);
       }
     }
-
+    
     response = server_template.replace("{$SERVER_LIST}", serverList);
 
     let server = args[2] ? bot.client.guilds.cache.get(args[2]) : "-";
@@ -137,10 +138,45 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
     response = response.replace("{$CHANNEL_LIST}", channelList);
 
+    if (server) {
+        response = response.replace("{$DISCORD_NAME}", '<font color="#999999" size="6" face="Arial, Helvetica, sans-serif">' + server.name + "</font><br>");
+    } else {
+        response = response.replace("{$DISCORD_NAME}", "");
+    }
+
     const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
     whiteThemeCookie == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
     const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
     imagesCookie == 1 ? response = strReplace(response, "{$IMAGES_WARNING}", "") : response = strReplace(response, "{$IMAGES_WARNING}", no_images_warning_template)
+
+    if (response.match?.(emojiRegex) && imagesCookie == 1) {
+      const unicode_emoji_matches = [...response.match?.(emojiRegex)]
+      unicode_emoji_matches.forEach(match => {
+        const points = [];
+        let char = 0;
+        let previous = 0;                  // This whole code block was "inspired" by the official Twitter Twemoji parser.
+        let i = 0;                         // I would have done it myself but my code wasn't ready for skin tones/emoji variation
+        let output                         // The Regex I wouldn't have done myself, so thanks for that too!
+        while (i < match.length) {
+          char = match.charCodeAt(i++);
+          if (previous) {
+            points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
+            previous = 0;
+          } else if (char > 0xd800 && char <= 0xdbff) {
+            previous = char;
+          } else {
+            points.push(char.toString(16));
+          }
+          output = points.join("-")
+        }
+        response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 6%;vertical-align:top;" alt="emoji">`)
+      });
+    }       
+    
+    const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
+    if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+      response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
+    })
     
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(response);
