@@ -101,7 +101,7 @@ server.on('request', async (req, res) => {
     if (args[1] === 'send') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
-        sendpage.sendMessage(bot, req, res, args, discordID)
+        await sendpage.sendMessage(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'logout') {
       const discordID = await auth.checkAuth(req, res, true) // True = no redirect to login page
@@ -113,23 +113,23 @@ server.on('request', async (req, res) => {
     } else if (args[1] === 'server') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
-        serverpage.processServer(bot, req, res, args, discordID)
+        await serverpage.processServer(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'channels') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
-        channelpage.processChannel(bot, req, res, args, discordID)
+        await channelpage.processChannel(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'login.html') {
-      loginpage.processLogin(bot, req, res, args)
+      await loginpage.processLogin(bot, req, res, args)
     } /*else if (args[1] === 'guest.html') {
       guestpage.processGuestLogin(bot, req, res, args)
     }*/ else if (args[1] === 'register.html') {
-      registerpage.processRegister(bot, req, res, args)
+      await registerpage.processRegister(bot, req, res, args)
     } else if (args[1] === 'forgot.html') {
-      forgotpage.processForgot(bot, req, res, args)
+      await forgotpage.processForgot(bot, req, res, args)
     } else if (args[1] === 'index.html' || parsedurl.pathname === '/') {
-      indexpage.processIndex(bot, req, res, args)
+      await indexpage.processIndex(bot, req, res, args)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
       connectionHandler.processRequest(req, res)
     } else if (args[1] === "discord") {
