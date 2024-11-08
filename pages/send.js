@@ -65,7 +65,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       // regex modified from https://www.reddit.com/r/discordapp/comments/6k4fml/username_requirements/
 
       var regex = /@([^#]{2,32}#\d{4})/g; // Regular expression to detect user mentions
-      0var m;
+      var m;
 
       do {
         m = regex.exec(processedmessage);
