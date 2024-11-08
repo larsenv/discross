@@ -23,12 +23,12 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
   try {
     parsedurl = url.parse(req.url, true);
     if (parsedurl.query.message != "") {
+      const channel = await bot.client.channels.fetch(parsedurl.query.channel);
 
-      channel = await bot.client.channels.fetch(parsedurl.query.channel);
+      const member = await channel.guild.members.fetch(discordID);
+      const user = member.user;
+      let username = user.tag;
 
-      member = await channel.guild.members.fetch(discordID);
-      user = member.user;
-      username = user.tag;
       if (member.displayName != user.username) {
         username = member.displayName + " (@" + user.tag + ")";
       }
@@ -65,7 +65,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       // regex modified from https://www.reddit.com/r/discordapp/comments/6k4fml/username_requirements/
 
       var regex = /@([^#]{2,32}#\d{4})/g; // Regular expression to detect user mentions
-      var m;
+      0var m;
 
       do {
         m = regex.exec(processedmessage);
