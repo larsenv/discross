@@ -34,6 +34,46 @@ function strReplace(string, needle, replacement) {
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 
+function processServerChannels(server, member, response) {
+  try {
+    const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
+    const categoriesSorted = categories.sort((a, b) => a.calculatedPosition - b.calculatedPosition);
+
+    // Start with lone text channels (no category)
+    let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
+    channelsSorted = channelsSorted.sort((a, b) => a.calculatedPosition - b.calculatedPosition);
+
+    categoriesSorted.forEach(category => {
+      channelsSorted.push(category);
+      channelsSorted = channelsSorted.concat(
+        [...category.children.cache.sort((a, b) => a.calculatedPosition - b.calculatedPosition)
+          .values()]
+          .filter(channel => channel.isTextBased())
+      );
+    });
+
+    let channelList = "";
+    channelsSorted.forEach(item => {
+      // Check if the member has permission to view the channel
+      if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
+        if (item.type == ChannelType.GuildCategory) {
+          channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else {
+          channelList += text_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
+        }
+      }
+    });
+
+    // Replace the channel list in the response
+    response = response.replace("{$CHANNEL_LIST}", channelList);
+  } catch (err) {
+    console.error("Error processing server channels:", err);
+    response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
+  }
+
+  return response;
+}
+
 exports.processServer = async function (bot, req, res, args, discordID) {
   try {
     let serverList = "";
@@ -75,20 +115,55 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       const targetServer = bot.client.guilds.cache.get(args[2]);
       await lock.acquire(discordID, async () => {
         if (targetServer) {
+          response = response.replace("{$DISCORD_NAME}", '<font color="#999999" size="6" face="Arial, Helvetica, sans-serif">' + targetServer.name + "</font><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
             response = processServerChannels(targetServer, member, response);
           } else {
             response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
           }
+        } else {
+          response = response.replace("{$DISCORD_NAME}", "");
         }
       });
     } else {
       response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
+      response = response.replace("{$DISCORD_NAME}", "");
     }
+
+    const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
 
     // Handle theme and images preferences
     response = applyUserPreferences(response, req);
+
+    if (response.match?.(emojiRegex) && imagesCookie == 1) {
+      const unicode_emoji_matches = [...response.match?.(emojiRegex)]
+      unicode_emoji_matches.forEach(match => {
+        const points = [];
+        let char = 0;
+        let previous = 0;                  // This whole code block was "inspired" by the official Twitter Twemoji parser.
+        let i = 0;                         // I would have done it myself but my code wasn't ready for skin tones/emoji variation
+        let output                         // The Regex I wouldn't have done myself, so thanks for that too!
+        while (i < match.length) {
+          char = match.charCodeAt(i++);
+          if (previous) {
+            points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
+            previous = 0;
+          } else if (char > 0xd800 && char <= 0xdbff) {
+            previous = char;
+          } else {
+            points.push(char.toString(16));
+          }
+          output = points.join("-")
+        }
+        response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 6%;vertical-align:top;" alt="emoji">`)
+      });
+    }
+
+    const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
+    if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+      response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
+    })
 
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(response);
@@ -128,6 +203,6 @@ function createServerHTML(server, member) {
   // Generate server-specific HTML
   let serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
   serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
-  serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", `"${server.name}"`);
+  serverHTML = strReplace(serverHTML, "{$DISCORD_NAME}", server.name);
   return serverHTML;
 }
