@@ -100,3 +100,8 @@ The bot will send you a verification code in DMs
 Go to [localhost:4000](http://localhost:4000) and use it to register
 
 ### Discross is made by [circuit10](https://github.com/Heath123) (Heath123 is circuit10's GitHub username)
+
+
+## Contributors
+
+- @koboshkobosh added the ability to reply to messages
