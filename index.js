@@ -125,7 +125,6 @@ server.on('request', async (req, res) => {
         await serverpage.processServer(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'channels') {
-      console.log(args)
       const discordID = await auth.checkAuth(req, res)
       if (args.length == 3) {
         if (discordID) {
