@@ -38,6 +38,9 @@ var { toggleTheme } = require('./pages/themeToggle.js')
 var { imageProxy } = require('./pages/imageProxy.js')
 var { fileProxy } = require('./pages/fileProxy.js')
 var { toggleImages } = require('./pages/toggleImages.js')
+var chanelreplypage = require('./pages/channel_reply.js')
+var replypage = require('./pages/reply.js')
+
 
 bot.startBot();
 
@@ -103,7 +106,13 @@ server.on('request', async (req, res) => {
       if (discordID) {
         await sendpage.sendMessage(bot, req, res, args, discordID)
       }
-    } else if (args[1] === 'logout') {
+    } else if (args[1] === 'reply') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await replypage.replyMessage(bot, req, res, args, discordID)
+      }
+    }
+    else if (args[1] === 'logout') {
       const discordID = await auth.checkAuth(req, res, true) // True = no redirect to login page
       if (discordID) {
         /*if (typeof discordID !== "object")*/ auth.logout(discordID)
@@ -116,9 +125,23 @@ server.on('request', async (req, res) => {
         await serverpage.processServer(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'channels') {
+      console.log(args)
       const discordID = await auth.checkAuth(req, res)
-      if (discordID) {
-        await channelpage.processChannel(bot, req, res, args, discordID)
+      if (args.length == 3) {
+        if (discordID) {
+          await channelpage.processChannel(bot, req, res, args, discordID)
+        }
+      }
+      else if (args.length == 4) {
+        if (discordID) {
+          if (args[3].length == 0) {
+            await channelpage.processChannel(bot, req, res, args, discordID)
+          } else { await chanelreplypage.processChannelReply(bot, req, res, args, discordID) }
+        }
+      } else {
+        if (discordID) {
+          await channelpage.processChannel(bot, req, res, args, discordID)
+        }
       }
     } else if (args[1] === 'login.html') {
       await loginpage.processLogin(bot, req, res, args)

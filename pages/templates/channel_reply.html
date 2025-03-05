@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#2b5797">
+    <meta name="theme-color" content="#ffffff">
+    <title>Discross - #general</title>
+    <style>
+        html,
+        body,
+        #wrapper {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        .light-theme #wrapper {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+        }
+
+        .light-theme #wrapper * {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            -webkit-text-fill-color: #000000 !important;
+        }
+
+        .light-theme #wrapper form table {
+            border-spacing: 0px;
+        }
+
+        .light-theme #wrapper form table td:nth-child(2) {
+            border-radius: 50px 0px 0px 50px;
+            -webkit-border-radius: 50px 0px 0px 50px;
+            -moz-border-radius: 50px 0px 0px 50px;
+            border: 10px solid #000000;
+            border-right: none;
+            padding-left: 10px;
+        }
+
+        .light-theme #wrapper form table td:nth-child(3) {
+            border-radius: 0px 50px 50px 0px;
+            -webkit-border-radius: 0px 50px 50px 0px;
+            -moz-border-radius: 0px 50px 50px 0px;
+            border: 10px solid #000000;
+            border-left: 5px solid #000000;
+            padding-left: 15px;
+        }
+
+        .light-theme #wrapper form table td:nth-child(2) * {
+            all: unset !important
+        }
+
+        .light-theme #wrapper form table td:nth-child(3) * {
+            all: unset !important;
+        }
+
+        .light-theme .download {
+            border-radius: 10px;
+            border: 5px solid #000000;
+        }
+
+        br.nodisp {
+            display: none
+        }
+
+        th {
+            vertical-align: top;
+            position: relative;
+            top: 4px;
+            text-align: left;
+            font-weight: 400 !important
+        }
+
+        th.join {
+            vertical-align: middle
+        }
+
+        hr {
+            border-top: none;
+            margin-bottom: 15px;
+            border-bottom: solid 1px #393c40;
+            border-left: solid 1px #393c40;
+            border-right: solid 1px #393c40
+        }
+
+        table {
+            padding-bottom: 5px
+        }
+
+        form table {
+            height: 86px;
+            background: #303338;
+            width: 100%;
+            padding: 15px 0 0 8px;
+            border-top: solid 1px #393c40
+        }
+
+        a {
+            color: #647dcd;
+        }
+    </style>
+</head>
+
+<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+        <table>
+            <tbody>
+                <tr>
+                    <td valign="top" style="vertical-align: top;">
+                        <div class="links">
+                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif" alt="Menu"
+                                    style="position: fixed; top: 32px;left: 12px;"></a>
+                            <br><img src="/resources/images/menuspacer.gif" alt=" " height="14px" width="32px" />
+                        </div>
+                        <br>
+                    </td>
+                    <td width="100%">
+                        <div id="msgcontainer">
+                            {$MESSAGES}
+                        </div>
+                        
+                        <div id="myList"></div> <!-- TODO: Remove -->
+                        <!-- <br> -->
+                        <a id="end" name="end"></a>
+                        <div id="replying_to">
+                            <div class="message">
+                                <hr noshade="">
+                                <br class="nodisp">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td valign="top" align="left" width="100%">
+                                                <div class="content">
+                            
+                                                        <font size="2" face="Arial, Helvetica, sans-serif" color="#dddddd">
+                                                            Replying to "{$REPLY_MESSAGE_CONTENT}" from {$REPLY_MESSAGE_AUTHOR}: </font>
+                                                            <a href="./#end"><font size="2" face="Arial, Helvetica, sans-serif" color="#dddddd">
+                                                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cancel</font></a>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <form action="../../reply">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
+                                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif"
+                                                    alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                                            <input type="hidden" id="reply_message_id" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">
+                                            <input type="hidden" id="lite" name="lite" value="False">
+                                            <div
+                                                style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
+                                                {$INPUT}
+
+                                        <td valign="middle" style="vertical-align: middle; width: 48px;">
+                                            <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif"
+                                                    alt="Refresh"></a>
+                                        </td>
+                        </form>
+                    <td valign="middle" style="vertical-align: middle; width: 48px;">
+                        <form action="/switchtheme" method="post">
+                            <button type="submit" style="background: none; border: none;">
+                                <img src="/resources/images/themeswitch.gif" alt="Switch theme">
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        </td>
+        </tr>
+        </tbody>
+        </table>
+        <script src="/connection.js"></script>
+    </div>
+</body>
+
+</html>
