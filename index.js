@@ -134,12 +134,16 @@ server.on('request', async (req, res) => {
       else if (args.length == 4) {
         if (discordID) {
           if (args[3].length == 0) {
-            await channelpage.processChannel(bot, req, res, args, discordID)
+            res.writeHead(302, { "Location": `/channels/${args[2]}#end` });
+            res.end();
+            return;
           } else { await chanelreplypage.processChannelReply(bot, req, res, args, discordID) }
         }
       } else {
         if (discordID) {
-          await channelpage.processChannel(bot, req, res, args, discordID)
+          res.writeHead(302, { "Location": `/channels/${args[2]}#end` });
+          res.end();
+          return;
         }
       }
     } else if (args[1] === 'login.html') {
