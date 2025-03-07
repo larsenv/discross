@@ -14,7 +14,8 @@ const { PermissionFlagsBits } = require('discord.js');
 // Is that a bad idea?
 
 // Templates for viewing the messages in a channel
-const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
+// const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
+const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel_reply.html', 'utf-8'));
 
 
 const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message.html', 'utf-8'));
@@ -43,7 +44,7 @@ function formatFileSize(bytes) {
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
-exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
+exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   try {
     try {
@@ -91,7 +92,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       lastdate = new Date('1995-12-17T03:24:00');
       currentmessage = "";
       islastmessage = false;
-      messageid = 0;
 
       handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
         if (lastauthor) { // Only consider the last message if this is not the first
@@ -100,7 +100,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
 
             currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-            currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2]+ "/" +messageid);
             if (lastmember) { // Webhooks are not members!
               currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastmember.displayName));
             } else {
@@ -186,7 +185,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         lastmember = item.member;
         lastdate = item.createdAt;
         currentmessage += messagetext;
-        messageid = item.id;
 
       }
 
@@ -205,7 +203,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
       whiteThemeCookie == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
- 
+
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
         final = strReplace(template, "{$INPUT}", input_disabled_template);
         final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
@@ -237,12 +235,31 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           }
           response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 3%;vertical-align:top;" alt="emoji">`)
         });
-      }       
-      
+      }
+
       const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
       if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
         response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
       })
+      let reply_message_id = args[3];
+      
+      try {
+        let message = await chnl.messages.fetch(reply_message_id);
+        let message_content = message.content;
+        if (message_content.length > 30) {
+          message_content = message.content.substring(0, 30) + "...";
+        }
+        let author = message.author.username;
+        final = strReplace(final, "{$REPLY_MESSAGE_ID}", reply_message_id);
+        final = strReplace(final, "{$REPLY_MESSAGE_AUTHOR}", author);
+        final = strReplace(final, "{$REPLY_MESSAGE_CONTENT}", message_content);
+      } catch (err) {
+        res.writeHead(404, { "Content-Type": "text/html" });
+        res.write("Invalid message!"); //write a response to the client
+        res.end(); //end the response
+        return
+      }
+
       final = strReplace(final, "{$MESSAGES}", response);
 
       res.writeHead(200, { "Content-Type": "text/html" });
