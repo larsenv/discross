@@ -129,6 +129,79 @@
                         </div>
                         <div id="myList"></div> <!-- TODO: Remove -->
                         <br>
+                        <div id="emoji" style="display: none;">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :sob:'">
+                                            <img src="/resources/twemoji/1f62d.gif" alt="sob"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
+                                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :skull:'">
+                                            <img src="/resources/twemoji/1f480.gif" alt="skull"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :pleading_face:'">
+                                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :thumbsup:'">
+                                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :thumbsdown:'">
+                                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :pray:'">
+                                            <img src="/resources/twemoji/1f64f.gif" alt="pray"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :tada:'">
+                                            <img src="/resources/twemoji/1f389.gif" alt="tada"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                </tr>
+                            </table>
+
+                        </div>
                         <a id="end" name="end"></a>
                         <form action="../send">
                             <table>
@@ -144,7 +217,13 @@
                                             <div
                                                 style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
                                                 {$INPUT}
-
+                                        <td valign="middle" style="vertical-align: middle; width: 48px;">
+                                            <button type="submit" style="background: none; border: none;"
+                                                onclick="showEmoji()">
+                                                <img src="/resources/twemoji/1f44d.gif" alt="Emojis"
+                                                    style="width: 30px; height: 30px;">
+                                            </button>
+                                        </td>
                                         <td valign="middle" style="vertical-align: middle; width: 48px;">
                                             <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif"
                                                     alt="Refresh"></a>

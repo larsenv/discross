@@ -212,3 +212,14 @@ if (window.WebSocket || window.MozWebSocket) {
 }
 
 // }
+
+var emojiShowing = false;
+function showEmoji() {
+  if (emojiShowing) {
+    document.getElementById("emoji").style.display = "none";
+    emojiShowing = false;
+  } else {
+    document.getElementById("emoji").style.display = "block";
+    emojiShowing = true;
+  }
+}
