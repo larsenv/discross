@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: 
+Sitemap: https://discross.rc24.xyz/sitemap.xml
