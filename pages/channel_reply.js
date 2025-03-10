@@ -259,7 +259,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         res.end(); //end the response
         return
       }
-
+      const randomEmoji = ["1f62d","1f480","2764-fe0f","1f44d","1f64f","1f389","1f642"][Math.floor(Math.random() * 7)];
+      final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
+      final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
       final = strReplace(final, "{$MESSAGES}", response);
 
       res.writeHead(200, { "Content-Type": "text/html" });

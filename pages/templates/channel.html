@@ -11,7 +11,7 @@
     <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
     <meta name="msapplication-TileColor" content="#2b5797">
     <meta name="theme-color" content="#ffffff">
-    <title>Discross - #general</title>
+    <title>Discross - #{$CHANNEL_NAME}</title>
     <style>
         html,
         body,
@@ -164,6 +164,14 @@
                                                 style="width: 30px; height: 30px;">
                                         </button>
                                     </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :heart:'">
+                                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -198,6 +206,14 @@
                                                 style="width: 30px; height: 30px;">
                                         </button>
                                     </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :slight_smile:'">
+                                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
                                 </tr>
                             </table>
 
@@ -218,9 +234,9 @@
                                                 style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
                                                 {$INPUT}
                                         <td valign="middle" style="vertical-align: middle; width: 48px;">
-                                            <button style="background: none; border: none;"
-                                                onclick="showEmoji()" type="button">
-                                                <img src="/resources/twemoji/1f44d.gif" alt="Emojis"
+                                            <button style="background: none; border: none;" onclick="showEmoji()"
+                                                type="button">
+                                                <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Emojis"
                                                     style="width: 30px; height: 30px;">
                                             </button>
                                         </td>
