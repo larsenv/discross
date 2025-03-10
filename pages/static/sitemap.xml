@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+		<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+	<loc>https://discross.rc24.xyz/</loc>
+	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
+	<priority>1.0</priority>
+</url>
+<url>
+	<loc>https://discross.rc24.xyz/login.html</loc>
+	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
+	<priority>1.0</priority>
+</url>
+<url>
+	<loc>https://discross.rc24.xyz/register.html</loc>
+	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
+	<priority>1.0</priority>
+</url>
+<url>
+	<loc>https://discross.rc24.xyz/forwarder/discross.cia</loc>
+	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>https://discross.rc24.xyz/forwarder/discross.wad</loc>
+	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>https://discross.rc24.xyz/forgot.html</loc>
+	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
+	<priority>1.0</priority>
+</url>
+</urlset>
