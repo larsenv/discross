@@ -18,6 +18,7 @@
     "path-sanitizer": "^2.0.0",
     "sharp": "^0.33.3",
     "snowtransfer": "^0.10.5",
+    "sync-fetch": "^0.6.0-2",
     "uuid": "^9.0.1",
     "ws": "^8.17.0"
   },
