@@ -250,6 +250,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
       const tensorLinksRegex = /<a href="https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)">https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)<\/a>/g;
       let tmpTensorLinks = [...response.toString().matchAll(tensorLinksRegex)];
+      let resp_,gifLink,description;
       tmpTensorLinks.forEach(link => {
         resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
         try { resp_ = resp_.json(); }
@@ -268,11 +269,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       res.end(); //end the response
     }
   } catch (error) {
-    // console.log(error)
+    console.log(error)
     // res.writeHead(302, { "Location": "/server/" });
     res.writeHead(500, { "Content-Type": "text/html" });
     res.write("An error occurred! Please try again later.<br>"); //write a response to the client
-    res.write(error.toString());
+    // res.write(error.toString());
     res.end();
   }
 }
