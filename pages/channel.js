@@ -268,7 +268,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       res.end(); //end the response
     }
   } catch (error) {
-    console.log(error)
+    // console.log(error)
     // res.writeHead(302, { "Location": "/server/" });
     res.writeHead(500, { "Content-Type": "text/html" });
     res.write("An error occurred! Please try again later.<br>"); //write a response to the client
