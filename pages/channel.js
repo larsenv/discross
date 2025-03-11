@@ -10,7 +10,7 @@ const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
-const { console } = require('inspector');
+// const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
@@ -271,7 +271,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     console.log(error)
     // res.writeHead(302, { "Location": "/server/" });
     res.writeHead(500, { "Content-Type": "text/html" });
-    res.write("An error occurred! Please try again later.\n"); //write a response to the client
+    res.write("An error occurred! Please try again later.<br>"); //write a response to the client
     res.write(error.toString());
     res.end();
   }
