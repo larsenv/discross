@@ -251,7 +251,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       const tensorLinksRegex = /<a href="https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)">https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)<\/a>/g;
       let tmpTensorLinks = [...response.toString().matchAll(tensorLinksRegex)];
       tmpTensorLinks.forEach(link => {
-        resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA").json()
+        resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
+        try { resp_ = resp_.json(); }
+        catch { return }
         gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
         description = resp_["results"][0]["content_description"];
         response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
