@@ -9,6 +9,7 @@ const sharp = require("sharp");
 const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
+const fetch = require("sync-fetch");
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
@@ -242,7 +243,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
       })
       let reply_message_id = args[3];
-      
+
       try {
         let message = await chnl.messages.fetch(reply_message_id);
         let message_content = message.content;
@@ -259,9 +260,20 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         res.end(); //end the response
         return
       }
-      const randomEmoji = ["1f62d","1f480","2764-fe0f","1f44d","1f64f","1f389","1f642"][Math.floor(Math.random() * 7)];
+      const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
       final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
+      const tensorLinksRegex = /<a href="https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)">https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)<\/a>/g;
+      let tmpTensorLinks = [...response.toString().matchAll(tensorLinksRegex)];
+      let resp_,gifLink,description;
+      tmpTensorLinks.forEach(link => {
+        resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
+        try { resp_ = resp_.json();
+          gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
+          description = resp_["results"][0]["content_description"];}
+        catch { return }
+        response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
+      });
       final = strReplace(final, "{$MESSAGES}", response);
 
       res.writeHead(200, { "Content-Type": "text/html" });

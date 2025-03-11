@@ -10,7 +10,8 @@ const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
-
+// const { console } = require('inspector'); // sorry idk why i added this
+const fetch = require("sync-fetch");
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
 
@@ -101,7 +102,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
 
             currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-            currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2]+ "/" +messageid);
+            currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
             if (lastmember) { // Webhooks are not members!
               currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastmember.displayName));
             } else {
@@ -206,7 +207,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
       whiteThemeCookie == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
- 
+
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
         final = strReplace(template, "{$INPUT}", input_disabled_template);
         final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
@@ -238,15 +239,26 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           }
           response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 3%;vertical-align:top;" alt="emoji">`)
         });
-      }       
-      
+      }
+
       const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
       if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
         response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
       })
-      const randomEmoji = ["1f62d","1f480","2764-fe0f","1f44d","1f64f","1f389","1f642"][Math.floor(Math.random() * 7)];
+      const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
       final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
+      const tensorLinksRegex = /<a href="https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)">https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)<\/a>/g;
+      let tmpTensorLinks = [...response.toString().matchAll(tensorLinksRegex)];
+      let resp_,gifLink,description;
+      tmpTensorLinks.forEach(link => {
+        resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
+        try { resp_ = resp_.json();
+          gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
+          description = resp_["results"][0]["content_description"];}
+        catch { return }
+        response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
+      });
       final = strReplace(final, "{$MESSAGES}", response);
       res.writeHead(200, { "Content-Type": "text/html" });
       res.write(final); //write a response to the client
@@ -258,7 +270,10 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     }
   } catch (error) {
     console.log(error)
-    res.writeHead(302, { "Location": "/server/" });
+    // res.writeHead(302, { "Location": "/server/" });
+    res.writeHead(500, { "Content-Type": "text/html" });
+    res.write("An error occurred! Please try again later.<br>"); //write a response to the client
+    // res.write(error.toString());
     res.end();
   }
 }
