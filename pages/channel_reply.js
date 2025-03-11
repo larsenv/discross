@@ -268,10 +268,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       let resp_,gifLink,description;
       tmpTensorLinks.forEach(link => {
         resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
-        try { resp_ = resp_.json(); }
+        try { resp_ = resp_.json();
+          gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
+          description = resp_["results"][0]["content_description"];}
         catch { return }
-        gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
-        description = resp_["results"][0]["content_description"];
         response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
       });
       final = strReplace(final, "{$MESSAGES}", response);
