@@ -73,14 +73,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID)
           }
         } while (m);
         await webhook.edit({ channel: channel });
-        const base64Data = processedmessage;
+        const base64Data = parsedurl.query.drawinginput;
 
         // Remove the data URL prefix
         const base64Image = base64Data.split(';base64,').pop();
         const imageBuffer = Buffer.from(base64Image, 'base64');
 
         const message = await webhook.send({
-          content: "sent a drawing",
+          content: "Sent a drawing:\n"+processedmessage,
           username: member.displayName || member.user.tag,
           avatarURL: await member.user.avatarURL(),
           files: [{ attachment: imageBuffer, name: "image.png" }]
