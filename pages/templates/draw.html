@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#2b5797">
+    <meta name="theme-color" content="#ffffff">
+    <title>Discross - #{$CHANNEL_NAME}</title>
+    <style>
+        html,
+        body,
+        #wrapper {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        .light-theme #wrapper {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+        }
+
+        .light-theme #wrapper * {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            -webkit-text-fill-color: #000000 !important;
+        }
+
+        .light-theme #wrapper form table {
+            border-spacing: 0px;
+        }
+
+        .light-theme #wrapper form table td:nth-child(2) {
+            border-radius: 50px 0px 0px 50px;
+            -webkit-border-radius: 50px 0px 0px 50px;
+            -moz-border-radius: 50px 0px 0px 50px;
+            border: 10px solid #000000;
+            border-right: none;
+            padding-left: 10px;
+        }
+
+        .light-theme #wrapper form table td:nth-child(3) {
+            border-radius: 0px 50px 50px 0px;
+            -webkit-border-radius: 0px 50px 50px 0px;
+            -moz-border-radius: 0px 50px 50px 0px;
+            border: 10px solid #000000;
+            border-left: 5px solid #000000;
+            padding-left: 15px;
+        }
+
+        .light-theme #wrapper form table td:nth-child(2) * {
+            all: unset !important
+        }
+
+        .light-theme #wrapper form table td:nth-child(3) * {
+            all: unset !important;
+        }
+
+        .light-theme .download {
+            border-radius: 10px;
+            border: 5px solid #000000;
+        }
+
+        br.nodisp {
+            display: none
+        }
+
+        th {
+            vertical-align: top;
+            position: relative;
+            top: 4px;
+            text-align: left;
+            font-weight: 400 !important
+        }
+
+        th.join {
+            vertical-align: middle
+        }
+
+        hr {
+            border-top: none;
+            margin-bottom: 15px;
+            border-bottom: solid 1px #393c40;
+            border-left: solid 1px #393c40;
+            border-right: solid 1px #393c40
+        }
+
+        table {
+            padding-bottom: 5px
+        }
+
+        form table {
+            height: 86px;
+            background: #303338;
+            width: 100%;
+            padding: 15px 0 0 8px;
+            border-top: solid 1px #393c40
+        }
+
+        a {
+            color: #647dcd;
+        }
+    </style>
+    <script src="/atrament.min.js"></script>
+</head>
+
+<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+        <table>
+            <tbody>
+                <tr>
+                    <td valign="top" style="vertical-align: top;">
+                        <div class="links">
+                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif" alt="Menu"
+                                    style="position: fixed; top: 32px;left: 12px;"></a>
+                            <br><img src="/resources/images/menuspacer.gif" alt=" " height="14px" width="32px" />
+                        </div>
+                        <br>
+                    </td>
+                    <td width="100%">
+                        <canvas id="sketchpad" style="width: auto; height: auto; background:#ffffff;"></canvas>
+                        <div id="myList"></div> <!-- TODO: Remove -->
+                        <br>
+                        <div id="emoji" style="display: none;">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :sob:'">
+                                            <img src="/resources/twemoji/1f62d.gif" alt="sob"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
+                                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :skull:'">
+                                            <img src="/resources/twemoji/1f480.gif" alt="skull"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :pleading_face:'">
+                                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :heart:'">
+                                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :thumbsup:'">
+                                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :thumbsdown:'">
+                                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :pray:'">
+                                            <img src="/resources/twemoji/1f64f.gif" alt="pray"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :tada:'">
+                                            <img src="/resources/twemoji/1f389.gif" alt="tada"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :slight_smile:'">
+                                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                </tr>
+                            </table>
+
+                        </div>
+                        <a id="end" name="end"></a>
+                        <form action="../senddrawing">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
+                                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif"
+                                                    alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                                            <input type="hidden" id="lite" name="lite" value="False">
+                                            <div
+                                                style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
+                                                <input type="text" name="message" id="message" value=""
+                                                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;box-shadow: 0 0 0 50px #393c40 inset;-webkit-text-fill-color: #dddddd;"
+                                                    required="" placeholder="Message #{$CHANNEL_NAME}">
+                                            </div>
+                                        </td>
+                                        <td style="width: 55px;">
+                                            <input type="button"
+                                            id="fakesend"
+                                                style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                                value="Send">
+                                        </td>
+                                        <input type="submit"
+                                        id="send"
+                                            style="display:none; width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                            value="Send">
+                        </form>
+                </tr>
+            </tbody>
+        </table>
+
+        </td>
+        </tr>
+        </tbody>
+        </table>
+
+        <script src="/connection.js"></script>
+    </div>
+    <script>
+        var canvas = document.getElementById("sketchpad");
+        var send = document.getElementById("send");
+        var fakesend = document.getElementById("fakesend");
+        var message = document.getElementById("message");
+        var sketchpad = new atrament.Atrament(canvas);
+        function sendDrawing() {
+            var data = canvas.toDataURL();
+            message.value = data;
+            send.click();
+        }
+        fakesend.addEventListener("click", sendDrawing);
+    </script>
+</body>
+
+</html>
