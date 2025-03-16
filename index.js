@@ -111,6 +111,7 @@ server.on('request', async (req, res) => {
     } else if (args[1] === 'senddrawing') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
+        console.log("senddrawing")
         await senddrawing.sendDrawing(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'reply') {
