@@ -125,7 +125,7 @@
                         <br>
                     </td>
                     <td width="100%">
-                        <canvas id="sketchpad" style="width: auto; height: auto; background:#ffffff;"></canvas>
+                        <canvas id="sketchpad" style="width: auto; height: auto;"></canvas>
                         <div id="myList"></div> <!-- TODO: Remove -->
                         <br>
                         <div id="emoji" style="display: none;">
@@ -228,6 +228,7 @@
                                         </td>
                                         <td>
                                             <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                                            <input type="hidden" id="drawinginput" name="drawinginput" value="">
                                             <input type="hidden" id="lite" name="lite" value="False">
                                             <div
                                                 style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
@@ -262,16 +263,17 @@
         var canvas = document.getElementById("sketchpad");
         var send = document.getElementById("send");
         var fakesend = document.getElementById("fakesend");
-        var message = document.getElementById("message");
+        var drawinginput = document.getElementById("drawinginput");
         var sketchpad = new atrament.Atrament(canvas);
         function sendDrawing() {
-            var data = canvas.toDataURL();
-            message.value = data;
+            drawinginput.value = canvas.toDataURL();
             send.click();
         }
-        sketchpad.canvas.getContext("2d").fillRect(0,0,sketchpad.canvas.width,sketchpad.canvas.height)
+        sketchpad.canvas.getContext("2d").fillStyle = "white";
+        sketchpad.canvas.getContext("2d").fillRect(0,0,sketchpad.canvas.width,sketchpad.canvas.height);
         fakesend.addEventListener("click", sendDrawing);
     </script>
+
 </body>
 
 </html>
