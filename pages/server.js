@@ -29,6 +29,12 @@ function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 };
 
+`
+i think str.replaceAll is a better option than str.split().join() because it's more readable and easier to understand
+but this also works
+so imma leave it as is :)
+`
+
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 const AsyncLock = require('async-lock');
