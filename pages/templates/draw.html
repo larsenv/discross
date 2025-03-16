@@ -269,6 +269,7 @@
             message.value = data;
             send.click();
         }
+        sketchpad.canvas.getContext("2d").fillRect(0,0,sketchpad.canvas.width,sketchpad.canvas.height)
         fakesend.addEventListener("click", sendDrawing);
     </script>
 </body>
