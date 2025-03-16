@@ -37,20 +37,21 @@ const lock = new AsyncLock();
 function processServerChannels(server, member, response) {
   try {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
-    const categoriesSorted = categories.sort((a, b) => a.calculatedPosition - b.calculatedPosition);
+    const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
     // Start with lone text channels (no category)
     let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
-    channelsSorted = channelsSorted.sort((a, b) => a.calculatedPosition - b.calculatedPosition);
+    channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
     categoriesSorted.forEach(category => {
       channelsSorted.push(category);
       channelsSorted = channelsSorted.concat(
-        [...category.children.cache.sort((a, b) => a.calculatedPosition - b.calculatedPosition)
+        [...category.children.cache.sort((a, b) => a.position - b.position)
           .values()]
           .filter(channel => channel.isTextBased())
       );
     });
+
 
     let channelList = "";
     channelsSorted.forEach(item => {
