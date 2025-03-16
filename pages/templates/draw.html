@@ -125,7 +125,7 @@
                         <br>
                     </td>
                     <td width="100%">
-                        <canvas id="sketchpad" style="width: auto; height: auto;"></canvas>
+                        <canvas id="sketchpad" width="0" height="0"></canvas>
                         <div id="myList"></div> <!-- TODO: Remove -->
                         <br>
                         <div id="emoji" style="display: none;">
@@ -261,10 +261,16 @@
     </div>
     <script>
         var canvas = document.getElementById("sketchpad");
+        canvas.width = Math.min(window.innerWidth - 34 - 15, 400);
+        canvas.height = Math.min(window.innerHeight - 107.2 - 15, 200);
         var send = document.getElementById("send");
         var fakesend = document.getElementById("fakesend");
         var drawinginput = document.getElementById("drawinginput");
-        var sketchpad = new atrament.Atrament(canvas);
+        var sketchpad = new atrament.Atrament(canvas,{
+            width: canvas.width,
+            height: canvas.height,
+            color: 'black',
+          });
         function sendDrawing() {
             drawinginput.value = canvas.toDataURL();
             send.click();

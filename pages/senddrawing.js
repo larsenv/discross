@@ -87,13 +87,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID)
         });
         bot.addToCache(message);
       }
-
+      console.log("Redirecting to channel...");
       res.writeHead(302, { "Location": `/channels/${parsedurl.query.channel}#end` });
       res.end();
     });
   } catch (err) {
     console.error("Error sending message:", err);
-    res.writeHead(302, { "Location": "/server/" });
+    res.writeHead(500, { "Content-Type": "text/html" });
+    res.write("An error occurred! Please try again later.<br>"); //write a response to the client
     res.end();
   }
 };
