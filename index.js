@@ -41,6 +41,7 @@ var { toggleImages } = require('./pages/toggleImages.js')
 var chanelreplypage = require('./pages/channel_reply.js')
 var replypage = require('./pages/reply.js')
 var drawpage = require('./pages/draw.js')
+var senddrawing = require('./pages/senddrawing.js')
 
 
 bot.startBot();
@@ -106,6 +107,11 @@ server.on('request', async (req, res) => {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
         await sendpage.sendMessage(bot, req, res, args, discordID)
+      }
+    } else if (args[1] === 'senddrawing') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await senddrawing.sendDrawing(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'reply') {
       const discordID = await auth.checkAuth(req, res)

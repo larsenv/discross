@@ -2,6 +2,7 @@ const url = require('url');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
+const { Buffer } = require('buffer');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -40,7 +41,7 @@ async function getOrCreateWebhook(channel, guildID) {
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock(); // Create a new lock instance
 
-exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
+exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID) {
   try {
     await lock.acquire(discordID, async () => {
       const parsedurl = url.parse(req.url, true);
@@ -71,15 +72,19 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
             }
           }
         } while (m);
-
         await webhook.edit({ channel: channel });
+        const base64Data = processedmessage;
+
+        // Remove the data URL prefix
+        const base64Image = base64Data.split(';base64,').pop();
+        const imageBuffer = Buffer.from(base64Image, 'base64');
+
         const message = await webhook.send({
-          content: processedmessage,
+          content: "sent a drawing",
           username: member.displayName || member.user.tag,
           avatarURL: await member.user.avatarURL(),
-          disableEveryone: true,
+          files: [{ attachment: imageBuffer, name: "image.png" }]
         });
-
         bot.addToCache(message);
       }
 
