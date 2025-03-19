@@ -108,6 +108,7 @@
             color: #647dcd;
         }
     </style>
+    <script src="/atrament.min.js"></script>
 </head>
 
 <body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
@@ -124,9 +125,7 @@
                         <br>
                     </td>
                     <td width="100%">
-                        <div id="msgcontainer">
-                            {$MESSAGES}
-                        </div>
+                        <canvas id="sketchpad" width="0" height="0"></canvas>
                         <div id="myList"></div> <!-- TODO: Remove -->
                         <br>
                         <div id="emoji" style="display: none;">
@@ -219,7 +218,7 @@
 
                         </div>
                         <a id="end" name="end"></a>
-                        <form action="../send">
+                        <form action="../senddrawing">
                             <table>
                                 <tbody>
                                     <tr>
@@ -229,25 +228,25 @@
                                         </td>
                                         <td>
                                             <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                                            <input type="hidden" id="drawinginput" name="drawinginput" value="">
                                             <input type="hidden" id="lite" name="lite" value="False">
                                             <div
                                                 style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
-                                                {$INPUT}
-                                        <td valign="middle" style="vertical-align: middle; width: 48px;">
-                                            <button style="background: none; border: none;" onclick="showEmoji()"
-                                                type="button">
-                                                <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Emojis"
-                                                    style="width: 30px; height: 30px;">
-                                            </button>
+                                                <input type="text" name="message" id="message" value=""
+                                                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;box-shadow: 0 0 0 50px #393c40 inset;-webkit-text-fill-color: #dddddd;"
+                                                    required="" placeholder="Message #{$CHANNEL_NAME}">
+                                            </div>
                                         </td>
-                                        <td valign="middle" style="vertical-align: middle; width: 48px;">
-                                            <a href="/draw/{$CHANNEL_ID}"><img src="/resources/twemoji/1f58c-fe0f.gif"
-                                                    alt="Draw" style="width: 30px; height: 30px;"></a>
+                                        <td style="width: 55px;">
+                                            <input type="button"
+                                            id="fakesend"
+                                                style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                                value="Send">
                                         </td>
-                                        <td valign="middle" style="vertical-align: middle; width: 48px;">
-                                            <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif"
-                                                    alt="Refresh" style="width: 30px; height: 30px;"></a>
-                                        </td>
+                                        <input type="submit"
+                                        id="send"
+                                            style="display:none; width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                            value="Send">
                         </form>
                 </tr>
             </tbody>
@@ -257,8 +256,30 @@
         </tr>
         </tbody>
         </table>
+
         <script src="/connection.js"></script>
     </div>
+    <script>
+        var canvas = document.getElementById("sketchpad");
+        canvas.width = Math.min(window.innerWidth - 34 - 15, 400);
+        canvas.height = Math.min(window.innerHeight - 107.2 - 15, 200);
+        var send = document.getElementById("send");
+        var fakesend = document.getElementById("fakesend");
+        var drawinginput = document.getElementById("drawinginput");
+        var sketchpad = new atrament.Atrament(canvas,{
+            width: canvas.width,
+            height: canvas.height,
+            color: 'black',
+          });
+        function sendDrawing() {
+            drawinginput.value = canvas.toDataURL();
+            send.click();
+        }
+        sketchpad.canvas.getContext("2d").fillStyle = "white";
+        sketchpad.canvas.getContext("2d").fillRect(0,0,sketchpad.canvas.width,sketchpad.canvas.height);
+        fakesend.addEventListener("click", sendDrawing);
+    </script>
+
 </body>
 
 </html>
