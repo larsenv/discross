@@ -83,6 +83,16 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
   })
 }
 
+async function senddrawingAsync(req, res, body) {
+  const discordID = await auth.checkAuth(req, res)
+  // console.log("senddrawingAsync")
+  const urlQuery = url.parse("/?"+body, true).query
+  // console.log(urlQuery)
+  if (discordID) {
+    await senddrawing.sendDrawing(bot, req, res, [], discordID, urlQuery)
+  }
+}
+
 server.on('request', async (req, res) => {
   if (req.method === 'POST') {
     let body = '' // https://itnext.io/how-to-handle-the-post-request-body-in-node-js-without-using-a-framework-cd2038b93190
@@ -95,6 +105,13 @@ server.on('request', async (req, res) => {
         toggleTheme(req, res)
       } else if (parsedurl == "/toggleImages") {
         toggleImages(req, res)
+      }else if (parsedurl == "/senddrawing") {
+        senddrawingAsync(req, res, body).then(() => {}).catch((err) => {
+          console.log(err)
+          res.writeHead(500, { 'Content-Type': 'text/plain' })
+          res.end('Internal Server Error')
+        }
+        )
       } else {
         auth.handleLoginRegister(req, res, body)
       }
@@ -108,13 +125,9 @@ server.on('request', async (req, res) => {
       if (discordID) {
         await sendpage.sendMessage(bot, req, res, args, discordID)
       }
-    } else if (args[1] === 'senddrawing') {
-      const discordID = await auth.checkAuth(req, res)
-      if (discordID) {
-        console.log("senddrawing")
-        await senddrawing.sendDrawing(bot, req, res, args, discordID)
-      }
-    } else if (args[1] === 'reply') {
+    } else if (args[1] === 'senddrawing') {}
+    
+    else if (args[1] === 'reply') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
         await replypage.replyMessage(bot, req, res, args, discordID)
