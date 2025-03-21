@@ -218,7 +218,7 @@
 
                         </div>
                         <a id="end" name="end"></a>
-                        <form action="../senddrawing">
+                        <form action="../senddrawing" method="post">
                             <table>
                                 <tbody>
                                     <tr>
@@ -261,8 +261,8 @@
     </div>
     <script>
         var canvas = document.getElementById("sketchpad");
-        canvas.width = Math.min(window.innerWidth - 34 - 15, 400);
-        canvas.height = Math.min(window.innerHeight - 107.2 - 15, 200);
+        canvas.width = Math.min(window.innerWidth - 34 - 15, 1000);
+        canvas.height = Math.min(window.innerHeight - 107.2 - 15, 1000);
         var send = document.getElementById("send");
         var fakesend = document.getElementById("fakesend");
         var drawinginput = document.getElementById("drawinginput");

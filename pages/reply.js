@@ -20,7 +20,7 @@ async function clean(server, nodelete) {
 async function getOrCreateWebhook(channel, guildID) {
   try {
     const existingWebhooks = await channel.fetchWebhooks();
-    let webhook = existingWebhooks.find(w => w.owner.username === "Discross");
+    let webhook = existingWebhooks.find(w => w.owner.username === "discross beta" || w.owner.username === "Discross");
 
     if (!webhook) {
       webhook = await channel.createWebhook({
