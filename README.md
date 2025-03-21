@@ -10,36 +10,39 @@ You can try out Discross there without having to invite the bot to your own serv
 ## Usage
 
 ### All of these steps have to be performed on a modern device that can access Discord.com
+
 0. Use the [link](https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8) to add Discross to your server. Not necessary if you're already on a server with the bot.
 1. Type `^connect` on the server to get your verification code
 2. Go to [discross.rc24.xyz](https://discross.rc24.xyz/)
 3. Register on the website with that code
 4. Click the "update your server list" button to authorize Discross with your Discord account
+
 ### Now you can use Discross on all of your devices by logging into the account you have just made!
 
 ### Supported platforms
+
 Platforms that are confirmed to work, to some extent:
 
-* iPad
-* iPhone
-* Kindle
-* Nintendo 3DS
-* Nintendo DS
-* Nintendo DSi
-* Nintendo Switch
-* PlayStation 3
-* PlayStation 4
-* PlayStation 5
-* PlayStation Portable
-* PlayStation Vita
-* Sega Dreamcast
-* Wii Internet Channel
-* Wii U
-* Windows 95
-* Windows 98
-* Windows XP
-* Xbox 360
-* Xbox One
+- iPad
+- iPhone
+- Kindle
+- Nintendo 3DS
+- Nintendo DS
+- Nintendo DSi
+- Nintendo Switch
+- PlayStation 3
+- PlayStation 4
+- PlayStation 5
+- PlayStation Portable
+- PlayStation Vita
+- Sega Dreamcast
+- Wii Internet Channel
+- Wii U
+- Windows 95
+- Windows 98
+- Windows XP
+- Xbox 360
+- Xbox One
 
 ## Screenshots!
 
@@ -51,9 +54,9 @@ Platforms that are confirmed to work, to some extent:
 
 Make sure the following are installed:
 
-* Node.js
-* Python
-* Visual Studio Build Tools
+- Node.js
+- Python
+- Visual Studio Build Tools
 
 ```bash
 git clone https://github.com/larsenv/discross.git
@@ -101,7 +104,10 @@ Go to [localhost:4000](http://localhost:4000) and use it to register
 
 ### Discross is made by [circuit10](https://github.com/Heath123) (Heath123 is circuit10's GitHub username)
 
-
 ## Contributors
 
 - @koboshkobosh added the ability to reply to messages
+
+# Known Issues
+
+- On modern browsers, when drawing, you have to press the send button, pressing enter will not send the image.
