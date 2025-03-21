@@ -21,7 +21,7 @@ async function clean(server, nodelete) {
 async function getOrCreateWebhook(channel, guildID) {
   try {
     const existingWebhooks = await channel.fetchWebhooks();
-    let webhook = existingWebhooks.find(w => w.owner.username === "Discross");
+    let webhook = existingWebhooks.find(w => w.owner.username === "discross beta" || w.owner.username === "Discross");
 
     if (!webhook) {
       webhook = await channel.createWebhook({
@@ -41,12 +41,17 @@ async function getOrCreateWebhook(channel, guildID) {
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock(); // Create a new lock instance
 
-exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID) {
+exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
   try {
     await lock.acquire(discordID, async () => {
-      const parsedurl = url.parse(req.url, true);
-      if (parsedurl.query.message !== "") {
-        const channel = await bot.client.channels.fetch(parsedurl.query.channel);
+      let parsedurl;
+      if (urlQuery == null) {
+        parsedurl = url.parse(req.url, true).query;
+      } else {
+        parsedurl = urlQuery;
+      }
+      if (parsedurl.message !== "") {
+        const channel = await bot.client.channels.fetch(parsedurl.channel);
         const member = await channel.guild.members.fetch(discordID);
 
         if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
@@ -57,7 +62,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID)
 
         const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-        let processedmessage = parsedurl.query.message;
+        let processedmessage = parsedurl.message;
         const regex = /@([^#]{2,32}#\d{4})/g;
         let m;
         do {
@@ -73,14 +78,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID)
           }
         } while (m);
         await webhook.edit({ channel: channel });
-        const base64Data = parsedurl.query.drawinginput;
+        const base64Data = parsedurl.drawinginput;
 
         // Remove the data URL prefix
         const base64Image = base64Data.split(';base64,').pop();
         const imageBuffer = Buffer.from(base64Image, 'base64');
 
         const message = await webhook.send({
-          content: "Sent a drawing:\n"+processedmessage,
+          content: "Sent a drawing:\n" + processedmessage,
           username: member.displayName || member.user.tag,
           avatarURL: await member.user.avatarURL(),
           files: [{ attachment: imageBuffer, name: "image.png" }]
@@ -88,7 +93,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID)
         bot.addToCache(message);
       }
       console.log("Redirecting to channel...");
-      res.writeHead(302, { "Location": `/channels/${parsedurl.query.channel}#end` });
+      res.writeHead(302, { "Location": `/channels/${parsedurl.channel}#end` });
       res.end();
     });
   } catch (err) {
