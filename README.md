@@ -111,3 +111,12 @@ Go to [localhost:4000](http://localhost:4000) and use it to register
 # Known Issues
 
 - On modern browsers, when drawing, you have to press the send button, pressing enter will not send the image.
+
+## TODO
+
+- [ ] Stickers
+- [ ] Uploading files
+- [x] Sending emoji
+- [ ] Profile pictures
+- [ ] Viewing reactions
+- [ ] Proper website embeds
