@@ -266,6 +266,7 @@
             var fakesend = document.getElementById("fakesend");
             var sendform1 = document.getElementById("sendform");
             var drawinginput = document.getElementById("drawinginput");
+            var messagedom = document.getElementById("message");
             var sketchpad = new atrament.Atrament(canvas, {
                 width: canvas.width,
                 height: canvas.height,
@@ -275,15 +276,15 @@
                 drawinginput.value = canvas.toDataURL();
                 sendform1.submit();
             }
-            document.querySelector("#sendform").addEventListener("keyup", event => {
+            sendform1.addEventListener("keyup", event => {
                 if (event.key !== "Enter") return;
                 sendDrawing();
                 event.preventDefault();
             });
-            document.querySelector("#message").addEventListener("keydown", event => {
+            messagedom.addEventListener("keydown", event => {
                 event.preventDefault();
             });
-            document.querySelector("#message").onkeypress = function (e) {
+            messagedom.onkeypress = function (e) {
                 if (e.keyCode == 13) {
                     e.preventDefault();
                 }
