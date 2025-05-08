@@ -281,9 +281,6 @@
                 sendDrawing();
                 event.preventDefault();
             });
-            messagedom.addEventListener("keydown", event => {
-                event.preventDefault();
-            });
             messagedom.onkeypress = function (e) {
                 if (e.keyCode == 13) {
                     e.preventDefault();
