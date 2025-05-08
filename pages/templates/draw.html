@@ -218,7 +218,7 @@
 
                         </div>
                         <a id="end" name="end"></a>
-                        <form action="../senddrawing" method="post">
+                        <form action="../senddrawing" method="post" id="sendform">
                             <table>
                                 <tbody>
                                     <tr>
@@ -238,15 +238,14 @@
                                             </div>
                                         </td>
                                         <td style="width: 55px;">
-                                            <input type="button"
-                                            id="fakesend"
+                                            <input type="button" id="fakesend"
                                                 style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
                                                 value="Send">
                                         </td>
-                                        <input type="submit"
+                                        <!-- <input type="submit"
                                         id="send"
                                             style="display:none; width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
-                                            value="Send">
+                                            value="Send"> -->
                         </form>
                 </tr>
             </tbody>
@@ -260,24 +259,31 @@
         <script src="/connection.js"></script>
     </div>
     <script>
-        var canvas = document.getElementById("sketchpad");
-        canvas.width = Math.min(window.innerWidth - 34 - 15, 1000);
-        canvas.height = Math.min(window.innerHeight - 107.2 - 15, 1000);
-        var send = document.getElementById("send");
-        var fakesend = document.getElementById("fakesend");
-        var drawinginput = document.getElementById("drawinginput");
-        var sketchpad = new atrament.Atrament(canvas,{
-            width: canvas.width,
-            height: canvas.height,
-            color: 'black',
-          });
-        function sendDrawing() {
-            drawinginput.value = canvas.toDataURL();
-            send.click();
-        }
-        sketchpad.canvas.getContext("2d").fillStyle = "white";
-        sketchpad.canvas.getContext("2d").fillRect(0,0,sketchpad.canvas.width,sketchpad.canvas.height);
-        fakesend.addEventListener("click", sendDrawing);
+        document.addEventListener("DOMContentLoaded", function () {
+            var canvas = document.getElementById("sketchpad");
+            canvas.width = Math.min(window.innerWidth - 34 - 15, 1000);
+            canvas.height = Math.min(window.innerHeight - 107.2 - 15, 1000);
+            var fakesend = document.getElementById("fakesend");
+            var sendform1 = document.getElementById("sendform");
+            var drawinginput = document.getElementById("drawinginput");
+            var sketchpad = new atrament.Atrament(canvas, {
+                width: canvas.width,
+                height: canvas.height,
+                color: 'black',
+            });
+            function sendDrawing() {
+                drawinginput.value = canvas.toDataURL();
+                sendform1.submit();
+            }
+            document.querySelector("#message").addEventListener("keyup", event => {
+                if (event.key !== "Enter") return;
+                sendDrawing();
+                event.preventDefault();
+            });
+            sketchpad.canvas.getContext("2d").fillStyle = "white";
+            sketchpad.canvas.getContext("2d").fillRect(0, 0, sketchpad.canvas.width, sketchpad.canvas.height);
+            fakesend.addEventListener("click", sendDrawing);
+        });
     </script>
 
 </body>
