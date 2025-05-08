@@ -275,11 +275,19 @@
                 drawinginput.value = canvas.toDataURL();
                 sendform1.submit();
             }
-            document.querySelector("#message").addEventListener("keyup", event => {
+            document.querySelector("#sendform").addEventListener("keyup", event => {
                 if (event.key !== "Enter") return;
                 sendDrawing();
                 event.preventDefault();
             });
+            document.querySelector("#message").addEventListener("onkeydown", event => {
+                event.preventDefault();
+            });
+            document.querySelector("#message").onkeypress = function (e) {
+                if (e.keyCode == 13) {
+                    e.preventDefault();
+                }
+            };
             sketchpad.canvas.getContext("2d").fillStyle = "white";
             sketchpad.canvas.getContext("2d").fillRect(0, 0, sketchpad.canvas.width, sketchpad.canvas.height);
             fakesend.addEventListener("click", sendDrawing);
