@@ -233,21 +233,31 @@
                                             <div
                                                 style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
                                                 {$INPUT}
-                                        <td valign="middle" style="vertical-align: middle; width: 48px;">
+                                            </div>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <table style="height: 96px; width: 11%; border-top: 0px;">
+                                <tbody>
+                                    <tr>
+                                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;"></td>
+                                        <td valign="left" style="vertical-align: left; width: 48px;">
                                             <button style="background: none; border: none;" onclick="showEmoji()"
                                                 type="button">
                                                 <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Emojis"
                                                     style="width: 30px; height: 30px;">
                                             </button>
                                         </td>
-                                        <td valign="middle" style="vertical-align: middle; width: 48px;">
+                                        <td valign="left" style="vertical-align: left; width: 48px;">
                                             <a href="/draw/{$CHANNEL_ID}"><img src="/resources/twemoji/1f58c-fe0f.gif"
                                                     alt="Draw" style="width: 30px; height: 30px;"></a>
                                         </td>
-                                        <td valign="middle" style="vertical-align: middle; width: 48px;">
+                                        <td valign="left" style="vertical-align: left; width: 48px;">
                                             <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif"
                                                     alt="Refresh" style="width: 30px; height: 30px;"></a>
                                         </td>
+                                </tbody>
+                            </table>
                         </form>
                 </tr>
             </tbody>
