@@ -16,8 +16,8 @@ function strReplace(string, needle, replacement) {
 exports.processRegister = async function (bot, req, res, args) {
   discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
   if (discordID) {
-    res.writeHead(302, { "Location": "/server/" });
-    res.write('Logged in! Click <a href="/server/">here</a> to continue.');
+    res.writeHead(302, { "Location": "http://discross.net/server/" });
+    res.write('Logged in! Click <a href="http://discross.net/server/">here</a> to continue.');
   } else {
     parsedurl = url.parse(req.url, true);
     response = register_template;
