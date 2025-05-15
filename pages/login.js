@@ -17,8 +17,8 @@ exports.processLogin = async function (bot, req, res, args) {
   discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
   if (discordID) {
     // res.writeHead(200, {'Content-Type': 'text/html'});
-    res.writeHead(301, { "Location": "http://discross.net/server/", "Content-Type": "text/html" });
-    res.write('Logged in! Click <a href="http://discross.ney/server/">here</a> to continue.');
+    res.writeHead(301, { "Location": "/server/", "Content-Type": "text/html" });
+    res.write('Logged in! Click <a href="/server/">here</a> to continue.');
   } else {
     parsedurl = url.parse(req.url, true);
     response = login_template;
