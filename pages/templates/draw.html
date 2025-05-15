@@ -226,6 +226,9 @@
                                             <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif"
                                                     alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
                                         </td>
+                                        <font face="Arial, Helvetica, sans-serif" color="#dddddd">
+                                            NOTE: Drawing only works on newer browsers. If you do not see a canvas your client does not support drawing
+                                        </font>
                                         <td>
                                             <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                                             <input type="hidden" id="drawinginput" name="drawinginput" value="">
@@ -237,9 +240,6 @@
                                                     required="" placeholder="Message #{$CHANNEL_NAME}">
                                             </div>
                                         </td>
-                                        <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-                                            NOTE: Drawing only works on newer browsers. If you do not see a canvas your client does not support drawing
-                                        </font>
                                         <td style="width: 55px;">
                                             <input type="button" id="fakesend"
                                                 style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
