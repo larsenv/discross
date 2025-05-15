@@ -210,6 +210,6 @@ function createServerHTML(server, member) {
   // Generate server-specific HTML
   let serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
   serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
-  serverHTML = strReplace(serverHTML, "{$SERVER_NAM}", server.name);
+  serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", server.name);
   return serverHTML;
 }
