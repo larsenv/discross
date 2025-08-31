@@ -36,16 +36,24 @@
   </table>
 </body>
 <script>
-  window.onload = () => {
-    const fragment = new URLSearchParams(window.location.hash.slice(1));
-    const [accessToken, tokenType] = [fragment.get('access_token'), fragment.get('token_type')];
+  window.onload = function() {
+    var hashParams = window.location.hash.slice(1);
+    var params = {};
+    var pairs = hashParams.split('&');
+    for (var i = 0; i < pairs.length; i++) {
+      var pair = pairs[i].split('=');
+      params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+    }
+    
+    var accessToken = params['access_token'];
+    var tokenType = params['token_type'];
+    
     if (!accessToken) {
       window.location.href = '/';
     }
-    const query = new URLSearchParams();
-    query.append('access_token', accessToken);
-    query.append('token_type', tokenType);
-    window.location.href = '/discord?' + query.toString()
+    
+    var queryString = 'access_token=' + encodeURIComponent(accessToken) + '&token_type=' + encodeURIComponent(tokenType);
+    window.location.href = '/discord?' + queryString;
   };
 </script>
 
