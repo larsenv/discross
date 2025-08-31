@@ -28,14 +28,12 @@
     .light-theme #wrapper * {
       background: #FFFFFF !important;
       color: #000000 !important;
-      box-shadow: none !important;
-      -webkit-text-fill-color: #000000 !important;
+      
+      
     }
 
     .light-theme #wrapper table div {
-      border-radius: 50px 50px 50px 50px !important;
-      -webkit-border-radius: 50px 50px 50px 50px !important;
-      -moz-border-radius: 50px 50px 50px 50px !important;
+      
       border: 10px solid #000000;
     }
 
@@ -44,9 +42,7 @@
     }
 
     .light-theme #wrapper table input:nth-of-type(2) {
-      border-radius: 50px 50px 50px 50px !important;
-      -webkit-border-radius: 50px 50px 50px 50px !important;
-      -moz-border-radius: 50px 50px 50px 50px !important;
+      
       border: 5px solid #000000 !important;
     }
   </style>
@@ -95,16 +91,16 @@
               <font face="Arial, Helvetica, sans-serif" color="#dddddd">
                 Username:
                 <br><br>
-                <div style="padding: 16px;background: #393c40;width: 300px;border-radius: 10px;"><input type="text"
+                <div style="padding: 16px;background: #393c40;width: 300px;"><input type="text"
                     name="username" id="username" value=""
-                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;box-shadow: 0 0 0 50px #393c40 inset;-webkit-text-fill-color: #dddddd;"
+                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
                     placeholder="Username"></div>
                 <br>
                 Password:
                 <br><br>
-                <div style="padding: 16px;background: #393c40;width: 300px;border-radius: 10px;"><input type="password"
+                <div style="padding: 16px;background: #393c40;width: 300px;"><input type="password"
                     name="password" id="password" value=""
-                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;box-shadow: 0 0 0 50px #393c40 inset;-webkit-text-fill-color: #dddddd;"
+                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
                     placeholder="Password"></div>
                 <br>
                 <a href="/forgot.html" style="text-decoration: none;">
@@ -116,7 +112,7 @@
                 <br>{$ERROR}<br>
                 <input type="hidden" id="redirect" name="redirect" value="{$REDIRECT_URL}">
                 <input type="submit"
-                  style="border-radius: 10px;color: #dddddd;height: 44px;width:150px;border: none;background: #393c40;"
+                  style="color: #dddddd;height: 44px;width:150px;border: none;background: #393c40;"
                   value="Login">
                 <!-- <br>
                 <br>
