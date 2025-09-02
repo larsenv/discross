@@ -23,6 +23,7 @@ const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/me
 const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
 const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
 const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
+const mention_self_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention_self.html', 'utf-8'));
 
 const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
 const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
@@ -34,6 +35,99 @@ const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templa
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 };
+
+function getAuthorInitial(displayName) {
+  if (!displayName) return "?";
+  return displayName.charAt(0).toUpperCase();
+}
+
+function getUserRoleColor(member) {
+  if (!member || !member.roles) return "#ffffff";
+  
+  // Get the highest role with a color
+  const roles = member.roles.cache.filter(role => role.color !== 0);
+  if (roles.size === 0) return "#ffffff";
+  
+  const highestRole = roles.sort((a, b) => b.position - a.position).first();
+  return `#${highestRole.color.toString(16).padStart(6, '0')}`;
+}
+
+function getDisplayName(member, author) {
+  if (!member) return author.username;
+  
+  // Use nickname if available, otherwise display name, otherwise username
+  return member.nickname || member.displayName || author.username;
+}
+
+function formatMessageDate(date, req) {
+  // Try to detect timezone from the request or use UTC as fallback
+  let timezone = 'UTC';
+  
+  // Check for timezone in cookies or headers (this would be set by frontend JavaScript)
+  const timezoneCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('timezone='))?.split('=')[1];
+  if (timezoneCookie) {
+    timezone = decodeURIComponent(timezoneCookie);
+  }
+  
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    
+    return formatter.format(date);
+  } catch (err) {
+    // Fallback to UTC if timezone detection fails
+    return date.toLocaleString('en-US', { timeZone: 'UTC' });
+  }
+}
+
+function processDiscordMarkdown(content) {
+  // Handle large text (# prefix) 
+  if (content.startsWith('# ')) {
+    const largeText = content.substring(2);
+    return `<div style="font-size: 32px; font-weight: 700; line-height: 36px; margin: 8px 0;">${escape(largeText)}</div>`;
+  }
+
+  // Check if content is only emoji (for larger emoji rendering)
+  const emojiOnlyRegex = /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\s]*$/u;
+  const isEmojiOnly = emojiOnlyRegex.test(content) && content.trim().length > 0;
+
+  // Process with markdown-it first
+  let processed = md.renderInline(content);
+  
+  // Enhance with Discord-specific styling
+  // Bold text **text** or __text__
+  processed = processed.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: 700;">$1</strong>');
+  processed = processed.replace(/__(.*?)__/g, '<strong style="font-weight: 700;">$1</strong>');
+  
+  // Italic text *text* or _text_
+  processed = processed.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em style="font-style: italic;">$1</em>');
+  processed = processed.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em style="font-style: italic;">$1</em>');
+  
+  // Strikethrough text ~~text~~
+  processed = processed.replace(/~~(.*?)~~/g, '<span style="text-decoration: line-through;">$1</span>');
+  
+  // Inline code `code`
+  processed = processed.replace(/`([^`]+)`/g, '<code style="background: #2f3136; color: #dcddde; padding: 2px 4px; border-radius: 3px; font-family: Consolas, Monaco, \'Courier New\', monospace; font-size: 14px;">$1</code>');
+  
+  // Code blocks ```code```
+  processed = processed.replace(/```([\s\S]*?)```/g, '<pre style="background: #2f3136; color: #dcddde; padding: 8px; border-radius: 4px; font-family: Consolas, Monaco, \'Courier New\', monospace; font-size: 14px; overflow-x: auto; white-space: pre-wrap;"><code>$1</code></pre>');
+  
+  // Spoiler text ||text||
+  processed = processed.replace(/\|\|(.*?)\|\|/g, '<span style="background: #202225; color: #202225; border-radius: 4px; padding: 0 2px; cursor: pointer;" onclick="this.style.color=\'#dcddde\'" title="Click to reveal spoiler">$1</span>');
+  
+  // Store emoji-only info for later processing
+  if (isEmojiOnly) {
+    processed = `<div class="emoji-only-message">${processed}</div>`;
+  }
+  
+  return processed;
+}
 
 function formatFileSize(bytes) {
   if (bytes === 0) return '0.00 Bytes';
@@ -102,16 +196,22 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
             currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
             if (lastmember) { // Webhooks are not members!
-              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastmember.displayName));
+              const displayName = getDisplayName(lastmember, lastauthor);
+              const roleColor = getUserRoleColor(lastmember);
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_INITIAL}", getAuthorInitial(displayName));
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_COLOR}", roleColor);
             } else {
               currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastauthor.username));
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_INITIAL}", getAuthorInitial(lastauthor.username));
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_COLOR}", "#ffffff");
             }
 
             var url = lastauthor.avatarURL();
             if (lastauthor.avatarURL && url && url.toString().startsWith("http")) { // Sometimes the URL is null or something else
               currentmessage = currentmessage.replace("{$PROFILE_URL}", url);
             }
-            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", lastdate.toLocaleTimeString('en-US') + " " + lastdate.toDateString());
+            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatMessageDate(lastdate, req));
             currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
             response += currentmessage;
             currentmessage = "";
@@ -123,7 +223,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         }
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        messagetext = processDiscordMarkdown(item.content);
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
@@ -139,14 +239,52 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             urls.push(url)
           });
           urls.forEach(url => {
-            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
+            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width: 400px; width: 100%; height: auto; border-radius: 4px; margin: 4px 0;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
+        
+        // Process Discord embeds
+        if (item?.embeds && item.embeds.length > 0 && imagesCookie == 1) {
+          item.embeds.forEach(embed => {
+            let embedHTML = '<div style="border-left: 4px solid #5865f2; background: #2f3136; margin: 8px 0; padding: 12px; border-radius: 4px; max-width: 400px;">';
+            
+            if (embed.title) {
+              const titleText = embed.url ? 
+                `<a href="${escape(embed.url)}" style="color: #00aff4; text-decoration: none; font-weight: 600;">${escape(embed.title)}</a>` : 
+                `<span style="color: #ffffff; font-weight: 600;">${escape(embed.title)}</span>`;
+              embedHTML += `<div style="margin-bottom: 8px;">${titleText}</div>`;
+            }
+            
+            if (embed.description) {
+              embedHTML += `<div style="color: #dcddde; font-size: 14px; margin-bottom: 8px;">${escape(embed.description)}</div>`;
+            }
+            
+            if (embed.image?.url) {
+              embedHTML += `<img src="/imageProxy/${embed.image.url.replace(/^(.*?)(\d+)/, '$2')}" style="max-width: 100%; height: auto; border-radius: 4px; margin-top: 8px;" alt="Embed image">`;
+            }
+            
+            if (embed.thumbnail?.url) {
+              embedHTML += `<img src="/imageProxy/${embed.thumbnail.url.replace(/^(.*?)(\d+)/, '$2')}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; float: right; margin-left: 12px;" alt="Embed thumbnail">`;
+            }
+            
+            if (embed.footer?.text) {
+              embedHTML += `<div style="color: #72767d; font-size: 12px; margin-top: 8px;">${escape(embed.footer.text)}</div>`;
+            }
+            
+            embedHTML += '</div>';
+            messagetext += embedHTML;
+          });
+        }
+        
         if (item.mentions) {
           item.mentions.members.forEach(function (user) {
             if (user) {
-              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
-              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
+              // Use yellow highlighting if this is a mention of the current user
+              const isCurrentUser = user.id === discordID;
+              const template = isCurrentUser ? mention_self_template : mention_template;
+              const displayName = getDisplayName(user, user.user);
+              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", template.replace("{$USERNAME}", escape("@" + displayName)));
+              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", template.replace("{$USERNAME}", escape("@" + displayName)));
             }
           });
         }
@@ -234,13 +372,19 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             }
             output = points.join("-")
           }
-          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 3%;vertical-align:top;" alt="emoji">`)
+          // Check if this emoji is in an emoji-only message for larger sizing
+          const isInEmojiOnlyMessage = response.includes('<div class="emoji-only-message">');
+          const emojiSize = isInEmojiOnlyMessage ? "6%" : "3%";
+          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: ${emojiSize}; vertical-align: top;" alt="emoji">`)
         });
       }
 
-      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
+      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {
+        // Check if this emoji is in an emoji-only message for larger sizing
+        const isInEmojiOnlyMessage = response.includes('<div class="emoji-only-message">');
+        const emojiSize = isInEmojiOnlyMessage ? "6%" : "3%";
+        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: ${emojiSize};" alt="emoji">`)
       })
       let reply_message_id = args[3];
 
