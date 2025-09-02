@@ -129,66 +129,6 @@
                 top: 8px;
                 left: 8px;
             }
-            
-            #wrapper > div {
-                padding-left: 50px !important;
-            }
-            
-            .message {
-                padding: 6px 8px;
-            }
-            
-            .messagecontent {
-                font-size: 14px !important;
-            }
-            
-            #emoji {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-            
-            /* Improve image sizing on mobile */
-            .messagecontent img {
-                max-width: 100% !important;
-                height: auto !important;
-                width: auto !important;
-            }
-            
-            /* Better emoji sizing on mobile */
-            .messagecontent img[alt="emoji"] {
-                width: 20px !important;
-                height: 20px !important;
-                max-width: 20px !important;
-            }
-            
-            .emoji-only-message img[alt="emoji"] {
-                width: 32px !important;
-                height: 32px !important;
-                max-width: 32px !important;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            #wrapper > div {
-                padding-left: 40px !important;
-            }
-            
-            .message {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .message > div:first-child {
-                margin-bottom: 8px;
-                margin-right: 0;
-            }
-            
-            .hero-title {
-                font-size: 24px !important;
-            }
-            
-            .hero-subtitle {
-                font-size: 14px !important;
-            }
         }
     </style>
 </head>
@@ -267,16 +207,6 @@
                         </div>
                         </div>
         </div>
-        <script>
-            // Detect and set user timezone
-            try {
-                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                document.cookie = `timezone=${encodeURIComponent(timezone)}; path=/; max-age=31536000`; // 1 year
-            } catch (e) {
-                // Fallback if timezone detection fails
-                console.log('Timezone detection failed, using UTC');
-            }
-        </script>
         <script src="/connection.js"></script>
     </div>
 </body>
