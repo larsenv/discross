@@ -21,6 +21,7 @@ const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/tem
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
 const invalid_server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/invalid_server.html', 'utf-8'));
+const server_list_only_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8'));
 const no_images_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8'));
 
 const cachedMembers = {}; // TODO: Find a better way
@@ -134,7 +135,14 @@ exports.processServer = async function (bot, req, res, args, discordID) {
         }
       });
     } else {
-      response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
+      // If no specific server is selected, choose template based on whether user has servers
+      if (serverList.trim() === "") {
+        // No servers available, show full authentication banner
+        response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
+      } else {
+        // User has servers, show simple message with refresh button
+        response = response.replace("{$CHANNEL_LIST}", server_list_only_template);
+      }
       response = response.replace("{$DISCORD_NAME}", "");
     }
 

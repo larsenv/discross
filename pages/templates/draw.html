@@ -161,7 +161,15 @@
         <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
             <div style="flex: 1; overflow-y: auto; padding: 16px;">
                 <div style="text-align: center;">
-                    <canvas id="sketchpad" width="0" height="0"></canvas>
+                    <canvas id="sketchpad" width="600" height="400"></canvas>
+                    <noscript>
+                        <div style="color: #ff6b6b; background: #2f3136; border: 1px solid #ff6b6b; border-radius: 4px; padding: 12px; margin: 8px; font-family: Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+                            ⚠ JavaScript is required for the drawing tool to work.
+                        </div>
+                    </noscript>
+                    <div style="color: #b9bbbe; font-size: 12px; margin: 8px; font-family: Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+                        Drawing not working? Try a different browser or device.
+                    </div>
                 </div>
                 
                 <div class="drawing-controls">
@@ -235,7 +243,7 @@
         <script src="/connection.js"></script>
     </div>
     <script>
-        let currentSketchpad = null;
+        var currentSketchpad = null;
         
         function setDrawingColor(color) {
             if (currentSketchpad) {
