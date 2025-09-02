@@ -156,8 +156,14 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         if (item.mentions) {
           item.mentions.members.forEach(function (user) {
             if (user) {
-              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
-              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
+              // Check if this mention is for the current user
+              const isCurrentUserMention = user.id === discordID;
+              const mentionClass = isCurrentUserMention ? "user-ping" : "";
+              const mentionStyle = isCurrentUserMention ? "background-color: #faa61a; color: #000000; padding: 2px 4px; border-radius: 3px;" : "background-color: rgba(100,125,205,0.1);";
+              
+              const mentionHtml = `<span class="${mentionClass}" style="${mentionStyle}">@${escape(user.displayName)}</span>`;
+              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mentionHtml);
+              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mentionHtml);
             }
           });
         }
@@ -176,13 +182,45 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               console.log(err);
             }
             if (channel) {
-              messagetext = strReplace(messagetext, m[0], mention_template.replace("{$USERNAME}", escape("#" + channel.name)));
+              messagetext = strReplace(messagetext, m[0], `<span style="color: #647dcd; background-color: rgba(100,125,205,0.1); padding: 2px 4px; border-radius: 3px;">#${escape(channel.name)}</span>`);
             }
           }
         } while (m);
 
-        messagetext = strReplace(messagetext, "@everyone", mention_template.replace("{$USERNAME}", "@everyone"));
-        messagetext = strReplace(messagetext, "@here", mention_template.replace("{$USERNAME}", "@here"));
+        messagetext = strReplace(messagetext, "@everyone", `<span style="color: #647dcd; background-color: rgba(100,125,205,0.1); padding: 2px 4px; border-radius: 3px;">@everyone</span>`);
+        messagetext = strReplace(messagetext, "@here", `<span style="color: #647dcd; background-color: rgba(100,125,205,0.1); padding: 2px 4px; border-radius: 3px;">@here</span>`);
+
+        // Process Discord-style quotes (lines starting with >)
+        const lines = messagetext.split('\n');
+        let processedLines = [];
+        let inQuote = false;
+        let quoteLines = [];
+        
+        for (let line of lines) {
+          if (line.trim().startsWith('&gt;')) {
+            // This is a quote line
+            quoteLines.push(line.replace('&gt;', '').trim());
+            inQuote = true;
+          } else {
+            // This is not a quote line
+            if (inQuote && quoteLines.length > 0) {
+              // End the quote block
+              processedLines.push(`<div class="discord-quote">${quoteLines.join('<br>')}</div>`);
+              quoteLines = [];
+              inQuote = false;
+            }
+            if (line.trim()) {
+              processedLines.push(line);
+            }
+          }
+        }
+        
+        // Handle any remaining quote at the end
+        if (inQuote && quoteLines.length > 0) {
+          processedLines.push(`<div class="discord-quote">${quoteLines.join('<br>')}</div>`);
+        }
+        
+        messagetext = processedLines.join('<br>');
 
 
 
