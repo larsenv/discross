@@ -35,6 +35,67 @@
       
       
     }
+
+    /* Button styling */
+    .discord-button {
+      display: inline-block;
+      background: #5865f2;
+      color: white !important;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-family: Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.17s ease;
+      margin: 8px 4px;
+    }
+
+    .discord-button:hover {
+      background: #4752c4;
+      text-decoration: none;
+    }
+
+    .discord-button.secondary {
+      background: #4f545c;
+    }
+
+    .discord-button.secondary:hover {
+      background: #5d6269;
+    }
+
+    .light-theme .discord-button {
+      background: #5865f2 !important;
+      color: white !important;
+    }
+
+    .light-theme .discord-button:hover {
+      background: #4752c4 !important;
+    }
+
+    .light-theme .discord-button.secondary {
+      background: #4f545c !important;
+      color: white !important;
+    }
+
+    .light-theme .discord-button.secondary:hover {
+      background: #5d6269 !important;
+    }
+
+    /* Content container improvements */
+    .content-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Button container for proper spacing */
+    .button-container {
+      margin: 20px 0;
+      text-align: left;
+    }
   </style>
 </head>
 
@@ -60,105 +121,105 @@
     </table>
     <hr style="margin: 0; position: relative; bottom: 4px;">
     <br>
-    <table>
-      <tbody>
-        <tr>
-          <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-          <td>
-            <font face="Arial, Helvetica, sans-serif" color='#dddddd' size="5">
-              <a style="color: #647dcd;"
-                href='http://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8'>
-                Add Discross to your server
-              </a>
-            </font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color='#dddddd' size="5">
-              <a style="color: #647dcd;" href="http://discord.gg/YrPG9krvVF">Join our Discord</a>
-            </font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color='#dddddd' size="5">
-              <a style="color: #647dcd;" href='http://github.com/larsenv/discross/'>Source code</a>
-            </font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">By logging in or registering you agree to the use
-              of cookies</font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">What is Discross?</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              A work-in-progress unofficial Discord relay (that acts like a client) aiming to support all platforms that
-              support HTML.
-              It uses webhooks and a bot so it doesn't need your user token, which would allow anyone to control your
-              account.
-              However, this means it only works on servers with the bot.
-            </font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">What platforms are supported?</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              Almost any platform that has a browser. Platforms that are confirmed to work, to some extent:
-              <ul>
-                <li>iOS</li>
-                <li>Kindle</li>
-                <li>MacOS 9</li>
-                <li>Nintendo 3DS</li>
-                <li>Nintendo DS</li>
-                <li>Nintendo DSi</li>
-                <li>Nintendo Switch</li>
-                <li>Nintendo Switch 2</li>
-                <li>PlayStation 2</li>
-                <li>PlayStation 3</li>
-                <li>PlayStation 4</li>
-                <li>PlayStation 5</li>
-                <li>PlayStation Portable</li>
-                <li>PlayStation Vita</li>
-                <li>Sega Dreamcast</li>
-                <li>Sega Saturn</li>
-                <li>Smart TV</li>
-                <li>Wii</li>
-                <li>Wii U</li>
-                <li>Windows 95</li>
-                <li>Windows 98</li>
-                <li>Windows XP</li>
-                <li>Xbox 360</li>
-                <li>Xbox One</li>
-                <li>Xbox Series X</li>
-              </ul>
-            </font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">Forwarder</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">Install these to access Discross quicker.</font>
-            <br>
-            <br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              <ul>
-                <li>Nintendo 3DS - CIA (<a style="color: #647dcd;"
-                    href='/forwarder/discross.cia'>Direct</a> / <a style="color: #647dcd;"
-                    href='/forwarder/discross.png'>QR</a>)</li>
-                <li>PSP - <a style="color: #647dcd;" href='http://banner.rc24.xyz/discross.prs'>Click here
-                    on
-                    a PSP to install this forwarder</a></li>
-                <li>Wii - <a style="color: #647dcd;" href='/forwarder/discross.wad'>WAD</a></li>
-              </ul>
-            </font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">Credits</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              <ul>
-                <li>AndreMor - Implementation of OAuth support</li>
-                <li>circuit10 - Creator of the project</li>
-                <li>Gabubu - Creator of Wii Discross forwarder</li>
-                <li>inqurity - Implementation of several features</li>
-                <li>Larsenv - Maintainer of project</li>
-                <li>zlc1004 - Implementation of reply and other features</li>
-              </ul>
-            </font>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="content-container">
+      <div class="button-container">
+        <a class="discord-button" 
+           href='http://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8'>
+          Add Discross to your server
+        </a>
+        <a class="discord-button secondary" href="http://discord.gg/YrPG9krvVF">Join our Discord</a>
+        <a class="discord-button secondary" href='http://github.com/larsenv/discross/'>Source code</a>
+      </div>
+      <div style="margin: 20px 0;">
+        <font face="Arial, Helvetica, sans-serif" color="#dddddd">By logging in or registering you agree to the use
+          of cookies</font>
+      </div>
+
+      <div style="margin: 30px 0;">
+        <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">What is Discross?</font>
+      </div>
+      <div>
+        <font face="Arial, Helvetica, sans-serif" color="#dddddd">
+          A work-in-progress unofficial Discord relay (that acts like a client) aiming to support all platforms that
+          support HTML.
+          It uses webhooks and a bot so it doesn't need your user token, which would allow anyone to control your
+          account.
+          However, this means it only works on servers with the bot.
+        </font>
+      </div>
+
+      <div style="margin: 30px 0;">
+        <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">What platforms are supported?</font>
+      </div>
+      <div>
+        <font face="Arial, Helvetica, sans-serif" color="#dddddd">
+          Almost any platform that has a browser. Platforms that are confirmed to work, to some extent:
+          <ul>
+            <li>iOS</li>
+            <li>Kindle</li>
+            <li>MacOS 9</li>
+            <li>Nintendo 3DS</li>
+            <li>Nintendo DS</li>
+            <li>Nintendo DSi</li>
+            <li>Nintendo Switch</li>
+            <li>Nintendo Switch 2</li>
+            <li>PlayStation 2</li>
+            <li>PlayStation 3</li>
+            <li>PlayStation 4</li>
+            <li>PlayStation 5</li>
+            <li>PlayStation Portable</li>
+            <li>PlayStation Vita</li>
+            <li>Sega Dreamcast</li>
+            <li>Sega Saturn</li>
+            <li>Smart TV</li>
+            <li>Wii</li>
+            <li>Wii U</li>
+            <li>Windows 95</li>
+            <li>Windows 98</li>
+            <li>Windows XP</li>
+            <li>Xbox 360</li>
+            <li>Xbox One</li>
+            <li>Xbox Series X</li>
+          </ul>
+        </font>
+      </div>
+
+      <div style="margin: 30px 0;">
+        <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">Forwarder</font>
+      </div>
+      <div>
+        <font face="Arial, Helvetica, sans-serif" color="#dddddd">Install these to access Discross quicker.</font>
+      </div>
+      <div style="margin: 15px 0;">
+        <font face="Arial, Helvetica, sans-serif" color="#dddddd">
+          <ul>
+            <li>Nintendo 3DS - CIA (<a style="color: #647dcd;"
+                href='/forwarder/discross.cia'>Direct</a> / <a style="color: #647dcd;"
+                href='/forwarder/discross.png'>QR</a>)</li>
+            <li>PSP - <a style="color: #647dcd;" href='http://banner.rc24.xyz/discross.prs'>Click here
+                on
+                a PSP to install this forwarder</a></li>
+            <li>Wii - <a style="color: #647dcd;" href='/forwarder/discross.wad'>WAD</a></li>
+          </ul>
+        </font>
+      </div>
+
+      <div style="margin: 30px 0;">
+        <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">Credits</font>
+      </div>
+      <div>
+        <font face="Arial, Helvetica, sans-serif" color="#dddddd">
+          <ul>
+            <li>AndreMor - Implementation of OAuth support</li>
+            <li>circuit10 - Creator of the project</li>
+            <li>Gabubu - Creator of Wii Discross forwarder</li>
+            <li>inqurity - Implementation of several features</li>
+            <li>Larsenv - Maintainer of project</li>
+            <li>zlc1004 - Implementation of reply and other features</li>
+          </ul>
+        </font>
+      </div>
+    </div>
   </div>
 </body>
 
