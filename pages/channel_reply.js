@@ -43,6 +43,50 @@ function formatFileSize(bytes) {
   return `${formattedSize} ${sizes[i]}`;
 }
 
+// Get the display name following Discord's order: server nickname -> Discord username -> internal username
+function getDisplayName(member, author) {
+  if (member) {
+    // Server nickname (guild nickname) first
+    if (member.nickname) {
+      return member.nickname;
+    }
+    // Otherwise Discord username (from user object)
+    if (member.user && member.user.globalName) {
+      return member.user.globalName;
+    }
+    if (member.user && member.user.username) {
+      return member.user.username;
+    }
+    // Fallback to member display name
+    return member.displayName;
+  }
+  
+  // For webhooks or when no member data, use author data
+  if (author) {
+    if (author.globalName) {
+      return author.globalName;
+    }
+    return author.username;
+  }
+  
+  return "Unknown User";
+}
+
+// Get the member's highest role color or default to white
+function getMemberColor(member) {
+  if (!member || !member.roles || !member.roles.highest) {
+    return "#ffffff"; // Default white color
+  }
+  
+  const roleColor = member.roles.highest.color;
+  if (roleColor === 0) {
+    return "#ffffff"; // Default role has color 0, use white
+  }
+  
+  // Convert Discord color integer to hex
+  return `#${roleColor.toString(16).padStart(6, '0')}`;
+}
+
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
@@ -101,16 +145,15 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
 
             currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-            if (lastmember) { // Webhooks are not members!
-              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastmember.displayName));
-            } else {
-              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastauthor.username));
-            }
+            
+            // Use helper functions for proper nickname and color
+            const displayName = getDisplayName(lastmember, lastauthor);
+            const authorColor = getMemberColor(lastmember);
+            
+            currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
+            currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
 
-            var url = lastauthor.avatarURL();
-            if (lastauthor.avatarURL && url && url.toString().startsWith("http")) { // Sometimes the URL is null or something else
-              currentmessage = currentmessage.replace("{$PROFILE_URL}", url);
-            }
+            // Remove avatar URL processing since we removed avatars
             currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", lastdate.toLocaleTimeString('en-US') + " " + lastdate.toDateString());
             currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
             response += currentmessage;
@@ -250,7 +293,17 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         if (message_content.length > 30) {
           message_content = message.content.substring(0, 30) + "...";
         }
-        let author = message.author.username;
+        
+        // Get proper display name for the reply author
+        let author;
+        try {
+          const replyMember = await chnl.guild.members.fetch(message.author.id);
+          author = getDisplayName(replyMember, message.author);
+        } catch {
+          // If we can't fetch the member, use the author's display name
+          author = getDisplayName(null, message.author);
+        }
+        
         final = strReplace(final, "{$REPLY_MESSAGE_ID}", reply_message_id);
         final = strReplace(final, "{$REPLY_MESSAGE_AUTHOR}", author);
         final = strReplace(final, "{$REPLY_MESSAGE_CONTENT}", message_content);
