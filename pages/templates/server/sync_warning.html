@@ -11,28 +11,31 @@
       Update Server List
     </button>
     <br /><br />
-    <font size="3" color="#e3e5e8">This will sync your current Discord servers with Discross.</font>
   </font>
 </div>
-
-<font face="Arial, Helvetica, sans-serif" color="#dddddd">
-  <font size="5" color="#5865f2"><b>Select a Server</b></font>
-  <br /><br />
-  <font size="4">Choose a server from the list on the left to view channels.</font>
-  <br /><br />
-  <a href="/">
-    <font face="Arial, Helvetica, sans-serif" color="#dddddd">Home</font>
-  </a>
-</font>
+<button onclick="window.location.href='/'"
+  style="background: #ffffff; border: none; border-radius: 6px; color: #5865f2; padding: 12px 24px; cursor: pointer; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; margin: 8px;">
+  Home
+</button>
+<br>
+<button
+  onclick="window.location.href='https://discord.com/oauth2/authorize?client_id=968999890640338955&response_type=token&redirect_uri=https%3A%2F%2Fdiscross.rc24.xyz%2Fdiscord.html&scope=identify+guilds&prompt=none'"
+  style="background: #ffffff; border: none; border-radius: 6px; color: #5865f2; padding: 12px 24px; cursor: pointer; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; margin: 8px;">
+  Update Server List
+</button>
 <br /><br />
-<a style="color: #647dcd"
-  href="https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=536870912">
-  <font face="Arial, Helvetica, sans-serif" color="#dddddd">Add Discross to your server</font>
-</a>
+<font size="3" color="#e3e5e8">This will sync your current Discord servers with Discross.</font>
+<br /><br />
+<button
+  onclick="window.location.href='https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=536870912'"
+  style="background: #ffffff; border: none; border-radius: 6px; color: #5865f2; padding: 12px 24px; cursor: pointer; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; margin: 8px;">
+  Add Discross to your server
+</button>
 {$IMAGES_WARNING}
 <br>
 <form action="/switchtheme" method="post">
-  <button type="submit" style="background: none; border: none;">
+  <button type="submit"
+    style="background: #ffffff; border: none; border-radius: 6px; color: #5865f2; padding: 12px 24px; cursor: pointer; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; margin: 8px;">
     <font face="Arial, Helvetica, sans-serif" color="#dddddd">Switch Theme</font>
   </button>
 </form>
