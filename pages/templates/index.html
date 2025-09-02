@@ -22,6 +22,7 @@
       margin: 0;
       padding: 0;
       height: 100%;
+      font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }
 
     .light-theme #wrapper {
@@ -29,136 +30,373 @@
       color: #000000 !important;
     }
 
-    .light-theme #wrapper * {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-      
-      
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 20px;
+      background: #36393f;
+      border-bottom: 1px solid #484851;
+    }
+
+    .header .logo {
+      width: 48px;
+      height: 48px;
+      margin-right: 16px;
+    }
+
+    .header .title {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #ffffff;
+      flex-grow: 1;
+    }
+
+    .header .menu-options {
+      color: #b9bbbe;
+      font-size: 1rem;
+      margin-right: 20px;
+    }
+
+    .header .menu-options a {
+      color: #00d4aa;
+      text-decoration: none;
+    }
+
+    .header .menu-options a:hover {
+      text-decoration: underline;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 4px;
+      transition: background-color 0.17s ease;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(79, 84, 92, 0.32);
+    }
+
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .action-button {
+      display: inline-block;
+      background: #5865f2;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 1.1rem;
+      transition: background-color 0.17s ease;
+      text-align: center;
+      max-width: 300px;
+    }
+
+    .action-button:hover {
+      background: #4752c4;
+    }
+
+    .action-button.secondary {
+      background: #4f545c;
+    }
+
+    .action-button.secondary:hover {
+      background: #5d6269;
+    }
+
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #5865f2;
+      padding-bottom: 8px;
+    }
+
+    .section-content {
+      color: #b9bbbe;
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+
+    .platforms-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    .platforms-list li {
+      background: #40444b;
+      padding: 8px 12px;
+      border-radius: 4px;
+      list-style: none;
+    }
+
+    .forwarder-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .forwarder-item {
+      background: #40444b;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #5865f2;
+    }
+
+    .forwarder-item strong {
+      color: #ffffff;
+    }
+
+    .credits-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .credit-item {
+      background: #40444b;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid #00d4aa;
+    }
+
+    .credit-item strong {
+      color: #ffffff;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .cookie-notice {
+      background: #faa61a;
+      color: #000000;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+
+    /* Light theme overrides */
+    .light-theme .header {
+      background: #ffffff;
+      border-bottom-color: #e3e5e8;
+    }
+
+    .light-theme .header .title {
+      color: #060607;
+    }
+
+    .light-theme .header .menu-options {
+      color: #4f5660;
+    }
+
+    .light-theme .theme-toggle:hover {
+      background: rgba(116, 127, 141, 0.08);
+    }
+
+    .light-theme .section-title {
+      color: #060607;
+    }
+
+    .light-theme .section-content {
+      color: #4f5660;
+    }
+
+    .light-theme .platforms-list li {
+      background: #f2f3f5;
+    }
+
+    .light-theme .forwarder-item {
+      background: #f2f3f5;
+    }
+
+    .light-theme .credit-item {
+      background: #f2f3f5;
+    }
+
+    .light-theme .credit-item strong {
+      color: #060607;
+    }
+
+    .light-theme .forwarder-item strong {
+      color: #060607;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .header .menu-options {
+        margin-right: 0;
+      }
+
+      .main-content {
+        padding: 20px 16px;
+      }
+
+      .platforms-list {
+        grid-template-columns: 1fr;
+      }
+
+      .credits-list {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 
-<body bgcolor="#303338" style="margin: 0;" {$WHITE_THEME_ENABLED}>
+<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
   <div id="wrapper">
-    <table>
-      <tr>
-        <td><img src="/resources/logo.gif" alt="Logo"></td>
-        <td>
-          <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
-        </td>
-        <td width="100%" align="right">
-          <font size="4" face="Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; {$MENU_OPTIONS}</font>
-        </td>
-        <td valign="right">
-          <form action="/switchtheme" method="post">
-            <button type="submit" style="background: none; border: none;">
-              <img src="/resources/images/themeswitch.gif" alt="Switch theme">
-            </button>
-          </form>
-        </td>
-      </tr>
-    </table>
-    <hr style="margin: 0; position: relative; bottom: 4px;">
-    <br>
-    <table>
-      <tbody>
-        <tr>
-          <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-          <td>
-            <font face="Arial, Helvetica, sans-serif" color='#dddddd' size="5">
-              <a style="color: #647dcd;"
-                href='http://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8'>
-                Add Discross to your server
-              </a>
-            </font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color='#dddddd' size="5">
-              <a style="color: #647dcd;" href="http://discord.gg/YrPG9krvVF">Join our Discord</a>
-            </font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color='#dddddd' size="5">
-              <a style="color: #647dcd;" href='http://github.com/larsenv/discross/'>Source code</a>
-            </font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">By logging in or registering you agree to the use
-              of cookies</font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">What is Discross?</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              A work-in-progress unofficial Discord relay (that acts like a client) aiming to support all platforms that
-              support HTML.
-              It uses webhooks and a bot so it doesn't need your user token, which would allow anyone to control your
-              account.
-              However, this means it only works on servers with the bot.
-            </font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">What platforms are supported?</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              Almost any platform that has a browser. Platforms that are confirmed to work, to some extent:
-              <ul>
-                <li>iOS</li>
-                <li>Kindle</li>
-                <li>MacOS 9</li>
-                <li>Nintendo 3DS</li>
-                <li>Nintendo DS</li>
-                <li>Nintendo DSi</li>
-                <li>Nintendo Switch</li>
-                <li>Nintendo Switch 2</li>
-                <li>PlayStation 2</li>
-                <li>PlayStation 3</li>
-                <li>PlayStation 4</li>
-                <li>PlayStation 5</li>
-                <li>PlayStation Portable</li>
-                <li>PlayStation Vita</li>
-                <li>Sega Dreamcast</li>
-                <li>Sega Saturn</li>
-                <li>Smart TV</li>
-                <li>Wii</li>
-                <li>Wii U</li>
-                <li>Windows 95</li>
-                <li>Windows 98</li>
-                <li>Windows XP</li>
-                <li>Xbox 360</li>
-                <li>Xbox One</li>
-                <li>Xbox Series X</li>
-              </ul>
-            </font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">Forwarder</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">Install these to access Discross quicker.</font>
-            <br>
-            <br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              <ul>
-                <li>Nintendo 3DS - CIA (<a style="color: #647dcd;"
-                    href='/forwarder/discross.cia'>Direct</a> / <a style="color: #647dcd;"
-                    href='/forwarder/discross.png'>QR</a>)</li>
-                <li>PSP - <a style="color: #647dcd;" href='http://banner.rc24.xyz/discross.prs'>Click here
-                    on
-                    a PSP to install this forwarder</a></li>
-                <li>Wii - <a style="color: #647dcd;" href='/forwarder/discross.wad'>WAD</a></li>
-              </ul>
-            </font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">Credits</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              <ul>
-                <li>AndreMor - Implementation of OAuth support</li>
-                <li>circuit10 - Creator of the project</li>
-                <li>Gabubu - Creator of Wii Discross forwarder</li>
-                <li>inqurity - Implementation of several features</li>
-                <li>Larsenv - Maintainer of project</li>
-                <li>zlc1004 - Implementation of reply and other features</li>
-              </ul>
-            </font>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <header class="header">
+      <img src="/resources/logo.gif" alt="Discross Logo" class="logo">
+      <div class="title">Discross</div>
+      <div class="menu-options">{$MENU_OPTIONS}</div>
+      <form action="/switchtheme" method="post">
+        <button type="submit" class="theme-toggle" title="Switch theme">
+          <img src="/resources/images/themeswitch.gif" alt="Switch theme" style="width: 24px; height: 24px;">
+        </button>
+      </form>
+    </header>
+
+    <main class="main-content">
+      <div class="cookie-notice">
+        By logging in or registering you agree to the use of cookies
+      </div>
+
+      <div class="action-buttons">
+        <a href="http://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8" class="action-button">
+          Add Discross to your server
+        </a>
+        <a href="http://discord.gg/YrPG9krvVF" class="action-button secondary">
+          Join our Discord
+        </a>
+        <a href="http://github.com/larsenv/discross/" class="action-button secondary">
+          Source code
+        </a>
+      </div>
+
+      <section class="section">
+        <h2 class="section-title">What is Discross?</h2>
+        <div class="section-content">
+          A work-in-progress unofficial Discord relay (that acts like a client) aiming to support all platforms that
+          support HTML. It uses webhooks and a bot so it doesn't need your user token, which would allow anyone to control your
+          account. However, this means it only works on servers with the bot.
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">What platforms are supported?</h2>
+        <div class="section-content">
+          Almost any platform that has a browser. Platforms that are confirmed to work, to some extent:
+          <ul class="platforms-list">
+            <li>iOS</li>
+            <li>Kindle</li>
+            <li>MacOS 9</li>
+            <li>Nintendo 3DS</li>
+            <li>Nintendo DS</li>
+            <li>Nintendo DSi</li>
+            <li>Nintendo Switch</li>
+            <li>Nintendo Switch 2</li>
+            <li>PlayStation 2</li>
+            <li>PlayStation 3</li>
+            <li>PlayStation 4</li>
+            <li>PlayStation 5</li>
+            <li>PlayStation Portable</li>
+            <li>PlayStation Vita</li>
+            <li>Sega Dreamcast</li>
+            <li>Sega Saturn</li>
+            <li>Smart TV</li>
+            <li>Wii</li>
+            <li>Wii U</li>
+            <li>Windows 95</li>
+            <li>Windows 98</li>
+            <li>Windows XP</li>
+            <li>Xbox 360</li>
+            <li>Xbox One</li>
+            <li>Xbox Series X</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Forwarder</h2>
+        <div class="section-content">
+          Install these to access Discross quicker.
+          <div class="forwarder-list">
+            <div class="forwarder-item">
+              <strong>Nintendo 3DS - CIA</strong>
+              <a href="/forwarder/discross.cia" style="color: #00d4aa;">Direct Download</a> / 
+              <a href="/forwarder/discross.png" style="color: #00d4aa;">QR Code</a>
+            </div>
+            <div class="forwarder-item">
+              <strong>PlayStation Portable</strong>
+              <a href="http://banner.rc24.xyz/discross.prs" style="color: #00d4aa;">Click here on a PSP to install this forwarder</a>
+            </div>
+            <div class="forwarder-item">
+              <strong>Wii - WAD</strong>
+              <a href="/forwarder/discross.wad" style="color: #00d4aa;">Download</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Credits</h2>
+        <div class="section-content">
+          <div class="credits-list">
+            <div class="credit-item">
+              <strong>AndreMor</strong>
+              Implementation of OAuth support
+            </div>
+            <div class="credit-item">
+              <strong>circuit10</strong>
+              Creator of the project
+            </div>
+            <div class="credit-item">
+              <strong>Gabubu</strong>
+              Creator of Wii Discross forwarder
+            </div>
+            <div class="credit-item">
+              <strong>inqurity</strong>
+              Implementation of several features
+            </div>
+            <div class="credit-item">
+              <strong>Larsenv</strong>
+              Maintainer of project
+            </div>
+            <div class="credit-item">
+              <strong>zlc1004</strong>
+              Implementation of reply and other features
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 </body>
 
