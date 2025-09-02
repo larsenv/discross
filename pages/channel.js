@@ -169,6 +169,32 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
         messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        
+        // Check if message consists of only 1-4 emojis (for large emoji rendering)
+        let isLargeEmojiMessage = false;
+        if (item.content && imagesCookie == 1) {
+          // Remove whitespace and check if content is only emojis
+          const trimmedContent = item.content.trim();
+          const unicodeEmojiMatches = [...(trimmedContent.match(emojiRegex) || [])];
+          const customEmojiMatches = [...(trimmedContent.matchAll(/(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*(?:>)?/g) || [])];
+          
+          // Check if the trimmed content consists only of 1-4 emojis with optional spaces
+          const totalEmojiCount = unicodeEmojiMatches.length + customEmojiMatches.length;
+          if (totalEmojiCount >= 1 && totalEmojiCount <= 4) {
+            // Remove all emojis and see if anything substantial remains
+            let contentWithoutEmojis = trimmedContent;
+            unicodeEmojiMatches.forEach(match => {
+              contentWithoutEmojis = contentWithoutEmojis.replace(match, '');
+            });
+            customEmojiMatches.forEach(match => {
+              contentWithoutEmojis = contentWithoutEmojis.replace(match[0], '');
+            });
+            // If only whitespace remains, this is an emoji-only message
+            if (contentWithoutEmojis.trim().length === 0) {
+              isLargeEmojiMessage = true;
+            }
+          }
+        }
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
@@ -227,6 +253,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           messagetext = merged_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
         }
 
+        // Add marker for large emoji messages to help with emoji sizing later
+        if (isLargeEmojiMessage) {
+          messagetext = '<div class="large-emoji-message">' + messagetext + '</div>';
+        }
+
         lastauthor = item.author;
         lastmember = item.member;
         lastdate = item.createdAt;
@@ -280,13 +311,34 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             }
             output = points.join("-")
           }
-          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 3%;vertical-align:top;" alt="emoji">`)
+          // Create two versions: large for emoji-only messages, regular for others
+          const largeEmojiHTML = `<img src="/resources/twemoji/${output}.gif" style="width: 48px; height: 48px; vertical-align: top;" alt="emoji">`;
+          const regularEmojiHTML = `<img src="/resources/twemoji/${output}.gif" style="width: 3%; vertical-align: top;" alt="emoji">`;
+          
+          // Replace within large emoji messages with large emojis
+          response = response.replace(
+            new RegExp(`(<div class="large-emoji-message">.*?)${match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(.*?</div>)`, 'g'),
+            `$1${largeEmojiHTML}$2`
+          );
+          
+          // Replace any remaining emojis (outside large emoji messages) with regular size
+          response = response.replace(match, regularEmojiHTML);
         });
       }
 
       const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
       if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
+        const largeCustomEmojiHTML = `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 48px; height: 48px;" alt="emoji">`;
+        const regularCustomEmojiHTML = `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;" alt="emoji">`;
+        
+        // Replace within large emoji messages with large emojis
+        response = response.replace(
+          new RegExp(`(<div class="large-emoji-message">.*?)${match[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(.*?</div>)`, 'g'),
+          `$1${largeCustomEmojiHTML}$2`
+        );
+        
+        // Replace any remaining custom emojis (outside large emoji messages) with regular size
+        response = response.replace(match[0], regularCustomEmojiHTML);
       })
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
