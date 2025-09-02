@@ -20,7 +20,6 @@ const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/tem
 
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
-const invalid_server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/invalid_server.html', 'utf-8'));
 const server_list_only_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8'));
 const sync_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8'));
 const no_images_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8'));
@@ -77,7 +76,7 @@ function processServerChannels(server, member, response) {
     response = response.replace("{$CHANNEL_LIST}", channelList);
   } catch (err) {
     console.error("Error processing server channels:", err);
-    response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
+    response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
   }
 
   return response;
@@ -218,7 +217,7 @@ async function fetchAndCacheMember(server, discordID) {
 
 function applyUserPreferences(response, req) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  
+
   // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
   if (whiteThemeCookie == 1) {
     response = response.replace("{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
