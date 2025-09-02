@@ -13,6 +13,20 @@
     <meta name="theme-color" content="#ffffff">
     <title>Discross - #{$CHANNEL_NAME}</title>
     <script>
+        window.onload = function () {
+            var end = document.getElementById("end");
+            if (end && end.scrollIntoView) {
+                try {
+                    end.scrollIntoView();
+                } catch (e) {
+                    var msgContainer = document.getElementById("msgcontainer");
+                    if (msgContainer) {
+                        msgContainer.scrollTop = msgContainer.scrollHeight;
+                    }
+                }
+            }
+        };
+
         var emojiShowing = false;
 
         function showEmoji() {
@@ -183,9 +197,8 @@
 </head>
 
 <body {$WHITE_THEME_ENABLED}>
-    <div style="background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;"
-        id="wrapper">
-        <table style="width: 100%; margin: 0; padding: 0; border-collapse: collapse;">
+    <div id="wrapper">
+        <table>
             <tbody>
                 <tr>
                     <td valign="top" style="vertical-align: top;">
@@ -247,55 +260,66 @@
                             </div>
                         </div>
                         <a id="end" name="end"></a>
-                    </td>
+
+                        <div id="replying_to">
+                            <div style="color: #b9bbbe; font-size: 14px; margin-bottom: 4px;">
+                                <strong>Replying to {$REPLY_MESSAGE_AUTHOR}</strong>
+                                <a href="./#end" style="color: #ed4245; margin-left: 8px; font-size: 12px;">Cancel</a>
+                            </div>
+                            <div style="color: #dcddde; font-size: 14px;">
+                                {$REPLY_MESSAGE_CONTENT}
+                            </div>
+                        </div>
+                        <form action="../send">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
+                                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif"
+                                                    alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                                            <input type="hidden" id="lite" name="lite" value="False">
+                                            <div
+                                                style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
+                                                {$INPUT}
+                                            </div>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <table style="height: 96px; width: 11%; border-top: 0px;">
+                                <tbody>
+                                    <tr>
+                                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
+                                        </td>
+                                        <td valign="left" style="vertical-align: left; width: 48px;">
+                                            <button style="background: none; border: none;" onclick="showEmoji()"
+                                                type="button">
+                                                <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Emojis"
+                                                    style="width: 30px; height: 30px;">
+                                            </button>
+                                        </td>
+                                        <td valign="left" style="vertical-align: left; width: 48px;">
+                                            <a href="/draw/{$CHANNEL_ID}"><img src="/resources/twemoji/1f58c-fe0f.gif"
+                                                    alt="Draw" style="width: 30px; height: 30px;"></a>
+                                        </td>
+                                        <td valign="left" style="vertical-align: left; width: 48px;">
+                                            <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif"
+                                                    alt="Refresh" style="width: 30px; height: 30px;"></a>
+                                        </td>
+                                </tbody>
+                            </table>
+                        </form>
+                </tr>
             </tbody>
         </table>
-        </form>
+
+        </td>
         </tr>
         </tbody>
         </table>
-        <form action="../send">
-            <table>
-                <tbody>
-                    <tr>
-                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
-                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif" alt="Menu"
-                                    style="position: fixed; top: 32px;left: 12px;"></a>
-                        </td>
-                        <td>
-                            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                            <input type="hidden" id="lite" name="lite" value="False">
-                            <div
-                                style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
-                                {$INPUT}
-                            </div>
-                    </tr>
-                </tbody>
-            </table>
-            <table style="height: 96px; border-top: 0px;">
-                <tbody>
-                    <tr>
-                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
-                        </td>
-                        <td valign="left" style="vertical-align: left; width: 48px;">
-                            <button style="background: none; border: none;" onclick="showEmoji()" type="button">
-                                <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Emojis"
-                                    style="width: 30px; height: 30px;">
-                            </button>
-                        </td>
-                        <td valign="left" style="vertical-align: left; width: 48px;">
-                            <a href="/draw/{$CHANNEL_ID}"><img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw"
-                                    style="width: 30px; height: 30px;"></a>
-                        </td>
-                        <td valign="left" style="vertical-align: left; width: 48px;">
-                            <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif" alt="Refresh"
-                                    style="width: 30px; height: 30px;"></a>
-
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <script src="/connection.js"></script>
+        <script src="/connection.js"></script>
     </div>
 </body>
 
