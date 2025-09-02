@@ -22,6 +22,7 @@ const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/template
 
 const invalid_server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/invalid_server.html', 'utf-8'));
 const server_list_only_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8'));
+const sync_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8'));
 const no_images_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8'));
 
 const cachedMembers = {}; // TODO: Find a better way
@@ -85,6 +86,7 @@ function processServerChannels(server, member, response) {
 exports.processServer = async function (bot, req, res, args, discordID) {
   try {
     let serverList = "";
+    let serversDeleted = 0; // Track if servers were deleted due to sync issues
     const data = auth.dbQueryAll("SELECT * FROM servers WHERE discordID=?", [discordID]);
 
     await lock.acquire(discordID, async () => {
@@ -101,6 +103,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             } catch (err) {
               // Delete from database if member isn't found
               auth.dbQueryRun("DELETE FROM servers WHERE serverID=? AND discordID=?", [server.id, discordID]);
+              serversDeleted++;
               continue;
             }
           }
@@ -112,11 +115,17 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           }
         } else {
           auth.dbQueryRun("DELETE FROM servers WHERE serverID=?", [serverID]);
+          serversDeleted++;
         }
       }
     });
 
     let response = server_template.replace("{$SERVER_LIST}", serverList);
+
+    // Check for sync_needed parameter
+    const url = require('url');
+    const parsedUrl = url.parse(req.url, true);
+    const syncNeeded = parsedUrl.query.sync_needed;
 
     // Process specific server if `args[2]` is given
     if (args[2]) {
@@ -139,8 +148,11 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       if (serverList.trim() === "") {
         // No servers available, show full authentication banner
         response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
+      } else if (syncNeeded === 'true' || serversDeleted > 0) {
+        // Show sync warning if explicitly requested or servers were deleted due to sync issues
+        response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
       } else {
-        // User has servers, show simple message with refresh button
+        // User has servers and they seem synced, show simple server selection
         response = response.replace("{$CHANNEL_LIST}", server_list_only_template);
       }
       response = response.replace("{$DISCORD_NAME}", "");
