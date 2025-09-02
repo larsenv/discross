@@ -17,148 +17,329 @@
   <meta name="msapplication-TileColor" content="#2b5797">
   <meta name="theme-color" content="#ffffff">
   <style>
+    /* Discord-inspired base styling */
+    * {
+      box-sizing: border-box;
+    }
+    
     html,
     body {
       margin: 0;
       padding: 0;
       height: 100%;
+      font-family: Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: #36393f;
+      color: #dcddde;
+    }
+
+    /* Light theme overrides */
+    .light-theme body {
+      background: #ffffff !important;
+      color: #2e3338 !important;
     }
 
     .light-theme #wrapper {
-      background: #FFFFFF !important;
-      color: #000000 !important;
+      background: #ffffff !important;
+      color: #2e3338 !important;
     }
 
-    .light-theme #wrapper * {
-      background: #FFFFFF !important;
-      color: #000000 !important;
+    .light-theme .header {
+      background: #ffffff !important;
+      border-color: #e3e5e8 !important;
+    }
+
+    .light-theme .hero-section {
+      background: #f2f3f5 !important;
+    }
+
+    /* Modern layout */
+    .header {
+      background: #2f3136;
+      border-bottom: 1px solid #40444b;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+    }
+
+    .brand-name {
+      font-size: 24px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .nav-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: 1px solid #40444b;
+      border-radius: 4px;
+      padding: 8px;
+      cursor: pointer;
+      color: #dcddde;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .hero-section {
+      background: #2f3136;
+      padding: 48px 24px;
+      text-align: center;
+      border-bottom: 1px solid #40444b;
+    }
+
+    .hero-title {
+      font-size: 48px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 16px 0;
+    }
+
+    .hero-subtitle {
+      font-size: 20px;
+      color: #b9bbbe;
+      margin: 0 0 32px 0;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .cta-button {
+      background: #5865f2;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: 500;
+      transition: background 0.2s;
+      display: inline-block;
+      min-width: 200px;
+      text-align: center;
+    }
+
+    .cta-button:hover {
+      background: #4752c4;
+    }
+
+    .cta-button.secondary {
+      background: transparent;
+      border: 1px solid #5865f2;
+      color: #5865f2;
+    }
+
+    .cta-button.secondary:hover {
+      background: #5865f2;
+      color: white;
+    }
+
+    .content-section {
+      padding: 48px 24px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: #ffffff;
+      margin: 0 0 24px 0;
+    }
+
+    .section-text {
+      font-size: 16px;
+      line-height: 24px;
+      color: #dcddde;
+      margin: 0 0 16px 0;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      margin: 32px 0;
+    }
+
+    .feature-card {
+      background: #2f3136;
+      border: 1px solid #40444b;
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    .feature-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffffff;
+      margin: 0 0 12px 0;
+    }
+
+    .feature-text {
+      font-size: 14px;
+      line-height: 20px;
+      color: #b9bbbe;
+      margin: 0;
+    }
+
+    .footer-text {
+      font-size: 12px;
+      color: #72767d;
+      text-align: center;
+      padding: 24px;
+      border-top: 1px solid #40444b;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 16px;
+      }
       
+      .hero-title {
+        font-size: 32px;
+      }
       
+      .hero-subtitle {
+        font-size: 16px;
+      }
+      
+      .cta-section {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 
-<body bgcolor="#303338" style="margin: 0;" {$WHITE_THEME_ENABLED}>
+<body {$WHITE_THEME_ENABLED}>
   <div id="wrapper">
-    <table>
-      <tr>
-        <td><img src="/resources/logo.gif" alt="Logo"></td>
-        <td>
-          <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
-        </td>
-        <td width="100%" align="right">
-          <font size="4" face="Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; {$MENU_OPTIONS}</font>
-        </td>
-        <td valign="right">
-          <form action="/switchtheme" method="post">
-            <button type="submit" style="background: none; border: none;">
-              <img src="/resources/images/themeswitch.gif" alt="Switch theme">
-            </button>
-          </form>
-        </td>
-      </tr>
-    </table>
-    <hr style="margin: 0; position: relative; bottom: 4px;">
-    <br>
-    <table>
-      <tbody>
-        <tr>
-          <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-          <td>
-            <font face="Arial, Helvetica, sans-serif" color='#dddddd' size="5">
-              <a style="color: #647dcd;"
-                href='http://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8'>
-                Add Discross to your server
-              </a>
-            </font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color='#dddddd' size="5">
-              <a style="color: #647dcd;" href="http://discord.gg/YrPG9krvVF">Join our Discord</a>
-            </font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color='#dddddd' size="5">
-              <a style="color: #647dcd;" href='http://github.com/larsenv/discross/'>Source code</a>
-            </font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">By logging in or registering you agree to the use
-              of cookies</font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">What is Discross?</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              A work-in-progress unofficial Discord relay (that acts like a client) aiming to support all platforms that
-              support HTML.
-              It uses webhooks and a bot so it doesn't need your user token, which would allow anyone to control your
-              account.
-              However, this means it only works on servers with the bot.
-            </font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">What platforms are supported?</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              Almost any platform that has a browser. Platforms that are confirmed to work, to some extent:
-              <ul>
-                <li>iOS</li>
-                <li>Kindle</li>
-                <li>MacOS 9</li>
-                <li>Nintendo 3DS</li>
-                <li>Nintendo DS</li>
-                <li>Nintendo DSi</li>
-                <li>Nintendo Switch</li>
-                <li>Nintendo Switch 2</li>
-                <li>PlayStation 2</li>
-                <li>PlayStation 3</li>
-                <li>PlayStation 4</li>
-                <li>PlayStation 5</li>
-                <li>PlayStation Portable</li>
-                <li>PlayStation Vita</li>
-                <li>Sega Dreamcast</li>
-                <li>Sega Saturn</li>
-                <li>Smart TV</li>
-                <li>Wii</li>
-                <li>Wii U</li>
-                <li>Windows 95</li>
-                <li>Windows 98</li>
-                <li>Windows XP</li>
-                <li>Xbox 360</li>
-                <li>Xbox One</li>
-                <li>Xbox Series X</li>
-              </ul>
-            </font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">Forwarder</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">Install these to access Discross quicker.</font>
-            <br>
-            <br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              <ul>
-                <li>Nintendo 3DS - CIA (<a style="color: #647dcd;"
-                    href='/forwarder/discross.cia'>Direct</a> / <a style="color: #647dcd;"
-                    href='/forwarder/discross.png'>QR</a>)</li>
-                <li>PSP - <a style="color: #647dcd;" href='http://banner.rc24.xyz/discross.prs'>Click here
-                    on
-                    a PSP to install this forwarder</a></li>
-                <li>Wii - <a style="color: #647dcd;" href='/forwarder/discross.wad'>WAD</a></li>
-              </ul>
-            </font>
-            <br><br>
-            <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">Credits</font>
-            <br><br>
-            <font face="Arial, Helvetica, sans-serif" color="#dddddd">
-              <ul>
-                <li>AndreMor - Implementation of OAuth support</li>
-                <li>circuit10 - Creator of the project</li>
-                <li>Gabubu - Creator of Wii Discross forwarder</li>
-                <li>inqurity - Implementation of several features</li>
-                <li>Larsenv - Maintainer of project</li>
-                <li>zlc1004 - Implementation of reply and other features</li>
-              </ul>
-            </font>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <header class="header">
+      <div class="logo-section">
+        <img src="/resources/logo.gif" alt="Discross Logo" class="logo">
+        <span class="brand-name">Discross</span>
+      </div>
+      <div class="nav-section">
+        <span style="color: #dcddde; font-size: 14px;">{$MENU_OPTIONS}</span>
+        <form action="/switchtheme" method="post" style="margin: 0;">
+          <button type="submit" class="theme-toggle" title="Switch theme">
+            <img src="/resources/images/themeswitch.gif" alt="Switch theme" style="width: 16px; height: 16px;">
+          </button>
+        </form>
+      </div>
+    </header>
+
+    <section class="hero-section">
+      <h1 class="hero-title">Discross</h1>
+      <p class="hero-subtitle">
+        Unofficial Discord relay that acts like a client, designed to support all platforms that support HTML.
+      </p>
+      <div class="cta-section">
+        <a href="http://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8" class="cta-button">
+          Add Discross to your server
+        </a>
+        <a href="http://discord.gg/YrPG9krvVF" class="cta-button secondary">
+          Join our Discord
+        </a>
+        <a href="http://github.com/larsenv/discross/" class="cta-button secondary">
+          View Source Code
+        </a>
+      </div>
+    </section>
+
+    <section class="content-section">
+      <h2 class="section-title">What is Discross?</h2>
+      <p class="section-text">
+        Discross is a work-in-progress unofficial Discord relay that acts like a client, specifically designed to support all platforms that support HTML. This means you can access Discord on devices that normally wouldn't be able to run the official Discord client.
+      </p>
+      <p class="section-text">
+        It uses webhooks and a bot so it doesn't need your user token, which would allow anyone to control your account. Instead, you create a dedicated application that only has the permissions you give it.
+      </p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3 class="feature-title">Universal Compatibility</h3>
+          <p class="feature-text">
+            Works on any device with HTML support, including retro gaming consoles, legacy browsers, and embedded systems.
+          </p>
+        </div>
+        <div class="feature-card">
+          <h3 class="feature-title">Lightweight Design</h3>
+          <p class="feature-text">
+            Optimized for low-bandwidth connections and minimal system requirements while maintaining core Discord functionality.
+          </p>
+        </div>
+        <div class="feature-card">
+          <h3 class="feature-title">Open Source</h3>
+          <p class="feature-text">
+            Fully open source project hosted on GitHub. Contribute to development or host your own instance.
+          </p>
+        </div>
+        <div class="feature-card">
+          <h3 class="feature-title">Retro Gaming Support</h3>
+          <p class="feature-text">
+            Tested and working on Nintendo Wii, PlayStation 3, Nintendo 3DS, and many other gaming platforms.
+          </p>
+        </div>
+      </div>
+
+      <h2 class="section-title">Getting Started</h2>
+      <p class="section-text">
+        To get started with Discross, you'll need to add the bot to your Discord server and create an account. Want to try before connecting? Visit our Discord server at discord.gg/YrPG9krvVF and test it out without authentication.
+      </p>
+      <p class="section-text">
+        You can revoke access at any time by visiting your Discord Developer Portal and deleting the Discross application.
+      </p>
+
+      <h2 class="section-title">Contributors</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3 class="feature-title">circuit10</h3>
+          <p class="feature-text">Creator of the project</p>
+        </div>
+        <div class="feature-card">
+          <h3 class="feature-title">Larsenv</h3>
+          <p class="feature-text">Maintainer of project</p>
+        </div>
+        <div class="feature-card">
+          <h3 class="feature-title">zlc1004</h3>
+          <p class="feature-text">Implementation of reply and other features</p>
+        </div>
+        <div class="feature-card">
+          <h3 class="feature-title">AndreMor</h3>
+          <p class="feature-text">Implementation of OAuth support</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer-text">
+      By logging in or registering, you agree to the use of cookies. 
+      Discross is an unofficial Discord client and is not affiliated with Discord Inc.
+    </footer>
   </div>
 </body>
 
