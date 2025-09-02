@@ -245,14 +245,21 @@
     <script>
         var currentSketchpad = null;
         
-        function setDrawingColor(color) {
+        // Make setDrawingColor function available globally for onclick handlers
+        window.setDrawingColor = function(color) {
             if (currentSketchpad) {
                 currentSketchpad.color = color;
             }
             // Update active color button
-            document.querySelectorAll('.color-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-        }
+            document.querySelectorAll('.color-button').forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+            // Get the clicked element more safely for older browsers
+            var target = event.target || event.srcElement;
+            if (target) {
+                target.classList.add('active');
+            }
+        };
         
         function initDrawing() {
             var canvas = document.getElementById("sketchpad");
@@ -263,36 +270,61 @@
             var drawinginput = document.getElementById("drawinginput");
             var messagedom = document.getElementById("message");
             
-            currentSketchpad = new atrament.Atrament(canvas, {
-                width: canvas.width,
-                height: canvas.height,
-                color: '#000000',
-                weight: 3,
-                smoothing: 1.5
-            });
-            
-            function sendDrawing() {
-                drawinginput.value = canvas.toDataURL();
-                sendform1.submit();
+            // Check if atrament is available
+            if (typeof atrament !== 'undefined' && atrament.Atrament) {
+                currentSketchpad = new atrament.Atrament(canvas, {
+                    width: canvas.width,
+                    height: canvas.height,
+                    color: '#000000',
+                    weight: 3,
+                    smoothing: 1.5
+                });
+            } else {
+                console.error("Atrament library not loaded");
+                return;
             }
             
-            sendform1.onkeyup = function(event) {
-                if (event.keyCode !== 13) return;
-                sendDrawing();
-                if (event.preventDefault) event.preventDefault();
-            };
-            
-            messagedom.onkeypress = function (e) {
-                if (e.keyCode == 13) {
-                    if (e.preventDefault) e.preventDefault();
+            function sendDrawing() {
+                if (canvas && canvas.toDataURL) {
+                    drawinginput.value = canvas.toDataURL();
+                    sendform1.submit();
                 }
-            };
+            }
+            
+            if (sendform1) {
+                sendform1.onkeyup = function(event) {
+                    event = event || window.event;
+                    if (event.keyCode !== 13) return;
+                    sendDrawing();
+                    if (event.preventDefault) {
+                        event.preventDefault();
+                    }
+                };
+            }
+            
+            if (messagedom) {
+                messagedom.onkeypress = function (e) {
+                    e = e || window.event;
+                    if (e.keyCode == 13) {
+                        if (e.preventDefault) {
+                            e.preventDefault();
+                        }
+                    }
+                };
+            }
             
             // Set white background
-            currentSketchpad.canvas.getContext("2d").fillStyle = "white";
-            currentSketchpad.canvas.getContext("2d").fillRect(0, 0, currentSketchpad.canvas.width, currentSketchpad.canvas.height);
+            if (currentSketchpad && currentSketchpad.canvas) {
+                var ctx = currentSketchpad.canvas.getContext("2d");
+                if (ctx) {
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, currentSketchpad.canvas.width, currentSketchpad.canvas.height);
+                }
+            }
             
-            fakesend.onclick = sendDrawing;
+            if (fakesend) {
+                fakesend.onclick = sendDrawing;
+            }
         }
         
         if (document.addEventListener) {

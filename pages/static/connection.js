@@ -1,8 +1,13 @@
-connectiontype = "none";
-latest_message_id = 0;
-messages = [];
-isxhr = false;
-authkey = "authpls";
+var connectiontype = "none";
+var latest_message_id = 0;
+var messages = [];
+var isxhr = false;
+var authkey = "authpls";
+var time;
+var xhttp;
+var xhttp2;
+var ws;
+var emojiShowing = false;
 // nocache
 
 // https://stackoverflow.com/a/15339941
@@ -213,7 +218,6 @@ if (window.WebSocket || window.MozWebSocket) {
 
 // }
 
-var emojiShowing = false;
 function showEmoji() {
   if (emojiShowing) {
     document.getElementById("emoji").style.display = "none";
