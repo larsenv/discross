@@ -293,7 +293,17 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         if (message_content.length > 30) {
           message_content = message.content.substring(0, 30) + "...";
         }
-        let author = message.author.username;
+        
+        // Get proper display name for the reply author
+        let author;
+        try {
+          const replyMember = await chnl.guild.members.fetch(message.author.id);
+          author = getDisplayName(replyMember, message.author);
+        } catch {
+          // If we can't fetch the member, use the author's display name
+          author = getDisplayName(null, message.author);
+        }
+        
         final = strReplace(final, "{$REPLY_MESSAGE_ID}", reply_message_id);
         final = strReplace(final, "{$REPLY_MESSAGE_AUTHOR}", author);
         final = strReplace(final, "{$REPLY_MESSAGE_CONTENT}", message_content);
