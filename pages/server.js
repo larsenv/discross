@@ -136,7 +136,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           if (member) {
             response = processServerChannels(targetServer, member, response);
           } else {
-            response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
+            response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
           }
         } else {
           response = response.replace("{$DISCORD_NAME}", "");
@@ -146,7 +146,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       // If no specific server is selected, choose template based on whether user has servers
       if (serverList.trim() === "") {
         // No servers available, show full authentication banner
-        response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
+        response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
       } else if (syncNeeded === 'true' || serversDeleted > 0) {
         // Show sync warning if explicitly requested or servers were deleted due to sync issues
         response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
