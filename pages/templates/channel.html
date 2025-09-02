@@ -247,16 +247,14 @@
                 </div>
                 <a id="end" name="end"></a>
             </div>
-            <div
-                style="position: sticky; bottom: 0; background: #36393f; padding: 16px; border-top: 1px solid #40444b;">
+            <div style="position: sticky; bottom: 0;">
                 <form action="../send" style="position: relative;">
                     <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                     <input type="hidden" id="lite" name="lite" value="False">
 
                     {$INPUT}
 
-                    <div
-                        style="display: flex; align-items: center; gap: 8px; margin-top: 8px; background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
+                    <div style="display: flex; align-items: center; width: 100%; box-sizing: border-box;">
                         <button
                             style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px;"
                             onclick="showEmoji()" type="button"
