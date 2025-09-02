@@ -29,8 +29,8 @@
         .light-theme #wrapper * {
             background: #FFFFFF !important;
             color: #000000 !important;
-            box-shadow: none !important;
-            -webkit-text-fill-color: #000000 !important;
+            
+            
         }
 
         .light-theme #wrapper form table {
@@ -38,18 +38,14 @@
         }
 
         .light-theme #wrapper form table td:nth-child(2) {
-            border-radius: 50px 0px 0px 50px;
-            -webkit-border-radius: 50px 0px 0px 50px;
-            -moz-border-radius: 50px 0px 0px 50px;
+            
             border: 10px solid #000000;
             border-right: none;
             padding-left: 10px;
         }
 
         .light-theme #wrapper form table td:nth-child(3) {
-            border-radius: 0px 50px 50px 0px;
-            -webkit-border-radius: 0px 50px 50px 0px;
-            -moz-border-radius: 0px 50px 50px 0px;
+            
             border: 10px solid #000000;
             border-left: 5px solid #000000;
             padding-left: 15px;
@@ -64,7 +60,7 @@
         }
 
         .light-theme .download {
-            border-radius: 10px;
+            
             border: 5px solid #000000;
         }
 
@@ -220,42 +216,49 @@
                         </div>
                         <a id="end" name="end"></a>
                         <form action="../send">
-                            <table>
+                            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                            <input type="hidden" id="lite" name="lite" value="False">
+                            <table style="width: 100%; border-spacing: 0;">
                                 <tbody>
                                     <tr>
                                         <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
                                             <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif"
                                                     alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
                                         </td>
-                                        <td>
-                                            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                                            <input type="hidden" id="lite" name="lite" value="False">
+                                        <td style="width: 100%;">
                                             <div
-                                                style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
+                                                style="padding: 16px;background: #393c40;width: 100%;">
                                                 {$INPUT}
                                             </div>
+                                        </td>
                                     </tr>
-                                </tbody>
-                            </table>
-                            <table style="height: 96px; width: 11%; border-top: 0px;">
-                                <tbody>
                                     <tr>
-                                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;"></td>
-                                        <td valign="left" style="vertical-align: left; width: 48px;">
-                                            <button style="background: none; border: none;" onclick="showEmoji()"
-                                                type="button">
-                                                <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Emojis"
-                                                    style="width: 30px; height: 30px;">
-                                            </button>
+                                        <td></td>
+                                        <td>
+                                            <table style="width: 100%; margin-top: 8px; border-spacing: 0;">
+                                                <tbody>
+                                                    <tr>
+                                                        <td valign="middle" style="vertical-align: middle; width: 48px; text-align: center;">
+                                                            <button style="background: none; border: none; cursor: pointer;" onclick="showEmoji()"
+                                                                type="button">
+                                                                <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Emojis"
+                                                                    style="width: 30px; height: 30px;">
+                                                            </button>
+                                                        </td>
+                                                        <td valign="middle" style="vertical-align: middle; width: 48px; text-align: center;">
+                                                            <a href="/draw/{$CHANNEL_ID}"><img src="/resources/twemoji/1f58c-fe0f.gif"
+                                                                    alt="Draw" style="width: 30px; height: 30px;"></a>
+                                                        </td>
+                                                        <td valign="middle" style="vertical-align: middle; width: 48px; text-align: center;">
+                                                            <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif"
+                                                                    alt="Refresh" style="width: 30px; height: 30px;"></a>
+                                                        </td>
+                                                        <td style="width: 100%;"></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </td>
-                                        <td valign="left" style="vertical-align: left; width: 48px;">
-                                            <a href="/draw/{$CHANNEL_ID}"><img src="/resources/twemoji/1f58c-fe0f.gif"
-                                                    alt="Draw" style="width: 30px; height: 30px;"></a>
-                                        </td>
-                                        <td valign="left" style="vertical-align: left; width: 48px;">
-                                            <a href="{$REFRESH_URL}"><img src="/resources/images/refresh.gif"
-                                                    alt="Refresh" style="width: 30px; height: 30px;"></a>
-                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </form>

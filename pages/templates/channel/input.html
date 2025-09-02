@@ -1,10 +1,18 @@
-<input type="text" name="message" id="message" value=""
-    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;box-shadow: 0 0 0 50px #393c40 inset;-webkit-text-fill-color: #dddddd;"
-    required="" placeholder="Message #{$CHANNEL_NAME}">
+<table style="width: 100%; border-spacing: 0;">
+        <tbody>
+            <tr>
+                <td style="width: 100%;">
+                    <input type="text" name="message" id="message" value=""
+                        style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;height: 40px;padding: 8px;"
+                        required="" placeholder="Message #{$CHANNEL_NAME}">
+                </td>
+                <td style="width: 60px; text-align: center;">
+                    <input type="submit"
+                        style="width: 55px;border: 1px solid #4a5568;color: #dddddd;height: 40px;background: #4a5568;"
+                        value="Send">
+                </td>
+            </tr>
+        </tbody>
+    </table>
 </div>
-</td>
-<td style="width: 55px;">
-    <input type="submit"
-        style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
-        value="Send">
 </td>
