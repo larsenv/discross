@@ -4,56 +4,232 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <title>Discross - Menu</title>
+    <title>Discross - Servers</title>
     <style>
+        /* Discord-inspired base styling */
+        * {
+            box-sizing: border-box;
+        }
+        
         html,
         body,
         #wrapper {
             margin: 0;
             padding: 0;
             height: 100%;
+            font-family: Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: #36393f;
+            color: #dcddde;
+        }
+
+        /* Light theme overrides */
+        .light-theme body {
+            background: #ffffff !important;
+            color: #2e3338 !important;
         }
 
         .light-theme #wrapper {
-            background: #FFFFFF !important;
-            color: #000000 !important;
+            background: #ffffff !important;
         }
 
-        .light-theme #wrapper * {
-            background: #FFFFFF !important;
-            color: #000000 !important;
-            
-            
+        .light-theme .server-sidebar {
+            background: #f2f3f5 !important;
+            border-color: #e3e5e8 !important;
         }
 
-        hr {
-            border: solid 1px #494c50;
+        .light-theme .channel-sidebar {
+            background: #f9f9f9 !important;
+            border-color: #e3e5e8 !important;
+        }
+
+        /* Layout */
+        #wrapper {
+            display: flex;
+            height: 100vh;
+        }
+
+        .server-sidebar {
+            width: 80px;
+            background: #202225;
+            border-right: 1px solid #40444b;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            overflow-y: auto;
+        }
+
+        .channel-sidebar {
+            width: 240px;
+            background: #2f3136;
+            border-right: 1px solid #40444b;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+            background: #36393f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #72767d;
+            font-size: 16px;
+        }
+
+        /* Server list styling */
+        .home-button {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            background: #36393f;
+            border: none;
+            cursor: pointer;
+            transition: border-radius 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .home-button:hover {
+            border-radius: 16px;
+            background: #5865f2;
+        }
+
+        .server-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: border-radius 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .server-icon:hover {
+            border-radius: 16px;
+        }
+
+        .server-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .server-separator {
+            width: 32px;
+            height: 2px;
+            background: #40444b;
+            border-radius: 1px;
+            margin: 4px 0;
+        }
+
+        /* Channel sidebar styling */
+        .server-header {
+            padding: 16px;
+            border-bottom: 1px solid #40444b;
+            font-weight: 600;
+            font-size: 16px;
+            color: #ffffff;
+        }
+
+        .channel-list {
+            flex: 1;
+            padding: 16px 8px;
+            overflow-y: auto;
+        }
+
+        .channel-category {
+            color: #8e9297;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            padding: 16px 8px 4px 16px;
+            margin-top: 16px;
+        }
+
+        .channel-category:first-child {
+            margin-top: 0;
+        }
+
+        .channel-item {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            margin: 1px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #8e9297;
+            font-size: 16px;
+            transition: background 0.15s;
+        }
+
+        .channel-item:hover {
+            background: rgba(79, 84, 92, 0.16);
+            color: #dcddde;
+        }
+
+        .channel-item.unread {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .channel-prefix {
+            margin-right: 8px;
+            font-size: 20px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .server-sidebar {
+                width: 60px;
+                padding: 8px 4px;
+            }
+            
+            .server-icon, .home-button {
+                width: 40px;
+                height: 40px;
+                border-radius: 20px;
+            }
+            
+            .channel-sidebar {
+                width: 200px;
+            }
         }
     </style>
 </head>
 
-<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
+<body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <table>
-            <tbody>
-                <tr>
-                    <td valign="top" style="vertical-align: top;">
-                        <a href="/server/"><img src="/resources/logo.gif" alt="Home" style=""
-                                width="48px" height="48px"></a><br>
-                        <hr noshade>
-                        {$SERVER_LIST}
-                    </td>
-                    <td>
-                        <font color="#303338">- </font>
-                    </td>
-                    <td valign="top" style="vertical-align: top;">
-                        {$DISCORD_NAME}
-                        
-                        {$CHANNEL_LIST}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="server-sidebar">
+            <a href="/server/" class="home-button">
+                <img src="/resources/logo.gif" alt="Home" style="width: 32px; height: 32px;">
+            </a>
+            <div class="server-separator"></div>
+            {$SERVER_LIST}
+        </div>
+
+        <div class="channel-sidebar">
+            <div class="server-header">
+                {$DISCORD_NAME}
+            </div>
+            <div class="channel-list">
+                {$CHANNEL_LIST}
+            </div>
+        </div>
+
+        <div class="main-content">
+            Select a channel to start messaging
+        </div>
     </div>
 </body>
 

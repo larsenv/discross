@@ -35,6 +35,11 @@ function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 };
 
+function getAuthorInitial(displayName) {
+  if (!displayName) return "?";
+  return displayName.charAt(0).toUpperCase();
+}
+
 function formatFileSize(bytes) {
   if (bytes === 0) return '0.00 Bytes';
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
@@ -103,8 +108,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
             if (lastmember) { // Webhooks are not members!
               currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastmember.displayName));
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_INITIAL}", getAuthorInitial(lastmember.displayName));
             } else {
               currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastauthor.username));
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_INITIAL}", getAuthorInitial(lastauthor.username));
             }
 
             var url = lastauthor.avatarURL();
