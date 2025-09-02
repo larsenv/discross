@@ -23,6 +23,7 @@ const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/me
 const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
 const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
 const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
+const mention_self_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention_self.html', 'utf-8'));
 
 const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
 const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
@@ -38,6 +39,49 @@ function strReplace(string, needle, replacement) {
 function getAuthorInitial(displayName) {
   if (!displayName) return "?";
   return displayName.charAt(0).toUpperCase();
+}
+
+function processDiscordMarkdown(content) {
+  // Handle large text (# prefix) 
+  if (content.startsWith('# ')) {
+    const largeText = content.substring(2);
+    return `<div style="font-size: 32px; font-weight: 700; line-height: 36px; margin: 8px 0;">${escape(largeText)}</div>`;
+  }
+
+  // Check if content is only emoji (for larger emoji rendering)
+  const emojiOnlyRegex = /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\s]*$/u;
+  const isEmojiOnly = emojiOnlyRegex.test(content) && content.trim().length > 0;
+
+  // Process with markdown-it first
+  let processed = md.renderInline(content);
+  
+  // Enhance with Discord-specific styling
+  // Bold text **text** or __text__
+  processed = processed.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: 700;">$1</strong>');
+  processed = processed.replace(/__(.*?)__/g, '<strong style="font-weight: 700;">$1</strong>');
+  
+  // Italic text *text* or _text_
+  processed = processed.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em style="font-style: italic;">$1</em>');
+  processed = processed.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em style="font-style: italic;">$1</em>');
+  
+  // Strikethrough text ~~text~~
+  processed = processed.replace(/~~(.*?)~~/g, '<span style="text-decoration: line-through;">$1</span>');
+  
+  // Inline code `code`
+  processed = processed.replace(/`([^`]+)`/g, '<code style="background: #2f3136; color: #dcddde; padding: 2px 4px; border-radius: 3px; font-family: Consolas, Monaco, \'Courier New\', monospace; font-size: 14px;">$1</code>');
+  
+  // Code blocks ```code```
+  processed = processed.replace(/```([\s\S]*?)```/g, '<pre style="background: #2f3136; color: #dcddde; padding: 8px; border-radius: 4px; font-family: Consolas, Monaco, \'Courier New\', monospace; font-size: 14px; overflow-x: auto; white-space: pre-wrap;"><code>$1</code></pre>');
+  
+  // Spoiler text ||text||
+  processed = processed.replace(/\|\|(.*?)\|\|/g, '<span style="background: #202225; color: #202225; border-radius: 4px; padding: 0 2px; cursor: pointer;" onclick="this.style.color=\'#dcddde\'" title="Click to reveal spoiler">$1</span>');
+  
+  // Store emoji-only info for later processing
+  if (isEmojiOnly) {
+    processed = `<div class="emoji-only-message">${processed}</div>`;
+  }
+  
+  return processed;
 }
 
 function formatFileSize(bytes) {
@@ -132,7 +176,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        messagetext = processDiscordMarkdown(item.content);
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
@@ -154,8 +198,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         if (item.mentions) {
           item.mentions.members.forEach(function (user) {
             if (user) {
-              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
-              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
+              // Use yellow highlighting if this is a mention of the current user
+              const isCurrentUser = user.id === discordID;
+              const template = isCurrentUser ? mention_self_template : mention_template;
+              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", template.replace("{$USERNAME}", escape("@" + user.displayName)));
+              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", template.replace("{$USERNAME}", escape("@" + user.displayName)));
             }
           });
         }
@@ -244,13 +291,19 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             }
             output = points.join("-")
           }
-          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 3%;vertical-align:top;" alt="emoji">`)
+          // Check if this emoji is in an emoji-only message for larger sizing
+          const isInEmojiOnlyMessage = response.includes('<div class="emoji-only-message">');
+          const emojiSize = isInEmojiOnlyMessage ? "6%" : "3%";
+          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: ${emojiSize}; vertical-align: top;" alt="emoji">`)
         });
       }
 
-      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
+      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {
+        // Check if this emoji is in an emoji-only message for larger sizing
+        const isInEmojiOnlyMessage = response.includes('<div class="emoji-only-message">');
+        const emojiSize = isInEmojiOnlyMessage ? "6%" : "3%";
+        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: ${emojiSize};" alt="emoji">`)
       })
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
