@@ -12,7 +12,17 @@
     <meta name="msapplication-TileColor" content="#2b5797">
     <meta name="theme-color" content="#ffffff">
     <title>Discross - #{$CHANNEL_NAME}</title>
-    <script src="/connection.js"></script>
+    <script>
+        function showEmoji() {
+            if (emojiShowing) {
+                document.getElementById("emoji").style.display = "none";
+                emojiShowing = false;
+            } else {
+                document.getElementById("emoji").style.display = "block";
+                emojiShowing = true;
+            }
+        }
+    </script>
     <style>
         /* Discord-inspired base styling */
         * {
