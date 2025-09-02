@@ -207,6 +207,16 @@
                         </div>
                         </div>
         </div>
+        <script>
+            // Detect and set user timezone
+            try {
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                document.cookie = `timezone=${encodeURIComponent(timezone)}; path=/; max-age=31536000`; // 1 year
+            } catch (e) {
+                // Fallback if timezone detection fails
+                console.log('Timezone detection failed, using UTC');
+            }
+        </script>
         <script src="/connection.js"></script>
     </div>
 </body>
