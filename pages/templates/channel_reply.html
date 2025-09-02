@@ -19,6 +19,12 @@
             margin: 0;
             padding: 0;
             height: 100%;
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: #36393f;
+            color: #dcddde;
         }
 
         .light-theme #wrapper {
@@ -242,6 +248,119 @@
         .light-theme .message span[style*="background: #2f3136"] {
             background: #f2f3f5 !important;
             color: #2e3338 !important;
+        }
+
+        /* Emoji styling */
+        .emoji-inline {
+            width: 20px !important;
+            height: 20px !important;
+            vertical-align: middle !important;
+            margin: 0 1px;
+        }
+
+        .emoji-large {
+            width: 48px !important;
+            height: 48px !important;
+            vertical-align: middle !important;
+            margin: 2px;
+        }
+
+        .emoji-only .emoji-inline {
+            width: 48px !important;
+            height: 48px !important;
+        }
+
+        /* Mobile image fixes */
+        @media (max-width: 768px) {
+            .message img:not(.emoji-inline):not(.emoji-large) {
+                max-width: 100% !important;
+                height: auto !important;
+                width: auto !important;
+            }
+        }
+
+        /* Emoji toggle button */
+        .emoji-toggle {
+            background: #4f545c;
+            border: none;
+            color: #ffffff;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .emoji-toggle:hover {
+            background: #5d6269;
+        }
+
+        .light-theme .emoji-toggle {
+            background: #e3e5e8;
+            color: #2e3338;
+        }
+
+        .light-theme .emoji-toggle:hover {
+            background: #d4d7dc;
+        }
+
+        /* Discord-style message improvements */
+        .message {
+            padding: 8px 16px;
+            margin: 0;
+            border-radius: 0;
+            transition: background-color 0.1s ease-in-out;
+        }
+
+        .message:hover {
+            background: rgba(79, 84, 92, 0.08);
+        }
+
+        .message hr {
+            display: none; /* Remove the old HR separators */
+        }
+
+        .message .name {
+            font-weight: 500;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .message .date {
+            font-size: 12px;
+            color: #a3a6aa;
+            margin-left: 8px;
+            font-weight: 400;
+        }
+
+        .message .messagecontent {
+            margin-top: 4px;
+            line-height: 1.375;
+            font-size: 16px;
+            color: #dcddde;
+        }
+
+        .message table {
+            width: 100%;
+            padding: 0;
+        }
+
+        .message table td {
+            padding: 0;
+            vertical-align: top;
+        }
+
+        /* Light theme message improvements */
+        .light-theme .message:hover {
+            background: rgba(116, 127, 141, 0.06);
+        }
+
+        .light-theme .message .date {
+            color: #5c6067;
+        }
+
+        .light-theme .message .messagecontent {
+            color: #2e3338;
         }
     </style>
 </head>

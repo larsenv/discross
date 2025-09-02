@@ -12,6 +12,12 @@
             margin: 0;
             padding: 0;
             height: 100%;
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: #36393f;
+            color: #dcddde;
         }
 
         .light-theme #wrapper {
@@ -19,15 +25,90 @@
             color: #000000 !important;
         }
 
-        .light-theme #wrapper * {
-            background: #FFFFFF !important;
-            color: #000000 !important;
-            
-            
+        .light-theme body {
+            background: #ffffff !important;
+            color: #2e3338 !important;
         }
 
         hr {
-            border: solid 1px #494c50;
+            border: solid 1px #484851;
+            margin: 16px 0;
+        }
+
+        .light-theme hr {
+            border-color: #e3e5e8;
+        }
+
+        /* Modern Discord-like styling for server and channel lists */
+        .server-list {
+            background: #2f3136;
+            padding: 16px 8px;
+            min-height: 100vh;
+        }
+
+        .channel-list {
+            background: #36393f;
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        .server-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: border-radius 0.15s ease-out;
+        }
+
+        .server-icon:hover {
+            border-radius: 16px;
+        }
+
+        .channel-item {
+            padding: 6px 8px;
+            margin: 2px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.17s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .channel-item:hover {
+            background: rgba(79, 84, 92, 0.32);
+        }
+
+        .channel-item.unread {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .channel-category {
+            color: #96989d;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            padding: 16px 8px 4px;
+            margin-top: 16px;
+        }
+
+        /* Light theme overrides */
+        .light-theme .server-list {
+            background: #f2f3f5;
+        }
+
+        .light-theme .channel-list {
+            background: #ffffff;
+        }
+
+        .light-theme .channel-item:hover {
+            background: rgba(116, 127, 141, 0.08);
+        }
+
+        .light-theme .channel-category {
+            color: #6a7480;
         }
     </style>
 </head>
