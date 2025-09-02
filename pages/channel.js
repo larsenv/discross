@@ -222,6 +222,32 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         
         messagetext = processedLines.join('<br>');
 
+        // Process Discord markdown formatting
+        // Large text (lines starting with # )
+        messagetext = messagetext.replace(/^# (.+)$/gm, '<span style="font-size: 1.5em; font-weight: bold;">$1</span>');
+        
+        // Code blocks (triple backticks)
+        messagetext = messagetext.replace(/```([^`]+)```/g, '<div style="background: #2f3136; border: 1px solid #202225; border-radius: 4px; padding: 8px; margin: 4px 0; font-family: Monaco, Consolas, \'Courier New\', monospace; white-space: pre-wrap;">$1</div>');
+        
+        // Inline code (single backticks)
+        messagetext = messagetext.replace(/`([^`]+)`/g, '<span style="background: #2f3136; border-radius: 3px; padding: 2px 4px; font-family: Monaco, Consolas, \'Courier New\', monospace;">$1</span>');
+        
+        // Bold text (**text** and __text__)
+        messagetext = messagetext.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        messagetext = messagetext.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+        
+        // Italic text (*text* and _text_) - simple version to avoid regex issues
+        messagetext = messagetext.replace(/\*([^*\s][^*]*[^*\s]|\S)\*/g, '<em>$1</em>');
+        messagetext = messagetext.replace(/_([^_\s][^_]*[^_\s]|\S)_/g, '<em>$1</em>');
+        
+        // Strikethrough (~~text~~)
+        messagetext = messagetext.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+        
+        // Underline (__text__) - but we'll skip this to avoid confusion with bold
+        
+        // Spoiler (||text||)
+        messagetext = messagetext.replace(/\|\|([^|]+)\|\|/g, '<span style="background: #202225; color: #202225; border-radius: 3px; padding: 0 2px;" onclick="this.style.color=\'#dcddde\'">$1</span>');
+
 
 
         // If the last message is not going to be merged with this one, use the template for the first message, otherwise use the template for merged messages
