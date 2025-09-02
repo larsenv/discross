@@ -40,7 +40,7 @@ so imma leave it as is :)
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 
-function processServerChannels(server, member, response) {
+function processServerChannels(server, member, discordID, bot, response) {
   try {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
@@ -66,7 +66,28 @@ function processServerChannels(server, member, response) {
         if (item.type == ChannelType.GuildCategory) {
           channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
         } else {
-          channelList += text_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
+          // Check for unread messages
+          const lastViewed = auth.getChannelLastViewed(discordID, item.id);
+          let isUnread = false;
+          
+          try {
+            // Get the latest message in the channel
+            if (item.lastMessage && item.lastMessage.createdTimestamp > lastViewed) {
+              isUnread = true;
+            }
+          } catch (err) {
+            // If we can't check, assume not unread
+            console.log("Could not check unread status for channel", item.id, err.message);
+          }
+          
+          const channelColor = isUnread ? "#ffffff" : "#999999";
+          const channelStyle = isUnread ? "font-weight: bold;" : "";
+          
+          channelList += text_channel_template
+            .replace("{$CHANNEL_NAME}", escape(item.name))
+            .replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`)
+            .replace("{$CHANNEL_COLOR}", channelColor)
+            .replace("{$CHANNEL_STYLE}", channelStyle);
         }
       }
     });
@@ -125,7 +146,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           response = response.replace("{$DISCORD_NAME}", '<font color="#999999" size="6" face="Arial, Helvetica, sans-serif">' + targetServer.name + "</font><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
-            response = processServerChannels(targetServer, member, response);
+            response = processServerChannels(targetServer, member, discordID, bot, response);
           } else {
             response = response.replace("{$CHANNEL_LIST}", invalid_server_template);
           }

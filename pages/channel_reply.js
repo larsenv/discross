@@ -10,6 +10,7 @@ const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 const fetch = require("sync-fetch");
+const auth = require('../authentication.js');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
@@ -87,12 +88,20 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       console.log("Processed valid channel request");
+      
+      // Get last viewed time before updating it
+      const lastViewedTime = auth.getChannelLastViewed(discordID, chnl.id);
+      
+      // Track that this user viewed this channel
+      auth.updateChannelView(discordID, chnl.id);
+      
       messages = await bot.getHistoryCached(chnl);
       lastauthor = undefined;
       lastmember = undefined;
       lastdate = new Date('1995-12-17T03:24:00');
       currentmessage = "";
       islastmessage = false;
+      let newMessageIndicatorAdded = false;
 
       handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
         if (lastauthor) { // Only consider the last message if this is not the first
@@ -190,6 +199,12 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       for (const item of messages) {
+        // Check if this message is newer than the last viewed time and we haven't added the indicator yet
+        if (!newMessageIndicatorAdded && item.createdTimestamp > lastViewedTime && lastViewedTime > 0) {
+          // Add the new message indicator
+          response += '<hr style="border: none; border-top: 2px solid #ed4245; margin: 16px 0; background: none;" title="New messages">';
+          newMessageIndicatorAdded = true;
+        }
         await handlemessage(item);
       }
 
