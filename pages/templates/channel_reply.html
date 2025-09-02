@@ -26,44 +26,6 @@
             color: #000000 !important;
         }
 
-        .light-theme #wrapper * {
-            background: #FFFFFF !important;
-            color: #000000 !important;
-            
-            
-        }
-
-        .light-theme #wrapper form table {
-            border-spacing: 0px;
-        }
-
-        .light-theme #wrapper form table td:nth-child(2) {
-            
-            border: 10px solid #000000;
-            border-right: none;
-            padding-left: 10px;
-        }
-
-        .light-theme #wrapper form table td:nth-child(3) {
-            
-            border: 10px solid #000000;
-            border-left: 5px solid #000000;
-            padding-left: 15px;
-        }
-
-        .light-theme #wrapper form table td:nth-child(2) * {
-            all: unset !important
-        }
-
-        .light-theme #wrapper form table td:nth-child(3) * {
-            all: unset !important;
-        }
-
-        .light-theme .download {
-            
-            border: 5px solid #000000;
-        }
-
         br.nodisp {
             display: none
         }
@@ -93,15 +55,152 @@
         }
 
         form table {
-            height: 86px;
-            background: #303338;
+            height: auto;
+            background: transparent;
             width: 100%;
-            padding: 15px 0 0 8px;
-            border-top: solid 1px #393c40
+            padding: 0;
+            border: none;
         }
 
         a {
             color: #647dcd;
+        }
+
+        /* Discord-like Input Styling */
+        .input-container {
+            background: #383a40;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 16px;
+            border: 1px solid #484851;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .message-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #dcddde;
+            font-size: 16px;
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.375;
+            resize: none;
+        }
+
+        .message-input::placeholder {
+            color: #72767d;
+        }
+
+        .message-input.disabled {
+            background: #2f3136;
+            color: #72767d;
+            cursor: not-allowed;
+        }
+
+        .send-button {
+            background: #5865f2;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.17s ease;
+            min-width: 60px;
+        }
+
+        .send-button:hover {
+            background: #4752c4;
+        }
+
+        .send-button:active {
+            background: #3c45a5;
+        }
+
+        /* Modern Form Layout */
+        .message-form {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #36393f;
+            border-top: 1px solid #484851;
+            z-index: 100;
+        }
+
+        .form-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            padding: 8px 16px;
+            align-items: center;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.17s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            background: rgba(79, 84, 92, 0.32);
+        }
+
+        .action-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Adjust main content to account for fixed form */
+        #msgcontainer {
+            padding-bottom: 120px;
+        }
+
+        /* Light theme overrides for inputs */
+        .light-theme .input-container {
+            background: #ebedef;
+            border-color: #d4d7dc;
+        }
+
+        .light-theme .message-input {
+            color: #2e3338;
+        }
+
+        .light-theme .message-input::placeholder {
+            color: #6a7480;
+        }
+
+        .light-theme .message-input.disabled {
+            background: #f2f3f5;
+            color: #72767d;
+        }
+
+        .light-theme .message-form {
+            background: #ffffff;
+            border-top-color: #e3e5e8;
+        }
+
+        .light-theme .action-btn:hover {
+            background: rgba(116, 127, 141, 0.08);
         }
     </style>
 </head>
@@ -242,39 +341,27 @@
         </table>
     </div>
     </div>
-    <form action="../../reply">
-        <table>
-            <tbody>
-                <tr>
-                    <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
-                        <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif" alt="Menu"
-                                style="position: fixed; top: 32px;left: 12px;"></a>
-                    </td>
-                    <td>
-                        <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                        <input type="hidden" id="reply_message_id" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">
-                        <input type="hidden" id="lite" name="lite" value="False">
-                        <div
-                            style="-moz--webkit-padding: 16px;background: #393c40;width: 100%;">
-                            {$INPUT}
-                    <td valign="middle" style="vertical-align: middle; width: 48px;">
-                        <button style="background: none; border: none;" onclick="showEmoji()" type="button">
-                            <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Emojis"
-                                style="width: 30px; height: 30px;">
-                        </button>
-                    </td>
-                    <td valign="middle" style="vertical-align: middle; width: 48px;">
-                        <a href="../{$REFRESH_URL}"><img src="/resources/images/refresh.gif" alt="Refresh"></a>
-                    </td>
+    <form action="../../reply" class="message-form">
+        <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+        <input type="hidden" id="reply_message_id" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">
+        <input type="hidden" id="lite" name="lite" value="False">
+        <div class="form-content">
+            {$INPUT}
+            <div class="action-buttons">
+                <button type="button" class="action-btn emoji-btn" onclick="showEmoji()" title="Add Emoji">
+                    <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Emojis" class="action-icon">
+                </button>
+                <a href="../{$REFRESH_URL}" class="action-btn" title="Refresh">
+                    <img src="/resources/images/refresh.gif" alt="Refresh" class="action-icon">
+                </a>
+            </div>
+        </div>
     </form>
-    </tr>
-    </tbody>
-    </table>
-
     </td>
     </tr>
     </tbody>
     </table>
+
     <script src="/connection.js"></script>
     </div>
 </body>
