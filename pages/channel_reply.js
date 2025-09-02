@@ -9,6 +9,7 @@ const sharp = require("sharp");
 const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
+const auth = require('../authentication.js');
 const fetch = require("sync-fetch");
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
