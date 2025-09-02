@@ -152,6 +152,98 @@
                             background: #ffffff;
                             border-top-color: #e3e5e8;
                         }
+
+                        /* Drawing controls */
+                        .drawing-controls {
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            padding: 16px;
+                            background: #2f3136;
+                            border-bottom: 1px solid #484851;
+                            flex-wrap: wrap;
+                        }
+
+                        .color-palette {
+                            display: flex;
+                            gap: 8px;
+                            align-items: center;
+                        }
+
+                        .color-button {
+                            width: 32px;
+                            height: 32px;
+                            border: 2px solid #484851;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            transition: border-color 0.17s ease;
+                        }
+
+                        .color-button:hover {
+                            border-color: #ffffff;
+                        }
+
+                        .color-button.active {
+                            border-color: #5865f2;
+                            border-width: 3px;
+                        }
+
+                        .brush-controls {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        }
+
+                        .brush-size {
+                            width: 100px;
+                        }
+
+                        .tool-buttons {
+                            display: flex;
+                            gap: 8px;
+                        }
+
+                        .tool-button {
+                            background: #4f545c;
+                            border: none;
+                            color: #ffffff;
+                            padding: 8px 12px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            transition: background-color 0.17s ease;
+                        }
+
+                        .tool-button:hover {
+                            background: #5d6269;
+                        }
+
+                        .tool-button.active {
+                            background: #5865f2;
+                        }
+
+                        /* Light theme drawing controls */
+                        .light-theme .drawing-controls {
+                            background: #f2f3f5;
+                            border-bottom-color: #e3e5e8;
+                        }
+
+                        .light-theme .color-button {
+                            border-color: #d4d7dc;
+                        }
+
+                        .light-theme .color-button:hover {
+                            border-color: #2e3338;
+                        }
+
+                        .light-theme .tool-button {
+                            background: #e3e5e8;
+                            color: #2e3338;
+                        }
+
+                        .light-theme .tool-button:hover {
+                            background: #d4d7dc;
+                        }
     </style>
     <script src="/atrament.min.js"></script>
 </head>
@@ -170,6 +262,31 @@
                         <br>
                     </td>
                     <td width="100%">
+                        <div class="drawing-controls">
+                            <div class="color-palette">
+                                <span style="color: #b9bbbe; font-size: 14px; margin-right: 8px;">Colors:</span>
+                                <div class="color-button" data-color="#000000" style="background: #000000;" title="Black"></div>
+                                <div class="color-button" data-color="#ffffff" style="background: #ffffff;" title="White"></div>
+                                <div class="color-button" data-color="#ed4245" style="background: #ed4245;" title="Red"></div>
+                                <div class="color-button" data-color="#57f287" style="background: #57f287;" title="Green"></div>
+                                <div class="color-button" data-color="#3498db" style="background: #3498db;" title="Blue"></div>
+                                <div class="color-button" data-color="#fee75c" style="background: #fee75c;" title="Yellow"></div>
+                                <div class="color-button" data-color="#eb459e" style="background: #eb459e;" title="Pink"></div>
+                                <div class="color-button" data-color="#9c59b6" style="background: #9c59b6;" title="Purple"></div>
+                                <div class="color-button" data-color="#f39c12" style="background: #f39c12;" title="Orange"></div>
+                                <div class="color-button" data-color="#95a5a6" style="background: #95a5a6;" title="Gray"></div>
+                            </div>
+                            <div class="brush-controls">
+                                <span style="color: #b9bbbe; font-size: 14px;">Size:</span>
+                                <input type="range" id="brush-size" class="brush-size" min="1" max="50" value="5">
+                                <span id="size-value" style="color: #b9bbbe; font-size: 14px;">5px</span>
+                            </div>
+                            <div class="tool-buttons">
+                                <button class="tool-button active" id="pen-tool" data-mode="draw">Pen</button>
+                                <button class="tool-button" id="eraser-tool" data-mode="erase">Eraser</button>
+                                <button class="tool-button" id="clear-canvas">Clear</button>
+                            </div>
+                        </div>
                         <div class="canvas-container">
                             <canvas id="sketchpad" width="0" height="0"></canvas>
                             <div id="myList"></div> <!-- TODO: Remove -->
@@ -294,32 +411,86 @@
         function initDrawing() {
             var canvas = document.getElementById("sketchpad");
             canvas.width = Math.min(window.innerWidth - 34 - 15, 1000);
-            canvas.height = Math.min(window.innerHeight - 107.2 - 15, 1000);
+            canvas.height = Math.min(window.innerHeight - 200, 600); // Adjust for controls
             var fakesend = document.getElementById("fakesend");
             var sendform1 = document.getElementById("sendform");
             var drawinginput = document.getElementById("drawinginput");
             var messagedom = document.getElementById("message");
+            
             var sketchpad = new atrament.Atrament(canvas, {
                 width: canvas.width,
                 height: canvas.height,
-                color: 'black',
+                color: '#000000',
+                weight: 5,
+                mode: 'draw',
+                smoothing: true
             });
+            
+            // Set up color buttons
+            const colorButtons = document.querySelectorAll('.color-button');
+            colorButtons[0].classList.add('active'); // Default to black
+            
+            colorButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    colorButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    sketchpad.color = this.dataset.color;
+                });
+            });
+            
+            // Set up brush size control
+            const brushSize = document.getElementById('brush-size');
+            const sizeValue = document.getElementById('size-value');
+            
+            brushSize.addEventListener('input', function() {
+                sketchpad.weight = this.value;
+                sizeValue.textContent = this.value + 'px';
+            });
+            
+            // Set up tool buttons
+            const toolButtons = document.querySelectorAll('.tool-button');
+            
+            document.getElementById('pen-tool').addEventListener('click', function() {
+                toolButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                sketchpad.mode = 'draw';
+            });
+            
+            document.getElementById('eraser-tool').addEventListener('click', function() {
+                toolButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                sketchpad.mode = 'erase';
+            });
+            
+            document.getElementById('clear-canvas').addEventListener('click', function() {
+                sketchpad.clear();
+                // Reset canvas to white background
+                sketchpad.canvas.getContext("2d").fillStyle = "white";
+                sketchpad.canvas.getContext("2d").fillRect(0, 0, sketchpad.canvas.width, sketchpad.canvas.height);
+            });
+            
             function sendDrawing() {
-                drawinginput.value = canvas.toDataURL();
+                drawinginput.value = canvas.toDataURL('image/png', 0.8); // Better quality
                 sendform1.submit();
             }
+            
             sendform1.onkeyup = function(event) {
                 if (event.keyCode !== 13) return;
                 sendDrawing();
                 if (event.preventDefault) event.preventDefault();
             };
+            
             messagedom.onkeypress = function (e) {
                 if (e.keyCode == 13) {
+                    sendDrawing();
                     if (e.preventDefault) e.preventDefault();
                 }
             };
+            
+            // Initialize canvas with white background for better quality
             sketchpad.canvas.getContext("2d").fillStyle = "white";
             sketchpad.canvas.getContext("2d").fillRect(0, 0, sketchpad.canvas.width, sketchpad.canvas.height);
+            
             fakesend.onclick = sendDrawing;
         }
         
