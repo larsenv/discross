@@ -10,6 +10,7 @@ const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
+const auth = require('../authentication.js');
 // const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
@@ -181,6 +182,13 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       }
 
       console.log("Processed valid channel request");
+      
+      // Get last viewed time before updating it
+      const lastViewedTime = auth.getChannelLastViewed(discordID, chnl.id);
+      
+      // Track that this user viewed this channel
+      auth.updateChannelView(discordID, chnl.id);
+      
       messages = await bot.getHistoryCached(chnl);
       lastauthor = undefined;
       lastmember = undefined;
