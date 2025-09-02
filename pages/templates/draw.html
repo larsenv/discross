@@ -15,8 +15,8 @@
     <script>
         var currentSketchpad = null;
 
-        // Make setDrawingColor function available globally for onclick handlers
-        window.setDrawingColor = function (color) {
+        // Make setDrawingColor function available globally
+        window.setDrawingColor = function (color, event) {
             if (currentSketchpad) {
                 currentSketchpad.color = color;
             }
@@ -24,10 +24,8 @@
             document.querySelectorAll('.color-button').forEach(function (btn) {
                 btn.classList.remove('active');
             });
-            // Get the clicked element more safely for older browsers
-            var target = event.target || event.srcElement;
-            if (target) {
-                target.classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
             }
         };
 
@@ -35,12 +33,11 @@
             var canvas = document.getElementById("sketchpad");
             canvas.width = Math.min(window.innerWidth - 140, 800);
             canvas.height = Math.min(window.innerHeight - 200, 600);
+
             var fakesend = document.getElementById("fakesend");
             var sendform1 = document.getElementById("sendform");
             var drawinginput = document.getElementById("drawinginput");
-            var messagedom = document.getElementById("message");
 
-            // Check if atrament is available
             if (typeof atrament !== 'undefined' && atrament.Atrament) {
                 currentSketchpad = new atrament.Atrament(canvas, {
                     width: canvas.width,
@@ -49,59 +46,24 @@
                     weight: 3,
                     smoothing: 1.5
                 });
+                // Set white background
+                var ctx = currentSketchpad.canvas.getContext("2d");
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, currentSketchpad.canvas.width, currentSketchpad.canvas.height);
             } else {
                 console.error("Atrament library not loaded");
                 return;
             }
 
             function sendDrawing() {
-                if (canvas && canvas.toDataURL) {
-                    drawinginput.value = canvas.toDataURL();
-                    sendform1.submit();
-                }
+                drawinginput.value = canvas.toDataURL();
+                sendform1.submit();
             }
 
-            if (sendform1) {
-                sendform1.onkeyup = function (event) {
-                    event = event || window.event;
-                    if (event.keyCode !== 13) return;
-                    sendDrawing();
-                    if (event.preventDefault) {
-                        event.preventDefault();
-                    }
-                };
-            }
-
-            if (messagedom) {
-                messagedom.onkeypress = function (e) {
-                    e = e || window.event;
-                    if (e.keyCode == 13) {
-                        if (e.preventDefault) {
-                            e.preventDefault();
-                        }
-                    }
-                };
-            }
-
-            // Set white background
-            if (currentSketchpad && currentSketchpad.canvas) {
-                var ctx = currentSketchpad.canvas.getContext("2d");
-                if (ctx) {
-                    ctx.fillStyle = "white";
-                    ctx.fillRect(0, 0, currentSketchpad.canvas.width, currentSketchpad.canvas.height);
-                }
-            }
-
-            if (fakesend) {
-                fakesend.onclick = sendDrawing;
-            }
+            if (fakesend) fakesend.onclick = sendDrawing;
         }
 
-        if (document.addEventListener) {
-            document.addEventListener("DOMContentLoaded", initDrawing);
-        } else {
-            window.onload = initDrawing;
-        }
+        document.addEventListener("DOMContentLoaded", initDrawing);
     </script>
     <style>
         /* Discord-inspired base styling */
