@@ -15,7 +15,7 @@ You can try out Discross there without having to invite the bot to your own serv
 1. Type `^connect` on the server to get your verification code
 2. Go to [discross.net](https://discross.net/)
 3. Register on the website with that code
-4. Click the "update your server list" button to authorize Discross with your Discord account
+4. Click the "update your server list" button to authorize Discross with your Discord account (only required on first login or when you've added/removed servers)
 
 ### Now you can use Discross on all of your devices by logging into the account you have just made!
 
