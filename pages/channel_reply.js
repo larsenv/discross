@@ -111,9 +111,19 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
             currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
             if (lastmember) { // Webhooks are not members!
-              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastmember.displayName));
+              // Get the highest role color
+              let roleColor = "#ffffff"; // Default white
+              if (lastmember.roles && lastmember.roles.highest && lastmember.roles.highest.color !== 0) {
+                roleColor = `#${lastmember.roles.highest.color.toString(16).padStart(6, '0')}`;
+              }
+              
+              // Use display name if available, otherwise username, and make it bold with role color
+              const displayName = lastmember.displayName || lastauthor.username;
+              const styledName = `<strong style="color: ${roleColor};">${escape(displayName)}</strong>`;
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", styledName);
             } else {
-              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastauthor.username));
+              // For webhooks, use username in bold white
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", `<strong style="color: #ffffff;">${escape(lastauthor.username)}</strong>`);
             }
 
             var url = lastauthor.avatarURL();
@@ -162,6 +172,22 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
               const mentionHtml = `<span class="${mentionClass}" style="${mentionStyle}">@${escape(user.displayName)}</span>`;
               messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mentionHtml);
               messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mentionHtml);
+            }
+          });
+        }
+
+        // Process role mentions
+        if (item.mentions && item.mentions.roles) {
+          item.mentions.roles.forEach(function (role) {
+            if (role) {
+              // Get role color
+              let roleColor = "#647dcd"; // Default mention color
+              if (role.color !== 0) {
+                roleColor = `#${role.color.toString(16).padStart(6, '0')}`;
+              }
+              
+              const roleMentionHtml = `<span style="color: ${roleColor}; background-color: rgba(100,125,205,0.1); padding: 2px 4px; border-radius: 3px;">@${escape(role.name)}</span>`;
+              messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id.toString() + "&gt;", roleMentionHtml);
             }
           });
         }
