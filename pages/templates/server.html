@@ -26,6 +26,25 @@
             
         }
 
+        /* AMOLED theme overrides for server page */
+        .amoled-theme #wrapper {
+            background: #000000 !important;
+            color: #ffffff !important;
+        }
+
+        .amoled-theme #wrapper * {
+            background: #000000 !important;
+            color: #ffffff !important;
+        }
+
+        .amoled-theme hr {
+            border-color: #555555 !important;
+        }
+
+        .amoled-theme a {
+            color: #5865f2 !important;
+        }
+
         hr {
             border: solid 1px #494c50;
         }
@@ -42,9 +61,6 @@
                                 width="48px" height="48px"></a><br>
                         <hr noshade>
                         {$SERVER_LIST}
-                    </td>
-                    <td>
-                        <font color="#303338">- </font>
                     </td>
                     <td valign="top" style="vertical-align: top;">
                         {$DISCORD_NAME}
