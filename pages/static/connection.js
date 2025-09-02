@@ -7,7 +7,6 @@ var time;
 var xhttp;
 var xhttp2;
 var ws;
-var emojiShowing = false;
 // nocache
 
 // https://stackoverflow.com/a/15339941
