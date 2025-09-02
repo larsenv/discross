@@ -41,6 +41,51 @@ function getAuthorInitial(displayName) {
   return displayName.charAt(0).toUpperCase();
 }
 
+function getUserRoleColor(member) {
+  if (!member || !member.roles) return "#ffffff";
+  
+  // Get the highest role with a color
+  const roles = member.roles.cache.filter(role => role.color !== 0);
+  if (roles.size === 0) return "#ffffff";
+  
+  const highestRole = roles.sort((a, b) => b.position - a.position).first();
+  return `#${highestRole.color.toString(16).padStart(6, '0')}`;
+}
+
+function getDisplayName(member, author) {
+  if (!member) return author.username;
+  
+  // Use nickname if available, otherwise display name, otherwise username
+  return member.nickname || member.displayName || author.username;
+}
+
+function formatMessageDate(date, req) {
+  // Try to detect timezone from the request or use UTC as fallback
+  let timezone = 'UTC';
+  
+  // Check for timezone in cookies or headers (this would be set by frontend JavaScript)
+  const timezoneCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('timezone='))?.split('=')[1];
+  if (timezoneCookie) {
+    timezone = decodeURIComponent(timezoneCookie);
+  }
+  
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    
+    return formatter.format(date);
+  } catch (err) {
+    // Fallback to UTC if timezone detection fails
+    return date.toLocaleString('en-US', { timeZone: 'UTC' });
+  }
+}
+
 function processDiscordMarkdown(content) {
   // Handle large text (# prefix) 
   if (content.startsWith('# ')) {
@@ -151,18 +196,22 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
             currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
             if (lastmember) { // Webhooks are not members!
-              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastmember.displayName));
-              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_INITIAL}", getAuthorInitial(lastmember.displayName));
+              const displayName = getDisplayName(lastmember, lastauthor);
+              const roleColor = getUserRoleColor(lastmember);
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_INITIAL}", getAuthorInitial(displayName));
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_COLOR}", roleColor);
             } else {
               currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(lastauthor.username));
               currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_INITIAL}", getAuthorInitial(lastauthor.username));
+              currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR_COLOR}", "#ffffff");
             }
 
             var url = lastauthor.avatarURL();
             if (lastauthor.avatarURL && url && url.toString().startsWith("http")) { // Sometimes the URL is null or something else
               currentmessage = currentmessage.replace("{$PROFILE_URL}", url);
             }
-            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", lastdate.toLocaleTimeString('en-US') + " " + lastdate.toDateString());
+            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatMessageDate(lastdate, req));
             currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
             response += currentmessage;
             currentmessage = "";
@@ -199,8 +248,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
               // Use yellow highlighting if this is a mention of the current user
               const isCurrentUser = user.id === discordID;
               const template = isCurrentUser ? mention_self_template : mention_template;
-              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", template.replace("{$USERNAME}", escape("@" + user.displayName)));
-              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", template.replace("{$USERNAME}", escape("@" + user.displayName)));
+              const displayName = getDisplayName(user, user.user);
+              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", template.replace("{$USERNAME}", escape("@" + displayName)));
+              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", template.replace("{$USERNAME}", escape("@" + displayName)));
             }
           });
         }
