@@ -218,7 +218,15 @@ async function fetchAndCacheMember(server, discordID) {
 
 function applyUserPreferences(response, req) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  response = whiteThemeCookie == 1 ? response.replace("{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response.replace("{$WHITE_THEME_ENABLED}", "");
+  
+  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
+  if (whiteThemeCookie == 1) {
+    response = response.replace("{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+  } else if (whiteThemeCookie == 2) {
+    response = response.replace("{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+  } else {
+    response = response.replace("{$WHITE_THEME_ENABLED}", "");
+  }
 
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   response = imagesCookie == 1 ? response.replace("{$IMAGES_WARNING}", "") : response.replace("{$IMAGES_WARNING}", no_images_warning_template);

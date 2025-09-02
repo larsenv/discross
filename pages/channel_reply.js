@@ -246,7 +246,15 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-      whiteThemeCookie == 1 ? response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"") : response = strReplace(response, "{$WHITE_THEME_ENABLED}", "")
+      
+      // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
+      if (whiteThemeCookie == 1) {
+        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+      } else if (whiteThemeCookie == 2) {
+        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+      } else {
+        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "");
+      }
 
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
         final = strReplace(template, "{$INPUT}", input_disabled_template);
