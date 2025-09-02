@@ -239,9 +239,43 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             urls.push(url)
           });
           urls.forEach(url => {
-            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
+            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width: 400px; width: 100%; height: auto; border-radius: 4px; margin: 4px 0;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
+        
+        // Process Discord embeds
+        if (item?.embeds && item.embeds.length > 0 && imagesCookie == 1) {
+          item.embeds.forEach(embed => {
+            let embedHTML = '<div style="border-left: 4px solid #5865f2; background: #2f3136; margin: 8px 0; padding: 12px; border-radius: 4px; max-width: 400px;">';
+            
+            if (embed.title) {
+              const titleText = embed.url ? 
+                `<a href="${escape(embed.url)}" style="color: #00aff4; text-decoration: none; font-weight: 600;">${escape(embed.title)}</a>` : 
+                `<span style="color: #ffffff; font-weight: 600;">${escape(embed.title)}</span>`;
+              embedHTML += `<div style="margin-bottom: 8px;">${titleText}</div>`;
+            }
+            
+            if (embed.description) {
+              embedHTML += `<div style="color: #dcddde; font-size: 14px; margin-bottom: 8px;">${escape(embed.description)}</div>`;
+            }
+            
+            if (embed.image?.url) {
+              embedHTML += `<img src="/imageProxy/${embed.image.url.replace(/^(.*?)(\d+)/, '$2')}" style="max-width: 100%; height: auto; border-radius: 4px; margin-top: 8px;" alt="Embed image">`;
+            }
+            
+            if (embed.thumbnail?.url) {
+              embedHTML += `<img src="/imageProxy/${embed.thumbnail.url.replace(/^(.*?)(\d+)/, '$2')}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; float: right; margin-left: 12px;" alt="Embed thumbnail">`;
+            }
+            
+            if (embed.footer?.text) {
+              embedHTML += `<div style="color: #72767d; font-size: 12px; margin-top: 8px;">${escape(embed.footer.text)}</div>`;
+            }
+            
+            embedHTML += '</div>';
+            messagetext += embedHTML;
+          });
+        }
+        
         if (item.mentions) {
           item.mentions.members.forEach(function (user) {
             if (user) {
