@@ -10,6 +10,7 @@ const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
+const auth = require('../authentication.js');
 // const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
@@ -87,6 +88,13 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       }
 
       console.log("Processed valid channel request");
+      
+      // Get last viewed time before updating it
+      const lastViewedTime = auth.getChannelLastViewed(discordID, chnl.id);
+      
+      // Track that this user viewed this channel
+      auth.updateChannelView(discordID, chnl.id);
+      
       messages = await bot.getHistoryCached(chnl);
       lastauthor = undefined;
       lastmember = undefined;
@@ -94,6 +102,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       currentmessage = "";
       islastmessage = false;
       messageid = 0;
+      let newMessageIndicatorAdded = false;
 
       handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
         if (lastauthor) { // Only consider the last message if this is not the first
@@ -193,6 +202,12 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       }
 
       for (const item of messages) {
+        // Check if this message is newer than the last viewed time and we haven't added the indicator yet
+        if (!newMessageIndicatorAdded && item.createdTimestamp > lastViewedTime && lastViewedTime > 0) {
+          // Add the new message indicator
+          response += '<hr style="border: none; border-top: 2px solid #ed4245; margin: 16px 0; background: none;" title="New messages">';
+          newMessageIndicatorAdded = true;
+        }
         await handlemessage(item);
       }
 

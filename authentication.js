@@ -143,6 +143,7 @@ function setup() {
   queryRun('CREATE TABLE IF NOT EXISTS webhooks (serverID TEXT, webhookID TEXT, token STRING)')
   queryRun('CREATE TABLE IF NOT EXISTS verificationcodes (discordID TEXT, code STRING, expires INT)')
   queryRun('CREATE TABLE IF NOT EXISTS servers (serverID TEXT, discordID TEXT, unique (serverID, discordID))')
+  queryRun('CREATE TABLE IF NOT EXISTS channel_views (discordID TEXT, channelID TEXT, last_viewed INT, unique (discordID, channelID))')
 }
 
 setup();
@@ -256,6 +257,21 @@ exports.handleLoginRegister = async function (req, res, body) {
       res.end()
     }
   }
+}
+
+// Channel view tracking functions
+exports.updateChannelView = function(discordID, channelID) {
+  const now = Date.now();
+  queryRun('INSERT OR REPLACE INTO channel_views (discordID, channelID, last_viewed) VALUES (?, ?, ?)', [discordID, channelID, now]);
+}
+
+exports.getChannelLastViewed = function(discordID, channelID) {
+  const result = querySingle('SELECT last_viewed FROM channel_views WHERE discordID = ? AND channelID = ?', [discordID, channelID]);
+  return result ? result.last_viewed : 0;
+}
+
+exports.getChannelViewsForUser = function(discordID) {
+  return queryAll('SELECT channelID, last_viewed FROM channel_views WHERE discordID = ?', [discordID]);
 }
 
 exports.dbQueryRun = queryRun
