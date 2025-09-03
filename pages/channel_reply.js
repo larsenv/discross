@@ -45,6 +45,12 @@ function formatFileSize(bytes) {
   return `${formattedSize} ${sizes[i]}`;
 }
 
+// Remove any existing anchors with id or name 'end' from HTML
+function removeExistingEndAnchors(html) {
+  // Remove anchors that have id="end" or name="end" (handles both single and double quotes)
+  return html.replace(/<a[^>]*(?:id=['"]end['"]|name=['"]end['"])[^>]*>[\s\S]*?<\/a>/gi, '');
+}
+
 // Get the display name following Discord's order: server nickname -> Discord username -> internal username
 function getDisplayName(member, author) {
   if (member) {
@@ -368,6 +374,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         catch { return }
         response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
       });
+      // Remove any existing end anchors from messages HTML before appending exactly one
+      response = removeExistingEndAnchors(response);
       response += '<a id="end" name="end"></a>';
       final = strReplace(final, "{$MESSAGES}", response);
 
