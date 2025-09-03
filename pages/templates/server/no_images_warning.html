@@ -1,10 +1,24 @@
-<br>
-<br>
+<style>
+    .discross-button {
+      display: inline-block;
+      background: #5865f2;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-family: Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin: 8px 0;
+    }
+</style>
 <font face="Arial, Helvetica, sans-serif" color="#dddddd">
 All images are currently turned OFF
 <form action="/toggleImages" method="post">
-  <button type="submit"
-    style="padding: 12px 24px; background: #ffffff; border: none; border-radius: 6px; color: #5865f2; cursor: pointer; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: bold; margin: 8px;" color="#e3e5e8">
+  <button class="discross-button" type="submit">
     Enable Images
   </button>
 </form>
