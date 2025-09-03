@@ -14,17 +14,63 @@
     <title>Discross - #{$CHANNEL_NAME}</title>
     <script>
         window.onload = function () {
-            var end = document.getElementById("end");
-            if (end && end.scrollIntoView) {
-                try {
-                    end.scrollIntoView();
-                } catch (e) {
-                    var msgContainer = document.getElementById("msgcontainer");
-                    if (msgContainer) {
+            // Enhanced scroll-to-bottom for old browser compatibility
+            function scrollToBottom() {
+                var end = document.getElementById("end");
+                var msgContainer = document.getElementById("msgcontainer");
+                var scrollContainer = msgContainer ? msgContainer.parentNode : null;
+                
+                // Try multiple scroll methods for maximum compatibility
+                var scrolled = false;
+                
+                // Method 1: scrollIntoView on #end element (modern browsers)
+                if (end && end.scrollIntoView) {
+                    try {
+                        end.scrollIntoView();
+                        scrolled = true;
+                    } catch (e) {
+                        // Continue to fallback methods
+                    }
+                }
+                
+                // Method 2: Scroll the container holding msgcontainer
+                if (!scrolled && scrollContainer && scrollContainer.scrollTop !== undefined) {
+                    try {
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                        scrolled = true;
+                    } catch (e) {
+                        // Continue to fallback methods
+                    }
+                }
+                
+                // Method 3: Scroll msgcontainer itself
+                if (!scrolled && msgContainer && msgContainer.scrollTop !== undefined) {
+                    try {
                         msgContainer.scrollTop = msgContainer.scrollHeight;
+                        scrolled = true;
+                    } catch (e) {
+                        // Continue to fallback methods
+                    }
+                }
+                
+                // Method 4: Scroll window to #end anchor (old browser fallback)
+                if (!scrolled && end) {
+                    try {
+                        window.location.hash = 'end';
+                        scrolled = true;
+                    } catch (e) {
+                        // Final fallback - scroll window to bottom
+                        try {
+                            window.scrollTo(0, document.body.scrollHeight);
+                        } catch (e2) {
+                            // If all else fails, at least try basic body scroll
+                            document.body.scrollTop = document.body.scrollHeight;
+                        }
                     }
                 }
             }
+            
+            scrollToBottom();
         };
 
         var emojiShowing = false;
@@ -193,6 +239,59 @@
                 left: 8px;
             }
         }
+
+        /* Old browser compatibility fixes */
+        .message-form-container {
+            /* Fallback for old browsers that don't support sticky */
+            position: relative;
+            bottom: 0;
+            /* Ensure it doesn't overflow */
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+            /* Add background to ensure visibility */
+            background: #36393f;
+            /* Add border for separation */
+            border-top: 1px solid #40444b;
+        }
+
+        .message-buttons-container {
+            /* Fallback layout for old browsers */
+            width: 100%;
+            max-width: 100%;
+            /* Use table-cell layout as flexbox fallback for very old browsers */
+            display: table;
+            table-layout: fixed;
+            box-sizing: border-box;
+            padding: 8px;
+        }
+
+        .message-button-cell {
+            display: table-cell;
+            width: 32px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Modern browsers will still use flex if supported */
+        .modern-flex {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Light theme adjustments for message form */
+        .light-theme .message-form-container {
+            background: #ffffff !important;
+            border-top-color: #e3e5e8 !important;
+        }
+
+        /* AMOLED theme adjustments for message form */
+        .amoled-theme .message-form-container {
+            background: #000000 !important;
+            border-top-color: #333333 !important;
+        }
     </style>
 </head>
 
@@ -247,34 +346,40 @@
                 </div>
                 <a id="end" name="end"></a>
             </div>
-            <div style="position: sticky; bottom: 0;">
+            <div class="message-form-container" style="position: sticky; bottom: 0;">
                 <form action="../send" style="position: relative;">
                     <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                     <input type="hidden" id="lite" name="lite" value="False">
 
                     {$INPUT}
 
-                    <div style="display: flex; align-items: center; width: 100%; box-sizing: border-box;">
-                        <button
-                            style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px;"
-                            onclick="showEmoji()" type="button"
-                            onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                            onmouseout="this.style.background='none'">
-                            <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                        <a href="/draw/{$CHANNEL_ID}"
-                            style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none;"
-                            onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                            onmouseout="this.style.background='none'">
-                            <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
-                        </a>
-                        <a href="{$REFRESH_URL}"
-                            style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none;"
-                            onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                            onmouseout="this.style.background='none'">
-                            <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
-                        </a>
+                    <div class="modern-flex message-buttons-container">
+                        <div class="message-button-cell">
+                            <button
+                                style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; width: 32px; height: 32px;"
+                                onclick="showEmoji()" type="button"
+                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+                                onmouseout="this.style.background='none'">
+                                <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
+                                    style="width: 24px; height: 24px;">
+                            </button>
+                        </div>
+                        <div class="message-button-cell">
+                            <a href="/draw/{$CHANNEL_ID}"
+                                style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+                                onmouseout="this.style.background='none'">
+                                <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
+                            </a>
+                        </div>
+                        <div class="message-button-cell">
+                            <a href="{$REFRESH_URL}"
+                                style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+                                onmouseout="this.style.background='none'">
+                                <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
