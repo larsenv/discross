@@ -310,6 +310,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         catch { return }
         response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
       });
+      response += '<a id="end" name="end"></a>';
       final = strReplace(final, "{$MESSAGES}", response);
       res.writeHead(200, { "Content-Type": "text/html" });
       res.write(final); //write a response to the client
