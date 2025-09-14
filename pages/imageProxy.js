@@ -41,12 +41,12 @@ exports.imageProxy = async function imageProxy(res, URL) {
             } catch (error) {
                 console.error('Error converting image to GIF:', error.message);
                 res.writeHead(500, { 'Content-Type': 'text/plain' });
-                res.end('Error converting image to GIF. Please email larsenv293@gmail.com or contact us on our Discord server. Make sure to let us know where you had found the error');
+                res.end('Error converting image to GIF. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error');
             }
         }).on('error', (err) => {
             console.error('Error fetching image:', err);
             res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end('An error occurred. Please email larsenv293@gmail.com or contact us on our Discord server. Make sure to let us know where you had found the error');
+            res.end('An error occurred. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error');
         });
     })
 }

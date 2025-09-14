@@ -197,7 +197,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
   } catch (err) {
     console.error(err);
     res.writeHead(500);
-    res.write("An error occurred. Please email larsenv293@gmail.com. Make sure to let us know where you had found the error");
+    res.write("An error occurred. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error");
     res.end();
   }
 };
