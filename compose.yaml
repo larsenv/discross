@@ -1,0 +1,12 @@
+services:
+  discross:
+    container_name: discross_server
+    build:
+      context: .
+    environment:
+      TOKEN: ${TOKEN}
+    volumes:
+      - ./db:/usr/src/app/db
+    ports:
+      - 4000:4000
+    restart: unless-stopped

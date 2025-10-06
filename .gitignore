@@ -8,3 +8,4 @@ pages/static/ico/server/*
 !pages/static/ico/server/.gitkeep
 .DS_Store
 package-lock.json
+.env
