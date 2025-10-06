@@ -9,3 +9,4 @@ pages/static/ico/server/*
 .DS_Store
 package-lock.json
 .env
+db/discross.db
