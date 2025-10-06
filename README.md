@@ -52,6 +52,12 @@ Platforms that are confirmed to work, to some extent:
 
 ## Hosting
 
+### WARNING!! database file relocated to db/discross.db. Please move your database file to the new location if you are updating from an older version.
+
+```sh
+mv secrets/database.db db/discross.db
+```
+
 ### Without docker
 
 Make sure the following are installed:
