@@ -73,6 +73,7 @@ mkdir secrets
 cd secrets
 # copy your key.pem and cert.pem files here if you are using HTTPS
 cd ..
+touch db/discross.db
 npm install
 # replace the token in the line below with your bot's token
 export TOKEN=discord_bot_token_here
@@ -92,6 +93,7 @@ mkdir secrets
 cd secrets
 # copy your key.pem and cert.pem files here if you are using HTTPS
 cd ..
+touch db/discross.db
 cp .env.example .env
 # replace the token in .env with your bot's token
 docker compose up -d
