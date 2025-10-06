@@ -77,6 +77,7 @@ copy your key.pem and cert.pem files here if you are using HTTPS
 
 ```bash
 cd ..
+mkdir db
 touch db/discross.db
 npm install
 ```
@@ -105,6 +106,7 @@ copy your key.pem and cert.pem files here if you are using HTTPS
 
 ```bash
 cd ..
+mkdir db
 touch db/discross.db
 cp .env.example .env
 ```
