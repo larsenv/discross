@@ -86,7 +86,7 @@ mkdir secrets
 cd secrets
 # copy your key.pem and cert.pem files here if you are using HTTPS
 cd ..
-copy .env.example .env
+cp .env.example .env
 # replace the token in .env with your bot's token
 docker compose up -d
 ``` 
