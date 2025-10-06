@@ -19,7 +19,7 @@ exports.setHTTPS = function (ishttps) { // Called from index.js
   https = ishttps
 }
 
-const db = new sqlite3('secrets/database.db');
+const db = new sqlite3('db/discross.db');
 console.log("Connected to the database.");
 
 function queryRun(sql, params = []) {
