@@ -52,6 +52,8 @@ Platforms that are confirmed to work, to some extent:
 
 ## Hosting
 
+### Without docker
+
 Make sure the following are installed:
 
 - Node.js
@@ -63,11 +65,33 @@ git clone https://github.com/larsenv/discross.git
 cd discross
 mkdir secrets
 cd secrets
-touch database.db
-touch token.txt
+# copy your key.pem and cert.pem files here if you are using HTTPS
 cd ..
+npm install
+# replace the token in the line below with your bot's token
+export TOKEN=discord_bot_token_here
+npm start
 ```
 
+### With docker
+
+Make sure you have [Docker](https://www.docker.com/get-started/) and [Docker Compose](https://docs.docker.com/compose/install/) installed.
+
+Or if you're on Windows or Mac, just install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+```bash
+git clone https://github.com/larsenv/discross.git
+cd discross
+mkdir secrets
+cd secrets
+# copy your key.pem and cert.pem files here if you are using HTTPS
+cd ..
+copy .env.example .env
+# replace the token in .env with your bot's token
+docker compose up -d
+``` 
+
+### Bot setup
 Go to [discord.dev](https://discord.com/developers/applications) and create a new application
 
 In the application menu go to "Bot" and click on "Reset Token"
@@ -92,10 +116,6 @@ Copy the link again, but replace `response_type=code` with `response_type=token`
 
 Paste the link into a new tab and press "Authorize"
 
-```bash
-node .
-```
-
 Open Discord and type ^connect in the same server you invited the bot in
 
 The bot will send you a verification code in DMs
@@ -106,7 +126,7 @@ Go to [localhost:4000](http://localhost:4000) and use it to register
 
 ## Contributors
 
-- @koboshkobosh added the ability to reply to messages
+- @kobosh.com(kobosh_com)
 
 # Known Issues
 

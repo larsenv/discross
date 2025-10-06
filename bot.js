@@ -41,7 +41,12 @@ client.on('messageCreate', async function (msg) {
 // client.on('messageDelete
 
 exports.startBot = async function () {
-  client.login(fs.readFileSync('secrets/token.txt', 'utf-8').replace('\n', ''))
+  if (process.env.TOKEN) {
+    client.login(process.env.TOKEN)
+  } else {
+    console.error('No token found! Please set the TOKEN environment variable to your bot token.')
+    process.exit(1)
+  }
 }
 
 exports.addToCache = function (msg) {
