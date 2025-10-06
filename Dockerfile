@@ -12,11 +12,10 @@ COPY package.json .
 COPY pages pages
 COPY secrets secrets
 
-RUN npm install --production --omit=dev
-RUN npm cache clean --force
+RUN npm install --production --omit=dev && npm cache clean --force
 
 USER node
 
 EXPOSE 4000
 
-CMD npm start
+CMD node index.js
