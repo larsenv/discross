@@ -54,7 +54,7 @@ Platforms that are confirmed to work, to some extent:
 
 ### WARNING!! database file relocated to db/discross.db. Please move your database file to the new location if you are updating from an older version.
 
-```sh
+```bash
 mv secrets/database.db db/discross.db
 ```
 
@@ -71,11 +71,19 @@ git clone https://github.com/larsenv/discross.git
 cd discross
 mkdir secrets
 cd secrets
-# copy your key.pem and cert.pem files here if you are using HTTPS
+```
+
+copy your key.pem and cert.pem files here if you are using HTTPS
+
+```bash
 cd ..
 touch db/discross.db
 npm install
-# replace the token in the line below with your bot's token
+```
+
+replace the token in the line below with your bot's token
+
+```bash
 export TOKEN=discord_bot_token_here
 npm start
 ```
@@ -91,11 +99,19 @@ git clone https://github.com/larsenv/discross.git
 cd discross
 mkdir secrets
 cd secrets
-# copy your key.pem and cert.pem files here if you are using HTTPS
+```
+
+copy your key.pem and cert.pem files here if you are using HTTPS
+
+```bash
 cd ..
 touch db/discross.db
 cp .env.example .env
-# replace the token in .env with your bot's token
+```
+
+replace the token in .env with your bot's token
+
+```bash
 docker compose up -d
 ``` 
 
