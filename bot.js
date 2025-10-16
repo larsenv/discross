@@ -10,7 +10,7 @@ const client = new Discord.Client({ partials: [Discord.Partials.Message], shards
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
-client.on('ready', () => {
+client.on('clientReady', () => {
   console.log(`Logged in as ${client.user.tag}!`)
   // console.log(client.channels.array());
 })
