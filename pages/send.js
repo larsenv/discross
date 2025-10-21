@@ -40,15 +40,54 @@ async function getOrCreateWebhook(channel, guildID) {
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock(); // Create a new lock instance
 
+function isValidSnowflake(id) {
+  return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
+}
+
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
   try {
     await lock.acquire(discordID, async () => {
       const parsedurl = url.parse(req.url, true);
-      if (parsedurl.query.message !== "") {
-        const channel = await bot.client.channels.fetch(parsedurl.query.channel);
-        const member = await channel.guild.members.fetch(discordID);
+      const query = parsedurl.query || {};
 
-        if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
+      // Ensure message exists and is a non-empty string
+      if (typeof query.message === 'string' && query.message !== "") {
+        const channelId = (query.channel || query.channel_id || args?.[2]);
+
+        // Validate channel id format early
+        if (!channelId || !isValidSnowflake(channelId)) {
+          res.writeHead(404, { "Content-Type": "text/plain" });
+          res.write("Invalid channel!");
+          res.end();
+          return;
+        }
+
+        // Attempt to fetch channel, handle failures gracefully
+        let channel;
+        try {
+          channel = await bot.client.channels.fetch(channelId);
+        } catch (err) {
+          console.error("Channel fetch error:", err);
+          channel = null;
+        }
+
+        if (!channel) {
+          res.writeHead(404, { "Content-Type": "text/plain" });
+          res.write("Invalid channel!");
+          res.end();
+          return;
+        }
+
+        // Attempt to fetch member and check permissions
+        let member;
+        try {
+          member = await channel.guild.members.fetch(discordID);
+        } catch (err) {
+          console.error("Member fetch error:", err);
+          member = null;
+        }
+
+        if (!member || !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
           res.write("You don't have permission to do that!");
           res.end();
           return;
@@ -56,7 +95,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
         const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-        let processedmessage = parsedurl.query.message;
+        let processedmessage = query.message;
         const regex = /@([^#]{2,32}#\d{4})/g;
         let m;
         do {
@@ -72,7 +111,13 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
           }
         } while (m);
 
-        await webhook.edit({ channel: channel });
+        try {
+          await webhook.edit({ channel: channel });
+        } catch (err) {
+          // Editing webhook channel can fail if missing permissions; log but continue to attempt send
+          console.error("Failed to edit webhook channel:", err);
+        }
+
         const message = await webhook.send({
           content: processedmessage,
           username: member.displayName || member.user.tag,
@@ -83,7 +128,9 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
         bot.addToCache(message);
       }
 
-      res.writeHead(302, { "Location": `/channels/${parsedurl.query.channel}#end` });
+      // redirect back to the channel (use the provided channel id if available)
+      const redirectChannel = (parsedurl.query && parsedurl.query.channel) ? parsedurl.query.channel : (args?.[2] || "");
+      res.writeHead(302, { "Location": `/channels/${redirectChannel}#end` });
       res.end();
     });
   } catch (err) {
