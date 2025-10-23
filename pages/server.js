@@ -86,6 +86,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
   try {
     let serverList = "";
     let serversDeleted = 0; // Track if servers were deleted due to sync issues
+    const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
     const data = auth.dbQueryAll("SELECT * FROM servers WHERE discordID=?", [discordID]);
 
     await lock.acquire(discordID, async () => {
@@ -95,7 +96,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
         if (server) {
           let member = cachedMembers[discordID]?.[server.id];
-          if (!member) {
+          if (clientIsReady && !member) {
             try {
               member = await server.members.fetch(discordID);
               cachedMembers[discordID] = { ...cachedMembers[discordID], [server.id]: member };
