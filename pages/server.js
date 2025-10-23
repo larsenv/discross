@@ -113,8 +113,20 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             serverList += serverHTML;
           }
         } else {
-          auth.dbQueryRun("DELETE FROM servers WHERE serverID=?", [serverID]);
-          serversDeleted++;
+          // NEW: Only delete the server from the DB if the bot client is ready.
+          // If the bot hasn't connected yet (client not ready), skip deletion so servers are preserved during boot.
+          const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+
+          if (clientIsReady) {
+            // bot is connected and the guild truly isn't in cache -> safe to delete
+            auth.dbQueryRun("DELETE FROM servers WHERE serverID=?", [serverID]);
+            serversDeleted++;
+          } else {
+            // bot not ready / not connected: do not delete the server row; treat as temporarily missing
+            // keep server in DB and do not increment serversDeleted
+            console.log(`Skipping deletion of server ${serverID} because bot client is not ready.`);
+            continue;
+          }
         }
       }
     });
@@ -186,8 +198,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       });
     }
 
-    const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-    if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+    const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since [...]
+    if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by[...]
       response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
     })
 
@@ -235,7 +247,7 @@ function applyUserPreferences(response, req) {
 
 function createServerHTML(server, member) {
   // Generate server-specific HTML
-  let serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
+  let serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "[...]
   serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
   serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", server.name);
   return serverHTML;
