@@ -7,7 +7,7 @@
     "@bhavingajjar/html-minify": "^1.0.0",
     "async": "^3.2.6",
     "async-lock": "^1.4.1",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.4.1",
     "discord.js": "^14.14.1",
     "dotenv": "^17.2.3",
