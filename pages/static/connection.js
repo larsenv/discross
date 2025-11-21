@@ -170,7 +170,9 @@ if (window.WebSocket || window.MozWebSocket) {
 
   connectiontype = "websocket";
   // Let us open a web socket
-  ws = new WebSocket("wss://" + location.host + "/");
+  // Use ws:// for http and wss:// for https
+  var wsProtocol = location.protocol === "https:" ? "wss://" : "ws://";
+  ws = new WebSocket(wsProtocol + location.host + "/");
 
   ws.onopen = function () {
     auth();
