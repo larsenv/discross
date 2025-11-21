@@ -344,6 +344,13 @@
     <script>
         // Lightweight drawing implementation
         (function() {
+            // Configuration constants
+            const CANVAS_PADDING = 140;
+            const CANVAS_MAX_WIDTH = 800;
+            const CANVAS_HEIGHT_OFFSET = 200;
+            const CANVAS_MAX_HEIGHT = 600;
+            const ERASER_SIZE_MULTIPLIER = 2;
+
             let canvas, ctx;
             let isDrawing = false;
             let currentColor = '#000000';
@@ -357,8 +364,8 @@
                 ctx = canvas.getContext("2d");
                 
                 // Set canvas size
-                canvas.width = Math.min(window.innerWidth - 140, 800);
-                canvas.height = Math.min(window.innerHeight - 200, 600);
+                canvas.width = Math.min(window.innerWidth - CANVAS_PADDING, CANVAS_MAX_WIDTH);
+                canvas.height = Math.min(window.innerHeight - CANVAS_HEIGHT_OFFSET, CANVAS_MAX_HEIGHT);
                 
                 // Set white background
                 ctx.fillStyle = "white";
@@ -439,13 +446,13 @@
                 fakesend.onclick = sendDrawing;
 
                 sendform.onkeyup = function (event) {
-                    if (event.keyCode !== 13) return;
+                    if (event.key !== 'Enter') return;
                     sendDrawing();
                     if (event.preventDefault) event.preventDefault();
                 };
 
                 messagedom.onkeypress = function (e) {
-                    if (e.keyCode == 13) {
+                    if (e.key === 'Enter') {
                         if (e.preventDefault) e.preventDefault();
                     }
                 };
@@ -511,7 +518,7 @@
                 
                 if (isErasing) {
                     ctx.globalCompositeOperation = 'destination-out';
-                    ctx.lineWidth = currentSize * 2;
+                    ctx.lineWidth = currentSize * ERASER_SIZE_MULTIPLIER;
                 } else {
                     ctx.globalCompositeOperation = 'source-over';
                     ctx.strokeStyle = currentColor;
