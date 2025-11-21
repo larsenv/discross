@@ -50,11 +50,14 @@
             background: white;
             display: block;
             margin: 16px auto;
+            cursor: crosshair;
+            touch-action: none;
         }
 
         /* Drawing controls */
         .drawing-controls {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             gap: 12px;
             margin: 16px;
@@ -62,6 +65,18 @@
             background: #2f3136;
             border: 1px solid #40444b;
             border-radius: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-label {
+            color: #b9bbbe;
+            font-size: 14px;
+            margin-right: 4px;
         }
 
         .color-button {
@@ -80,6 +95,67 @@
         .color-button.active {
             border-color: #5865f2;
             box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.3);
+        }
+
+        .tool-button {
+            background: #40444b;
+            border: 2px solid #40444b;
+            border-radius: 4px;
+            color: #dcddde;
+            cursor: pointer;
+            padding: 6px 12px;
+            font-size: 14px;
+            transition: all 0.1s;
+        }
+
+        .tool-button:hover {
+            background: #4e5058;
+        }
+
+        .tool-button.active {
+            background: #5865f2;
+            border-color: #5865f2;
+            color: white;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slider {
+            width: 100px;
+            height: 4px;
+            border-radius: 2px;
+            background: #40444b;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #5865f2;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #5865f2;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            color: #dcddde;
+            font-size: 14px;
+            min-width: 25px;
         }
 
         /* Hide legacy styling */
@@ -147,9 +223,12 @@
                 max-width: calc(100vw - 80px);
                 max-height: 300px;
             }
+
+            .slider {
+                width: 60px;
+            }
         }
     </style>
-    <script src="/atrament.min.js"></script>
 </head>
 
 <body {$WHITE_THEME_ENABLED}>
@@ -161,25 +240,39 @@
         <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
             <div style="flex: 1; overflow-y: auto; padding: 16px;">
                 <div style="text-align: center;">
-                    <canvas id="sketchpad" width="0" height="0"></canvas>
+                    <canvas id="sketchpad"></canvas>
                 </div>
 
                 <div class="drawing-controls">
-                    <span style="color: #b9bbbe; font-size: 14px; margin-right: 8px;">Colors:</span>
-                    <div class="color-button active" style="background: #000000;" onclick="setDrawingColor('#000000')"
-                        title="Black"></div>
-                    <div class="color-button" style="background: #ed4245;" onclick="setDrawingColor('#ed4245')"
-                        title="Red"></div>
-                    <div class="color-button" style="background: #57f287;" onclick="setDrawingColor('#57f287')"
-                        title="Green"></div>
-                    <div class="color-button" style="background: #3498db;" onclick="setDrawingColor('#3498db')"
-                        title="Blue"></div>
-                    <div class="color-button" style="background: #f1c40f;" onclick="setDrawingColor('#f1c40f')"
-                        title="Yellow"></div>
-                    <div class="color-button" style="background: #9b59b6;" onclick="setDrawingColor('#9b59b6')"
-                        title="Purple"></div>
-                    <div class="color-button" style="background: #ffffff;" onclick="setDrawingColor('#ffffff')"
-                        title="White"></div>
+                    <div class="control-group">
+                        <span class="control-label">Colors:</span>
+                        <div class="color-button active" style="background: #000000;" data-color="#000000"
+                            title="Black"></div>
+                        <div class="color-button" style="background: #ed4245;" data-color="#ed4245"
+                            title="Red"></div>
+                        <div class="color-button" style="background: #57f287;" data-color="#57f287"
+                            title="Green"></div>
+                        <div class="color-button" style="background: #3498db;" data-color="#3498db"
+                            title="Blue"></div>
+                        <div class="color-button" style="background: #f1c40f;" data-color="#f1c40f"
+                            title="Yellow"></div>
+                        <div class="color-button" style="background: #9b59b6;" data-color="#9b59b6"
+                            title="Purple"></div>
+                        <div class="color-button" style="background: #ffffff;" data-color="#ffffff"
+                            title="White"></div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="control-label">Brush Size:</span>
+                        <input type="range" class="slider" id="brushSize" min="1" max="50" value="3">
+                        <span class="slider-value" id="brushSizeValue">3</span>
+                    </div>
+
+                    <div class="control-group">
+                        <button class="tool-button active" id="drawMode" title="Draw">✏️ Draw</button>
+                        <button class="tool-button" id="eraseMode" title="Erase">🧹 Erase</button>
+                        <button class="tool-button" id="clearCanvas" title="Clear Canvas">🗑️ Clear</button>
+                    </div>
                 </div>
 
                 <div id="emoji" style="display: none;">
@@ -249,63 +342,209 @@
         <script src="/connection.js"></script>
     </div>
     <script>
-        let currentSketchpad = null;
+        // Lightweight drawing implementation
+        (function() {
+            let canvas, ctx;
+            let isDrawing = false;
+            let currentColor = '#000000';
+            let currentSize = 3;
+            let isErasing = false;
+            let lastX = 0;
+            let lastY = 0;
 
-        function setDrawingColor(color) {
-            if (currentSketchpad) {
-                currentSketchpad.color = color;
+            function initDrawing() {
+                canvas = document.getElementById("sketchpad");
+                ctx = canvas.getContext("2d");
+                
+                // Set canvas size
+                canvas.width = Math.min(window.innerWidth - 140, 800);
+                canvas.height = Math.min(window.innerHeight - 200, 600);
+                
+                // Set white background
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Set up canvas properties
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                // Set up event listeners
+                setupCanvasEvents();
+                setupControlEvents();
+                setupFormEvents();
             }
-            // Update active color button
-            document.querySelectorAll('.color-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-        }
 
-        function initDrawing() {
-            var canvas = document.getElementById("sketchpad");
-            canvas.width = Math.min(window.innerWidth - 140, 800);
-            canvas.height = Math.min(window.innerHeight - 200, 600);
-            var fakesend = document.getElementById("fakesend");
-            var sendform1 = document.getElementById("sendform");
-            var drawinginput = document.getElementById("drawinginput");
-            var messagedom = document.getElementById("message");
-
-            currentSketchpad = new atrament.Atrament(canvas, {
-                width: canvas.width,
-                height: canvas.height,
-                color: '#000000',
-                weight: 3,
-                smoothing: 1.5
-            });
-
-            function sendDrawing() {
-                drawinginput.value = canvas.toDataURL();
-                sendform1.submit();
+            function setupCanvasEvents() {
+                // Mouse events
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('mouseout', stopDrawing);
+                
+                // Touch events for mobile
+                canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
+                canvas.addEventListener('touchmove', handleTouchMove, {passive: false});
+                canvas.addEventListener('touchend', stopDrawing);
             }
 
-            sendform1.onkeyup = function (event) {
-                if (event.keyCode !== 13) return;
-                sendDrawing();
-                if (event.preventDefault) event.preventDefault();
-            };
+            function setupControlEvents() {
+                // Color buttons
+                document.querySelectorAll('.color-button').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        currentColor = this.getAttribute('data-color');
+                        isErasing = false;
+                        updateActiveButton('color', this);
+                        updateToolButtons('draw');
+                    });
+                });
 
-            messagedom.onkeypress = function (e) {
-                if (e.keyCode == 13) {
-                    if (e.preventDefault) e.preventDefault();
+                // Brush size slider
+                const brushSlider = document.getElementById('brushSize');
+                const brushValue = document.getElementById('brushSizeValue');
+                brushSlider.addEventListener('input', function() {
+                    currentSize = parseInt(this.value);
+                    brushValue.textContent = currentSize;
+                });
+
+                // Tool buttons
+                document.getElementById('drawMode').addEventListener('click', function() {
+                    isErasing = false;
+                    updateToolButtons('draw');
+                });
+
+                document.getElementById('eraseMode').addEventListener('click', function() {
+                    isErasing = true;
+                    updateToolButtons('erase');
+                });
+
+                document.getElementById('clearCanvas').addEventListener('click', function() {
+                    if (confirm('Are you sure you want to clear the canvas?')) {
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                });
+            }
+
+            function setupFormEvents() {
+                const fakesend = document.getElementById("fakesend");
+                const sendform = document.getElementById("sendform");
+                const drawinginput = document.getElementById("drawinginput");
+                const messagedom = document.getElementById("message");
+
+                function sendDrawing() {
+                    drawinginput.value = canvas.toDataURL();
+                    sendform.submit();
                 }
-            };
 
-            // Set white background
-            currentSketchpad.canvas.getContext("2d").fillStyle = "white";
-            currentSketchpad.canvas.getContext("2d").fillRect(0, 0, currentSketchpad.canvas.width, currentSketchpad.canvas.height);
+                fakesend.onclick = sendDrawing;
 
-            fakesend.onclick = sendDrawing;
-        }
+                sendform.onkeyup = function (event) {
+                    if (event.keyCode !== 13) return;
+                    sendDrawing();
+                    if (event.preventDefault) event.preventDefault();
+                };
 
-        if (document.addEventListener) {
-            document.addEventListener("DOMContentLoaded", initDrawing);
-        } else {
-            window.onload = initDrawing;
-        }
+                messagedom.onkeypress = function (e) {
+                    if (e.keyCode == 13) {
+                        if (e.preventDefault) e.preventDefault();
+                    }
+                };
+            }
+
+            function updateActiveButton(type, activeBtn) {
+                if (type === 'color') {
+                    document.querySelectorAll('.color-button').forEach(btn => 
+                        btn.classList.remove('active')
+                    );
+                    activeBtn.classList.add('active');
+                }
+            }
+
+            function updateToolButtons(mode) {
+                const drawBtn = document.getElementById('drawMode');
+                const eraseBtn = document.getElementById('eraseMode');
+                
+                if (mode === 'draw') {
+                    drawBtn.classList.add('active');
+                    eraseBtn.classList.remove('active');
+                } else {
+                    drawBtn.classList.remove('active');
+                    eraseBtn.classList.add('active');
+                }
+            }
+
+            function getCoordinates(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                
+                if (e.type.includes('touch')) {
+                    const touch = e.touches[0] || e.changedTouches[0];
+                    return {
+                        x: (touch.clientX - rect.left) * scaleX,
+                        y: (touch.clientY - rect.top) * scaleY
+                    };
+                } else {
+                    return {
+                        x: (e.clientX - rect.left) * scaleX,
+                        y: (e.clientY - rect.top) * scaleY
+                    };
+                }
+            }
+
+            function startDrawing(e) {
+                isDrawing = true;
+                const coords = getCoordinates(e);
+                lastX = coords.x;
+                lastY = coords.y;
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                
+                e.preventDefault();
+                const coords = getCoordinates(e);
+                
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(coords.x, coords.y);
+                
+                if (isErasing) {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = currentSize * 2;
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = currentColor;
+                    ctx.lineWidth = currentSize;
+                }
+                
+                ctx.stroke();
+                
+                lastX = coords.x;
+                lastY = coords.y;
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+            }
+
+            function handleTouchStart(e) {
+                e.preventDefault();
+                startDrawing(e);
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                draw(e);
+            }
+
+            // Initialize when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initDrawing);
+            } else {
+                initDrawing();
+            }
+        })();
     </script>
 
 </body>
