@@ -359,19 +359,54 @@
         // Lightweight drawing implementation
         (function() {
             // Configuration constants
-            const CANVAS_PADDING = 140;
-            const CANVAS_MAX_WIDTH = 1200;
-            const CANVAS_HEIGHT_OFFSET = 200;
-            const CANVAS_MAX_HEIGHT = 800;
-            const ERASER_SIZE_MULTIPLIER = 2;
+            var CANVAS_PADDING = 140;
+            var CANVAS_MAX_WIDTH = 1200;
+            var CANVAS_HEIGHT_OFFSET = 200;
+            var CANVAS_MAX_HEIGHT = 800;
+            var ERASER_SIZE_MULTIPLIER = 2;
 
-            let canvas, ctx;
-            let isDrawing = false;
-            let currentColor = '#000000';
-            let currentSize = 3;
-            let isErasing = false;
-            let lastX = 0;
-            let lastY = 0;
+            var canvas, ctx;
+            var isDrawing = false;
+            var currentColor = '#000000';
+            var currentSize = 3;
+            var isErasing = false;
+            var lastX = 0;
+            var lastY = 0;
+
+            // Helper function to get elements by tag and filter by class (legacy compatible)
+            function getElementsByClassName(className) {
+                var results = [];
+                var allElements = document.getElementsByTagName('*');
+                for (var i = 0; i < allElements.length; i++) {
+                    var elemClasses = allElements[i].className.split(' ');
+                    for (var j = 0; j < elemClasses.length; j++) {
+                        if (elemClasses[j] === className) {
+                            results.push(allElements[i]);
+                            break;
+                        }
+                    }
+                }
+                return results;
+            }
+
+            // Helper function to add class (legacy compatible)
+            function addClass(element, className) {
+                if (element.className.indexOf(className) === -1) {
+                    element.className = element.className ? element.className + ' ' + className : className;
+                }
+            }
+
+            // Helper function to remove class (legacy compatible)
+            function removeClass(element, className) {
+                var classes = element.className.split(' ');
+                var newClasses = [];
+                for (var i = 0; i < classes.length; i++) {
+                    if (classes[i] !== className) {
+                        newClasses.push(classes[i]);
+                    }
+                }
+                element.className = newClasses.join(' ');
+            }
 
             function initDrawing() {
                 canvas = document.getElementById("sketchpad");
@@ -403,25 +438,26 @@
                 canvas.addEventListener('mouseout', stopDrawing);
                 
                 // Touch events for mobile
-                canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
-                canvas.addEventListener('touchmove', handleTouchMove, {passive: false});
+                canvas.addEventListener('touchstart', handleTouchStart);
+                canvas.addEventListener('touchmove', handleTouchMove);
                 canvas.addEventListener('touchend', stopDrawing);
             }
 
             function setupControlEvents() {
                 // Color buttons
-                document.querySelectorAll('.color-button').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                var colorButtons = getElementsByClassName('color-button');
+                for (var i = 0; i < colorButtons.length; i++) {
+                    colorButtons[i].addEventListener('click', function() {
                         currentColor = this.getAttribute('data-color');
                         isErasing = false;
                         updateActiveButton('color', this);
                         updateToolButtons('draw');
                     });
-                });
+                }
 
                 // Brush size slider
-                const brushSlider = document.getElementById('brushSize');
-                const brushValue = document.getElementById('brushSizeValue');
+                var brushSlider = document.getElementById('brushSize');
+                var brushValue = document.getElementById('brushSizeValue');
                 brushSlider.addEventListener('input', function() {
                     currentSize = parseInt(this.value);
                     brushValue.textContent = currentSize;
@@ -447,10 +483,10 @@
             }
 
             function setupFormEvents() {
-                const fakesend = document.getElementById("fakesend");
-                const sendform = document.getElementById("sendform");
-                const drawinginput = document.getElementById("drawinginput");
-                const messagedom = document.getElementById("message");
+                var fakesend = document.getElementById("fakesend");
+                var sendform = document.getElementById("sendform");
+                var drawinginput = document.getElementById("drawinginput");
+                var messagedom = document.getElementById("message");
 
                 function sendDrawing() {
                     drawinginput.value = canvas.toDataURL();
@@ -460,13 +496,15 @@
                 fakesend.onclick = sendDrawing;
 
                 sendform.onkeyup = function (event) {
-                    if (event.key !== 'Enter') return;
+                    // Use keyCode for legacy browser compatibility
+                    if (event.keyCode !== 13) return;
                     sendDrawing();
                     if (event.preventDefault) event.preventDefault();
                 };
 
                 messagedom.onkeypress = function (e) {
-                    if (e.key === 'Enter') {
+                    // Use keyCode for legacy browser compatibility
+                    if (e.keyCode === 13) {
                         if (e.preventDefault) e.preventDefault();
                     }
                 };
@@ -474,33 +512,35 @@
 
             function updateActiveButton(type, activeBtn) {
                 if (type === 'color') {
-                    document.querySelectorAll('.color-button').forEach(btn => 
-                        btn.classList.remove('active')
-                    );
-                    activeBtn.classList.add('active');
+                    var colorButtons = getElementsByClassName('color-button');
+                    for (var i = 0; i < colorButtons.length; i++) {
+                        removeClass(colorButtons[i], 'active');
+                    }
+                    addClass(activeBtn, 'active');
                 }
             }
 
             function updateToolButtons(mode) {
-                const drawBtn = document.getElementById('drawMode');
-                const eraseBtn = document.getElementById('eraseMode');
+                var drawBtn = document.getElementById('drawMode');
+                var eraseBtn = document.getElementById('eraseMode');
                 
                 if (mode === 'draw') {
-                    drawBtn.classList.add('active');
-                    eraseBtn.classList.remove('active');
+                    addClass(drawBtn, 'active');
+                    removeClass(eraseBtn, 'active');
                 } else {
-                    drawBtn.classList.remove('active');
-                    eraseBtn.classList.add('active');
+                    removeClass(drawBtn, 'active');
+                    addClass(eraseBtn, 'active');
                 }
             }
 
             function getCoordinates(e) {
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
+                var rect = canvas.getBoundingClientRect();
+                var scaleX = canvas.width / rect.width;
+                var scaleY = canvas.height / rect.height;
                 
-                if (e.type.includes('touch')) {
-                    const touch = e.touches[0] || e.changedTouches[0];
+                // Use indexOf instead of includes for legacy compatibility
+                if (e.type.indexOf('touch') !== -1) {
+                    var touch = e.touches[0] || e.changedTouches[0];
                     return {
                         x: (touch.clientX - rect.left) * scaleX,
                         y: (touch.clientY - rect.top) * scaleY
@@ -515,7 +555,7 @@
 
             function startDrawing(e) {
                 isDrawing = true;
-                const coords = getCoordinates(e);
+                var coords = getCoordinates(e);
                 lastX = coords.x;
                 lastY = coords.y;
             }
@@ -524,7 +564,7 @@
                 if (!isDrawing) return;
                 
                 e.preventDefault();
-                const coords = getCoordinates(e);
+                var coords = getCoordinates(e);
                 
                 ctx.beginPath();
                 ctx.moveTo(lastX, lastY);
