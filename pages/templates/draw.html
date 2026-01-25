@@ -497,22 +497,31 @@
 
             // Init - use DOMContentLoaded when available, fallback to load event for old browsers
             function init() {
+                var initialized = false;
+                
+                function runInit() {
+                    if (!initialized) {
+                        initialized = true;
+                        initDrawing();
+                    }
+                }
+                
                 // Check if DOM is already loaded
                 if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                    initDrawing();
+                    runInit();
                 } else if (document.addEventListener) {
                     // Modern browsers - use DOMContentLoaded
-                    document.addEventListener('DOMContentLoaded', initDrawing, false);
+                    document.addEventListener('DOMContentLoaded', runInit, false);
                 } else if (document.attachEvent) {
                     // IE8 and older
                     document.attachEvent('onreadystatechange', function() {
                         if (document.readyState === 'complete') {
-                            initDrawing();
+                            runInit();
                         }
                     });
                 } else {
                     // Very old browsers - fallback to window.onload
-                    window.onload = initDrawing;
+                    window.onload = runInit;
                 }
             }
             
