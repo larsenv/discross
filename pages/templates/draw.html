@@ -100,6 +100,7 @@
             border-radius: 50%;
             cursor: pointer;
             transition: transform 0.1s;
+            padding: 0;
         }
 
         .color-button:hover {
@@ -120,6 +121,7 @@
             padding: 6px 12px;
             font-size: 14px;
             transition: all 0.1s;
+            font-family: 'rodin', Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
         .tool-button:hover {
@@ -260,20 +262,13 @@
                 <div class="drawing-controls">
                     <div class="control-group">
                         <span class="control-label">Colors:</span>
-                        <div class="color-button active" style="background: #000000;" data-color="#000000"
-                            title="Black"></div>
-                        <div class="color-button" style="background: #ed4245;" data-color="#ed4245"
-                            title="Red"></div>
-                        <div class="color-button" style="background: #57f287;" data-color="#57f287"
-                            title="Green"></div>
-                        <div class="color-button" style="background: #3498db;" data-color="#3498db"
-                            title="Blue"></div>
-                        <div class="color-button" style="background: #f1c40f;" data-color="#f1c40f"
-                            title="Yellow"></div>
-                        <div class="color-button" style="background: #9b59b6;" data-color="#9b59b6"
-                            title="Purple"></div>
-                        <div class="color-button" style="background: #ffffff;" data-color="#ffffff"
-                            title="White"></div>
+                        <input type="button" class="color-button active" style="background: #000000;" data-color="#000000" value="" title="Black">
+                        <input type="button" class="color-button" style="background: #ed4245;" data-color="#ed4245" value="" title="Red">
+                        <input type="button" class="color-button" style="background: #57f287;" data-color="#57f287" value="" title="Green">
+                        <input type="button" class="color-button" style="background: #3498db;" data-color="#3498db" value="" title="Blue">
+                        <input type="button" class="color-button" style="background: #f1c40f;" data-color="#f1c40f" value="" title="Yellow">
+                        <input type="button" class="color-button" style="background: #9b59b6;" data-color="#9b59b6" value="" title="Purple">
+                        <input type="button" class="color-button" style="background: #ffffff;" data-color="#ffffff" value="" title="White">
                     </div>
 
                     <div class="control-group">
@@ -283,9 +278,9 @@
                     </div>
 
                     <div class="control-group">
-                        <button class="tool-button active" id="drawMode" title="Draw">✏️ Draw</button>
-                        <button class="tool-button" id="eraseMode" title="Erase">🧹 Erase</button>
-                        <button class="tool-button" id="clearCanvas" title="Clear Canvas">🗑️ Clear</button>
+                        <input type="button" class="tool-button active" id="drawMode" value="Draw" title="Draw">
+                        <input type="button" class="tool-button" id="eraseMode" value="Erase" title="Erase">
+                        <input type="button" class="tool-button" id="clearCanvas" value="Clear" title="Clear Canvas">
                     </div>
                 </div>
 
@@ -359,10 +354,10 @@
         // Lightweight drawing implementation
         (function() {
             // Configuration constants
-            var CANVAS_PADDING = 140;
-            var CANVAS_MAX_WIDTH = 1200;
-            var CANVAS_HEIGHT_OFFSET = 200;
-            var CANVAS_MAX_HEIGHT = 800;
+            var CANVAS_PADDING = 80;
+            var CANVAS_MAX_WIDTH = 1600;
+            var CANVAS_HEIGHT_OFFSET = 150;
+            var CANVAS_MAX_HEIGHT = 1200;
             var ERASER_SIZE_MULTIPLIER = 2;
 
             var canvas, ctx;
