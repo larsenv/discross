@@ -398,10 +398,11 @@
 
             // Helper function to remove class (legacy compatible)
             function removeClass(element, className) {
+                if (!element.className) return;
                 var classes = element.className.split(' ');
                 var newClasses = [];
                 for (var i = 0; i < classes.length; i++) {
-                    if (classes[i] !== className) {
+                    if (classes[i] !== className && classes[i] !== '') {
                         newClasses.push(classes[i]);
                     }
                 }
