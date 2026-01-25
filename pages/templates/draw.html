@@ -13,6 +13,20 @@
     <meta name="theme-color" content="#ffffff">
     <title>Discross - #{$CHANNEL_NAME}</title>
     <style>
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
+            font-weight: 400;
+        }
+
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
+            font-weight: 700;
+        }
+
         /* Discord-inspired base styling */
         * {
             box-sizing: border-box;
@@ -24,7 +38,7 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-family: 'rodin', Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
         body {
@@ -324,16 +338,16 @@
                     <div
                         style="display: flex; align-items: center; background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0;">
                         <input type="text" name="message" id="message" value=""
-                            style="flex: 1; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px;"
+                            style="flex: 1; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px;"
                             required="" placeholder="Message #{$CHANNEL_NAME}">
                         <button type="button" id="fakesend"
-                            style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; margin: 0 8px; cursor: pointer; font-family: Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 32px; right: 17px;"
+                            style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; margin: 0 8px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 32px; right: 17px;"
                             onmouseover="this.style.background='#4752c4'"
                             onmouseout="this.style.background='#5865f2'">Send Drawing</button>
                     </div>
 
                     <div
-                        style="color: #b9bbbe; font-size: 14px; margin-bottom: 8px; font-family: Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+                        style="color: #b9bbbe; font-size: 14px; margin-bottom: 8px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;">
                         Drawing mode: Use the canvas above to draw, then click "Send Drawing" to share.
                     </div>
                 </form>
