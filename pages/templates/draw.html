@@ -463,13 +463,13 @@
             }
 
             function handleTouchStart(e) {
-                if(e.target == canvas) preventDefault(e);
+                if (e.target === canvas) preventDefault(e);
                 startDrawing(e);
             }
 
             function handleTouchMove(e) {
-                 if(e.target == canvas) preventDefault(e);
-                 draw(e);
+                if (e.target === canvas) preventDefault(e);
+                draw(e);
             }
 
             // Init
