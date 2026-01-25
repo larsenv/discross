@@ -100,6 +100,8 @@
             margin: 0 2px;
             cursor: pointer;
             vertical-align: middle;
+            padding: 0;
+            background-clip: padding-box;
         }
 
         .color-button.active {
@@ -185,7 +187,7 @@
                 <canvas id="sketchpad" width="800" height="600">
                     <p style="color: #fff; padding: 20px;">
                         Your browser does not support the HTML5 Canvas element. <br>
-                        Please upgrade to a newer browser (e.g. Wii Internet Channel / Opera 9+).
+                        Please upgrade to a newer browser.
                     </p>
                 </canvas>
             </div>
@@ -193,13 +195,13 @@
             <div class="drawing-controls">
                 <div class="control-group" id="color-palette">
                     <span class="control-label">Colors:</span>
-                    <div class="color-button active" style="background: #000000;" data-color="#000000" title="Black"></div>
-                    <div class="color-button" style="background: #ed4245;" data-color="#ed4245" title="Red"></div>
-                    <div class="color-button" style="background: #57f287;" data-color="#57f287" title="Green"></div>
-                    <div class="color-button" style="background: #3498db;" data-color="#3498db" title="Blue"></div>
-                    <div class="color-button" style="background: #f1c40f;" data-color="#f1c40f" title="Yellow"></div>
-                    <div class="color-button" style="background: #9b59b6;" data-color="#9b59b6" title="Purple"></div>
-                    <div class="color-button" style="background: #ffffff;" data-color="#ffffff" title="White"></div>
+                    <button type="button" class="color-button active" style="background: #000000;" data-color="#000000" title="Black"></button>
+                    <button type="button" class="color-button" style="background: #ed4245;" data-color="#ed4245" title="Red"></button>
+                    <button type="button" class="color-button" style="background: #57f287;" data-color="#57f287" title="Green"></button>
+                    <button type="button" class="color-button" style="background: #3498db;" data-color="#3498db" title="Blue"></button>
+                    <button type="button" class="color-button" style="background: #f1c40f;" data-color="#f1c40f" title="Yellow"></button>
+                    <button type="button" class="color-button" style="background: #9b59b6;" data-color="#9b59b6" title="Purple"></button>
+                    <button type="button" class="color-button" style="background: #ffffff;" data-color="#ffffff" title="White"></button>
                 </div>
 
                 <div class="control-group">
@@ -338,7 +340,7 @@
             function setupControlEvents() {
                 // Colors
                 var palette = document.getElementById('color-palette');
-                var buttons = palette.getElementsByTagName('div');
+                var buttons = palette.getElementsByTagName('button');
                 
                 for (var i = 0; i < buttons.length; i++) {
                     // Use closure to capture button reference
