@@ -86,6 +86,20 @@
         }
     </script>
     <style>
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
+            font-weight: 400;
+        }
+
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
+            font-weight: 700;
+        }
+
         /* Global reset + consistent box sizing and font */
         *, *::before, *::after {
             box-sizing: border-box;
@@ -97,7 +111,7 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             font-size: 16px;
             line-height: 1.45;
             -webkit-font-smoothing: antialiased;
