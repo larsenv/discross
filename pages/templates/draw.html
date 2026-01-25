@@ -13,6 +13,21 @@
     <meta name="theme-color" content="#ffffff">
     <title>Discross - #{$CHANNEL_NAME}</title>
     <style>
+        /* Font faces */
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
+            font-weight: 400;
+        }
+
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
+            font-weight: 700;
+        }
+
         /* Discord-inspired base styling - Legacy Compatible */
         * {
             box-sizing: border-box;
@@ -26,7 +41,7 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-family: 'rodin', Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
             font-size: 14px;
         }
 
@@ -235,6 +250,33 @@
             var lastY = 0;
             var eraserMultiplier = 2;
 
+            // Helper function to remove a class name
+            function removeClass(elem, className) {
+                var classes = elem.className.split(/\s+/);
+                var newClasses = [];
+                for (var i = 0; i < classes.length; i++) {
+                    if (classes[i] !== className && classes[i] !== '') {
+                        newClasses.push(classes[i]);
+                    }
+                }
+                elem.className = newClasses.join(' ');
+            }
+
+            // Helper function to add a class name
+            function addClass(elem, className) {
+                var classes = elem.className.split(/\s+/);
+                var hasClass = false;
+                for (var i = 0; i < classes.length; i++) {
+                    if (classes[i] === className) {
+                        hasClass = true;
+                        break;
+                    }
+                }
+                if (!hasClass) {
+                    elem.className = elem.className ? elem.className + ' ' + className : className;
+                }
+            }
+
             // Cross-browser event handler
             function addEvent(elem, type, handler) {
                 if (elem.addEventListener) {
@@ -326,10 +368,10 @@
                             
                             // Remove active class from all
                             for (var j = 0; j < buttons.length; j++) {
-                                buttons[j].className = buttons[j].className.replace(' active', '');
+                                removeClass(buttons[j], 'active');
                             }
                             // Add active to this
-                            btn.className += ' active';
+                            addClass(btn, 'active');
                             
                             updateToolButtons('draw');
                         };
@@ -389,13 +431,13 @@
                 var drawBtn = document.getElementById('drawMode');
                 var eraseBtn = document.getElementById('eraseMode');
                 
-                drawBtn.className = drawBtn.className.replace(' active', '');
-                eraseBtn.className = eraseBtn.className.replace(' active', '');
+                removeClass(drawBtn, 'active');
+                removeClass(eraseBtn, 'active');
                 
                 if (mode === 'draw') {
-                    drawBtn.className += ' active';
+                    addClass(drawBtn, 'active');
                 } else {
-                    eraseBtn.className += ' active';
+                    addClass(eraseBtn, 'active');
                 }
             }
 
