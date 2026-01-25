@@ -12,12 +12,27 @@
   <meta name="msapplication-TileColor" content="#2b5797">
   <meta name="theme-color" content="#ffffff">
   <style>
+    @font-face {
+      font-family: 'rodin';
+      src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
+           url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
+      font-weight: 400;
+    }
+
+    @font-face {
+      font-family: 'rodin';
+      src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
+           url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
+      font-weight: 700;
+    }
+
     html,
     body,
     #wrapper {
       margin: 0;
       padding: 0;
       height: 100%;
+      font-family: 'rodin', Arial, Helvetica, sans-serif;
     }
 
     .light-theme #wrapper {
@@ -81,10 +96,10 @@
         <td><img src="/resources/logo.gif" alt="Logo"></td>
 
         <td>
-          <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
         </td>
         <td width="100%" align="right">
-          <font size="4" face="Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
             <a style="color: #dddddd;" href="./login.html">
                 <font color="#dddddd">Login</font>
             </a>&#160;
@@ -112,8 +127,8 @@
           </td>
           <td>
             <form action="/login" method="post">
-              <font size="6" face="Arial, Helvetica, sans-serif" color="#dddddd">Login</font><br><br>
-              <font face="Arial, Helvetica, sans-serif" color="#dddddd">
+              <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Login</font><br><br>
+              <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
                 Username:
                 <br><br>
                 <div style="padding: 16px;background: #393c40;width: 300px;"><input type="text"
@@ -129,7 +144,7 @@
                     placeholder="Password"></div>
                 <br>
                 <a href="/forgot.html" style="text-decoration: none;">
-                  <font color="#999999" size="4" face="Arial, Helvetica, sans-serif">
+                  <font color="#999999" size="4" face="'rodin', Arial, Helvetica, sans-serif">
                     Forgot username or password
                   </font>
                 </a>
@@ -142,7 +157,7 @@
                 <!-- <br>
                 <br>
                 <a style="text-decoration: none;" href="/guest.html">
-                  <font size="4" face="Arial, Helvetica, sans-serif" color="#999999">Guest mode</font>
+                  <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#999999">Guest mode</font>
                 </a> !-->
               </font>
             </form>
