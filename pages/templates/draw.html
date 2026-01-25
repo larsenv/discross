@@ -305,11 +305,13 @@
 
                 ctx = canvas.getContext("2d");
                 
-                // Set canvas size dynamically
-                resizeCanvas();
-                addEvent(window, 'resize', resizeCanvas);
+                // Set canvas size dynamically (only once on init)
+                var w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+                var h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+                canvas.width = Math.min(w - 60, 1000);
+                canvas.height = Math.min(h - 250, 600);
                 
-                // Initialize context
+                // Initialize context - must be after setting canvas size
                 ctx.fillStyle = "white";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.lineCap = 'round';
@@ -318,25 +320,6 @@
                 setupCanvasEvents();
                 setupControlEvents();
                 setupFormEvents();
-            }
-
-            function resizeCanvas() {
-                // Get window size with fallback
-                var w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-                var h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-                
-                // Only resize if significantly different to avoid clearing drawing on mobile scroll
-                // For simplicity in this legacy version, we just set it once or if logic allows
-                // Note: Resizing canvas clears it. In a real app we might want to save/restore.
-                // For now, we set a reasonable default if not set.
-                if (canvas.width === 800) { // Initial load
-                     canvas.width = Math.min(w - 60, 1000);
-                     canvas.height = Math.min(h - 250, 600);
-                     if (ctx) {
-                         ctx.fillStyle = "white";
-                         ctx.fillRect(0, 0, canvas.width, canvas.height);
-                     }
-                }
             }
 
             function setupCanvasEvents() {
@@ -512,14 +495,28 @@
                 draw(e);
             }
 
-            // Init
-            if (window.addEventListener) {
-                window.addEventListener('load', initDrawing, false);
-            } else if (window.attachEvent) {
-                window.attachEvent('onload', initDrawing);
-            } else {
-                window.onload = initDrawing;
+            // Init - use DOMContentLoaded when available, fallback to load event for old browsers
+            function init() {
+                // Check if DOM is already loaded
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                    initDrawing();
+                } else if (document.addEventListener) {
+                    // Modern browsers - use DOMContentLoaded
+                    document.addEventListener('DOMContentLoaded', initDrawing, false);
+                } else if (document.attachEvent) {
+                    // IE8 and older
+                    document.attachEvent('onreadystatechange', function() {
+                        if (document.readyState === 'complete') {
+                            initDrawing();
+                        }
+                    });
+                } else {
+                    // Very old browsers - fallback to window.onload
+                    window.onload = initDrawing;
+                }
             }
+            
+            init();
         })();
     </script>
 </body>
