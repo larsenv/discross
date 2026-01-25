@@ -507,7 +507,7 @@
                 }
                 
                 // Check if DOM is already loaded
-                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                if (document.readyState === 'complete' || document.readyState === 'interactive' || document.readyState === 'loaded') {
                     runInit();
                 } else if (document.addEventListener) {
                     // Modern browsers - use DOMContentLoaded
