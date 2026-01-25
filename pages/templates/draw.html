@@ -378,7 +378,7 @@
                 var results = [];
                 var allElements = document.getElementsByTagName('*');
                 for (var i = 0; i < allElements.length; i++) {
-                    var elemClasses = allElements[i].className.split(' ');
+                    var elemClasses = (allElements[i].className || '').split(' ');
                     for (var j = 0; j < elemClasses.length; j++) {
                         if (elemClasses[j] === className) {
                             results.push(allElements[i]);
