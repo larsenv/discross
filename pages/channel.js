@@ -8,7 +8,7 @@ const path = require('path');
 const sharp = require("sharp");
 const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
-const { PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const { channel } = require('diagnostics_channel');
 // const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
@@ -21,6 +21,7 @@ const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/ch
 
 
 const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message.html', 'utf-8'));
+const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message.html', 'utf-8'));
 const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
 const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
 const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
@@ -104,6 +105,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       currentmessage = "";
       islastmessage = false;
       messageid = 0;
+      isForwarded = false;
+      forwardData = {};
       
       // Cache for member data to avoid repeated fetches
       const memberCache = new Map();
@@ -113,9 +116,16 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           // If the last message is not going to be merged with this one, put it into the response
           if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
 
-
-            currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-            currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
+            // Choose template based on whether this is a forwarded message
+            if (isForwarded) {
+              currentmessage = message_forwarded_template.replace("{$MESSAGE_CONTENT}", currentmessage);
+              currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
+              currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
+              currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+            } else {
+              currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
+              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
+            }
             
             // Use helper functions for proper nickname and color
             const displayName = getDisplayName(lastmember, lastauthor);
@@ -134,6 +144,32 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         if (!item) { // When processing the last message outside of the forEach item is undefined
           return;
+        }
+
+        // Check if this message is a forward and fetch forward data
+        isForwarded = false;
+        forwardData = {};
+        if (item.reference?.type === MessageReferenceType.Forward) {
+          try {
+            const forwardedMessage = await item.fetchReference();
+            const forwardedMember = await ensureMemberData(forwardedMessage, chnl.guild, memberCache);
+            const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
+            const forwardedContent = forwardedMessage.content.length > 100 
+              ? forwardedMessage.content.substring(0, 100) + "..." 
+              : forwardedMessage.content;
+            const forwardedDate = forwardedMessage.createdAt.toLocaleString();
+            
+            isForwarded = true;
+            forwardData = {
+              author: forwardedAuthor,
+              content: md.renderInline(forwardedContent),
+              date: forwardedDate
+            };
+          } catch (err) {
+            console.error("Could not fetch forwarded message:", err);
+            // Fallback: show indicator but don't fail
+            isForwarded = false;
+          }
         }
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
