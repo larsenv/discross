@@ -78,7 +78,7 @@
                 
                 // Save preference to server
                 var serverID = window.location.pathname.split('/').pop();
-                if (serverID) {
+                if (serverID && serverID.length > 0 && serverID !== 'server') {
                     fetch('/toggleCategory', {
                         method: 'POST',
                         headers: {
