@@ -54,8 +54,8 @@ function processServerChannels(server, member, response, discordID) {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
-    // Get all active threads from the guild
-    const allThreads = server.threads?.cache || new Map();
+    // Get all active (non-archived) threads from the guild as an array
+    const allThreads = server.threads?.cache ? Array.from(server.threads.cache.values()).filter(thread => !thread.archived) : [];
 
     // Start with lone text channels (no category)
     let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
@@ -83,7 +83,7 @@ function processServerChannels(server, member, response, discordID) {
               categoryContent += text_channel_template.replace("{$CHANNEL_NAME}", escape(child.name)).replace("{$CHANNEL_LINK}", `../channels/${child.id}#end`);
               
               // Add threads for this channel
-              const channelThreads = allThreads.filter(thread => thread.parentId === child.id && !thread.archived);
+              const channelThreads = allThreads.filter(thread => thread.parentId === child.id);
               channelThreads.sort((a, b) => a.name.localeCompare(b.name)).forEach(thread => {
                 if (member.permissionsIn(thread).has(PermissionFlagsBits.ViewChannel, true)) {
                   categoryContent += thread_channel_template.replace("{$CHANNEL_NAME}", escape(thread.name)).replace("{$CHANNEL_LINK}", `../channels/${thread.id}#end`);
@@ -106,7 +106,7 @@ function processServerChannels(server, member, response, discordID) {
           channelList += text_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
           
           // Add threads for channels without a parent category
-          const channelThreads = allThreads.filter(thread => thread.parentId === item.id && !thread.archived);
+          const channelThreads = allThreads.filter(thread => thread.parentId === item.id);
           channelThreads.sort((a, b) => a.name.localeCompare(b.name)).forEach(thread => {
             if (member.permissionsIn(thread).has(PermissionFlagsBits.ViewChannel, true)) {
               channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(thread.name)).replace("{$CHANNEL_LINK}", `../channels/${thread.id}#end`);
