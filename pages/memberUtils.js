@@ -80,6 +80,7 @@ async function ensureMemberData(message, guild, cache = null) {
   
   // If there's no author or guild, we can't fetch member data
   if (!message.author || !guild) {
+    console.warn('ensureMemberData: Missing author or guild');
     return null;
   }
   
@@ -90,6 +91,7 @@ async function ensureMemberData(message, guild, cache = null) {
   
   // Try to fetch the member from the guild
   try {
+    console.log(`Fetching member data for user ${message.author.id} (${message.author.username})`);
     const member = await guild.members.fetch(message.author.id);
     // Store in cache if provided
     if (cache) {
