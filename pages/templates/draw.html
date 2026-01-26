@@ -553,6 +553,57 @@
         canvas.onmouseup = function() { isDrawing = false; };
         canvas.onmouseout = function() { isDrawing = false; };
 
+        // --- TOUCH SUPPORT FOR MOBILE ---
+        // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
+        function getTouchPos(e) {
+            if (!e.touches || e.touches.length === 0) return null;
+            var touch = e.touches[0];
+            var rect = canvas.getBoundingClientRect();
+            return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+        }
+
+        canvas.addEventListener('touchstart', function(e) {
+            if(e.preventDefault) e.preventDefault(); // Prevent scrolling
+            isDrawing = true;
+            var pos = getTouchPos(e);
+            if (!pos) return;
+            lastX = pos.x;
+            lastY = pos.y;
+            
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
+            ctx.fillStyle = currColor;
+            ctx.fill();
+            ctx.beginPath();
+            
+            return false;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', function(e) {
+            if (!isDrawing) return;
+            if(e.preventDefault) e.preventDefault(); // Prevent scrolling
+            
+            var pos = getTouchPos(e);
+            if (!pos) return;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            
+            lastX = pos.x;
+            lastY = pos.y;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', function(e) {
+            if(e.preventDefault) e.preventDefault();
+            isDrawing = false;
+        }, { passive: false });
+
+        canvas.addEventListener('touchcancel', function(e) {
+            if(e.preventDefault) e.preventDefault();
+            isDrawing = false;
+        }, { passive: false });
+
         // --- UI FUNCTIONS ---
         function setColor(col, id) {
             currColor = col;
