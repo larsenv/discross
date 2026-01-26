@@ -5,255 +5,191 @@
     <meta name="viewport" content="width=device-width">
     <title>Discross - #{$CHANNEL_NAME}</title>
     <style>
-        body {
-            margin: 0;
-            padding: 10px 0 0 0; /* Top padding fixes the "Cut Off" issue on TV */
-            background-color: #36393f; /* Discord Dark Grey */
-            color: #dcddde;
-            font-family: Arial, sans-serif; /* Rodin fallback */
-            overflow: hidden; /* Try to prevent scrolling */
-            text-align: center;
+        /* FONTS */
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
+            font-weight: 700;
         }
 
-        /* --- TOOLBAR STYLES --- */
-        #toolbar-container {
-            background-color: #2f3136;
-            padding: 5px;
-            border-bottom: 1px solid #202225;
-            display: inline-block; /* Centers the bar */
-            border-radius: 8px;
-            margin-bottom: 5px;
-        }
-
-        .c-box {
-            width: 24px; height: 24px; /* Smaller to fit snug */
-            border: 2px solid #555;
-            display: inline-block;
-            margin: 1px;
-            cursor: pointer;
-            vertical-align: middle;
-        }
-
-        .s-btn {
-            background: #b9bbbe;
-            border: 2px solid #000;
-            display: inline-block;
-            margin: 0 3px;
-            cursor: pointer;
-            vertical-align: middle;
-            padding: 2px;
-        }
+        /* RESET & THEME */
+        * { box-sizing: border-box; font-family: 'rodin', Arial, sans-serif; }
         
+        body, html, #wrapper { margin: 0; padding: 0; height: 100%; }
+        body { background: #303338; color: #dddddd; overflow: hidden; }
+
+        /* LIGHT THEME */
+        .light-theme #wrapper { background: #FFFFFF !important; color: #000000 !important; }
+        .light-theme #wrapper * { background: #FFFFFF !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+        .light-theme #wrapper form table td:nth-child(2) { border: 10px solid #000; border-radius: 50px 0 0 50px; }
+        .light-theme #wrapper form table td:nth-child(3) { border: 10px solid #000; border-radius: 0 50px 50px 0; border-left: 5px solid #000; }
+
+        /* DRAWING TOOLS */
+        .c-box { width: 24px; height: 24px; border: 2px solid #555; display: inline-block; margin: 1px; cursor: pointer; vertical-align: middle; }
+        .s-btn { background: #b9bbbe; border: 2px solid #000; display: inline-block; margin: 0 3px; cursor: pointer; padding: 2px; }
         .s-inner { background: black; font-size: 1px; }
 
-        /* --- CANVAS STYLES --- */
-        #canvas-wrapper {
-            margin: 0 auto;
-            display: block;
-            background: #2f3136;
-            padding: 5px;
-            width: 610px; /* Snug fit wrapper */
-        }
+        /* CANVAS */
+        canvas { background: #fff; cursor: crosshair; display: block; margin: 0 auto; border: 2px solid #202225; }
 
-        canvas {
-            background: #ffffff;
-            cursor: crosshair;
-            display: block;
-            border: 1px solid #202225;
-        }
-
-        /* --- BOTTOM INPUT BAR --- */
-        #bottom-bar {
-            background: #2f3136;
-            padding: 8px;
-            margin-top: 5px;
-            border-top: 1px solid #202225;
-            text-align: center;
-        }
-        
-        input[type="text"] {
-            background: #40444b;
-            border: none;
-            color: #dcddde;
-            padding: 8px;
-            width: 60%;
-            border-radius: 4px;
-        }
-
-        #btn-send, #btn-clear {
-            padding: 8px 15px;
-            border-radius: 4px;
-            border: none;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        #btn-send { background-color: #5865f2; } /* Blurple */
-        #btn-clear { background-color: #ed4245; margin-right:10px; } /* Red */
-
+        /* LAYOUT HELPERS */
+        .links { padding: 10px; }
+        .msg-input { color: #dddddd; background: #393c40; border: none; width: 100%; outline: none; box-shadow: 0 0 0 50px #393c40 inset; }
+        .send-btn { width: 70px; right: 17px; position: relative; border-radius: 10px; border: transparent; color: #dddddd; height: 50px; background: #393c40; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 
-<body>
+<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
+<div id="wrapper">
+    <table width="100%" height="100%">
+        <tr>
+            <td valign="top" width="50">
+                <div class="links">
+                    <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif" alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
+                </div>
+            </td>
+            
+            <td valign="top" align="center">
+                <div style="background:#202225; padding:5px; border-radius:8px; display:inline-block; margin-bottom:5px;">
+                    <div id="c1" class="c-box" style="background:#000;" onclick="setColor('#000','c1')"></div>
+                    <div id="c2" class="c-box" style="background:#fff;" onclick="setColor('#fff','c2')"></div>
+                    <div id="c3" class="c-box" style="background:#f00;" onclick="setColor('#f00','c3')"></div>
+                    <div id="c4" class="c-box" style="background:#ffa500;" onclick="setColor('#ffa500','c4')"></div>
+                    <div id="c5" class="c-box" style="background:#ff0;" onclick="setColor('#ff0','c5')"></div>
+                    <div id="c6" class="c-box" style="background:#0f0;" onclick="setColor('#0f0','c6')"></div>
+                    <div id="c7" class="c-box" style="background:#00f;" onclick="setColor('#00f','c7')"></div>
+                    <span style="margin:0 10px; border-left:1px solid #777;"></span>
+                    <div id="s1" class="s-btn" onclick="setSize(2,'s1')"><div class="s-inner" style="width:2px; height:2px;"></div></div>
+                    <div id="s2" class="s-btn" onclick="setSize(6,'s2')"><div class="s-inner" style="width:6px; height:6px;"></div></div>
+                    <div id="s3" class="s-btn" onclick="setSize(15,'s3')"><div class="s-inner" style="width:15px; height:15px;"></div></div>
+                    <span style="margin:0 10px; border-left:1px solid #777;"></span>
+                    <button type="button" onclick="wipe()" style="background:#ed4245; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold;">CLR</button>
+                </div>
 
-    <div id="toolbar-container">
-        <div id="c1" class="c-box" style="background:#000000;" onclick="setColor('#000000', 'c1')"></div>
-        <div id="c2" class="c-box" style="background:#808080;" onclick="setColor('#808080', 'c2')"></div>
-        <div id="c3" class="c-box" style="background:#ffffff;" onclick="setColor('#ffffff', 'c3')"></div>
-        <div id="c4" class="c-box" style="background:#ff0000;" onclick="setColor('#ff0000', 'c4')"></div>
-        <div id="c5" class="c-box" style="background:#ffa500;" onclick="setColor('#ffa500', 'c5')"></div>
-        <div id="c6" class="c-box" style="background:#ffff00;" onclick="setColor('#ffff00', 'c6')"></div>
-        <div id="c7" class="c-box" style="background:#008000;" onclick="setColor('#008000', 'c7')"></div>
-        <div id="c8" class="c-box" style="background:#0000ff;" onclick="setColor('#0000ff', 'c8')"></div>
-        <div id="c9" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c9')"></div>
+                <canvas id="sketchpad" width="600" height="350"></canvas>
+            </td>
+        </tr>
         
-        <span style="margin: 0 10px; border-left: 1px solid #555;"></span>
+        <tr height="86">
+            <td colspan="2">
+                <form action="../senddrawing" method="post" id="sendform">
+                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                    <input type="hidden" id="drawinginput" name="drawinginput" value="">
+                    <input type="hidden" id="lite" name="lite" value="False">
+                    
+                    <table width="100%" bgcolor="#303338" style="padding:15px 0 0 8px; border-top:1px solid #393c40;">
+                        <tr>
+                            <td width="100%">
+                                <div style="box-sizing: border-box; padding: 16px; background: #393c40; width: 100%; border-radius: 10px;">
+                                    <input type="text" name="message" id="message" class="msg-input" placeholder="Message #{$CHANNEL_NAME}" autocomplete="off">
+                                </div>
+                            </td>
+                            <td width="80" align="right" style="padding-right:10px;">
+                                <input type="button" id="fakesend" class="send-btn" value="Send" onclick="prepareAndSend()">
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </td>
+        </tr>
+    </table>
+</div>
 
-        <div id="s1" class="s-btn" onclick="setSize(2, 's1')"><div class="s-inner" style="width:2px; height:2px;"></div></div>
-        <div id="s2" class="s-btn" onclick="setSize(5, 's2')"><div class="s-inner" style="width:5px; height:5px;"></div></div>
-        <div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div>
-        <div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div>
-    </div>
+<script type="text/javascript">
+    // --- WII COMPATIBLE DRAWING ENGINE (NO ATRAMENT) ---
+    var canvas = document.getElementById('sketchpad');
+    var ctx = canvas.getContext('2d');
+    var isDrawing = false;
+    var lastX = 0, lastY = 0;
+    var currColor = '#000000';
+    var currSize = 6;
 
-    <div id="canvas-wrapper">
-        <canvas id="sketchpad" width="600" height="350"></canvas>
-    </div>
+    // Init Canvas
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = currSize;
+    ctx.strokeStyle = currColor;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = currColor;
 
-    <form action="../senddrawing" method="post" id="sendform">
-        <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-        <input type="hidden" id="drawinginput" name="drawinginput" value="">
-        <input type="hidden" id="lite" name="lite" value="False">
-        
-        <div id="bottom-bar">
-            <button type="button" id="btn-clear" onclick="wipe()">CLEAR</button>
-            <input type="text" name="message" id="message" placeholder="Message #{$CHANNEL_NAME}" autocomplete="off">
-            <button type="button" id="btn-send" onclick="prepareAndSend()">SEND</button>
-        </div>
-    </form>
+    // Coordinate Fixer
+    function getPos(e) {
+        if (e.offsetX) return { x: e.offsetX, y: e.offsetY };
+        if (e.layerX) return { x: e.layerX, y: e.layerY };
+        var rect = canvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
 
-    <script type="text/javascript">
-        // --- WII SAFE DRAWING ENGINE ---
-        var canvas = document.getElementById('sketchpad');
-        var ctx = canvas.getContext('2d');
-        
-        var isDrawing = false;
-        var lastX = 0;
-        var lastY = 0;
-        var currColor = '#000000';
-        var currSize = 5;
+    // Drawing Events
+    canvas.onmousedown = function(e) {
+        if(e.preventDefault) e.preventDefault();
+        isDrawing = true;
+        var pos = getPos(e);
+        lastX = pos.x; lastY = pos.y;
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
+        ctx.fillStyle = currColor;
+        ctx.fill();
+        ctx.beginPath();
+        return false;
+    };
 
-        // Defaults
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.lineWidth = currSize;
-        ctx.strokeStyle = currColor;
-        // Fill canvas with white immediately (transparent canvas turns black on some Wii conversions)
+    canvas.onmousemove = function(e) {
+        if (!isDrawing) return;
+        if(e.preventDefault) e.preventDefault();
+        var pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        lastX = pos.x; lastY = pos.y;
+    };
+    canvas.onmouseup = function() { isDrawing = false; };
+    canvas.onmouseout = function() { isDrawing = false; };
+
+    // Tools
+    function setColor(c, id) {
+        currColor = c; ctx.strokeStyle = c;
+        for(var i=1;i<=7;i++) { var el=document.getElementById('c'+i); if(el) el.style.border="2px solid #555"; }
+        document.getElementById(id).style.border="2px solid white";
+    }
+    function setSize(s, id) {
+        currSize = s; ctx.lineWidth = s;
+        for(var i=1;i<=3;i++) { var el=document.getElementById('s'+i); if(el) el.style.border="2px solid #000"; }
+        document.getElementById(id).style.border="2px solid blue";
+    }
+    function wipe() {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = currColor;
+    }
 
-        // --- COORDINATE SYSTEM ---
-        function getPos(e) {
-            if (e.offsetX) {
-                return { x: e.offsetX, y: e.offsetY };
-            } else if (e.layerX) {
-                return { x: e.layerX, y: e.layerY };
-            } else {
-                var rect = canvas.getBoundingClientRect();
-                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    // Send Logic
+    function prepareAndSend() {
+        var btn = document.getElementById('fakesend');
+        btn.value = "Sending...";
+        setTimeout(function() {
+            try {
+                var data = canvas.toDataURL("image/png");
+                document.getElementById('drawinginput').value = data;
+                document.getElementById('sendform').submit();
+            } catch(e) {
+                alert("Memory Error. Refresh page.");
             }
-        }
-
-        // --- DRAWING EVENTS ---
-        canvas.onmousedown = function(e) {
-            if(e.preventDefault) e.preventDefault(); // Stop Wii Drag
-            isDrawing = true;
-            var pos = getPos(e);
-            lastX = pos.x;
-            lastY = pos.y;
-            
-            ctx.beginPath();
-            ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
-            ctx.fillStyle = currColor;
-            ctx.fill();
-            ctx.beginPath();
-            
-            return false;
-        };
-
-        canvas.onmousemove = function(e) {
-            if (!isDrawing) return;
-            if(e.preventDefault) e.preventDefault(); 
-
-            var pos = getPos(e);
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            
-            lastX = pos.x;
-            lastY = pos.y;
-        };
-
-        canvas.onmouseup = function() { isDrawing = false; };
-        canvas.onmouseout = function() { isDrawing = false; };
-
-        // --- UI FUNCTIONS ---
-        function setColor(col, id) {
-            currColor = col;
-            ctx.strokeStyle = currColor;
-            
-            // Reset borders
-            for(var i=1; i<=9; i++) {
-                var el = document.getElementById('c'+i);
-                if(el) el.style.border = "2px solid #555";
-            }
-            document.getElementById(id).style.border = "2px solid white";
-        }
-
-        function setSize(s, id) {
-            currSize = s;
-            ctx.lineWidth = currSize;
-
-            for(var i=1; i<=4; i++) {
-                var el = document.getElementById('s'+i);
-                if(el) el.style.border = "2px solid #000";
-            }
-            document.getElementById(id).style.border = "2px solid blue";
-        }
-
-        function wipe() {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = currColor;
-        }
-
-        // --- SEND LOGIC ---
-        function prepareAndSend() {
-            var inputField = document.getElementById('drawinginput');
-            var form = document.getElementById('sendform');
-            var btn = document.getElementById('btn-send');
-            
-            // Visual feedback
-            btn.innerHTML = "Sending...";
-            
-            // Convert to Base64
-            // Note: Wii Opera 9.3 usually supports toDataURL, but it can be slow
-            setTimeout(function() {
-                try {
-                    var data = canvas.toDataURL("image/png");
-                    inputField.value = data;
-                    form.submit();
-                } catch(e) {
-                    alert("Error converting image");
-                }
-            }, 100);
-        }
-
-        // Initialize UI
-        setColor('#000000', 'c1');
-        setSize(5, 's2');
-    </script>
+        }, 50);
+    }
+    
+    // Init Defaults
+    setColor('#000', 'c1');
+    setSize(6, 's2');
+</script>
 </body>
 </html>
