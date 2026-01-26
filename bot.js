@@ -6,7 +6,7 @@ const connectionHandler = require('./connectionHandler.js')
 
 const cachelength = 100 // Length of message history
 const msghistory = {}
-const client = new Discord.Client({ partials: [Discord.Partials.Message], shards: "auto", intents: [Discord.GatewayIntentBits.Guilds/*, Discord.GatewayIntentBits.GuildMembers*/, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.MessageContent] })
+const client = new Discord.Client({ partials: [Discord.Partials.Message], shards: "auto", intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMembers, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.MessageContent] })
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
