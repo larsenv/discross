@@ -32,6 +32,9 @@ const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/t
 
 const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'));
 
+const reactions_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'));
+const reaction_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'));
+
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 };
@@ -52,6 +55,91 @@ function removeExistingEndAnchors(html) {
 
 // Member utility functions (getDisplayName, getMemberColor, ensureMemberData) 
 // are now imported from memberUtils.js to avoid duplication
+
+// Function to process and format reactions
+function processReactions(reactions, imagesCookie) {
+  if (!reactions || reactions.size === 0) {
+    return '';
+  }
+
+  let reactionsHtml = '';
+  
+  reactions.forEach((reaction) => {
+    const emoji = reaction.emoji;
+    const count = reaction.count;
+    
+    // Determine if it's a super reaction based on burst colors
+    const isSuperReaction = reaction.burst_colors && reaction.burst_colors.length > 0;
+    
+    // Set background and border colors
+    let backgroundColor, borderColor;
+    if (isSuperReaction) {
+      // Super reactions have a different background
+      backgroundColor = 'rgba(88, 101, 242, 0.15)'; // Purple-ish tint for super reactions
+      borderColor = 'rgba(88, 101, 242, 0.4)';
+    } else {
+      // Normal reactions
+      backgroundColor = 'rgba(79, 84, 92, 0.16)';
+      borderColor = 'rgba(79, 84, 92, 0.24)';
+    }
+    
+    let emojiHtml = '';
+    
+    if (emoji.id) {
+      // Custom emoji
+      if (imagesCookie == 1) {
+        const extension = emoji.animated ? 'gif' : 'png';
+        emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
+      } else {
+        // Fallback to emoji name if images are disabled
+        emojiHtml = `:${emoji.name}:`;
+      }
+    } else if (emoji.name) {
+      // Unicode emoji (twemoji)
+      if (imagesCookie == 1) {
+        // Convert unicode emoji to twemoji format
+        const points = [];
+        let char = 0;
+        let previous = 0;
+        let i = 0;
+        let output;
+        
+        while (i < emoji.name.length) {
+          char = emoji.name.charCodeAt(i++);
+          if (previous) {
+            points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
+            previous = 0;
+          } else if (char > 0xd800 && char <= 0xdbff) {
+            previous = char;
+          } else {
+            points.push(char.toString(16));
+          }
+          output = points.join("-");
+        }
+        
+        emojiHtml = `<img src="/resources/twemoji/${output}.gif" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
+      } else {
+        // Show the unicode emoji directly
+        emojiHtml = emoji.name;
+      }
+    }
+    
+    // Build the reaction HTML
+    let reactionHtml = reaction_template;
+    reactionHtml = strReplace(reactionHtml, '{$EMOJI}', emojiHtml);
+    reactionHtml = strReplace(reactionHtml, '{$COUNT}', count.toString());
+    reactionHtml = strReplace(reactionHtml, '{$REACTION_BG}', backgroundColor);
+    reactionHtml = strReplace(reactionHtml, '{$REACTION_BORDER}', borderColor);
+    
+    reactionsHtml += reactionHtml;
+  });
+  
+  if (reactionsHtml) {
+    return reactions_template.replace('{$REACTIONS}', reactionsHtml);
+  }
+  
+  return '';
+}
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
@@ -112,7 +200,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         if (lastauthor) { // Only consider the last message if this is not the first
           // If the last message is not going to be merged with this one, put it into the response
           if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
-
 
             currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
             currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
@@ -195,6 +282,10 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         } else {
           messagetext = merged_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
         }
+
+        // Process and add reactions to the message
+        const reactionsHtml = processReactions(item.reactions, imagesCookie);
+        messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
 
         lastauthor = item.author;
         // Ensure member data is populated - fetch if missing, using cache to avoid repeated fetches
