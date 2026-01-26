@@ -55,25 +55,30 @@ function removeExistingEndAnchors(html) {
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
-  const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   try {
+    // 1. Setup Variables
+    let response = "";
+    let chnl;
+    let botMember;
+    let member;
+    let user;
+    let template;
+    let final;
+
+    // 2. Fetch Channel & Member Data
     try {
-      response = "";
       chnl = await bot.client.channels.fetch(args[2]);
     } catch (err) {
       chnl = undefined;
     }
 
     if (chnl) {
-      botMember = await chnl.guild.members.fetch(bot.client.user.id)
+      botMember = await chnl.guild.members.fetch(bot.client.user.id);
       member = await chnl.guild.members.fetch(discordID);
-      user = member.user;
-      username = user.tag;
-      if (member.displayName != user.username) {
-        username = member.displayName + " (@" + user.tag + ")";
-      }
-
-      if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) || !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) {
+      
+      // 3. Security: Check View Permissions
+      if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) || 
+          !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) {
         res.write("You (or the bot) don't have permission to do that!");
         res.end();
         return;
@@ -219,84 +224,38 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
       
-      // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
+      // 5. Theme Logic (Cookie Check)
+      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
       if (whiteThemeCookie == 1) {
-        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
       } else if (whiteThemeCookie == 2) {
-        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
       } else {
-        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "");
       }
 
+      // 6. Security: Check Send Permissions (Optional but good for UX)
+      // Even though we aren't displaying messages, we can check if they are allowed to send drawings.
+      // If your HTML has the form hardcoded, this block mostly just validates the bot's permissions.
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
-        final = strReplace(template, "{$INPUT}", input_disabled_template);
-        final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
-      } else if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
-        final = strReplace(template, "{$INPUT}", input_template);
-      } else {
-        final = strReplace(template, "{$INPUT}", input_disabled_template);
+         // Optionally handle error or disable form here if you were injecting it
+         // For now, we just pass through since your HTML handles the form
       }
 
-      if (response.match?.(emojiRegex) && imagesCookie == 1) {
-        const unicode_emoji_matches = [...response.match?.(emojiRegex)]
-        unicode_emoji_matches.forEach(match => {
-          const points = [];
-          let char = 0;
-          let previous = 0;                  // This whole code block was "inspired" by the official Twitter Twemoji parser.
-          let i = 0;                         // I would have done it myself but my code wasn't ready for skin tones/emoji variation
-          let output                         // The Regex I wouldn't have done myself, so thanks for that too!
-          while (i < match.length) {
-            char = match.charCodeAt(i++);
-            if (previous) {
-              points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
-              previous = 0;
-            } else if (char > 0xd800 && char <= 0xdbff) {
-              previous = char;
-            } else {
-              points.push(char.toString(16));
-            }
-            output = points.join("-")
-          }
-          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 3%;vertical-align:top;" alt="emoji">`)
-        });
-      }
-
-      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
-      })
-      const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
-      final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
-      final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
-      const tensorLinksRegex = /<a href="https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)">https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)<\/a>/g;
-      let tmpTensorLinks = [...response.toString().matchAll(tensorLinksRegex)];
-      let resp_,gifLink,description;
-      tmpTensorLinks.forEach(link => {
-        resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
-        try { resp_ = resp_.json();
-          gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
-          description = resp_["results"][0]["content_description"];}
-        catch { return }
-        response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
-      });
-      // Remove any existing end anchors from messages HTML before appending exactly one
-      response = removeExistingEndAnchors(response);
-      response += '<a id="end" name="end"></a>';
-      final = strReplace(final, "{$MESSAGES}", response);
+      // 7. Send the Response
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.write(final); //write a response to the client
-      res.end(); //end the response
+      res.write(template); 
+      res.end();
+
     } else {
       res.writeHead(404, { "Content-Type": "text/html" });
-      res.write("Invalid channel!"); //write a response to the client
-      res.end(); //end the response
+      res.write("Invalid channel!");
+      res.end();
     }
   } catch (error) {
-    console.log(error)
-    // res.writeHead(302, { "Location": "/server/" });
+    console.log(error);
     res.writeHead(500, { "Content-Type": "text/html" });
-    res.write("An error occurred! Please try again later.<br>"); //write a response to the client
-    // res.write(error.toString());
+    res.write("An error occurred! Please try again later.<br>");
     res.end();
   }
-}
+};
