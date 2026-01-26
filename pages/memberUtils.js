@@ -67,6 +67,9 @@ function getMemberColor(member) {
  * Discord.js doesn't always populate the member property when fetching messages,
  * so we need to manually fetch it if it's missing.
  * 
+ * For webhook messages (which don't have member data), attempts to find the
+ * real guild member by matching the webhook's display name.
+ * 
  * @param {Object} message - Discord Message object
  * @param {Object} guild - Discord Guild object
  * @param {Map} cache - Optional cache to store fetched members and avoid repeated API calls
@@ -84,18 +87,57 @@ async function ensureMemberData(message, guild, cache = null) {
     return null;
   }
   
-  // Check cache first if provided
-  if (cache && cache.has(message.author.id)) {
-    return cache.get(message.author.id);
+  // Check cache first if provided (use webhook:username for webhook messages)
+  const cacheKey = message.webhookId ? `webhook:${message.author.username}` : message.author.id;
+  if (cache && cache.has(cacheKey)) {
+    return cache.get(cacheKey);
   }
   
-  // Try to fetch the member from the guild
+  // Special handling for webhook messages
+  // Webhooks don't have member data, but we can try to find the real member
+  // by matching the webhook's username (which is set to the member's display name)
+  if (message.webhookId) {
+    console.debug(`Message is from webhook, trying to find member by display name: ${message.author.username}`);
+    try {
+      // Fetch all members and search for one with matching display name or username
+      const members = await guild.members.fetch();
+      const webhookUsername = message.author.username;
+      
+      // Try to find member by display name or username match
+      const foundMember = members.find(m => 
+        m.displayName === webhookUsername || 
+        m.user.username === webhookUsername ||
+        m.user.globalName === webhookUsername ||
+        (m.nickname && m.nickname === webhookUsername)
+      );
+      
+      if (foundMember) {
+        console.debug(`Found matching member for webhook message: ${foundMember.user.username}`);
+        if (cache) {
+          cache.set(cacheKey, foundMember);
+        }
+        return foundMember;
+      } else {
+        console.debug(`No matching member found for webhook username: ${webhookUsername}`);
+        // Cache null result to avoid repeated lookups
+        if (cache) {
+          cache.set(cacheKey, null);
+        }
+        return null;
+      }
+    } catch (error) {
+      console.error(`Failed to fetch members for webhook message:`, error.message);
+      return null;
+    }
+  }
+  
+  // Try to fetch the member from the guild (non-webhook message)
   try {
     console.debug(`Fetching member data for user ${message.author.id} (${message.author.username})`);
     const member = await guild.members.fetch(message.author.id);
     // Store in cache if provided
     if (cache) {
-      cache.set(message.author.id, member);
+      cache.set(cacheKey, member);
     }
     return member;
   } catch (error) {
