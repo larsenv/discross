@@ -2,7 +2,7 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
-var md = require('markdown-it')({ breaks: true, linkify: true });
+var { renderDiscordMarkdown } = require('./discordMarkdown');
 var he = require('he'); // Encodes HTML attributes
 const path = require('path');
 const sharp = require("sharp");
@@ -157,7 +157,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         }
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        messagetext = /* strReplace( */ renderDiscordMarkdown(item.content) /* , "\n", "<br>") */;
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
