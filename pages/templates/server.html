@@ -64,6 +64,36 @@
             border: solid 1px #494c50;
         }
     </style>
+    <script>
+        function toggleCategory(categoryId) {
+            var categoryDiv = document.getElementById('category_' + categoryId);
+            var arrowSpan = document.getElementById('arrow_' + categoryId);
+            
+            if (categoryDiv && arrowSpan) {
+                var isCollapsed = categoryDiv.style.display === 'none';
+                categoryDiv.style.display = isCollapsed ? 'block' : 'none';
+                arrowSpan.textContent = isCollapsed ? '▼' : '▶';
+                
+                // Save preference to server
+                var serverID = window.location.pathname.split('/').pop();
+                if (serverID) {
+                    fetch('/toggleCategory', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            serverID: serverID,
+                            categoryID: categoryId,
+                            collapsed: !isCollapsed
+                        })
+                    }).catch(function(err) {
+                        console.error('Error saving category preference:', err);
+                    });
+                }
+            }
+        }
+    </script>
 </head>
 
 <body bgcolor="#303338" {$WHITE_THEME_ENABLED}>

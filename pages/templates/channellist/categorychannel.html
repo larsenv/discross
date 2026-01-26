@@ -1,4 +1,9 @@
-<font size="1" color="#999999" face="'rodin', Arial, Helvetica, sans-serif">
-  {$CHANNEL_NAME}
-</font>
+<a href="#" onclick="toggleCategory('{$CATEGORY_ID}'); return false;" style="text-decoration: none; cursor: pointer;">
+  <font size="1" color="#999999" face="'rodin', Arial, Helvetica, sans-serif">
+    <span id="arrow_{$CATEGORY_ID}">{$ARROW}</span> {$CHANNEL_NAME}
+  </font>
+</a>
 <br>
+<div id="category_{$CATEGORY_ID}" style="display: {$DISPLAY};">
+{$CATEGORY_CONTENT}
+</div>
