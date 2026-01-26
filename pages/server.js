@@ -45,7 +45,13 @@ const lock = new AsyncLock();
 function processServerChannels(server, member, response, discordID) {
   try {
     // Get user preferences for collapsed state
-    const preferences = auth.getChannelPreferences(discordID, server.id);
+    let preferences = [];
+    try {
+      preferences = auth.getChannelPreferences(discordID, server.id);
+    } catch (err) {
+      console.error("Error fetching channel preferences:", err);
+      // Continue with empty preferences array
+    }
     const collapsedMap = {};
     preferences.forEach(pref => {
       collapsedMap[pref.channelID] = pref.collapsed === 1;
@@ -54,8 +60,15 @@ function processServerChannels(server, member, response, discordID) {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
-    // Get all active (non-archived) threads from the guild as an array
-    const allThreads = server.threads?.cache ? Array.from(server.threads.cache.values()).filter(thread => !thread.archived) : [];
+    // Get all active (non-archived) threads from the guild
+    const allThreads = [];
+    if (server.threads?.cache) {
+      for (const [, thread] of server.threads.cache) {
+        if (!thread.archived) {
+          allThreads.push(thread);
+        }
+      }
+    }
 
     // Start with lone text channels (no category)
     let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
