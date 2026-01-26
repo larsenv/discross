@@ -15,17 +15,19 @@ function getCacheStats() {
   
   const files = fs.readdirSync(CACHE_DIR);
   let totalSize = 0;
+  let fileCount = 0;
   
   for (const file of files) {
     const filePath = path.join(CACHE_DIR, file);
     const stats = fs.statSync(filePath);
     if (stats.isFile()) {
+      fileCount++;
       totalSize += stats.size;
     }
   }
   
   return {
-    count: files.length,
+    count: fileCount,
     totalSize: totalSize,
     totalSizeMB: totalSize > 0 ? (totalSize / 1024 / 1024).toFixed(2) : '0.00'
   };

@@ -62,17 +62,18 @@ async function cacheEmoji(emojiId, isAnimated) {
           const buffer = Buffer.concat(chunks);
           let gifBuffer = buffer;
           
+          // Get metadata once
+          const metadata = await sharp(buffer).metadata();
+          
           // Convert to GIF and optimize if necessary
           if (buffer.length > 200000) {
             // Large emoji - compress it
-            const metadata = await sharp(buffer).metadata();
             gifBuffer = await sharp(buffer)
               .resize(Math.floor(metadata.width / 4), Math.floor(metadata.height / 4))
               .toFormat('gif', { colors: 16 })
               .toBuffer();
           } else {
             // Convert to GIF if not already
-            const metadata = await sharp(buffer).metadata();
             if (metadata.format !== "gif") {
               gifBuffer = await sharp(buffer)
                 .toFormat('gif')
@@ -82,7 +83,7 @@ async function cacheEmoji(emojiId, isAnimated) {
           
           // Save to cache
           const cachePath = getCachePath(emojiId);
-          fs.writeFileSync(cachePath, gifBuffer);
+          await fs.promises.writeFile(cachePath, gifBuffer);
           
           resolve(gifBuffer);
         } catch (error) {
@@ -109,7 +110,7 @@ async function getEmoji(emojiId, isAnimated) {
     // Check if already cached
     if (checkCache(emojiId, isAnimated)) {
       const cachePath = getCachePath(emojiId);
-      return fs.readFileSync(cachePath);
+      return await fs.promises.readFile(cachePath);
     }
     
     // Not cached - download and cache it
