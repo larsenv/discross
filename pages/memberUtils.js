@@ -91,7 +91,7 @@ async function ensureMemberData(message, guild, cache = null) {
   
   // Try to fetch the member from the guild
   try {
-    console.log(`Fetching member data for user ${message.author.id} (${message.author.username})`);
+    console.debug(`Fetching member data for user ${message.author.id} (${message.author.username})`);
     const member = await guild.members.fetch(message.author.id);
     // Store in cache if provided
     if (cache) {
