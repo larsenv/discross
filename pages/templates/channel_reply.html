@@ -485,14 +485,6 @@
                 </div>
             </div>
             <div class="message-form-container" style="position: fixed; bottom: 0; left: 60px; right: 0;">
-                <form action="/send" style="position: relative;">
-                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                    <input type="hidden" id="reply_message_id" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">
-                    <input type="hidden" id="lite" name="lite" value="False">
-
-                    {$INPUT}
-                </form>
-
                 <div class="modern-flex message-buttons-container">
                     <div class="message-button-cell">
                         <button
@@ -521,6 +513,14 @@
                         </a>
                     </div>
                 </div>
+
+                <form action="/send" style="position: relative;">
+                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                    <input type="hidden" id="reply_message_id" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">
+                    <input type="hidden" id="lite" name="lite" value="False">
+
+                    {$INPUT}
+                </form>
             </div>
         </div>
     </div>
