@@ -72,21 +72,17 @@
             
             scrollToBottom();
         };
-
+        
         var emojiShowing = false;
-
+        
         function showEmoji() {
-            var emojiElement = document.getElementById("emoji");
-            if (!emojiElement) {
-                return; // Exit gracefully if emoji element doesn't exist
-            }
-            if (emojiShowing) {
-                emojiElement.style.display = "none";
-                emojiShowing = false;
-            } else {
-                emojiElement.style.display = "block";
-                emojiShowing = true;
-            }
+          if (emojiShowing) {
+            document.getElementById("emoji").style.display = "none";
+            emojiShowing = false;
+          } else {
+            document.getElementById("emoji").style.display = "block";
+            emojiShowing = true;
+          }
         }
     </script>
     <style>
