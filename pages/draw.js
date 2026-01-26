@@ -12,6 +12,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
 // const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
+const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
 
@@ -48,49 +49,8 @@ function removeExistingEndAnchors(html) {
   return html.replace(/<a[^>]*(?:id=['"]end['"]|name=['"]end['"])[^>]*>[\s\S]*?<\/a>/gi, '');
 }
 
-// Get the display name following Discord's order: server nickname -> Discord username -> internal username
-function getDisplayName(member, author) {
-  if (member) {
-    // Server nickname (guild nickname) first
-    if (member.nickname) {
-      return member.nickname;
-    }
-    // Otherwise Discord username (from user object)
-    if (member.user && member.user.globalName) {
-      return member.user.globalName;
-    }
-    if (member.user && member.user.username) {
-      return member.user.username;
-    }
-    // Fallback to member display name
-    return member.displayName;
-  }
-  
-  // For webhooks or when no member data, use author data
-  if (author) {
-    if (author.globalName) {
-      return author.globalName;
-    }
-    return author.username;
-  }
-  
-  return "Unknown User";
-}
-
-// Get the member's highest role color or default to white
-function getMemberColor(member) {
-  if (!member || !member.roles || !member.roles.highest) {
-    return "#ffffff"; // Default white color
-  }
-  
-  const roleColor = member.roles.highest.color;
-  if (roleColor === 0) {
-    return "#ffffff"; // Default role has color 0, use white
-  }
-  
-  // Convert Discord color integer to hex
-  return `#${roleColor.toString(16).padStart(6, '0')}`;
-}
+// Member utility functions (getDisplayName, getMemberColor, ensureMemberData) 
+// are now imported from memberUtils.js to avoid duplication
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
@@ -124,11 +84,145 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         return;
       }
 
-      // 4. Load & Prepare the Drawing Template
-      // We load the "channel_template" which is your 'draw.html'
-      template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id);
-      template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
-      template = strReplace(template, "{$CHANNEL_NAME}", chnl.name);
+      if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
+        template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
+        template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
+
+        if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
+          final = strReplace(template, "{$INPUT}", input_template);
+        } else {
+          final = strReplace(template, "{$INPUT}", input_disabled_template);
+        }
+        final = strReplace(final, "{$MESSAGES}", no_message_history_template);
+
+        res.write(final); //write a response to the client
+        res.end(); //end the response
+        return;
+      }
+
+      console.log("Processed valid channel request");
+      messages = await bot.getHistoryCached(chnl);
+      lastauthor = undefined;
+      lastmember = undefined;
+      lastdate = new Date('1995-12-17T03:24:00');
+      currentmessage = "";
+      islastmessage = false;
+      messageid = 0;
+      
+      // Cache for member data to avoid repeated fetches
+      const memberCache = new Map();
+
+      handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
+        if (lastauthor) { // Only consider the last message if this is not the first
+          // If the last message is not going to be merged with this one, put it into the response
+          if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
+
+
+            currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
+            currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
+            
+            // Use helper functions for proper nickname and color
+            const displayName = getDisplayName(lastmember, lastauthor);
+            const authorColor = getMemberColor(lastmember);
+            
+            currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
+            currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
+
+            // Remove avatar URL processing since we removed avatars
+            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", lastdate.toLocaleTimeString('en-US') + " " + lastdate.toDateString());
+            currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
+            response += currentmessage;
+            currentmessage = "";
+          }
+        }
+
+        if (!item) { // When processing the last message outside of the forEach item is undefined
+          return;
+        }
+
+        // messagetext = strReplace(escape(item.content), "\n", "<br>");
+        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        if (item?.attachments) {
+          let urls = new Array()
+          item.attachments.forEach(attachment => {
+            let url
+            if (attachment.name.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))$/) && imagesCookie == 1) {
+              url = "/imageProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
+            } else {
+              url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
+              messagetext = messagetext.concat(file_download_template)
+              messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name)
+              messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size))
+            }
+            urls.push(url)
+          });
+          urls.forEach(url => {
+            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
+          });
+        }
+        if (item.mentions) {
+          item.mentions.members.forEach(function (user) {
+            if (user) {
+              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
+              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
+            }
+          });
+        }
+
+        // https://stackoverflow.com/questions/6323417/regex-to-extract-all-matches-from-string-using-regexp-exec
+
+        var regex = /&lt;#([0-9]{18})&gt;/g; // Regular expression to detect channel IDs
+        var m;
+
+        do {
+          m = regex.exec(messagetext);
+          if (m) {
+            try {
+              channel = await bot.client.channels.cache.get(m[1]);
+            } catch (err) {
+              console.log(err);
+            }
+            if (channel) {
+              messagetext = strReplace(messagetext, m[0], mention_template.replace("{$USERNAME}", escape("#" + channel.name)));
+            }
+          }
+        } while (m);
+
+        messagetext = strReplace(messagetext, "@everyone", mention_template.replace("{$USERNAME}", "@everyone"));
+        messagetext = strReplace(messagetext, "@here", mention_template.replace("{$USERNAME}", "@here"));
+
+
+
+        // If the last message is not going to be merged with this one, use the template for the first message, otherwise use the template for merged messages
+        if (!lastauthor || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
+          messagetext = first_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
+        } else {
+          messagetext = merged_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
+        }
+
+        lastauthor = item.author;
+        // Ensure member data is populated - fetch if missing, using cache to avoid repeated fetches
+        lastmember = await ensureMemberData(item, chnl.guild, memberCache);
+        lastdate = item.createdAt;
+        currentmessage += messagetext;
+        messageid = item.id;
+
+      }
+
+      for (const item of messages) {
+        await handlemessage(item);
+      }
+
+      // Handle the last message
+      // Uses the function in the foreach from earlier
+
+      islastmessage = true;
+      await handlemessage();
+
+      template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
+      template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
+      template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
+      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
       
       // 5. Theme Logic (Cookie Check)
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
