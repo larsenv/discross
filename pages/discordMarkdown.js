@@ -72,7 +72,8 @@ function renderDiscordMarkdown(text) {
   
   // Convert ___text___ (triple underscore = bold italic) to ***text***
   // This needs to be done before markdown-it processing
-  text = text.replace(/___([^_]+?)___/g, '***$1***');
+  // Allow any content including underscores within the markers
+  text = text.replace(/___(.+?)___/g, '***$1***');
   
   return md.renderInline(text);
 }

@@ -2,7 +2,6 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
-var { renderDiscordMarkdown } = require('./discordMarkdown');
 var he = require('he'); // Encodes HTML attributes
 const path = require('path');
 const sharp = require("sharp");
