@@ -54,6 +54,9 @@ function processServerChannels(server, member, response, discordID) {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
+    // Get all active threads from the guild
+    const allThreads = server.threads?.cache || new Map();
+
     // Start with lone text channels (no category)
     let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
@@ -80,14 +83,12 @@ function processServerChannels(server, member, response, discordID) {
               categoryContent += text_channel_template.replace("{$CHANNEL_NAME}", escape(child.name)).replace("{$CHANNEL_LINK}", `../channels/${child.id}#end`);
               
               // Add threads for this channel
-              if (child.threads) {
-                const activeThreads = child.threads.cache.filter(thread => !thread.archived);
-                activeThreads.sort((a, b) => a.name.localeCompare(b.name)).forEach(thread => {
-                  if (member.permissionsIn(thread).has(PermissionFlagsBits.ViewChannel, true)) {
-                    categoryContent += thread_channel_template.replace("{$CHANNEL_NAME}", escape(thread.name)).replace("{$CHANNEL_LINK}", `../channels/${thread.id}#end`);
-                  }
-                });
-              }
+              const channelThreads = allThreads.filter(thread => thread.parentId === child.id && !thread.archived);
+              channelThreads.sort((a, b) => a.name.localeCompare(b.name)).forEach(thread => {
+                if (member.permissionsIn(thread).has(PermissionFlagsBits.ViewChannel, true)) {
+                  categoryContent += thread_channel_template.replace("{$CHANNEL_NAME}", escape(thread.name)).replace("{$CHANNEL_LINK}", `../channels/${thread.id}#end`);
+                }
+              });
             }
           });
 
@@ -105,14 +106,12 @@ function processServerChannels(server, member, response, discordID) {
           channelList += text_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
           
           // Add threads for channels without a parent category
-          if (item.threads) {
-            const activeThreads = item.threads.cache.filter(thread => !thread.archived);
-            activeThreads.sort((a, b) => a.name.localeCompare(b.name)).forEach(thread => {
-              if (member.permissionsIn(thread).has(PermissionFlagsBits.ViewChannel, true)) {
-                channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(thread.name)).replace("{$CHANNEL_LINK}", `../channels/${thread.id}#end`);
-              }
-            });
-          }
+          const channelThreads = allThreads.filter(thread => thread.parentId === item.id && !thread.archived);
+          channelThreads.sort((a, b) => a.name.localeCompare(b.name)).forEach(thread => {
+            if (member.permissionsIn(thread).has(PermissionFlagsBits.ViewChannel, true)) {
+              channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(thread.name)).replace("{$CHANNEL_LINK}", `../channels/${thread.id}#end`);
+            }
+          });
         }
       }
     });
