@@ -87,9 +87,11 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     let serverList = "";
     let serversDeleted = 0; // Track if servers were deleted due to sync issues
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-    const data = auth.dbQueryAll("SELECT * FROM servers WHERE discordID=?", [discordID]);
 
     await lock.acquire(discordID, async () => {
+      // Move DB query inside lock to prevent race conditions where users might see other users' servers
+      const data = auth.dbQueryAll("SELECT * FROM servers WHERE discordID=?", [discordID]);
+      
       for (let serverData of data) {
         const serverID = serverData.serverID;
         let server = bot.client.guilds.cache.get(serverID);
