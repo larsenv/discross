@@ -56,13 +56,18 @@ md.inline.ruler.before('emphasis', 'discord_underline', function(state, silent) 
   const token_o = state.push('underline_open', 'u', 1);
   token_o.markup = '__';
   
-  const token_t = state.push('text', '', 0);
-  token_t.content = state.src.slice(start + 2, end);
+  // Process the content recursively to allow nested formatting
+  const oldPos = state.pos;
+  const oldMax = state.posMax;
+  state.pos = start + 2;
+  state.posMax = end;
+  state.md.inline.tokenize(state);
+  state.pos = end + 2;
+  state.posMax = oldMax;
   
   const token_c = state.push('underline_close', 'u', -1);
   token_c.markup = '__';
   
-  state.pos = end + 2;
   return true;
 });
 
