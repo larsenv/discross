@@ -97,45 +97,6 @@ async function ensureMemberData(message, guild, cache = null) {
     return cache.get(cacheKey);
   }
   
-  // Special handling for webhook messages
-  // Webhooks don't have member data, but we can try to find the real member
-  // by matching the webhook's username (which is set to the member's display name)
-  if (message.webhookId) {
-    console.debug(`Message is from webhook, trying to find member by display name: ${message.author.username}`);
-    try {
-      // Note: This fetches all members once per webhook username (cached afterward)
-      // For large guilds, consider using guild.members.search() if performance is an issue
-      const members = await guild.members.fetch();
-      const webhookUsername = message.author.username;
-      
-      // Try to find member by display name, username, or globalName
-      // displayName already includes nickname in priority, so no need to check nickname separately
-      const foundMember = members.find(m => 
-        m.displayName === webhookUsername || 
-        m.user.username === webhookUsername ||
-        m.user.globalName === webhookUsername
-      );
-      
-      if (foundMember) {
-        console.debug(`Found matching member for webhook message: ${foundMember.user.username}`);
-        if (cache) {
-          cache.set(cacheKey, foundMember);
-        }
-        return foundMember;
-      } else {
-        console.debug(`No matching member found for webhook username: ${webhookUsername}`);
-        // Cache null result to avoid repeated lookups
-        if (cache) {
-          cache.set(cacheKey, null);
-        }
-        return null;
-      }
-    } catch (error) {
-      console.error(`Failed to fetch members for webhook message:`, error.message);
-      return null;
-    }
-  }
-  
   // Try to fetch the member from the guild (non-webhook message)
   try {
     console.debug(`Fetching member data for user ${message.author.id} (${message.author.username})`);
@@ -146,7 +107,6 @@ async function ensureMemberData(message, guild, cache = null) {
     }
     return member;
   } catch (error) {
-    console.error(`Failed to fetch member for user ${message.author.id}:`, error.message);
     return null;
   }
 }
