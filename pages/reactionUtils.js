@@ -6,7 +6,8 @@ function strReplace(string, needle, replacement) {
 
 // Function to process and format reactions
 function processReactions(reactions, imagesCookie, reactions_template, reaction_template) {
-  // Handle ReactionManager vs Collection
+  // In Discord.js v14, message.reactions is a ReactionManager with a cache property
+  // that contains the Collection of MessageReaction objects. Handle both cases.
   const reactionCollection = reactions?.cache || reactions;
   
   if (!reactionCollection || reactionCollection.size === 0) {
