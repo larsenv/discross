@@ -35,6 +35,9 @@ const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/t
 
 const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'));
 
+// Constants
+const FORWARDED_CONTENT_MAX_LENGTH = 100;
+
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 };
@@ -174,8 +177,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             const forwardedMessage = await item.fetchReference();
             const forwardedMember = await ensureMemberData(forwardedMessage, chnl.guild, memberCache);
             const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
-            const forwardedContent = forwardedMessage.content.length > 100 
-              ? forwardedMessage.content.substring(0, 100) + "..." 
+            const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH 
+              ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..." 
               : forwardedMessage.content;
             const forwardedDate = forwardedMessage.createdAt.toLocaleString();
             
