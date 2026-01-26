@@ -26,6 +26,7 @@ const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pag
 const first_message_content_large_emoji_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content_large_emoji.html', 'utf-8'));
 const merged_message_content_large_emoji_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content_large_emoji.html', 'utf-8'));
 const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
+const mention_self_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention_self.html', 'utf-8'));
 
 const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
 const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
@@ -176,13 +177,34 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
-        if (item.mentions) {
-          item.mentions.members.forEach(function (user) {
-            if (user) {
-              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
-              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
+        // Process user mentions - find all user mentions in the message text
+        var userMentionRegex = /&lt;@!?(\d{17,19})&gt;/g;
+        var mentionMatch;
+        var mentionsToProcess = [];
+        
+        // Collect all unique user IDs mentioned
+        while ((mentionMatch = userMentionRegex.exec(messagetext)) !== null) {
+          mentionsToProcess.push(mentionMatch[1]);
+        }
+        
+        // Process each mentioned user
+        for (const userId of mentionsToProcess) {
+          try {
+            const mentionedMember = await chnl.guild.members.fetch(userId);
+            if (mentionedMember) {
+              const displayName = getDisplayName(mentionedMember, mentionedMember.user);
+              // Use self-mention template if the mentioned user is the current user
+              const templateToUse = userId === discordID ? mention_self_template : mention_template;
+              const mentionHtml = templateToUse.replace("{$USERNAME}", escape("@" + displayName));
+              
+              // Replace both <@userId> and <@!userId> formats
+              messagetext = strReplace(messagetext, "&lt;@" + userId + "&gt;", mentionHtml);
+              messagetext = strReplace(messagetext, "&lt;@!" + userId + "&gt;", mentionHtml);
             }
-          });
+          } catch (err) {
+            // If we can't fetch the member, leave the mention as-is
+            console.log("Could not fetch member for mention:", userId, err);
+          }
         }
 
         // https://stackoverflow.com/questions/6323417/regex-to-extract-all-matches-from-string-using-regexp-exec
