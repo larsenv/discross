@@ -111,6 +111,80 @@
             box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.3);
         }
 
+        /* HSV Color Picker */
+        .hsv-picker {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .hsv-picker-main {
+            display: flex;
+            gap: 8px;
+        }
+
+        .saturation-value-picker {
+            width: 200px;
+            height: 150px;
+            border: 2px solid #40444b;
+            border-radius: 4px;
+            cursor: crosshair;
+            position: relative;
+            touch-action: none;
+        }
+
+        .hue-slider-picker {
+            width: 20px;
+            height: 150px;
+            border: 2px solid #40444b;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            touch-action: none;
+        }
+
+        .color-preview {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #40444b;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .picker-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border: 2px solid white;
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+            transform: translate(-50%, -50%);
+        }
+
+        .quick-swatches {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .saturation-value-picker {
+                width: 150px;
+                height: 120px;
+            }
+
+            .hue-slider-picker {
+                height: 120px;
+            }
+
+            .color-preview {
+                width: 50px;
+                height: 50px;
+            }
+        }
+
         .tool-button {
             background: #40444b;
             border: 2px solid #40444b;
@@ -258,22 +332,29 @@
                 </div>
 
                 <div class="drawing-controls">
-                    <div class="control-group">
-                        <span class="control-label">Colors:</span>
-                        <div class="color-button active" style="background: #000000;" data-color="#000000"
-                            title="Black"></div>
-                        <div class="color-button" style="background: #ed4245;" data-color="#ed4245"
-                            title="Red"></div>
-                        <div class="color-button" style="background: #57f287;" data-color="#57f287"
-                            title="Green"></div>
-                        <div class="color-button" style="background: #3498db;" data-color="#3498db"
-                            title="Blue"></div>
-                        <div class="color-button" style="background: #f1c40f;" data-color="#f1c40f"
-                            title="Yellow"></div>
-                        <div class="color-button" style="background: #9b59b6;" data-color="#9b59b6"
-                            title="Purple"></div>
-                        <div class="color-button" style="background: #ffffff;" data-color="#ffffff"
-                            title="White"></div>
+                    <div class="control-group" style="width: 100%;">
+                        <span class="control-label">Color Picker:</span>
+                        <div class="hsv-picker">
+                            <div class="hsv-picker-main">
+                                <canvas id="saturationValuePicker" class="saturation-value-picker" width="200" height="150"></canvas>
+                                <canvas id="huePicker" class="hue-slider-picker" width="20" height="150"></canvas>
+                            </div>
+                            <div class="color-preview" id="colorPreview"></div>
+                            <div class="quick-swatches">
+                                <div class="color-button" style="background: #000000;" data-color="#000000"
+                                    title="Black"></div>
+                                <div class="color-button" style="background: #ffffff;" data-color="#ffffff"
+                                    title="White"></div>
+                                <div class="color-button" style="background: #ed4245;" data-color="#ed4245"
+                                    title="Red"></div>
+                                <div class="color-button" style="background: #57f287;" data-color="#57f287"
+                                    title="Green"></div>
+                                <div class="color-button" style="background: #3498db;" data-color="#3498db"
+                                    title="Blue"></div>
+                                <div class="color-button" style="background: #f1c40f;" data-color="#f1c40f"
+                                    title="Yellow"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="control-group">
@@ -356,7 +437,7 @@
         <script src="/connection.js"></script>
     </div>
     <script>
-        // Lightweight drawing implementation
+        // Lightweight drawing implementation with HSV color picker
         (function() {
             // Configuration constants
             const CANVAS_PADDING = 140;
@@ -373,6 +454,242 @@
             let lastX = 0;
             let lastY = 0;
 
+            // HSV Picker state
+            let currentHue = 0;
+            let currentSaturation = 0;
+            let currentValue = 0;
+            let svPicker, svCtx;
+            let huePicker, hueCtx;
+            let colorPreview;
+
+            // HSV to RGB conversion
+            function hsvToRgb(h, s, v) {
+                let r, g, b;
+                const i = Math.floor(h * 6);
+                const f = h * 6 - i;
+                const p = v * (1 - s);
+                const q = v * (1 - f * s);
+                const t = v * (1 - (1 - f) * s);
+                
+                switch (i % 6) {
+                    case 0: r = v; g = t; b = p; break;
+                    case 1: r = q; g = v; b = p; break;
+                    case 2: r = p; g = v; b = t; break;
+                    case 3: r = p; g = q; b = v; break;
+                    case 4: r = t; g = p; b = v; break;
+                    case 5: r = v; g = p; b = q; break;
+                }
+                
+                return {
+                    r: Math.round(r * 255),
+                    g: Math.round(g * 255),
+                    b: Math.round(b * 255)
+                };
+            }
+
+            // RGB to hex conversion
+            function rgbToHex(r, g, b) {
+                return '#' + [r, g, b].map(x => {
+                    const hex = x.toString(16);
+                    return hex.length === 1 ? '0' + hex : hex;
+                }).join('');
+            }
+
+            // Hex to HSV conversion
+            function hexToHsv(hex) {
+                const r = parseInt(hex.substr(1, 2), 16) / 255;
+                const g = parseInt(hex.substr(3, 2), 16) / 255;
+                const b = parseInt(hex.substr(5, 2), 16) / 255;
+                
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                const diff = max - min;
+                
+                let h = 0;
+                let s = max === 0 ? 0 : diff / max;
+                let v = max;
+                
+                if (diff !== 0) {
+                    if (max === r) {
+                        h = ((g - b) / diff + (g < b ? 6 : 0)) / 6;
+                    } else if (max === g) {
+                        h = ((b - r) / diff + 2) / 6;
+                    } else {
+                        h = ((r - g) / diff + 4) / 6;
+                    }
+                }
+                
+                return { h, s, v };
+            }
+
+            // Update current color from HSV
+            function updateColorFromHSV() {
+                const rgb = hsvToRgb(currentHue, currentSaturation, currentValue);
+                currentColor = rgbToHex(rgb.r, rgb.g, rgb.b);
+                colorPreview.style.background = currentColor;
+                
+                // Update quick swatches active state
+                document.querySelectorAll('.color-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            }
+
+            // Draw saturation/value picker
+            function drawSVPicker() {
+                const width = svPicker.width;
+                const height = svPicker.height;
+                
+                // Draw the gradient
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const s = x / width;
+                        const v = 1 - (y / height);
+                        const rgb = hsvToRgb(currentHue, s, v);
+                        svCtx.fillStyle = rgbToHex(rgb.r, rgb.g, rgb.b);
+                        svCtx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+
+            // Draw hue picker
+            function drawHuePicker() {
+                const width = huePicker.width;
+                const height = huePicker.height;
+                
+                for (let y = 0; y < height; y++) {
+                    const h = y / height;
+                    const rgb = hsvToRgb(h, 1, 1);
+                    hueCtx.fillStyle = rgbToHex(rgb.r, rgb.g, rgb.b);
+                    hueCtx.fillRect(0, y, width, 1);
+                }
+            }
+
+            // Initialize HSV picker
+            function initHSVPicker() {
+                svPicker = document.getElementById('saturationValuePicker');
+                svCtx = svPicker.getContext('2d');
+                huePicker = document.getElementById('huePicker');
+                hueCtx = huePicker.getContext('2d');
+                colorPreview = document.getElementById('colorPreview');
+                
+                // Set initial HSV values (black)
+                const hsv = hexToHsv(currentColor);
+                currentHue = hsv.h;
+                currentSaturation = hsv.s;
+                currentValue = hsv.v;
+                
+                // Draw pickers
+                drawHuePicker();
+                drawSVPicker();
+                updateColorFromHSV();
+                
+                // Set up event listeners for SV picker
+                let isSVDragging = false;
+                
+                function handleSVStart(e) {
+                    isSVDragging = true;
+                    updateSVFromEvent(e);
+                }
+                
+                function handleSVMove(e) {
+                    if (!isSVDragging) return;
+                    updateSVFromEvent(e);
+                }
+                
+                function handleSVEnd() {
+                    isSVDragging = false;
+                }
+                
+                function updateSVFromEvent(e) {
+                    e.preventDefault();
+                    const rect = svPicker.getBoundingClientRect();
+                    const scaleX = svPicker.width / rect.width;
+                    const scaleY = svPicker.height / rect.height;
+                    
+                    let clientX, clientY;
+                    if (e.type.includes('touch')) {
+                        const touch = e.touches[0] || e.changedTouches[0];
+                        clientX = touch.clientX;
+                        clientY = touch.clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+                    
+                    const x = Math.max(0, Math.min((clientX - rect.left) * scaleX, svPicker.width));
+                    const y = Math.max(0, Math.min((clientY - rect.top) * scaleY, svPicker.height));
+                    
+                    currentSaturation = x / svPicker.width;
+                    currentValue = 1 - (y / svPicker.height);
+                    updateColorFromHSV();
+                    
+                    // Switch to draw mode when color changes
+                    if (isErasing) {
+                        isErasing = false;
+                        updateToolButtons('draw');
+                    }
+                }
+                
+                svPicker.addEventListener('mousedown', handleSVStart);
+                svPicker.addEventListener('mousemove', handleSVMove);
+                svPicker.addEventListener('mouseup', handleSVEnd);
+                svPicker.addEventListener('mouseleave', handleSVEnd);
+                svPicker.addEventListener('touchstart', handleSVStart, {passive: false});
+                svPicker.addEventListener('touchmove', handleSVMove, {passive: false});
+                svPicker.addEventListener('touchend', handleSVEnd);
+                
+                // Set up event listeners for hue picker
+                let isHueDragging = false;
+                
+                function handleHueStart(e) {
+                    isHueDragging = true;
+                    updateHueFromEvent(e);
+                }
+                
+                function handleHueMove(e) {
+                    if (!isHueDragging) return;
+                    updateHueFromEvent(e);
+                }
+                
+                function handleHueEnd() {
+                    isHueDragging = false;
+                }
+                
+                function updateHueFromEvent(e) {
+                    e.preventDefault();
+                    const rect = huePicker.getBoundingClientRect();
+                    const scaleY = huePicker.height / rect.height;
+                    
+                    let clientY;
+                    if (e.type.includes('touch')) {
+                        const touch = e.touches[0] || e.changedTouches[0];
+                        clientY = touch.clientY;
+                    } else {
+                        clientY = e.clientY;
+                    }
+                    
+                    const y = Math.max(0, Math.min((clientY - rect.top) * scaleY, huePicker.height));
+                    currentHue = y / huePicker.height;
+                    
+                    drawSVPicker();
+                    updateColorFromHSV();
+                    
+                    // Switch to draw mode when color changes
+                    if (isErasing) {
+                        isErasing = false;
+                        updateToolButtons('draw');
+                    }
+                }
+                
+                huePicker.addEventListener('mousedown', handleHueStart);
+                huePicker.addEventListener('mousemove', handleHueMove);
+                huePicker.addEventListener('mouseup', handleHueEnd);
+                huePicker.addEventListener('mouseleave', handleHueEnd);
+                huePicker.addEventListener('touchstart', handleHueStart, {passive: false});
+                huePicker.addEventListener('touchmove', handleHueMove, {passive: false});
+                huePicker.addEventListener('touchend', handleHueEnd);
+            }
+
             function initDrawing() {
                 canvas = document.getElementById("sketchpad");
                 ctx = canvas.getContext("2d");
@@ -388,6 +705,9 @@
                 // Set up canvas properties
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
+                
+                // Initialize HSV picker
+                initHSVPicker();
                 
                 // Set up event listeners
                 setupCanvasEvents();
@@ -409,13 +729,29 @@
             }
 
             function setupControlEvents() {
-                // Color buttons
+                // Quick swatch buttons
                 document.querySelectorAll('.color-button').forEach(btn => {
                     btn.addEventListener('click', function() {
-                        currentColor = this.getAttribute('data-color');
-                        isErasing = false;
-                        updateActiveButton('color', this);
-                        updateToolButtons('draw');
+                        const color = this.getAttribute('data-color');
+                        const hsv = hexToHsv(color);
+                        currentHue = hsv.h;
+                        currentSaturation = hsv.s;
+                        currentValue = hsv.v;
+                        
+                        drawSVPicker();
+                        updateColorFromHSV();
+                        
+                        // Mark this swatch as active
+                        document.querySelectorAll('.color-button').forEach(b => 
+                            b.classList.remove('active')
+                        );
+                        this.classList.add('active');
+                        
+                        // Switch to draw mode
+                        if (isErasing) {
+                            isErasing = false;
+                            updateToolButtons('draw');
+                        }
                     });
                 });
 
@@ -470,15 +806,6 @@
                         if (e.preventDefault) e.preventDefault();
                     }
                 };
-            }
-
-            function updateActiveButton(type, activeBtn) {
-                if (type === 'color') {
-                    document.querySelectorAll('.color-button').forEach(btn => 
-                        btn.classList.remove('active')
-                    );
-                    activeBtn.classList.add('active');
-                }
             }
 
             function updateToolButtons(mode) {
