@@ -18,7 +18,7 @@ function getDisplayName(member, author) {
     if (member.nickname) {
       return member.nickname;
     }
-    // Otherwise Discord username (from user object)
+    // Otherwise Discord global name (from user object)
     if (member.user && member.user.globalName) {
       return member.user.globalName;
     }
@@ -34,7 +34,9 @@ function getDisplayName(member, author) {
     if (author.globalName) {
       return author.globalName;
     }
-    return author.username;
+    if (author.username) {
+      return author.username;
+    }
   }
   
   return "Unknown User";
