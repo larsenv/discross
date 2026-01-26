@@ -12,6 +12,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
 // const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
+const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
 
@@ -48,49 +49,8 @@ function removeExistingEndAnchors(html) {
   return html.replace(/<a[^>]*(?:id=['"]end['"]|name=['"]end['"])[^>]*>[\s\S]*?<\/a>/gi, '');
 }
 
-// Get the display name following Discord's order: server nickname -> Discord username -> internal username
-function getDisplayName(member, author) {
-  if (member) {
-    // Server nickname (guild nickname) first
-    if (member.nickname) {
-      return member.nickname;
-    }
-    // Otherwise Discord username (from user object)
-    if (member.user && member.user.globalName) {
-      return member.user.globalName;
-    }
-    if (member.user && member.user.username) {
-      return member.user.username;
-    }
-    // Fallback to member display name
-    return member.displayName;
-  }
-  
-  // For webhooks or when no member data, use author data
-  if (author) {
-    if (author.globalName) {
-      return author.globalName;
-    }
-    return author.username;
-  }
-  
-  return "Unknown User";
-}
-
-// Get the member's highest role color or default to white
-function getMemberColor(member) {
-  if (!member || !member.roles || !member.roles.highest) {
-    return "#ffffff"; // Default white color
-  }
-  
-  const roleColor = member.roles.highest.color;
-  if (roleColor === 0) {
-    return "#ffffff"; // Default role has color 0, use white
-  }
-  
-  // Convert Discord color integer to hex
-  return `#${roleColor.toString(16).padStart(6, '0')}`;
-}
+// Member utility functions (getDisplayName, getMemberColor, ensureMemberData) 
+// are now imported from memberUtils.js to avoid duplication
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
@@ -233,7 +193,8 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         }
 
         lastauthor = item.author;
-        lastmember = item.member;
+        // Ensure member data is populated - fetch if missing
+        lastmember = await ensureMemberData(item, chnl.guild);
         lastdate = item.createdAt;
         currentmessage += messagetext;
         messageid = item.id;
