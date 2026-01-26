@@ -70,15 +70,18 @@
 
         /* Drawing controls */
         .drawing-controls {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
             margin: 16px;
             padding: 12px;
             background: #2f3136;
             border: 1px solid #40444b;
             border-radius: 8px;
+        }
+
+        .drawing-controls form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
         }
 
         .control-group {
@@ -93,26 +96,27 @@
             margin-right: 4px;
         }
 
-        .color-button {
-            width: 32px;
+        .drawing-controls input[type="color"] {
+            width: 50px;
             height: 32px;
             border: 2px solid #40444b;
-            border-radius: 50%;
+            border-radius: 4px;
             cursor: pointer;
-            transition: transform 0.1s;
-            padding: 0;
+            background: transparent;
         }
 
-        .color-button:hover {
-            transform: scale(1.1);
+        .drawing-controls input[type="number"] {
+            width: 60px;
+            height: 32px;
+            padding: 4px 8px;
+            background: #40444b;
+            border: 2px solid #40444b;
+            border-radius: 4px;
+            color: #dcddde;
+            font-size: 14px;
         }
 
-        .color-button.active {
-            border-color: #5865f2;
-            box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.3);
-        }
-
-        .tool-button {
+        .drawing-controls input[type="button"] {
             background: #40444b;
             border: 2px solid #40444b;
             border-radius: 4px;
@@ -120,18 +124,11 @@
             cursor: pointer;
             padding: 6px 12px;
             font-size: 14px;
-            transition: all 0.1s;
             font-family: 'rodin', Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
-        .tool-button:hover {
+        .drawing-controls input[type="button"]:hover {
             background: #4e5058;
-        }
-
-        .tool-button.active {
-            background: #5865f2;
-            border-color: #5865f2;
-            color: white;
         }
 
         .slider-container {
@@ -260,28 +257,19 @@
                 </div>
 
                 <div class="drawing-controls">
-                    <div class="control-group">
-                        <span class="control-label">Colors:</span>
-                        <input type="button" class="color-button active" style="background: #000000;" data-color="#000000" value="" title="Black">
-                        <input type="button" class="color-button" style="background: #ed4245;" data-color="#ed4245" value="" title="Red">
-                        <input type="button" class="color-button" style="background: #57f287;" data-color="#57f287" value="" title="Green">
-                        <input type="button" class="color-button" style="background: #3498db;" data-color="#3498db" value="" title="Blue">
-                        <input type="button" class="color-button" style="background: #f1c40f;" data-color="#f1c40f" value="" title="Yellow">
-                        <input type="button" class="color-button" style="background: #9b59b6;" data-color="#9b59b6" value="" title="Purple">
-                        <input type="button" class="color-button" style="background: #ffffff;" data-color="#ffffff" value="" title="White">
-                    </div>
-
-                    <div class="control-group">
-                        <span class="control-label">Brush Size:</span>
-                        <input type="range" class="slider" id="brushSize" min="1" max="50" value="3">
-                        <span class="slider-value" id="brushSizeValue">3</span>
-                    </div>
-
-                    <div class="control-group">
-                        <input type="button" class="tool-button active" id="drawMode" value="Draw" title="Draw">
-                        <input type="button" class="tool-button" id="eraseMode" value="Erase" title="Erase">
-                        <input type="button" class="tool-button" id="clearCanvas" value="Clear" title="Clear Canvas">
-                    </div>
+                    <form name="painter">
+                        <div class="control-group">
+                            <span class="control-label">Color:</span>
+                            <input type="color" id="color" value="#000000">
+                        </div>
+                        <div class="control-group">
+                            <span class="control-label">Size:</span>
+                            <input type="number" id="size" value="3" min="1" max="50">
+                        </div>
+                        <div class="control-group">
+                            <input type="button" value="Clear" onclick="clearCanvas()">
+                        </div>
+                    </form>
                 </div>
 
                 <div id="emoji" style="display: none;">
@@ -351,257 +339,137 @@
         <script src="/connection.js"></script>
     </div>
     <script>
-        // Lightweight drawing implementation
-        (function() {
-            // Configuration constants
-            var CANVAS_PADDING = 80;
-            var CANVAS_MAX_WIDTH = 1600;
-            var CANVAS_HEIGHT_OFFSET = 150;
-            var CANVAS_MAX_HEIGHT = 1200;
-            var ERASER_SIZE_MULTIPLIER = 2;
+        // Drawing implementation based on dsipaint for maximum compatibility
+        var canvas, ctx;
+        var painting = false;
+        var lastX, lastY;
 
-            var canvas, ctx;
-            var isDrawing = false;
-            var currentColor = '#000000';
-            var currentSize = 3;
-            var isErasing = false;
-            var lastX = 0;
-            var lastY = 0;
-
-            // Helper function to get elements by tag and filter by class (legacy compatible)
-            function getElementsByClassName(className) {
-                var results = [];
-                var allElements = document.getElementsByTagName('*');
-                for (var i = 0; i < allElements.length; i++) {
-                    var elemClasses = (allElements[i].className || '').split(' ');
-                    for (var j = 0; j < elemClasses.length; j++) {
-                        if (elemClasses[j] === className) {
-                            results.push(allElements[i]);
-                            break;
-                        }
-                    }
-                }
-                return results;
-            }
-
-            // Helper function to add class (legacy compatible)
-            function addClass(element, className) {
-                if (element.className.indexOf(className) === -1) {
-                    element.className = element.className ? element.className + ' ' + className : className;
-                }
-            }
-
-            // Helper function to remove class (legacy compatible)
-            function removeClass(element, className) {
-                if (!element.className) return;
-                var classes = element.className.split(' ');
-                var newClasses = [];
-                for (var i = 0; i < classes.length; i++) {
-                    if (classes[i] !== className && classes[i] !== '') {
-                        newClasses.push(classes[i]);
-                    }
-                }
-                element.className = newClasses.join(' ');
-            }
-
-            function initDrawing() {
-                canvas = document.getElementById("sketchpad");
-                ctx = canvas.getContext("2d");
-                
-                // Set canvas size
-                canvas.width = Math.min(window.innerWidth - CANVAS_PADDING, CANVAS_MAX_WIDTH);
-                canvas.height = Math.min(window.innerHeight - CANVAS_HEIGHT_OFFSET, CANVAS_MAX_HEIGHT);
-                
-                // Set white background
-                ctx.fillStyle = "white";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Set up canvas properties
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                
-                // Set up event listeners
-                setupCanvasEvents();
-                setupControlEvents();
-                setupFormEvents();
-            }
-
-            function setupCanvasEvents() {
-                // Mouse events
-                canvas.addEventListener('mousedown', startDrawing);
-                canvas.addEventListener('mousemove', draw);
-                canvas.addEventListener('mouseup', stopDrawing);
-                canvas.addEventListener('mouseout', stopDrawing);
-                
-                // Touch events for mobile
-                canvas.addEventListener('touchstart', handleTouchStart);
-                canvas.addEventListener('touchmove', handleTouchMove);
-                canvas.addEventListener('touchend', stopDrawing);
-            }
-
-            function setupControlEvents() {
-                // Color buttons
-                var colorButtons = getElementsByClassName('color-button');
-                for (var i = 0; i < colorButtons.length; i++) {
-                    colorButtons[i].addEventListener('click', function() {
-                        currentColor = this.getAttribute('data-color');
-                        isErasing = false;
-                        updateActiveButton('color', this);
-                        updateToolButtons('draw');
-                    });
-                }
-
-                // Brush size slider
-                var brushSlider = document.getElementById('brushSize');
-                var brushValue = document.getElementById('brushSizeValue');
-                brushSlider.addEventListener('input', function() {
-                    currentSize = parseInt(this.value);
-                    brushValue.textContent = currentSize;
+        function initCanvas() {
+            canvas = document.getElementById('sketchpad');
+            ctx = canvas.getContext('2d');
+            
+            // Set larger canvas size
+            canvas.width = Math.min(window.innerWidth - 80, 1600);
+            canvas.height = Math.min(window.innerHeight - 150, 1200);
+            
+            // Set white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Set canvas properties
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Mouse events
+            canvas.onmousedown = startPaint;
+            canvas.onmousemove = paint;
+            canvas.onmouseup = stopPaint;
+            canvas.onmouseout = stopPaint;
+            
+            // Touch events
+            canvas.ontouchstart = function(e) {
+                e.preventDefault();
+                var touch = e.touches[0];
+                var mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
                 });
-
-                // Tool buttons
-                document.getElementById('drawMode').addEventListener('click', function() {
-                    isErasing = false;
-                    updateToolButtons('draw');
+                canvas.dispatchEvent(mouseEvent);
+            };
+            
+            canvas.ontouchmove = function(e) {
+                e.preventDefault();
+                var touch = e.touches[0];
+                var mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
                 });
+                canvas.dispatchEvent(mouseEvent);
+            };
+            
+            canvas.ontouchend = function(e) {
+                e.preventDefault();
+                var mouseEvent = new MouseEvent('mouseup', {});
+                canvas.dispatchEvent(mouseEvent);
+            };
+        }
 
-                document.getElementById('eraseMode').addEventListener('click', function() {
-                    isErasing = true;
-                    updateToolButtons('erase');
-                });
+        function startPaint(e) {
+            painting = true;
+            var rect = canvas.getBoundingClientRect();
+            lastX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            lastY = (e.clientY - rect.top) * (canvas.height / rect.height);
+        }
 
-                document.getElementById('clearCanvas').addEventListener('click', function() {
-                    if (confirm('Are you sure you want to clear the canvas?')) {
-                        ctx.fillStyle = "white";
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    }
-                });
+        function paint(e) {
+            if (!painting) return;
+            
+            var rect = canvas.getBoundingClientRect();
+            var x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            var y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            
+            var colorInput = document.getElementById('color');
+            var sizeInput = document.getElementById('size');
+            
+            ctx.strokeStyle = colorInput.value;
+            ctx.lineWidth = sizeInput.value;
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            
+            lastX = x;
+            lastY = y;
+        }
+
+        function stopPaint() {
+            painting = false;
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Form submission
+        function setupFormEvents() {
+            var fakesend = document.getElementById('fakesend');
+            var sendform = document.getElementById('sendform');
+            var drawinginput = document.getElementById('drawinginput');
+            var messagedom = document.getElementById('message');
+
+            function sendDrawing() {
+                drawinginput.value = canvas.toDataURL();
+                sendform.submit();
             }
 
-            function setupFormEvents() {
-                var fakesend = document.getElementById("fakesend");
-                var sendform = document.getElementById("sendform");
-                var drawinginput = document.getElementById("drawinginput");
-                var messagedom = document.getElementById("message");
+            fakesend.onclick = sendDrawing;
 
-                function sendDrawing() {
-                    drawinginput.value = canvas.toDataURL();
-                    sendform.submit();
-                }
-
-                fakesend.onclick = sendDrawing;
-
-                sendform.onkeyup = function (event) {
-                    // Use keyCode for legacy browser compatibility
-                    if (event.keyCode !== 13) return;
+            sendform.onkeyup = function(event) {
+                if (event.keyCode === 13) {
                     sendDrawing();
                     if (event.preventDefault) event.preventDefault();
-                };
-
-                messagedom.onkeypress = function (e) {
-                    // Use keyCode for legacy browser compatibility
-                    if (e.keyCode === 13) {
-                        if (e.preventDefault) e.preventDefault();
-                    }
-                };
-            }
-
-            function updateActiveButton(type, activeBtn) {
-                if (type === 'color') {
-                    var colorButtons = getElementsByClassName('color-button');
-                    for (var i = 0; i < colorButtons.length; i++) {
-                        removeClass(colorButtons[i], 'active');
-                    }
-                    addClass(activeBtn, 'active');
                 }
-            }
+            };
 
-            function updateToolButtons(mode) {
-                var drawBtn = document.getElementById('drawMode');
-                var eraseBtn = document.getElementById('eraseMode');
-                
-                if (mode === 'draw') {
-                    addClass(drawBtn, 'active');
-                    removeClass(eraseBtn, 'active');
-                } else {
-                    removeClass(drawBtn, 'active');
-                    addClass(eraseBtn, 'active');
+            messagedom.onkeypress = function(e) {
+                if (e.keyCode === 13) {
+                    if (e.preventDefault) e.preventDefault();
                 }
-            }
+            };
+        }
 
-            function getCoordinates(e) {
-                var rect = canvas.getBoundingClientRect();
-                var scaleX = canvas.width / rect.width;
-                var scaleY = canvas.height / rect.height;
-                
-                // Use indexOf instead of includes for legacy compatibility
-                if (e.type.indexOf('touch') !== -1) {
-                    var touch = e.touches[0] || e.changedTouches[0];
-                    return {
-                        x: (touch.clientX - rect.left) * scaleX,
-                        y: (touch.clientY - rect.top) * scaleY
-                    };
-                } else {
-                    return {
-                        x: (e.clientX - rect.left) * scaleX,
-                        y: (e.clientY - rect.top) * scaleY
-                    };
-                }
-            }
-
-            function startDrawing(e) {
-                isDrawing = true;
-                var coords = getCoordinates(e);
-                lastX = coords.x;
-                lastY = coords.y;
-            }
-
-            function draw(e) {
-                if (!isDrawing) return;
-                
-                e.preventDefault();
-                var coords = getCoordinates(e);
-                
-                ctx.beginPath();
-                ctx.moveTo(lastX, lastY);
-                ctx.lineTo(coords.x, coords.y);
-                
-                if (isErasing) {
-                    ctx.globalCompositeOperation = 'destination-out';
-                    ctx.lineWidth = currentSize * ERASER_SIZE_MULTIPLIER;
-                } else {
-                    ctx.globalCompositeOperation = 'source-over';
-                    ctx.strokeStyle = currentColor;
-                    ctx.lineWidth = currentSize;
-                }
-                
-                ctx.stroke();
-                
-                lastX = coords.x;
-                lastY = coords.y;
-            }
-
-            function stopDrawing() {
-                isDrawing = false;
-            }
-
-            function handleTouchStart(e) {
-                e.preventDefault();
-                startDrawing(e);
-            }
-
-            function handleTouchMove(e) {
-                e.preventDefault();
-                draw(e);
-            }
-
-            // Initialize when DOM is ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initDrawing);
-            } else {
-                initDrawing();
-            }
-        })();
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initCanvas();
+                setupFormEvents();
+            });
+        } else {
+            initCanvas();
+            setupFormEvents();
+        }
     </script>
 
 </body>
