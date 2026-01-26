@@ -67,7 +67,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     }
 
     if (chnl) {
-      const botMember = await chnl.guild.members.fetch(bot.client.user.id)
+      const botMember = await chnl.guild.members.fetch(bot.client.user.id);
       const member = await chnl.guild.members.fetch(discordID);
       const user = member.user;
       let username = user.tag;
