@@ -36,6 +36,7 @@
             font-family: 'rodin', Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
+        
         html,
         body,
         #wrapper {
@@ -44,559 +45,278 @@
             height: 100%;
         }
 
-        body {
-            background: #36393f;
-            color: #dcddde;
-        }
-
-        /* Light theme overrides */
-        .light-theme body {
-            background: #ffffff !important;
-            color: #2e3338 !important;
-        }
-
         .light-theme #wrapper {
-            background: #ffffff !important;
-            color: #2e3338 !important;
+            background: #FFFFFF !important;
+            color: #000000 !important;
         }
 
-        /* Canvas styling */
-        #sketchpad {
-            border: 2px solid #40444b;
-            border-radius: 8px;
-            background: white;
-            display: block;
-            margin: 16px auto;
-            cursor: crosshair;
-            touch-action: none;
+        .light-theme #wrapper * {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            -webkit-text-fill-color: #000000 !important;
         }
 
-        /* Drawing controls */
-        .drawing-controls {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
-            margin: 16px;
-            padding: 12px;
-            background: #2f3136;
-            border: 1px solid #40444b;
-            border-radius: 8px;
+        .light-theme #wrapper form table {
+            border-spacing: 0px;
         }
 
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .light-theme #wrapper form table td:nth-child(2) {
+            border-radius: 50px 0px 0px 50px;
+            -webkit-border-radius: 50px 0px 0px 50px;
+            -moz-border-radius: 50px 0px 0px 50px;
+            border: 10px solid #000000;
+            border-right: none;
+            padding-left: 10px;
         }
 
-        .control-label {
-            color: #b9bbbe;
-            font-size: 14px;
-            margin-right: 4px;
+        .light-theme #wrapper form table td:nth-child(3) {
+            border-radius: 0px 50px 50px 0px;
+            -webkit-border-radius: 0px 50px 50px 0px;
+            -moz-border-radius: 0px 50px 50px 0px;
+            border: 10px solid #000000;
+            border-left: 5px solid #000000;
+            padding-left: 15px;
         }
 
-        .color-button {
-            width: 32px;
-            height: 32px;
-            border: 2px solid #40444b;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: transform 0.1s;
+        .light-theme #wrapper form table td:nth-child(2) * {
+            all: unset !important
         }
 
-        .color-button:hover {
-            transform: scale(1.1);
+        .light-theme #wrapper form table td:nth-child(3) * {
+            all: unset !important;
         }
 
-        .color-button.active {
-            border-color: #5865f2;
-            box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.3);
+        .light-theme .download {
+            border-radius: 10px;
+            border: 5px solid #000000;
         }
 
-        .tool-button {
-            background: #40444b;
-            border: 2px solid #40444b;
-            border-radius: 4px;
-            color: #dcddde;
-            cursor: pointer;
-            padding: 6px 12px;
-            font-size: 14px;
-            transition: all 0.1s;
-        }
-
-        .tool-button:hover {
-            background: #4e5058;
-        }
-
-        .tool-button.active {
-            background: #5865f2;
-            border-color: #5865f2;
-            color: white;
-        }
-
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .slider {
-            width: 100px;
-            height: 4px;
-            border-radius: 2px;
-            background: #40444b;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #5865f2;
-            cursor: pointer;
-        }
-
-        .slider::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #5865f2;
-            cursor: pointer;
-            border: none;
-        }
-
-        .slider-value {
-            color: #dcddde;
-            font-size: 14px;
-            min-width: 25px;
-        }
-
-        /* Hide legacy styling */
         br.nodisp {
-            display: none;
+            display: none
         }
 
-        /* Legacy table fixes */
+        th {
+            vertical-align: top;
+            position: relative;
+            top: 4px;
+            text-align: left;
+            font-weight: 400 !important
+        }
+
+        th.join {
+            vertical-align: middle
+        }
+
+        hr {
+            border-top: none;
+            margin-bottom: 15px;
+            border-bottom: solid 1px #393c40;
+            border-left: solid 1px #393c40;
+            border-right: solid 1px #393c40
+        }
+
         table {
-            padding-bottom: 5px;
+            padding-bottom: 5px
         }
 
-        /* Links */
+        form table {
+            height: 86px;
+            background: #303338;
+            width: 100%;
+            padding: 15px 0 0 8px;
+            border-top: solid 1px #393c40
+        }
+
         a {
-            color: #00aff4;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Emoji picker styling */
-        #emoji {
-            background: #2f3136;
-            border: 1px solid #40444b;
-            border-radius: 8px;
-            padding: 16px;
-            margin: 8px 0;
-        }
-
-        #emoji button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 4px;
-        }
-
-        #emoji button:hover {
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        /* Menu positioning */
-        .menu-button {
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 1000;
-            background: #36393f;
-            border: 1px solid #40444b;
-            border-radius: 4px;
-            padding: 8px;
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .menu-button {
-                top: 8px;
-                left: 8px;
-            }
-
-            #sketchpad {
-                margin: 8px;
-                max-width: calc(100vw - 80px);
-                max-height: 300px;
-            }
-
-            .slider {
-                width: 60px;
-            }
+            color: #647dcd;
         }
     </style>
+    <script src="/atrament.min.js"></script>
 </head>
 
-<body {$WHITE_THEME_ENABLED}>
+<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <a href="../server/{$SERVER_ID}" class="menu-button">
-            <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
-        </a>
+        <table>
+            <tbody>
+                <tr>
+                    <td valign="top" style="vertical-align: top;">
+                        <div class="links">
+                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif" alt="Menu"
+                                    style="position: fixed; top: 32px;left: 12px;"></a>
+                            <br><img src="/resources/images/menuspacer.gif" alt=" " height="14px" width="32px" />
+                        </div>
+                        <br>
+                    </td>
+                    <td width="100%">
+                        <canvas id="sketchpad" width="0" height="0"></canvas>
+                        <div id="myList"></div> <!-- TODO: Remove -->
+                        <br>
+                        <div id="emoji" style="display: none;">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :sob:'">
+                                            <img src="/resources/twemoji/1f62d.gif" alt="sob"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
+                                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :skull:'">
+                                            <img src="/resources/twemoji/1f480.gif" alt="skull"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :pleading_face:'">
+                                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :heart:'">
+                                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :thumbsup:'">
+                                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :thumbsdown:'">
+                                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :pray:'">
+                                            <img src="/resources/twemoji/1f64f.gif" alt="pray"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :tada:'">
+                                            <img src="/resources/twemoji/1f389.gif" alt="tada"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :slight_smile:'">
+                                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                </tr>
+                            </table>
 
-        <div style="padding-left: 60px; position: relative;">
-            <!-- Canvas - absolute positioning for Wii compatibility -->
-            <canvas id="sketchpad" width="640" height="400" style="border: 2px solid #40444b; position: absolute; left: 50%; top: 0; margin-left: -396px;" onmousedown="start_paint()" onmousemove="paint()" onmouseup="stop_paint()"></canvas>
-            
-            <!-- Color palette -->
-            <canvas id="palette" width="148" height="264" style="border: 2px solid #40444b; position: absolute; left: 50%; top: 0; margin-left: 248px; cursor: pointer;" onclick="selectColorFromPalette(event)"></canvas>
-            
-            <!-- Brush size slider and value -->
-            <input type="range" id="brushSize" min="1" max="50" value="15" style="position: absolute; left: 50%; top: 270px; margin-left: 248px; width: 144px;" oninput="updateBrushSize(this.value)">
-            <span id="brushSizeValue" style="position: absolute; left: 50%; top: 295px; margin-left: 248px; width: 144px; text-align: center; color: #dcddde; font-size: 14px;">15</span>
-            
-            <!-- Tool buttons -->
-            <button id="drawMode" onclick="setDrawMode()" style="position: absolute; left: 50%; top: 320px; margin-left: 248px; width: 144px; height: 32px; background: #5865f2; border: 2px solid #5865f2; border-radius: 4px; color: white; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px;">Draw</button>
-            <button id="eraseMode" onclick="setEraseMode()" style="position: absolute; left: 50%; top: 360px; margin-left: 248px; width: 144px; height: 32px; background: #40444b; border: 2px solid #40444b; border-radius: 4px; color: #dcddde; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px;">Erase</button>
-            <button id="clearCanvas" onclick="clearDrawing()" style="position: absolute; left: 50%; top: 400px; margin-left: 248px; width: 144px; height: 32px; background: #40444b; border: 2px solid #40444b; border-radius: 4px; color: #dcddde; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px;">Clear</button>
+                        </div>
+                        <a id="end" name="end"></a>
+                        <form action="../senddrawing" method="post" id="sendform">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
+                                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif"
+                                                    alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
+                                        </td>
+                                        <font face="Arial, Helvetica, sans-serif" color="#dddddd">
+                                            NOTE: Drawing only works on newer browsers. If you do not see a canvas your client does not support drawing
+                                        </font>
+                                        <td>
+                                            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                                            <input type="hidden" id="drawinginput" name="drawinginput" value="">
+                                            <input type="hidden" id="lite" name="lite" value="False">
+                                            <div
+                                                style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
+                                                <input type="text" name="message" id="message" value=""
+                                                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;box-shadow: 0 0 0 50px #393c40 inset;-webkit-text-fill-color: #dddddd;"
+                                                    required="" placeholder="Message #{$CHANNEL_NAME}">
+                                            </div>
+                                        </td>
+                                        <td style="width: 55px;">
+                                            <input type="button" id="fakesend"
+                                                style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                                value="Send">
+                                        </td>
+                                        <!-- <input type="submit"
+                                        id="send"
+                                            style="display:none; width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                            value="Send"> -->
+                        </form>
+                </tr>
+            </tbody>
+        </table>
 
-                <div id="emoji" style="display: none; position: absolute; top: 480px;">
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
-                        <button onclick="document.getElementById('message').value += ' :sob:'">
-                            <img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
-                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :skull:'">
-                            <img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pleading_face:'">
-                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :heart:'">
-                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsup:'">
-                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
-                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pray:'">
-                            <img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :tada:'">
-                            <img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :slight_smile:'">
-                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                    </div>
-                    </div>
-                </div>
-            </div>
-            
-            <a id="end" name="end"></a>
-            
-            <!-- Message form positioned at bottom -->
-            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: #36393f; padding: 16px; border-top: 1px solid #40444b;">
-                <form action="../senddrawing" method="post" id="sendform">
-                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                    <input type="hidden" id="drawinginput" name="drawinginput" value="">
-                    <input type="hidden" id="lite" name="lite" value="False">
+        </td>
+        </tr>
+        </tbody>
+        </table>
 
-                    <div style="background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0;">
-                        <input type="text" name="message" id="message" value=""
-                            style="width: calc(100% - 100px); color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Arial, sans-serif; font-size: 16px;"
-                            required="" placeholder="Message #{$CHANNEL_NAME}">
-                        <button type="button" id="fakesend"
-                            style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px; height: 32px; vertical-align: middle;">Send</button>
-                    </div>
-                    
-                    <!-- Copyright notice -->
-                    <div style="font-size: 9px; color: #72767d; line-height: 1.2; text-align: center; margin-top: 8px;">This code is derived from WiiPaint.<br>(c) 2009 Daniel Gump of HullBreach Studios. All Rights Reserved</div>
-                </form>
-            </div>
-        </div>
         <script src="/connection.js"></script>
     </div>
     <script>
-        // Drawing implementation derived from WiiPaint
-        // (c) 2009 Daniel Gump of HullBreach Studios. All Rights Reserved
-        
-        var canvas, ctx;
-        var paletteCanvas, paletteCtx;
-        var isDrawing = false;
-        var currentColor = [0, 0, 0]; // RGB array
-        var currentSize = 15;
-        var isErasing = false;
-        var lastX = 0;
-        var lastY = 0;
-        
-        // Global functions for onmouse handlers (Wii compatibility)
-        function start_paint() {
-            isDrawing = true;
-            lastX = 0;
-            lastY = 0;
-        }
-        
-        function stop_paint() {
-            isDrawing = false;
-            lastX = 0;
-            lastY = 0;
-        }
-        
-        function paint() {
-            if (!isDrawing) return;
-            
-            var e = window.event;
-            var rect = canvas.getBoundingClientRect();
-            var scaleX = canvas.width / rect.width;
-            var scaleY = canvas.height / rect.height;
-            var x = (e.clientX - rect.left) * scaleX;
-            var y = (e.clientY - rect.top) * scaleY;
-            
-            // First time drawing or continuing
-            if (lastX === 0 && lastY === 0) {
-                lastX = x;
-                lastY = y;
-                drawBlock(x, y);
-                return;
-            }
-            
-            // Interpolate points between last position and current position
-            var dx = x - lastX;
-            var dy = y - lastY;
-            var distance = Math.sqrt(dx * dx + dy * dy);
-            var steps = Math.max(1, Math.floor(distance / 2));
-            
-            for (var i = 0; i <= steps; i++) {
-                var t = i / steps;
-                var ix = lastX + dx * t;
-                var iy = lastY + dy * t;
-                drawBlock(ix, iy);
-            }
-            
-            lastX = x;
-            lastY = y;
-        }
-        
-        // Global functions for onclick handlers
-        function selectColorFromPalette(e) {
-            var rect = paletteCanvas.getBoundingClientRect();
-            var x = Math.floor(e.clientX - rect.left);
-            var y = Math.floor(e.clientY - rect.top);
-            
-            // Get pixel color from palette
-            var imageData = paletteCtx.getImageData(x, y, 1, 1);
-            currentColor = [imageData.data[0], imageData.data[1], imageData.data[2]];
-            
-            // Switch to draw mode
-            setDrawMode();
-        }
-        
-        function updateBrushSize(value) {
-            currentSize = parseInt(value);
-            document.getElementById('brushSizeValue').textContent = value;
-        }
-        
-        function setDrawMode() {
-            isErasing = false;
-            document.getElementById('drawMode').style.background = '#5865f2';
-            document.getElementById('drawMode').style.borderColor = '#5865f2';
-            document.getElementById('drawMode').style.color = 'white';
-            document.getElementById('eraseMode').style.background = '#40444b';
-            document.getElementById('eraseMode').style.borderColor = '#40444b';
-            document.getElementById('eraseMode').style.color = '#dcddde';
-        }
-        
-        function setEraseMode() {
-            isErasing = true;
-            document.getElementById('eraseMode').style.background = '#5865f2';
-            document.getElementById('eraseMode').style.borderColor = '#5865f2';
-            document.getElementById('eraseMode').style.color = 'white';
-            document.getElementById('drawMode').style.background = '#40444b';
-            document.getElementById('drawMode').style.borderColor = '#40444b';
-            document.getElementById('drawMode').style.color = '#dcddde';
-        }
-        
-        function clearDrawing() {
-            ctx.fillStyle = "rgb(255,255,255)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-        
-        function initDrawing() {
-            canvas = document.getElementById("sketchpad");
-            ctx = canvas.getContext("2d");
-            paletteCanvas = document.getElementById("palette");
-            paletteCtx = paletteCanvas.getContext("2d");
-            
-            // Set white background
-            ctx.fillStyle = "rgb(255,255,255)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw color palette
-            drawPalette();
-            
-            // Set up canvas event listeners
-            setupCanvasEvents();
-            setupFormEvents();
-        }
-        
-        function drawPalette() {
-            // Draw 512-color palette (8x8x8 RGB combinations)
-            for (var temp_color = 512; --temp_color >= 0;) {
-                var r = ((temp_color >> 6) & 7) << 5;
-                var g = ((temp_color >> 3) & 7) << 5;
-                var b = ((temp_color) & 7) << 5;
-                paletteCtx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
-                paletteCtx.fillRect((temp_color & 15) << 3, (temp_color >> 4) << 3, 8, 8);
-            }
-            
-            // Draw 8 grayscale colors on the right
-            for (var temp_color = 8; --temp_color >= 0;) {
-                var gray = temp_color << 5;
-                paletteCtx.fillStyle = 'rgb(' + gray + ',' + gray + ',' + gray + ')';
-                paletteCtx.fillRect(128, temp_color << 5, 20, 32);
-            }
-        }
-        
-        function setupCanvasEvents() {
-            // Mouse events
-            canvas.onmousedown = startDrawing;
-            canvas.onmousemove = draw;
-            canvas.onmouseup = stopDrawing;
-            canvas.onmouseleave = stopDrawing;
-            
-            // Touch events for mobile/Wii
-            canvas.ontouchstart = handleTouchStart;
-            canvas.ontouchmove = handleTouchMove;
-            canvas.ontouchend = stopDrawing;
-        }
-        
-        function setupFormEvents() {
+        document.addEventListener("DOMContentLoaded", function () {
+            var canvas = document.getElementById("sketchpad");
+            canvas.width = Math.min(window.innerWidth - 34 - 15, 1000);
+            canvas.height = Math.min(window.innerHeight - 107.2 - 15, 1000);
             var fakesend = document.getElementById("fakesend");
-            var sendform = document.getElementById("sendform");
+            var sendform1 = document.getElementById("sendform");
             var drawinginput = document.getElementById("drawinginput");
             var messagedom = document.getElementById("message");
-            
+            var sketchpad = new atrament.Atrament(canvas, {
+                width: canvas.width,
+                height: canvas.height,
+                color: 'black',
+            });
             function sendDrawing() {
                 drawinginput.value = canvas.toDataURL();
-                sendform.submit();
+                sendform1.submit();
             }
-            
-            fakesend.onclick = sendDrawing;
-            
-            sendform.onkeyup = function(event) {
-                if (event.key !== 'Enter') return;
+            sendform1.addEventListener("keyup", event => {
+                if (event.key !== "Enter") return;
                 sendDrawing();
-                if (event.preventDefault) event.preventDefault();
-            };
-            
-            messagedom.onkeypress = function(e) {
-                if (e.key === 'Enter') {
-                    if (e.preventDefault) e.preventDefault();
+                event.preventDefault();
+            });
+            messagedom.onkeypress = function (e) {
+                if (e.keyCode == 13) {
+                    e.preventDefault();
                 }
             };
-        }
-        
-        function getCoordinates(e) {
-            var rect = canvas.getBoundingClientRect();
-            var scaleX = canvas.width / rect.width;
-            var scaleY = canvas.height / rect.height;
-            
-            if (e.type && e.type.indexOf('touch') !== -1) {
-                var touch = e.touches[0] || e.changedTouches[0];
-                return {
-                    x: (touch.clientX - rect.left) * scaleX,
-                    y: (touch.clientY - rect.top) * scaleY
-                };
-            } else {
-                return {
-                    x: (e.clientX - rect.left) * scaleX,
-                    y: (e.clientY - rect.top) * scaleY
-                };
-            }
-        }
-        
-        function startDrawing(e) {
-            isDrawing = true;
-            var coords = getCoordinates(e);
-            lastX = coords.x;
-            lastY = coords.y;
-            drawBlock(coords.x, coords.y);
-        }
-        
-        function draw(e) {
-            if (!isDrawing) return;
-            if (e.preventDefault) e.preventDefault();
-            
-            var coords = getCoordinates(e);
-            
-            // Interpolate points between last position and current position
-            // This prevents streaking when drawing quickly
-            var dx = coords.x - lastX;
-            var dy = coords.y - lastY;
-            var distance = Math.sqrt(dx * dx + dy * dy);
-            var steps = Math.max(1, Math.floor(distance / 2));
-            
-            for (var i = 0; i <= steps; i++) {
-                var t = i / steps;
-                var x = lastX + dx * t;
-                var y = lastY + dy * t;
-                drawBlock(x, y);
-            }
-            
-            lastX = coords.x;
-            lastY = coords.y;
-        }
-        
-        function drawBlock(x, y) {
-            var radius = currentSize / 2;
-            
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, 2 * Math.PI);
-            
-            if (isErasing) {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.fill();
-                ctx.globalCompositeOperation = 'source-over';
-            } else {
-                ctx.fillStyle = 'rgb(' + currentColor[0] + ',' + currentColor[1] + ',' + currentColor[2] + ')';
-                ctx.fill();
-            }
-        }
-        
-        function stopDrawing() {
-            isDrawing = false;
-        }
-        
-        function handleTouchStart(e) {
-            if (e.preventDefault) e.preventDefault();
-            startDrawing(e);
-        }
-        
-        function handleTouchMove(e) {
-            if (e.preventDefault) e.preventDefault();
-            draw(e);
-        }
-        
-        // Initialize when page loads
-        window.onload = initDrawing;
+            sketchpad.canvas.getContext("2d").fillStyle = "white";
+            sketchpad.canvas.getContext("2d").fillRect(0, 0, sketchpad.canvas.width, sketchpad.canvas.height);
+            fakesend.addEventListener("click", sendDrawing);
+        });
     </script>
 
 </body>
