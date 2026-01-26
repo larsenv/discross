@@ -17,6 +17,7 @@ const server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/ser
 
 const text_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8'));
 const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
+const thread_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8'));
 
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
@@ -41,8 +42,15 @@ so imma leave it as is :)
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 
-function processServerChannels(server, member, response) {
+function processServerChannels(server, member, response, discordID) {
   try {
+    // Get user preferences for collapsed state
+    const preferences = auth.getChannelPreferences(discordID, server.id);
+    const collapsedMap = {};
+    preferences.forEach(pref => {
+      collapsedMap[pref.channelID] = pref.collapsed === 1;
+    });
+
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
@@ -65,9 +73,46 @@ function processServerChannels(server, member, response) {
       // Check if the member has permission to view the channel
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         if (item.type == ChannelType.GuildCategory) {
-          channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+          // Build category content (channels + threads)
+          let categoryContent = "";
+          item.children.cache.sort((a, b) => a.position - b.position).forEach(child => {
+            if (member.permissionsIn(child).has(PermissionFlagsBits.ViewChannel, true) && child.isTextBased()) {
+              categoryContent += text_channel_template.replace("{$CHANNEL_NAME}", escape(child.name)).replace("{$CHANNEL_LINK}", `../channels/${child.id}#end`);
+              
+              // Add threads for this channel
+              if (child.threads) {
+                const activeThreads = child.threads.cache.filter(thread => !thread.archived);
+                activeThreads.sort((a, b) => a.name.localeCompare(b.name)).forEach(thread => {
+                  if (member.permissionsIn(thread).has(PermissionFlagsBits.ViewChannel, true)) {
+                    categoryContent += thread_channel_template.replace("{$CHANNEL_NAME}", escape(thread.name)).replace("{$CHANNEL_LINK}", `../channels/${thread.id}#end`);
+                  }
+                });
+              }
+            }
+          });
+
+          const isCollapsed = collapsedMap[item.id] || false;
+          const arrow = isCollapsed ? "▶" : "▼";
+          const display = isCollapsed ? "none" : "block";
+          
+          let categoryHTML = category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+          categoryHTML = categoryHTML.replace("{$CATEGORY_ID}", item.id);
+          categoryHTML = categoryHTML.replace("{$ARROW}", arrow);
+          categoryHTML = categoryHTML.replace("{$DISPLAY}", display);
+          categoryHTML = categoryHTML.replace("{$CATEGORY_CONTENT}", categoryContent);
+          channelList += categoryHTML;
         } else {
           channelList += text_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
+          
+          // Add threads for channels without a parent category
+          if (item.threads) {
+            const activeThreads = item.threads.cache.filter(thread => !thread.archived);
+            activeThreads.sort((a, b) => a.name.localeCompare(b.name)).forEach(thread => {
+              if (member.permissionsIn(thread).has(PermissionFlagsBits.ViewChannel, true)) {
+                channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(thread.name)).replace("{$CHANNEL_LINK}", `../channels/${thread.id}#end`);
+              }
+            });
+          }
         }
       }
     });
@@ -147,7 +192,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           response = response.replace("{$DISCORD_NAME}", '<font color="#999999" size="6" face="Arial, Helvetica, sans-serif">' + targetServer.name + "</font><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
-            response = processServerChannels(targetServer, member, response);
+            response = processServerChannels(targetServer, member, response, discordID);
           } else {
             response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
           }
