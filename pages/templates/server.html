@@ -70,7 +70,9 @@
             var arrowSpan = document.getElementById('arrow_' + categoryId);
             
             if (categoryDiv && arrowSpan) {
-                var isCollapsed = categoryDiv.style.display === 'none';
+                // Check current display using getComputedStyle for reliability
+                var currentDisplay = window.getComputedStyle(categoryDiv).display;
+                var isCollapsed = currentDisplay === 'none';
                 categoryDiv.style.display = isCollapsed ? 'block' : 'none';
                 arrowSpan.textContent = isCollapsed ? '▼' : '▶';
                 

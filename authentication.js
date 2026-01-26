@@ -143,7 +143,7 @@ function setup() {
   queryRun('CREATE TABLE IF NOT EXISTS webhooks (serverID TEXT, webhookID TEXT, token STRING)')
   queryRun('CREATE TABLE IF NOT EXISTS verificationcodes (discordID TEXT, code STRING, expires INT)')
   queryRun('CREATE TABLE IF NOT EXISTS servers (serverID TEXT, discordID TEXT, unique (serverID, discordID))')
-  queryRun('CREATE TABLE IF NOT EXISTS channel_preferences (discordID TEXT, serverID TEXT, channelID TEXT, collapsed INTEGER DEFAULT 0, unique (discordID, serverID, channelID))')
+  queryRun('CREATE TABLE IF NOT EXISTS channel_preferences (discordID TEXT, serverID TEXT, channelID TEXT, collapsed INTEGER DEFAULT 0, PRIMARY KEY (discordID, serverID, channelID))')
 }
 
 setup();
