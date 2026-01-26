@@ -39,6 +39,7 @@ var { toggleTheme } = require('./pages/themeToggle.js')
 var { imageProxy } = require('./pages/imageProxy.js')
 var { fileProxy } = require('./pages/fileProxy.js')
 var { toggleImages } = require('./pages/toggleImages.js')
+var { serveEmoji } = require('./pages/emojiCache.js')
 var chanelreplypage = require('./pages/channel_reply.js')
 var replypage = require('./pages/reply.js')
 var drawpage = require('./pages/draw.js')
@@ -226,8 +227,24 @@ server.on('request', async (req, res) => {
         }
       }
     } else if (args[1] === 'imageProxy') {
-      const fullImageUrl = `https://cdn.discordapp.com/${args[2] == "emoji" ? "emojis" : "attachments"}/${args[2] == "emoji" ? parsedurl.path.slice(18) : parsedurl.path.slice(12)}`
-      await imageProxy(res, fullImageUrl);
+      if (args[2] === 'emoji') {
+        // Extract emoji ID and determine if animated
+        const emojiPath = parsedurl.path.slice(18); // Remove "/imageProxy/emoji/"
+        const match = emojiPath.match(/^(\d+)\.(gif|png)$/);
+        
+        if (match) {
+          const emojiId = match[1];
+          const isAnimated = match[2] === 'gif';
+          await serveEmoji(res, emojiId, isAnimated);
+        } else {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('Invalid emoji URL format');
+        }
+      } else {
+        // Regular image proxy for attachments
+        const fullImageUrl = `https://cdn.discordapp.com/attachments/${parsedurl.path.slice(12)}`;
+        await imageProxy(res, fullImageUrl);
+      }
     } else if (args[1] === 'fileProxy') {
       const filePath = parsedurl.path.slice(11)
       const fullFileUrl = `https://cdn.discordapp.com/attachments/${filePath}`

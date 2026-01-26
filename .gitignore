@@ -10,3 +10,6 @@ pages/static/ico/server/*
 package-lock.json
 .env
 db/discross.db
+
+# Emoji cache
+pages/static/emoji_cache/
