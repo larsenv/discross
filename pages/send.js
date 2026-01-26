@@ -148,7 +148,11 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
       // redirect back to the channel (use the provided channel id if available)
       const redirectChannel = (parsedurl.query && parsedurl.query.channel) ? parsedurl.query.channel : (args?.[2] || "");
-      res.writeHead(302, { "Location": `/channels/${redirectChannel}#end` });
+      // If reply_message_id is present, redirect to the reply page to keep showing the reply UI
+      const redirectPath = (query.reply_message_id && isValidSnowflake(query.reply_message_id)) 
+        ? `/channels/${redirectChannel}/${query.reply_message_id}#end`
+        : `/channels/${redirectChannel}#end`;
+      res.writeHead(302, { "Location": redirectPath });
       res.end();
     });
   } catch (err) {
