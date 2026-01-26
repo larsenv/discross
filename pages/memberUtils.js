@@ -49,6 +49,7 @@ function getDisplayName(member, author) {
  * @returns {string} Hex color string (e.g., "#ffffff")
  */
 function getMemberColor(member) {
+  return "#ffffff";
   if (!member || !member.roles || !member.roles.highest) {
     console.debug('getMemberColor: No member or roles, returning white');
     return "#ffffff"; // Default white color
