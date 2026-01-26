@@ -76,11 +76,15 @@
         var emojiShowing = false;
 
         function showEmoji() {
+            var emojiElement = document.getElementById("emoji");
+            if (!emojiElement) {
+                return; // Exit gracefully if emoji element doesn't exist
+            }
             if (emojiShowing) {
-                document.getElementById("emoji").style.display = "none";
+                emojiElement.style.display = "none";
                 emojiShowing = false;
             } else {
-                document.getElementById("emoji").style.display = "block";
+                emojiElement.style.display = "block";
                 emojiShowing = true;
             }
         }
