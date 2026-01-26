@@ -112,7 +112,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
         } while (m);
 
         // Handle reply if reply_message_id is present
-        if (query.reply_message_id && query.reply_message_id !== "") {
+        if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
           try {
             let reply_message = await channel.messages.fetch(query.reply_message_id);
             let reply_message_content = reply_message.content;
@@ -120,9 +120,9 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
               reply_message_content = reply_message_content.substring(0, 30) + "...";
             }
             let author_id = reply_message.author.id;
-            let author_mention = "<@" + author_id + ">";
+            let author_mention = `<@${author_id}>`;
 
-            processedmessage = "> Replying to \"" + reply_message_content + "\" from " + author_mention + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
+            processedmessage = `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
           } catch (err) {
             console.error("Failed to fetch reply message:", err);
             // Continue sending the message without the reply quote if fetching fails
