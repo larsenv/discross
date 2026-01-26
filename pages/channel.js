@@ -137,7 +137,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        messagetext = /* strReplace( */ md.render(item.content) /* , "\n", "<br>") */;
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
