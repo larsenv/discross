@@ -588,15 +588,9 @@
             var inputField = document.getElementById('drawinginput');
             var form = document.getElementById('sendform');
             var btn = document.getElementById('btn-send');
-            function() {
-                try {
-                    var data = canvas.toDataURL("image/png");
-                    inputField.value = data;
-                    form.submit();
-                } catch(e) {
-                    alert("Error converting image");
-                }
-            };
+            var data = canvas.toDataURL("image/png");
+            inputField.value = data;
+            form.submit();
         }
 
         // Initialize UI
