@@ -252,30 +252,30 @@
         </a>
 
         <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow: hidden; padding: 16px; display: flex; gap: 16px; align-items: flex-start;">
+            <div style="flex: 1; overflow: hidden; padding: 16px; display: flex; gap: 12px; align-items: flex-start;">
                 <!-- Canvas on the left -->
                 <div style="flex: 1;">
                     <canvas id="sketchpad" style="border: 2px solid #40444b; border-radius: 4px;"></canvas>
                 </div>
 
                 <!-- Controls on the right -->
-                <div style="width: 200px; display: flex; flex-direction: column; gap: 16px;">
+                <div style="width: 180px; display: flex; flex-direction: column; gap: 12px;">
                     <div class="control-group" style="width: 100%;">
-                        <span class="control-label">Color Palette:</span>
-                        <div style="border: 2px solid #40444b; border-radius: 4px; margin-top: 8px;">
+                        <span class="control-label" style="display: block; margin-bottom: 8px;">Color Palette:</span>
+                        <div style="border: 2px solid #40444b; border-radius: 4px;">
                             <canvas id="palette" width="148" height="264" style="display: block; cursor: pointer;"></canvas>
                         </div>
                     </div>
 
                     <div class="control-group">
-                        <span class="control-label">Brush Size:</span>
+                        <span class="control-label" style="display: block; margin-bottom: 8px;">Brush Size:</span>
                         <input type="range" class="slider" id="brushSize" min="1" max="50" value="5" style="width: 100%;">
-                        <span class="slider-value" id="brushSizeValue">5</span>
+                        <span class="slider-value" id="brushSizeValue" style="display: block; text-align: center; margin-top: 4px;">5</span>
                     </div>
 
-                    <div class="control-group">
-                        <button class="tool-button active" id="drawMode" title="Draw" style="width: 100%; margin-bottom: 8px;">Draw</button>
-                        <button class="tool-button" id="eraseMode" title="Erase" style="width: 100%; margin-bottom: 8px;">Erase</button>
+                    <div class="control-group" style="display: flex; flex-direction: column; gap: 8px;">
+                        <button class="tool-button active" id="drawMode" title="Draw" style="width: 100%;">Draw</button>
+                        <button class="tool-button" id="eraseMode" title="Erase" style="width: 100%;">Erase</button>
                         <button class="tool-button" id="clearCanvas" title="Clear Canvas" style="width: 100%;">Clear</button>
                     </div>
                 </div>
@@ -332,9 +332,9 @@
                             style="flex: 1; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px;"
                             required="" placeholder="Message #{$CHANNEL_NAME}">
                         <button type="button" id="fakesend"
-                            style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; margin: 0 8px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 32px; right: 17px;"
+                            style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; margin: 0 8px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 32px;"
                             onmouseover="this.style.background='#4752c4'"
-                            onmouseout="this.style.background='#5865f2'">Send Drawing</button>
+                            onmouseout="this.style.background='#5865f2'">Send</button>
                     </div>
 
                     <div
@@ -347,7 +347,8 @@
         <script src="/connection.js"></script>
     </div>
     <script>
-        // DSiPaint-style palette drawing implementation (Wii-compatible)
+        // Drawing implementation derived from WiiPaint
+        // (c) 2009 Daniel Gump of HullBreach Studios. All Rights Reserved
         (function() {
             var canvas, ctx;
             var paletteCanvas, paletteCtx;
@@ -355,6 +356,8 @@
             var currentColor = [0, 0, 0]; // RGB array
             var currentSize = 5;
             var isErasing = false;
+            var lastX = 0;
+            var lastY = 0;
             
             function initDrawing() {
                 canvas = document.getElementById("sketchpad");
@@ -363,7 +366,7 @@
                 paletteCtx = paletteCanvas.getContext("2d");
                 
                 // Set canvas size to fit the available space with padding
-                var maxWidth = window.innerWidth - 60 - 200 - 64; // sidebar + controls + padding
+                var maxWidth = window.innerWidth - 60 - 180 - 44; // sidebar + controls + padding
                 var maxHeight = window.innerHeight - 100; // padding for top/bottom
                 
                 // Limit to reasonable sizes
@@ -434,9 +437,10 @@
             }
             
             function setupControlEvents() {
-                // Brush size slider
+                // Brush size slider - initialize current size from slider value
                 var brushSlider = document.getElementById('brushSize');
                 var brushValue = document.getElementById('brushSizeValue');
+                currentSize = parseInt(brushSlider.value); // Initialize from HTML value
                 brushSlider.addEventListener('input', function() {
                     currentSize = parseInt(this.value);
                     brushValue.textContent = currentSize;
@@ -454,10 +458,8 @@
                 });
                 
                 document.getElementById('clearCanvas').addEventListener('click', function() {
-                    if (confirm('Are you sure you want to clear the canvas?')) {
-                        ctx.fillStyle = "rgb(255,255,255)";
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    }
+                    ctx.fillStyle = "rgb(255,255,255)";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                 });
             }
             
@@ -522,6 +524,8 @@
             function startDrawing(e) {
                 isDrawing = true;
                 var coords = getCoordinates(e);
+                lastX = coords.x;
+                lastY = coords.y;
                 drawBlock(coords.x, coords.y);
             }
             
@@ -530,7 +534,23 @@
                 if (e.preventDefault) e.preventDefault();
                 
                 var coords = getCoordinates(e);
-                drawBlock(coords.x, coords.y);
+                
+                // Interpolate points between last position and current position
+                // This prevents streaking when drawing quickly
+                var dx = coords.x - lastX;
+                var dy = coords.y - lastY;
+                var distance = Math.sqrt(dx * dx + dy * dy);
+                var steps = Math.max(1, Math.floor(distance / 2));
+                
+                for (var i = 0; i <= steps; i++) {
+                    var t = i / steps;
+                    var x = lastX + dx * t;
+                    var y = lastY + dy * t;
+                    drawBlock(x, y);
+                }
+                
+                lastX = coords.x;
+                lastY = coords.y;
             }
             
             function drawBlock(x, y) {
