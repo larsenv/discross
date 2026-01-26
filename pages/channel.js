@@ -160,11 +160,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // Process user mentions - find all user mentions in the message text
         var userMentionRegex = /&lt;@!?(\d{17,19})&gt;/g;
         var mentionMatch;
-        var mentionsToProcess = [];
+        var mentionsToProcess = new Set();
         
         // Collect all unique user IDs mentioned
         while ((mentionMatch = userMentionRegex.exec(messagetext)) !== null) {
-          mentionsToProcess.push(mentionMatch[1]);
+          mentionsToProcess.add(mentionMatch[1]);
         }
         
         // Process each mentioned user
