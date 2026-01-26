@@ -270,5 +270,11 @@ exports.getChannelPreferences = function (discordID, serverID) {
 }
 
 exports.setChannelPreference = function (discordID, serverID, channelID, collapsed) {
-  queryRun('INSERT OR REPLACE INTO channel_preferences (discordID, serverID, channelID, collapsed) VALUES (?, ?, ?, ?)', [discordID, serverID, channelID, collapsed])
+  try {
+    queryRun('INSERT OR REPLACE INTO channel_preferences (discordID, serverID, channelID, collapsed) VALUES (?, ?, ?, ?)', [discordID, serverID, channelID, collapsed])
+    return { success: true }
+  } catch (err) {
+    console.error('Error setting channel preference:', err)
+    return { success: false, error: err.message }
+  }
 }
