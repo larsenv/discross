@@ -32,13 +32,16 @@
             box-sizing: border-box;
         }
 
+        * {
+            font-family: 'rodin', Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
         html,
         body,
         #wrapper {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'rodin', Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
         body {
@@ -258,8 +261,8 @@
                     <canvas id="sketchpad" style="border: 2px solid #40444b; border-radius: 4px;"></canvas>
                 </div>
 
-                <!-- Controls aligned to the right edge -->
-                <div style="width: 148px; display: flex; flex-direction: column; gap: 12px; margin-right: 0;">
+                <!-- Controls next to canvas -->
+                <div style="width: 148px; display: flex; flex-direction: column; gap: 12px;">
                     <div class="control-group" style="width: 100%;">
                         <div style="border: 2px solid #40444b; border-radius: 4px;">
                             <canvas id="palette" width="148" height="264" style="display: block; cursor: pointer;"></canvas>
