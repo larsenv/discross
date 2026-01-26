@@ -60,6 +60,7 @@ exports.getHistoryCached = async function (chnl) {
     chnl = client.channels.get(chnl)
   }
   if (!msghistory[chnl.id]) {
+    // Fetch messages - Discord.js will try to populate member data automatically if available in cache
     const messagearray = await chnl.messages.fetch({ limit: cachelength })
     msghistory[chnl.id] = messagearray.sort((messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp)
   }

@@ -75,8 +75,8 @@ async function ensureMemberData(message, guild) {
     return message.member;
   }
   
-  // If there's no author, we can't fetch member data
-  if (!message.author) {
+  // If there's no author or guild, we can't fetch member data
+  if (!message.author || !guild) {
     return null;
   }
   
