@@ -35,7 +35,7 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
     
     if (emoji.id) {
       // Custom emoji
-      if (imagesCookie == 1) {
+      if (imagesCookie === 1) {
         const extension = emoji.animated ? 'gif' : 'png';
         emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
       } else {
@@ -44,7 +44,7 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
       }
     } else if (emoji.name) {
       // Unicode emoji (twemoji)
-      if (imagesCookie == 1) {
+      if (imagesCookie === 1) {
         // Convert unicode emoji to twemoji format
         const points = [];
         let char = 0;
