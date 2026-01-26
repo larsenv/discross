@@ -6,13 +6,16 @@ function strReplace(string, needle, replacement) {
 
 // Function to process and format reactions
 function processReactions(reactions, imagesCookie, reactions_template, reaction_template) {
-  if (!reactions || reactions.size === 0) {
+  // Handle ReactionManager vs Collection
+  const reactionCollection = reactions?.cache || reactions;
+  
+  if (!reactionCollection || reactionCollection.size === 0) {
     return '';
   }
 
   let reactionsHtml = '';
   
-  reactions.forEach((reaction) => {
+  reactionCollection.forEach((reaction) => {
     const emoji = reaction.emoji;
     const count = reaction.count;
     
