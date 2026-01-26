@@ -97,8 +97,18 @@ function getMemberColor(member) {
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   try {
+    // FIX 1: Declare all variables with 'let' to prevent "Assignment to constant variable" errors
+    let response = "";
+    let chnl;
+    let botMember;
+    let member;
+    let user;
+    let username;
+    let template;
+    let final;
+    let messages;
+
     try {
-      response = "";
       chnl = await bot.client.channels.fetch(args[2]);
     } catch (err) {
       chnl = undefined;
@@ -123,6 +133,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
         template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
 
+        // Note: The template likely won't have {$INPUT} if using the canvas template, so this replace might just do nothing, which is fine.
         if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
           final = strReplace(template, "{$INPUT}", input_template);
         } else {
@@ -130,50 +141,47 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         }
         final = strReplace(final, "{$MESSAGES}", no_message_history_template);
 
-        res.write(final); //write a response to the client
-        res.end(); //end the response
+        res.write(final);
+        res.end();
         return;
       }
 
-      console.log("Processed valid channel request");
+      // console.log("Processed valid channel request");
       messages = await bot.getHistoryCached(chnl);
-      lastauthor = undefined;
-      lastmember = undefined;
-      lastdate = new Date('1995-12-17T03:24:00');
-      currentmessage = "";
-      islastmessage = false;
-      messageid = 0;
+      
+      // FIX 2: Declare loop variables with 'let'
+      let lastauthor = undefined;
+      let lastmember = undefined;
+      let lastdate = new Date('1995-12-17T03:24:00');
+      let currentmessage = "";
+      let islastmessage = false;
+      let messageid = 0;
 
-      handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
-        if (lastauthor) { // Only consider the last message if this is not the first
-          // If the last message is not going to be merged with this one, put it into the response
+      // Define the handler function
+      const handlemessage = async function (item) { 
+        if (lastauthor) { 
           if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
-
 
             currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
             currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
             
-            // Use helper functions for proper nickname and color
             const displayName = getDisplayName(lastmember, lastauthor);
             const authorColor = getMemberColor(lastmember);
             
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
-
-            // Remove avatar URL processing since we removed avatars
             currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", lastdate.toLocaleTimeString('en-US') + " " + lastdate.toDateString());
             currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
-            response += currentmessage;
+            
+            response += currentmessage; // This assignment was failing before
             currentmessage = "";
           }
         }
 
-        if (!item) { // When processing the last message outside of the forEach item is undefined
-          return;
-        }
+        if (!item) return;
 
-        // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        let messagetext = md.renderInline(item.content);
+        
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
@@ -192,6 +200,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
+        
         if (item.mentions) {
           item.mentions.members.forEach(function (user) {
             if (user) {
@@ -201,21 +210,20 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
           });
         }
 
-        // https://stackoverflow.com/questions/6323417/regex-to-extract-all-matches-from-string-using-regexp-exec
-
-        var regex = /&lt;#([0-9]{18})&gt;/g; // Regular expression to detect channel IDs
+        var regex = /&lt;#([0-9]{18})&gt;/g; 
         var m;
 
         do {
           m = regex.exec(messagetext);
           if (m) {
+            let mentionedChannel; // FIX 3: Renamed to avoid conflict with global/module 'channel'
             try {
-              channel = await bot.client.channels.cache.get(m[1]);
+              mentionedChannel = await bot.client.channels.cache.get(m[1]);
             } catch (err) {
               console.log(err);
             }
-            if (channel) {
-              messagetext = strReplace(messagetext, m[0], mention_template.replace("{$USERNAME}", escape("#" + channel.name)));
+            if (mentionedChannel) {
+              messagetext = strReplace(messagetext, m[0], mention_template.replace("{$USERNAME}", escape("#" + mentionedChannel.name)));
             }
           }
         } while (m);
@@ -223,9 +231,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         messagetext = strReplace(messagetext, "@everyone", mention_template.replace("{$USERNAME}", "@everyone"));
         messagetext = strReplace(messagetext, "@here", mention_template.replace("{$USERNAME}", "@here"));
 
-
-
-        // If the last message is not going to be merged with this one, use the template for the first message, otherwise use the template for merged messages
         if (!lastauthor || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
           messagetext = first_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
         } else {
@@ -237,15 +242,11 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         lastdate = item.createdAt;
         currentmessage += messagetext;
         messageid = item.id;
-
       }
 
       for (const item of messages) {
         await handlemessage(item);
       }
-
-      // Handle the last message
-      // Uses the function in the foreach from earlier
 
       islastmessage = true;
       await handlemessage();
@@ -255,7 +256,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
       
-      // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
       if (whiteThemeCookie == 1) {
         response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
       } else if (whiteThemeCookie == 2) {
@@ -264,6 +264,8 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         response = strReplace(response, "{$WHITE_THEME_ENABLED}", "");
       }
 
+      // Remove the {$INPUT} replacement logic here if you want to strictly use the canvas from the template
+      // But keeping it is fine as long as the template doesn't have the {$INPUT} tag.
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
         final = strReplace(template, "{$INPUT}", input_disabled_template);
         final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
@@ -278,9 +280,9 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         unicode_emoji_matches.forEach(match => {
           const points = [];
           let char = 0;
-          let previous = 0;                  // This whole code block was "inspired" by the official Twitter Twemoji parser.
-          let i = 0;                         // I would have done it myself but my code wasn't ready for skin tones/emoji variation
-          let output                         // The Regex I wouldn't have done myself, so thanks for that too!
+          let previous = 0;                  
+          let i = 0;                         
+          let output                         
           while (i < match.length) {
             char = match.charCodeAt(i++);
             if (previous) {
@@ -297,42 +299,50 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         });
       }
 
-      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
+      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                
+      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          
+        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    
       })
+
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
       final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
+      
       const tensorLinksRegex = /<a href="https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)">https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)<\/a>/g;
       let tmpTensorLinks = [...response.toString().matchAll(tensorLinksRegex)];
-      let resp_,gifLink,description;
+      let resp_, gifLink, description;
+      
       tmpTensorLinks.forEach(link => {
-        resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
-        try { resp_ = resp_.json();
-          gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
-          description = resp_["results"][0]["content_description"];}
-        catch { return }
-        response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
+        try {
+            // Add a synchronous fetch wrapper or ensure this works synchronously if you aren't awaiting
+            // Assuming sync-fetch based on imports
+            resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
+            resp_ = resp_.json();
+            gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
+            description = resp_["results"][0]["content_description"];
+            response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
+        } catch (e) { 
+            return; 
+        }
       });
-      // Remove any existing end anchors from messages HTML before appending exactly one
+
       response = removeExistingEndAnchors(response);
       response += '<a id="end" name="end"></a>';
       final = strReplace(final, "{$MESSAGES}", response);
+      
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.write(final); //write a response to the client
-      res.end(); //end the response
+      res.write(final);
+      res.end();
     } else {
       res.writeHead(404, { "Content-Type": "text/html" });
-      res.write("Invalid channel!"); //write a response to the client
-      res.end(); //end the response
+      res.write("Invalid channel!");
+      res.end();
     }
   } catch (error) {
     console.log(error)
-    // res.writeHead(302, { "Location": "/server/" });
     res.writeHead(500, { "Content-Type": "text/html" });
-    res.write("An error occurred! Please try again later.<br>"); //write a response to the client
-    // res.write(error.toString());
+    res.write("An error occurred! Please try again later.<br>");
+    res.write(error.toString()); // Useful for debugging, remove in production
     res.end();
   }
 }
