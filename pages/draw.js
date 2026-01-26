@@ -223,9 +223,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-      
-      // 5. Theme Logic (Cookie Check)
-      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
       if (whiteThemeCookie == 1) {
         template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
       } else if (whiteThemeCookie == 2) {
