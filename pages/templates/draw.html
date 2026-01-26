@@ -493,7 +493,7 @@
 
             // RGB to hex conversion
             function rgbToHex(r, g, b) {
-                return '#' + [r, g, b].map(x => {
+                return '#' + [r, g, b].map(function(x) {
                     var hex = x.toString(16);
                     return hex.length === 1 ? '0' + hex : hex;
                 }).join('');
@@ -523,7 +523,7 @@
                     }
                 }
                 
-                return { h, s, v };
+                return { h: h, s: s, v: v };
             }
 
             // Update current color from HSV
@@ -533,7 +533,7 @@
                 colorPreview.style.background = currentColor;
                 
                 // Update quick swatches active state
-                document.querySelectorAll('.color-button').forEach(btn => {
+                document.querySelectorAll('.color-button').forEach(function(btn) {
                     btn.classList.remove('active');
                 });
             }
@@ -759,7 +759,7 @@
 
             function setupControlEvents() {
                 // Quick swatch buttons
-                document.querySelectorAll('.color-button').forEach(btn => {
+                document.querySelectorAll('.color-button').forEach(function(btn) {
                     btn.addEventListener('click', function() {
                         var color = this.getAttribute('data-color');
                         var hsv = hexToHsv(color);
@@ -771,9 +771,9 @@
                         updateColorFromHSV();
                         
                         // Mark this swatch as active
-                        document.querySelectorAll('.color-button').forEach(b => 
-                            b.classList.remove('active')
-                        );
+                        document.querySelectorAll('.color-button').forEach(function(b) {
+                            b.classList.remove('active');
+                        });
                         this.classList.add('active');
                         
                         // Switch to draw mode
