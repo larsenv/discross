@@ -99,16 +99,17 @@ async function ensureMemberData(message, guild, cache = null) {
   if (message.webhookId) {
     console.debug(`Message is from webhook, trying to find member by display name: ${message.author.username}`);
     try {
-      // Fetch all members and search for one with matching display name or username
+      // Note: This fetches all members once per webhook username (cached afterward)
+      // For large guilds, consider using guild.members.search() if performance is an issue
       const members = await guild.members.fetch();
       const webhookUsername = message.author.username;
       
-      // Try to find member by display name or username match
+      // Try to find member by display name, username, or globalName
+      // displayName already includes nickname in priority, so no need to check nickname separately
       const foundMember = members.find(m => 
         m.displayName === webhookUsername || 
         m.user.username === webhookUsername ||
-        m.user.globalName === webhookUsername ||
-        (m.nickname && m.nickname === webhookUsername)
+        m.user.globalName === webhookUsername
       );
       
       if (foundMember) {
