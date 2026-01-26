@@ -256,22 +256,19 @@
 
         <div style="padding-left: 60px; position: relative;">
             <!-- Canvas - absolute positioning for Wii compatibility -->
-            <canvas id="sketchpad" width="640" height="400" style="border: 2px solid #40444b; position: absolute; left: 0; top: 0;"></canvas>
+            <canvas id="sketchpad" width="640" height="400" style="border: 2px solid #40444b; position: absolute; left: 50%; top: 0; margin-left: -396px;" onmousedown="start_paint()" onmousemove="paint()" onmouseup="stop_paint()"></canvas>
             
             <!-- Color palette -->
-            <canvas id="palette" width="148" height="264" style="border: 2px solid #40444b; position: absolute; left: 644px; top: 0; cursor: pointer;" onclick="selectColorFromPalette(event)"></canvas>
+            <canvas id="palette" width="148" height="264" style="border: 2px solid #40444b; position: absolute; left: 50%; top: 0; margin-left: 248px; cursor: pointer;" onclick="selectColorFromPalette(event)"></canvas>
             
             <!-- Brush size slider and value -->
-            <input type="range" id="brushSize" min="1" max="50" value="15" style="position: absolute; left: 644px; top: 270px; width: 144px;" oninput="updateBrushSize(this.value)">
-            <span id="brushSizeValue" style="position: absolute; left: 644px; top: 295px; width: 144px; text-align: center; color: #dcddde; font-size: 14px;">15</span>
+            <input type="range" id="brushSize" min="1" max="50" value="15" style="position: absolute; left: 50%; top: 270px; margin-left: 248px; width: 144px;" oninput="updateBrushSize(this.value)">
+            <span id="brushSizeValue" style="position: absolute; left: 50%; top: 295px; margin-left: 248px; width: 144px; text-align: center; color: #dcddde; font-size: 14px;">15</span>
             
             <!-- Tool buttons -->
-            <button id="drawMode" onclick="setDrawMode()" style="position: absolute; left: 644px; top: 320px; width: 144px; height: 32px; background: #5865f2; border: 2px solid #5865f2; border-radius: 4px; color: white; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px;">Draw</button>
-            <button id="eraseMode" onclick="setEraseMode()" style="position: absolute; left: 644px; top: 360px; width: 144px; height: 32px; background: #40444b; border: 2px solid #40444b; border-radius: 4px; color: #dcddde; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px;">Erase</button>
-            <button id="clearCanvas" onclick="clearDrawing()" style="position: absolute; left: 644px; top: 400px; width: 144px; height: 32px; background: #40444b; border: 2px solid #40444b; border-radius: 4px; color: #dcddde; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px;">Clear</button>
-            
-            <!-- Copyright notice -->
-            <div style="position: absolute; left: 644px; top: 440px; width: 144px; font-size: 9px; color: #72767d; line-height: 1.2;">This code is derived from WiiPaint.<br>(c) 2009 Daniel Gump of HullBreach Studios. All Rights Reserved</div>
+            <button id="drawMode" onclick="setDrawMode()" style="position: absolute; left: 50%; top: 320px; margin-left: 248px; width: 144px; height: 32px; background: #5865f2; border: 2px solid #5865f2; border-radius: 4px; color: white; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px;">Draw</button>
+            <button id="eraseMode" onclick="setEraseMode()" style="position: absolute; left: 50%; top: 360px; margin-left: 248px; width: 144px; height: 32px; background: #40444b; border: 2px solid #40444b; border-radius: 4px; color: #dcddde; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px;">Erase</button>
+            <button id="clearCanvas" onclick="clearDrawing()" style="position: absolute; left: 50%; top: 400px; margin-left: 248px; width: 144px; height: 32px; background: #40444b; border: 2px solid #40444b; border-radius: 4px; color: #dcddde; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px;">Clear</button>
 
                 <div id="emoji" style="display: none; position: absolute; top: 480px;">
                     <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
@@ -329,6 +326,9 @@
                         <button type="button" id="fakesend"
                             style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; cursor: pointer; font-family: 'rodin', Arial, sans-serif; font-size: 14px; height: 32px; vertical-align: middle;">Send</button>
                     </div>
+                    
+                    <!-- Copyright notice -->
+                    <div style="font-size: 9px; color: #72767d; line-height: 1.2; text-align: center; margin-top: 8px;">This code is derived from WiiPaint.<br>(c) 2009 Daniel Gump of HullBreach Studios. All Rights Reserved</div>
                 </form>
             </div>
         </div>
@@ -346,6 +346,54 @@
         var isErasing = false;
         var lastX = 0;
         var lastY = 0;
+        
+        // Global functions for onmouse handlers (Wii compatibility)
+        function start_paint() {
+            isDrawing = true;
+            lastX = 0;
+            lastY = 0;
+        }
+        
+        function stop_paint() {
+            isDrawing = false;
+            lastX = 0;
+            lastY = 0;
+        }
+        
+        function paint() {
+            if (!isDrawing) return;
+            
+            var e = window.event;
+            var rect = canvas.getBoundingClientRect();
+            var scaleX = canvas.width / rect.width;
+            var scaleY = canvas.height / rect.height;
+            var x = (e.clientX - rect.left) * scaleX;
+            var y = (e.clientY - rect.top) * scaleY;
+            
+            // First time drawing or continuing
+            if (lastX === 0 && lastY === 0) {
+                lastX = x;
+                lastY = y;
+                drawBlock(x, y);
+                return;
+            }
+            
+            // Interpolate points between last position and current position
+            var dx = x - lastX;
+            var dy = y - lastY;
+            var distance = Math.sqrt(dx * dx + dy * dy);
+            var steps = Math.max(1, Math.floor(distance / 2));
+            
+            for (var i = 0; i <= steps; i++) {
+                var t = i / steps;
+                var ix = lastX + dx * t;
+                var iy = lastY + dy * t;
+                drawBlock(ix, iy);
+            }
+            
+            lastX = x;
+            lastY = y;
+        }
         
         // Global functions for onclick handlers
         function selectColorFromPalette(e) {
