@@ -603,117 +603,119 @@
                     drawHuePicker();
                     drawSVPicker();
                     updateColorFromHSV();
+                    
+                    // Set up event listeners for SV picker
+                    var isSVDragging = false;
+                    
+                    function handleSVStart(e) {
+                        isSVDragging = true;
+                        updateSVFromEvent(e);
+                    }
+                    
+                    function handleSVMove(e) {
+                        if (!isSVDragging) return;
+                        updateSVFromEvent(e);
+                    }
+                    
+                    function handleSVEnd() {
+                        isSVDragging = false;
+                    }
+                    
+                    function updateSVFromEvent(e) {
+                        e.preventDefault();
+                        var rect = svPicker.getBoundingClientRect();
+                        var scaleX = svPicker.width / rect.width;
+                        var scaleY = svPicker.height / rect.height;
+                        
+                        var clientX, clientY;
+                        if (e.type.includes('touch')) {
+                            var touch = e.touches[0] || e.changedTouches[0];
+                            clientX = touch.clientX;
+                            clientY = touch.clientY;
+                        } else {
+                            clientX = e.clientX;
+                            clientY = e.clientY;
+                        }
+                        
+                        var x = Math.max(0, Math.min((clientX - rect.left) * scaleX, svPicker.width));
+                        var y = Math.max(0, Math.min((clientY - rect.top) * scaleY, svPicker.height));
+                        
+                        currentSaturation = x / svPicker.width;
+                        currentValue = 1 - (y / svPicker.height);
+                        updateColorFromHSV();
+                        
+                        // Switch to draw mode when color changes
+                        if (isErasing) {
+                            isErasing = false;
+                            updateToolButtons('draw');
+                        }
+                    }
+                    
+                    svPicker.addEventListener('mousedown', handleSVStart);
+                    svPicker.addEventListener('mousemove', handleSVMove);
+                    svPicker.addEventListener('mouseup', handleSVEnd);
+                    svPicker.addEventListener('mouseleave', handleSVEnd);
+                    svPicker.addEventListener('touchstart', handleSVStart, {passive: false});
+                    svPicker.addEventListener('touchmove', handleSVMove, {passive: false});
+                    svPicker.addEventListener('touchend', handleSVEnd);
+                    
+                    // Set up event listeners for hue picker
+                    var isHueDragging = false;
+                    
+                    function handleHueStart(e) {
+                        isHueDragging = true;
+                        updateHueFromEvent(e);
+                    }
+                    
+                    function handleHueMove(e) {
+                        if (!isHueDragging) return;
+                        updateHueFromEvent(e);
+                    }
+                    
+                    function handleHueEnd() {
+                        isHueDragging = false;
+                    }
+                    
+                    function updateHueFromEvent(e) {
+                        e.preventDefault();
+                        var rect = huePicker.getBoundingClientRect();
+                        var scaleY = huePicker.height / rect.height;
+                        
+                        var clientY;
+                        if (e.type.includes('touch')) {
+                            var touch = e.touches[0] || e.changedTouches[0];
+                            clientY = touch.clientY;
+                        } else {
+                            clientY = e.clientY;
+                        }
+                        
+                        var y = Math.max(0, Math.min((clientY - rect.top) * scaleY, huePicker.height));
+                        currentHue = y / huePicker.height;
+                        
+                        drawSVPicker();
+                        updateColorFromHSV();
+                        
+                        // Switch to draw mode when color changes
+                        if (isErasing) {
+                            isErasing = false;
+                            updateToolButtons('draw');
+                        }
+                    }
+                    
+                    huePicker.addEventListener('mousedown', handleHueStart);
+                    huePicker.addEventListener('mousemove', handleHueMove);
+                    huePicker.addEventListener('mouseup', handleHueEnd);
+                    huePicker.addEventListener('mouseleave', handleHueEnd);
+                    huePicker.addEventListener('touchstart', handleHueStart, {passive: false});
+                    huePicker.addEventListener('touchmove', handleHueMove, {passive: false});
+                    huePicker.addEventListener('touchend', handleHueEnd);
                 } catch (e) {
                     // If HSV picker fails, just use the quick swatches
-                    console.error('HSV picker initialization failed:', e);
+                    if (window.console && console.log) {
+                        console.log('HSV picker initialization failed:', e);
+                    }
                     return;
                 }
-                
-                // Set up event listeners for SV picker
-                var isSVDragging = false;
-                
-                function handleSVStart(e) {
-                    isSVDragging = true;
-                    updateSVFromEvent(e);
-                }
-                
-                function handleSVMove(e) {
-                    if (!isSVDragging) return;
-                    updateSVFromEvent(e);
-                }
-                
-                function handleSVEnd() {
-                    isSVDragging = false;
-                }
-                
-                function updateSVFromEvent(e) {
-                    e.preventDefault();
-                    var rect = svPicker.getBoundingClientRect();
-                    var scaleX = svPicker.width / rect.width;
-                    var scaleY = svPicker.height / rect.height;
-                    
-                    var clientX, clientY;
-                    if (e.type.includes('touch')) {
-                        var touch = e.touches[0] || e.changedTouches[0];
-                        clientX = touch.clientX;
-                        clientY = touch.clientY;
-                    } else {
-                        clientX = e.clientX;
-                        clientY = e.clientY;
-                    }
-                    
-                    var x = Math.max(0, Math.min((clientX - rect.left) * scaleX, svPicker.width));
-                    var y = Math.max(0, Math.min((clientY - rect.top) * scaleY, svPicker.height));
-                    
-                    currentSaturation = x / svPicker.width;
-                    currentValue = 1 - (y / svPicker.height);
-                    updateColorFromHSV();
-                    
-                    // Switch to draw mode when color changes
-                    if (isErasing) {
-                        isErasing = false;
-                        updateToolButtons('draw');
-                    }
-                }
-                
-                svPicker.addEventListener('mousedown', handleSVStart);
-                svPicker.addEventListener('mousemove', handleSVMove);
-                svPicker.addEventListener('mouseup', handleSVEnd);
-                svPicker.addEventListener('mouseleave', handleSVEnd);
-                svPicker.addEventListener('touchstart', handleSVStart, {passive: false});
-                svPicker.addEventListener('touchmove', handleSVMove, {passive: false});
-                svPicker.addEventListener('touchend', handleSVEnd);
-                
-                // Set up event listeners for hue picker
-                var isHueDragging = false;
-                
-                function handleHueStart(e) {
-                    isHueDragging = true;
-                    updateHueFromEvent(e);
-                }
-                
-                function handleHueMove(e) {
-                    if (!isHueDragging) return;
-                    updateHueFromEvent(e);
-                }
-                
-                function handleHueEnd() {
-                    isHueDragging = false;
-                }
-                
-                function updateHueFromEvent(e) {
-                    e.preventDefault();
-                    var rect = huePicker.getBoundingClientRect();
-                    var scaleY = huePicker.height / rect.height;
-                    
-                    var clientY;
-                    if (e.type.includes('touch')) {
-                        var touch = e.touches[0] || e.changedTouches[0];
-                        clientY = touch.clientY;
-                    } else {
-                        clientY = e.clientY;
-                    }
-                    
-                    var y = Math.max(0, Math.min((clientY - rect.top) * scaleY, huePicker.height));
-                    currentHue = y / huePicker.height;
-                    
-                    drawSVPicker();
-                    updateColorFromHSV();
-                    
-                    // Switch to draw mode when color changes
-                    if (isErasing) {
-                        isErasing = false;
-                        updateToolButtons('draw');
-                    }
-                }
-                
-                huePicker.addEventListener('mousedown', handleHueStart);
-                huePicker.addEventListener('mousemove', handleHueMove);
-                huePicker.addEventListener('mouseup', handleHueEnd);
-                huePicker.addEventListener('mouseleave', handleHueEnd);
-                huePicker.addEventListener('touchstart', handleHueStart, {passive: false});
-                huePicker.addEventListener('touchmove', handleHueMove, {passive: false});
-                huePicker.addEventListener('touchend', handleHueEnd);
             }
 
             function initDrawing() {
