@@ -10,7 +10,7 @@ const CACHE_DIR = path.join(__dirname, 'static', 'emoji_cache');
  */
 function getCacheStats() {
   if (!fs.existsSync(CACHE_DIR)) {
-    return { count: 0, totalSize: 0 };
+    return { count: 0, totalSize: 0, totalSizeMB: '0.00' };
   }
   
   const files = fs.readdirSync(CACHE_DIR);
@@ -27,7 +27,7 @@ function getCacheStats() {
   return {
     count: files.length,
     totalSize: totalSize,
-    totalSizeMB: (totalSize / 1024 / 1024).toFixed(2)
+    totalSizeMB: totalSize > 0 ? (totalSize / 1024 / 1024).toFixed(2) : '0.00'
   };
 }
 
