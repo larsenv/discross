@@ -199,9 +199,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       });
     }
 
-    const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-    if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-      response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
+    const custom_emoji_matches = [...response.matchAll?.(/&lt;(a)?:(\w{2,32}):(\d{17,19})&gt;/g)];
+    if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {
+      response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[3]}.${match[1] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)
     })
     
     res.writeHead(200, { "Content-Type": "text/html" });
