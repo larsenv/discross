@@ -210,10 +210,9 @@
             vertical-align: middle;
         }
 
-        /* Modern browsers will still use flex if supported */
+        /* Modern browsers will still use table layout */
         .modern-flex {
-            display: flex;
-            align-items: center;
+            display: table;
             width: 100%;
             box-sizing: border-box;
         }
@@ -233,11 +232,12 @@
         /* Chat container - consistent spacing */
         .chat, .chat-container, #chat {
             padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
             max-width: 920px;
             margin: 0 auto;
+        }
+
+        .chat > *, .chat-container > *, #chat > * {
+            margin-bottom: 12px;
         }
 
         /* Message list: readable box */
@@ -250,28 +250,25 @@
             max-height: 60vh;
         }
 
-        /* Chat input area: flex so input shrinks correctly and button won't overflow */
+        /* Chat input area: table layout for input and button */
         .chat-input, .composer, .message-composer {
-            display: flex;
-            align-items: center;
-            gap: 8px;
             padding: 8px;
             background: transparent;
         }
 
-        /* Input/textarea should grow and allow content to wrap, but never force container width */
+        /* Input/textarea should be full width */
         .chat-input input[type="text"],
         .chat-input textarea,
         .message-composer input[type="text"],
         .message-composer textarea {
-            flex: 1 1 auto;
-            min-width: 0; /* critical to prevent overflow in flex layouts */
+            width: 100%;
             padding: 10px 12px;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             font-size: 0.95rem;
             background: #fff;
             outline: none;
+            box-sizing: border-box;
         }
 
         /* Textarea behavior */
@@ -282,7 +279,6 @@
 
         /* Send button: size, alignment, and prevent overflow */
         .send-button, .btn-send, button.send, .chat-send {
-            flex: 0 0 auto; /* don't grow, don't shrink */
             padding: 10px 14px;
             border-radius: 8px;
             background: #5865f2;
@@ -291,10 +287,6 @@
             font-weight: 600;
             font-size: 0.95rem;
             cursor: pointer;
-            align-self: stretch; /* match input height */
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
             white-space: nowrap;
             min-height: 44px; /* accessible tap target */
         }
@@ -406,8 +398,8 @@
             <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
         </a>
 
-        <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow-y: auto; padding: 16px;">
+        <div style="padding-left: 60px; position: relative; height: 100vh; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 16px; padding-bottom: 200px;">
                 <div id="emoji" style="display: none;">
                     <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
                         <button onclick="document.getElementById('message').value += ' :sob:'">
@@ -461,15 +453,21 @@
         </form>
 
         <div style="background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
-            <div style="display: flex; align-items: center; gap: 8px; padding: 0; width: 100%;">
-                <div name="message" id="message" value=""
-                    style="flex: 1 1 auto; min-width: 0; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box;"
-                    required=""></div>
-                <button type="submit"
-                    style="flex: 0 0 auto; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 32px; white-space: nowrap; margin-right: 8px;"
-                    onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
-                    onmouseout="this.style.background='#5865f2'">Send</button>
-            </div>
+            <table style="width: 100%; border-collapse: collapse; border-spacing: 0;">
+                <tr>
+                    <td style="padding: 0; width: 100%;">
+                        <div name="message" id="message" value=""
+                            style="width: 100%; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box;"
+                            required=""></div>
+                    </td>
+                    <td style="padding: 0; white-space: nowrap; padding-left: 8px; padding-right: 8px;">
+                        <button type="submit"
+                            style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 32px; white-space: nowrap;"
+                            onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
+                            onmouseout="this.style.background='#5865f2'">Send</button>
+                    </td>
+                </tr>
+            </table>
         </div>
         </td>
     </form>
