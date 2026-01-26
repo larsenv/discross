@@ -252,25 +252,23 @@
         </a>
 
         <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow: hidden; padding: 16px; display: flex; gap: 12px; align-items: flex-start;">
+            <div style="flex: 1; overflow: hidden; padding: 16px; display: flex; gap: 12px; align-items: flex-start; justify-content: space-between;">
                 <!-- Canvas on the left -->
                 <div style="flex: 1;">
                     <canvas id="sketchpad" style="border: 2px solid #40444b; border-radius: 4px;"></canvas>
                 </div>
 
-                <!-- Controls on the right -->
-                <div style="width: 180px; display: flex; flex-direction: column; gap: 12px;">
+                <!-- Controls aligned to the right edge -->
+                <div style="width: 148px; display: flex; flex-direction: column; gap: 12px; margin-right: 0;">
                     <div class="control-group" style="width: 100%;">
-                        <span class="control-label" style="display: block; margin-bottom: 8px;">Color Palette:</span>
                         <div style="border: 2px solid #40444b; border-radius: 4px;">
                             <canvas id="palette" width="148" height="264" style="display: block; cursor: pointer;"></canvas>
                         </div>
                     </div>
 
                     <div class="control-group">
-                        <span class="control-label" style="display: block; margin-bottom: 8px;">Brush Size:</span>
-                        <input type="range" class="slider" id="brushSize" min="1" max="50" value="5" style="width: 100%;">
-                        <span class="slider-value" id="brushSizeValue" style="display: block; text-align: center; margin-top: 4px;">5</span>
+                        <input type="range" class="slider" id="brushSize" min="1" max="50" value="15" style="width: 100%;">
+                        <span class="slider-value" id="brushSizeValue" style="display: block; text-align: center; margin-top: 4px;">15</span>
                     </div>
 
                     <div class="control-group" style="display: flex; flex-direction: column; gap: 8px;">
@@ -354,7 +352,7 @@
             var paletteCanvas, paletteCtx;
             var isDrawing = false;
             var currentColor = [0, 0, 0]; // RGB array
-            var currentSize = 5;
+            var currentSize = 15;
             var isErasing = false;
             var lastX = 0;
             var lastY = 0;
@@ -366,7 +364,7 @@
                 paletteCtx = paletteCanvas.getContext("2d");
                 
                 // Set canvas size to fit the available space with padding
-                var maxWidth = window.innerWidth - 60 - 180 - 44; // sidebar + controls + padding
+                var maxWidth = window.innerWidth - 60 - 148 - 44; // sidebar + controls + padding
                 var maxHeight = window.innerHeight - 100; // padding for top/bottom
                 
                 // Limit to reasonable sizes
