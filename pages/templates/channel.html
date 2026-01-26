@@ -209,6 +209,8 @@
             border-radius: 8px;
             padding: 16px;
             margin: 8px 0;
+            position: relative;
+            z-index: 200;
         }
 
         #emoji table {
@@ -479,6 +481,16 @@
                             onmouseout="this.style.background='none'">
                             <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
                         </a>
+                    </div>
+                    <div class="message-button-cell">
+                        <form action="/toggleImages" method="post" style="display: inline; margin: 0; padding: 0;">
+                            <button type="submit"
+                                style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; width: 32px; height: 32px;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+                                onmouseout="this.style.background='none'">
+                                <img src="/resources/twemoji/1f5bc.gif" alt="Toggle images" style="width: 24px; height: 24px;">
+                            </button>
+                        </form>
                     </div>
                 </div>
 
