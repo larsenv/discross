@@ -249,17 +249,21 @@
 
         /* Old browser compatibility fixes */
         .message-form-container {
-            /* Fallback for old browsers that don't support sticky */
-            position: relative;
+            /* Use fixed positioning for compatibility with non-flexbox browsers */
+            position: fixed;
             bottom: 0;
+            left: 60px;
+            right: 0;
             /* Ensure it doesn't overflow */
-            width: 100%;
+            width: auto;
             max-width: 100%;
             overflow: hidden;
             /* Add background to ensure visibility */
             background: #36393f;
             /* Add border for separation */
             border-top: 1px solid #40444b;
+            /* Add z-index to ensure it's above content */
+            z-index: 100;
         }
 
         .message-buttons-container {
@@ -296,6 +300,28 @@
 
         /* AMOLED theme adjustments for message form */
         .amoled-theme .message-form-container {
+            background: #000000 !important;
+            border-top-color: #333333 !important;
+        }
+
+        /* Reply indicator positioning and theming */
+        #replying_to {
+            position: fixed;
+            bottom: 90px;
+            left: 60px;
+            right: 0;
+            background: #36393f;
+            padding: 8px 16px;
+            border-top: 1px solid #40444b;
+            z-index: 99;
+        }
+
+        .light-theme #replying_to {
+            background: #ffffff !important;
+            border-top-color: #e3e5e8 !important;
+        }
+
+        .amoled-theme #replying_to {
             background: #000000 !important;
             border-top-color: #333333 !important;
         }
@@ -403,8 +429,8 @@
             <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
         </a>
 
-        <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow-y: auto; padding: 16px;">
+        <div style="padding-left: 60px; height: 100vh; position: relative;">
+            <div style="overflow-y: auto; padding: 16px; padding-bottom: 120px;">
                 <div id="msgcontainer">
                     {$MESSAGES}
                 </div>
@@ -458,7 +484,7 @@
                     {$REPLY_MESSAGE_CONTENT}
                 </div>
             </div>
-            <div class="message-form-container" style="position: sticky; bottom: 0;">
+            <div class="message-form-container" style="position: fixed; bottom: 0; left: 60px; right: 0;">
                 <form action="/send" style="position: relative;">
                     <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                     <input type="hidden" id="reply_message_id" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">
