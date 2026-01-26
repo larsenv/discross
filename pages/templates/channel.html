@@ -249,17 +249,21 @@
 
         /* Old browser compatibility fixes */
         .message-form-container {
-            /* Fallback for old browsers that don't support sticky */
-            position: relative;
+            /* Use fixed positioning for compatibility with non-flexbox browsers */
+            position: fixed;
             bottom: 0;
+            left: 60px;
+            right: 0;
             /* Ensure it doesn't overflow */
-            width: 100%;
+            width: auto;
             max-width: 100%;
             overflow: hidden;
             /* Add background to ensure visibility */
             background: #36393f;
             /* Add border for separation */
             border-top: 1px solid #40444b;
+            /* Add z-index to ensure it's above content */
+            z-index: 100;
         }
 
         .message-buttons-container {
@@ -403,8 +407,8 @@
             <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
         </a>
 
-        <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow-y: auto; padding: 16px;">
+        <div style="padding-left: 60px; height: 100vh; position: relative;">
+            <div style="overflow-y: auto; padding: 16px; padding-bottom: 120px;">
                 <div id="msgcontainer">
                     {$MESSAGES}
                 </div>
@@ -448,41 +452,41 @@
                 </div>
                 <a id="end" name="end"></a>
             </div>
-            <div class="message-form-container" style="position: sticky; bottom: 0;">
+            <div class="message-form-container" style="position: fixed; bottom: 0; left: 60px; right: 0;">
+                <div class="modern-flex message-buttons-container">
+                    <div class="message-button-cell">
+                        <button
+                            style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; width: 32px; height: 32px;"
+                            onclick="showEmoji()" type="button"
+                            onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+                            onmouseout="this.style.background='none'">
+                            <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
+                                style="width: 24px; height: 24px;">
+                        </button>
+                    </div>
+                    <div class="message-button-cell">
+                        <a href="/draw/{$CHANNEL_ID}"
+                            style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+                            onmouseout="this.style.background='none'">
+                            <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
+                        </a>
+                    </div>
+                    <div class="message-button-cell">
+                        <a href="{$REFRESH_URL}"
+                            style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.06)'"
+                            onmouseout="this.style.background='none'">
+                            <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
+                        </a>
+                    </div>
+                </div>
+
                 <form action="../send" style="position: relative;">
                     <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                     <input type="hidden" id="lite" name="lite" value="False">
 
                     {$INPUT}
-
-                    <div class="modern-flex message-buttons-container">
-                        <div class="message-button-cell">
-                            <button
-                                style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; width: 32px; height: 32px;"
-                                onclick="showEmoji()" type="button"
-                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                                onmouseout="this.style.background='none'">
-                                <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
-                                    style="width: 24px; height: 24px;">
-                            </button>
-                        </div>
-                        <div class="message-button-cell">
-                            <a href="/draw/{$CHANNEL_ID}"
-                                style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
-                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                                onmouseout="this.style.background='none'">
-                                <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
-                            </a>
-                        </div>
-                        <div class="message-button-cell">
-                            <a href="{$REFRESH_URL}"
-                                style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
-                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                                onmouseout="this.style.background='none'">
-                                <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
-                            </a>
-                        </div>
-                    </div>
                 </form>
             </div>
         </div>
