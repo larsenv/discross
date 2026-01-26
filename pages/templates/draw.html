@@ -180,38 +180,44 @@
         /* Old browser compatibility fixes */
         .message-form-container {
             /* Use fixed positioning for compatibility with non-flexbox browsers */
-            position: fixed;
-            bottom: 0;
-            left: 60px;
-            right: 0;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 60px !important;
+            right: 0 !important;
             /* Ensure it doesn't overflow */
             width: auto;
             max-width: 100%;
-            overflow: hidden;
+            overflow: visible;
             /* Add background to ensure visibility */
             background: #36393f;
             /* Add border for separation */
             border-top: 1px solid #40444b;
             /* Add z-index to ensure it's above content */
             z-index: 100;
+            /* Prevent zoom from affecting position */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
         }
 
         .message-buttons-container {
             /* Fallback layout for old browsers */
             width: 100%;
             max-width: 100%;
-            /* Use table-cell layout as flexbox fallback for very old browsers */
-            display: table;
-            table-layout: fixed;
+            /* Use inline-block layout for maximum compatibility */
+            text-align: left;
             box-sizing: border-box;
             padding: 8px;
+            /* Ensure buttons don't overflow */
+            overflow: visible;
         }
 
         .message-button-cell {
-            display: table-cell;
+            display: inline-block;
             width: 32px;
+            height: 32px;
             text-align: center;
             vertical-align: middle;
+            margin-right: 4px;
         }
 
         /* Modern browsers will still use flex if supported */
@@ -405,7 +411,7 @@
         <div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div>
         <div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div>
 
-        <button type="button" id="btn-clear" style="flex: 0 0 auto; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; align-items: center; justify-content: center;" onclick="wipe()">Clear</button>
+        <button type="button" id="btn-clear" style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-left: 8px; vertical-align: middle; display: inline-block;" onclick="wipe()">Clear</button>
     </div>
 
     <div id="canvas-wrapper">
@@ -475,7 +481,7 @@
                                 </td>
                                 <td style="padding: 0; width: 80px;">
                                     <button type="submit"
-                                        style="flex: 0 0 auto; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; align-items: center; justify-content: center;" 
+                                        style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; vertical-align: middle; display: inline-block;" 
                                         onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
                                         onmouseout="this.style.background='#5865f2'">Send</button>
                                 </td>

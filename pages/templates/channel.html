@@ -250,38 +250,44 @@
         /* Old browser compatibility fixes */
         .message-form-container {
             /* Use fixed positioning for compatibility with non-flexbox browsers */
-            position: fixed;
-            bottom: 0;
-            left: 60px;
-            right: 0;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 60px !important;
+            right: 0 !important;
             /* Ensure it doesn't overflow */
             width: auto;
             max-width: 100%;
-            overflow: hidden;
+            overflow: visible;
             /* Add background to ensure visibility */
             background: #36393f;
             /* Add border for separation */
             border-top: 1px solid #40444b;
             /* Add z-index to ensure it's above content */
             z-index: 100;
+            /* Prevent zoom from affecting position */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
         }
 
         .message-buttons-container {
             /* Fallback layout for old browsers */
             width: 100%;
             max-width: 100%;
-            /* Use table-cell layout as flexbox fallback for very old browsers */
-            display: table;
-            table-layout: fixed;
+            /* Use inline-block layout for maximum compatibility */
+            text-align: left;
             box-sizing: border-box;
             padding: 8px;
+            /* Ensure buttons don't overflow */
+            overflow: visible;
         }
 
         .message-button-cell {
-            display: table-cell;
+            display: inline-block;
             width: 32px;
+            height: 32px;
             text-align: center;
             vertical-align: middle;
+            margin-right: 4px;
         }
 
         /* Modern browsers will still use flex if supported */
@@ -453,7 +459,7 @@
                 <a id="end" name="end"></a>
             </div>
             <div class="message-form-container" style="position: fixed; bottom: 0; left: 60px; right: 0;">
-                <div class="modern-flex message-buttons-container">
+                <div class="message-buttons-container">
                     <div class="message-button-cell">
                         <button
                             style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; width: 32px; height: 32px;"
