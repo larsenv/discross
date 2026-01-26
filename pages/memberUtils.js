@@ -13,6 +13,8 @@
  * @returns {string} Display name to show
  */
 function getDisplayName(member, author) {
+  return null;
+  
   if (member) {
     // Server nickname (guild nickname) first
     if (member.nickname) {
