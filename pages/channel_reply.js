@@ -125,6 +125,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       lastdate = new Date('1995-12-17T03:24:00');
       currentmessage = "";
       islastmessage = false;
+      
+      // Cache for member data to avoid repeated fetches
+      const memberCache = new Map();
 
       handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
         if (lastauthor) { // Only consider the last message if this is not the first
@@ -225,8 +228,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         }
 
         lastauthor = item.author;
-        // Ensure member data is populated - fetch if missing
-        lastmember = await ensureMemberData(item, chnl.guild);
+        // Ensure member data is populated - fetch if missing, using cache to avoid repeated fetches
+        lastmember = await ensureMemberData(item, chnl.guild, memberCache);
         lastdate = item.createdAt;
         currentmessage += messagetext;
 

@@ -69,9 +69,10 @@ function getMemberColor(member) {
  * 
  * @param {Object} message - Discord Message object
  * @param {Object} guild - Discord Guild object
+ * @param {Map} cache - Optional cache to store fetched members and avoid repeated API calls
  * @returns {Promise<Object|null>} GuildMember object or null if fetch fails
  */
-async function ensureMemberData(message, guild) {
+async function ensureMemberData(message, guild, cache = null) {
   // If member is already present, return it
   if (message.member) {
     return message.member;
@@ -82,9 +83,18 @@ async function ensureMemberData(message, guild) {
     return null;
   }
   
+  // Check cache first if provided
+  if (cache && cache.has(message.author.id)) {
+    return cache.get(message.author.id);
+  }
+  
   // Try to fetch the member from the guild
   try {
     const member = await guild.members.fetch(message.author.id);
+    // Store in cache if provided
+    if (cache) {
+      cache.set(message.author.id, member);
+    }
     return member;
   } catch (error) {
     console.error(`Failed to fetch member for user ${message.author.id}:`, error.message);
