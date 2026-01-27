@@ -65,10 +65,31 @@ function removeExistingEndAnchors(html) {
 // Member utility functions (getDisplayName, getMemberColor, ensureMemberData) 
 // are now imported from memberUtils.js to avoid duplication
 
+// Check if text contains only emojis (1-4 emojis)
+function isEmojiOnlyMessage(text) {
+  // Remove HTML tags and whitespace
+  const cleanText = text.replace(/<[^>]*>/g, '').trim();
+  
+  // Check if the text matches only emoji pattern
+  const emojiMatches = cleanText.match(emojiRegex);
+  
+  if (!emojiMatches) {
+    return false;
+  }
+  
+  // Join all emoji matches and see if they equal the entire clean text
+  const allEmojis = emojiMatches.join('');
+  const isOnlyEmojis = allEmojis === cleanText;
+  
+  // Return true if 1-4 emojis and nothing else
+  return isOnlyEmojis && emojiMatches.length >= 1 && emojiMatches.length <= 4;
+}
+
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
-  const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+  const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
   
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
@@ -174,7 +195,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             // Add reply indicator (L-shaped line) if this is a reply
             let replyIndicator = '';
             if (lastReply) {
-              replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px; margin-left: 16px;">' +
+              replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px; margin-left: 36px;">' +
                 '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
                 '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
                 '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(lastReplyData.author) + '</span>' +
@@ -459,13 +480,13 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             }
             output = points.join("-")
           }
-          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 3%;vertical-align:top;" alt="emoji">`)
+          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 1em; height: 1em; vertical-align: -0.1em;" alt="emoji">`)
         });
       }
 
       const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
       if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
+        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 1em; height: 1em; vertical-align: -0.1em;" alt="emoji">`)    // Make it smaller if inline
       })
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
