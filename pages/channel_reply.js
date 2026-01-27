@@ -136,6 +136,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       isMentioned = false;
       isReply = false;
       replyData = {};
+      lastMentioned = false;
+      lastReply = false;
+      lastReplyData = {};
       
       // Cache for member data to avoid repeated fetches
       const memberCache = new Map();
@@ -146,7 +149,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
 
             // Choose template based on whether this is a forwarded message and if user is mentioned
-            if (isForwarded && isMentioned) {
+            if (isForwarded && lastMentioned) {
               currentmessage = message_forwarded_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
               currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
               currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
@@ -156,7 +159,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
               currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
               currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
               currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
-            } else if (isMentioned) {
+            } else if (lastMentioned) {
               currentmessage = message_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
             } else {
               currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
@@ -170,16 +173,16 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
             
             // Add ping indicator (@) if this is a reply with ping
-            const pingIndicator = (isReply && replyData.mentionsPing) ? ' <span style="color: #72767d;">@</span>' : '';
+            const pingIndicator = (lastReply && lastReplyData.mentionsPing) ? ' <span style="color: #72767d;">@</span>' : '';
             currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", pingIndicator);
             
             // Add reply indicator (L-shaped line) if this is a reply
             let replyIndicator = '';
-            if (isReply) {
+            if (lastReply) {
               replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px; margin-left: 16px;">' +
                 '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
                 '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
-                '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(replyData.author) + '</span>' +
+                '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(lastReplyData.author) + '</span>' +
                 '</div>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -385,6 +388,11 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         lastmember = await ensureMemberData(item, chnl.guild, memberCache);
         lastdate = item.createdAt;
         currentmessage += messagetext;
+        
+        // Save mention and reply state for next iteration
+        lastMentioned = isMentioned;
+        lastReply = isReply;
+        lastReplyData = replyData;
 
       }
 
