@@ -4,6 +4,8 @@ const sharp = require('sharp');
 const { default: sanitizer } = require('path-sanitizer');
 const { generatePlaceholderIconAsGif } = require('./iconGenerator.js');
 
+// Note: Using built-in fetch API (Node.js 18+)
+
 /**
  * Handle server icon requests with fallback to Discord CDN and placeholder generation
  * @param {object} bot - Discord bot client
@@ -71,9 +73,14 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
   
   // Fallback: generate placeholder icon
   try {
-    // Get server name from bot client
-    const server = bot.client.guilds.cache.get(serverID);
-    const serverName = server ? server.name : 'Server';
+    // Get server name from bot client (if available)
+    let serverName = 'Server';
+    if (bot && bot.client && bot.client.guilds && bot.client.guilds.cache) {
+      const server = bot.client.guilds.cache.get(serverID);
+      if (server && server.name) {
+        serverName = server.name;
+      }
+    }
     
     const placeholderBuffer = await generatePlaceholderIconAsGif(serverName, theme);
     
