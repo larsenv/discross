@@ -1,0 +1,187 @@
+/* Theme-specific styles */
+
+/* Default Dark Theme */
+body {
+  background: #303338;
+  color: #dddddd;
+}
+
+#wrapper {
+  background: #303338;
+  color: #dddddd;
+}
+
+/* Light Theme */
+.light-theme body {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+.light-theme #wrapper {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+.light-theme #wrapper * {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+.light-theme .discross-button {
+  background: #5865f2 !important;
+  color: white !important;
+}
+
+.light-theme .discross-button:hover {
+  background: #4752c4 !important;
+}
+
+.light-theme .discross-button.secondary {
+  background: #4f545c !important;
+  color: white !important;
+}
+
+.light-theme .discross-button.secondary:hover {
+  background: #5d6269 !important;
+}
+
+.light-theme a {
+  color: #647dcd !important;
+}
+
+.light-theme .message {
+  border-color: #e3e5e8 !important;
+}
+
+.light-theme .message .content,
+.light-theme .messagecontent {
+  color: #2e3338 !important;
+}
+
+.light-theme .message:hover {
+  background: rgba(6, 6, 7, 0.02) !important;
+}
+
+.light-theme pre {
+  background: #f6f6f7 !important;
+  border-color: #e3e5e8 !important;
+}
+
+.light-theme pre code {
+  color: #2e3338 !important;
+}
+
+.light-theme code {
+  background: #f6f6f7 !important;
+  color: #2e3338 !important;
+}
+
+.light-theme .message-form-container,
+.light-theme .message-input-wrapper {
+  background: #ffffff !important;
+  border-top-color: #e3e5e8 !important;
+}
+
+.light-theme .reaction {
+  color: #2e3338 !important;
+}
+
+.light-theme .form-input-wrapper {
+  border: 10px solid #000000 !important;
+}
+
+.light-theme .form-input {
+  border: 5px solid #000000 !important;
+}
+
+.light-theme .submit-button {
+  border: 5px solid #000000 !important;
+}
+
+/* AMOLED Theme - True black for maximum contrast and battery savings */
+.amoled-theme body {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.amoled-theme #wrapper {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.amoled-theme #wrapper * {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.amoled-theme a {
+  color: #5865f2 !important;
+}
+
+.amoled-theme hr {
+  border-color: #555555 !important;
+}
+
+.amoled-theme .message {
+  border-color: #333333 !important;
+  background: #000000 !important;
+}
+
+.amoled-theme .message .content,
+.amoled-theme .messagecontent {
+  color: #ffffff !important;
+}
+
+.amoled-theme .message:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.amoled-theme #emoji {
+  background: #111111 !important;
+  border-color: #333333 !important;
+}
+
+.amoled-theme #emoji button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.amoled-theme .menu-button {
+  background: #000000 !important;
+  border-color: #333333 !important;
+  color: #ffffff !important;
+}
+
+.amoled-theme .reaction {
+  color: #ffffff !important;
+}
+
+.amoled-theme pre {
+  background: #0d0d0d !important;
+  border-color: #1a1a1a !important;
+}
+
+.amoled-theme pre code {
+  color: #ffffff !important;
+}
+
+.amoled-theme code {
+  background: #0d0d0d !important;
+  color: #ffffff !important;
+}
+
+.amoled-theme .message-form-container,
+.amoled-theme .message-input-wrapper {
+  background: #000000 !important;
+  border-top-color: #333333 !important;
+}
+
+.amoled-theme .form-input-wrapper {
+  border: 10px solid #ffffff !important;
+}
+
+.amoled-theme .form-input,
+.amoled-theme .submit-button {
+  border: 5px solid #ffffff !important;
+  background: #111111 !important;
+  color: #ffffff !important;
+}

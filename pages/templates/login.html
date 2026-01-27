@@ -11,113 +11,32 @@
   <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
   <meta name="msapplication-TileColor" content="#2b5797">
   <meta name="theme-color" content="#ffffff">
-  <style>
-    @font-face {
-      font-family: 'rodin';
-      src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
-           url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
-      font-weight: 400;
-    }
-
-    @font-face {
-      font-family: 'rodin';
-      src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
-           url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
-      font-weight: 700;
-    }
-
-    html,
-    body,
-    #wrapper {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: 'rodin', Arial, Helvetica, sans-serif;
-    }
-
-    .light-theme #wrapper {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-    }
-
-    .light-theme #wrapper * {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-      
-      
-    }
-
-    .light-theme #wrapper table div {
-      
-      border: 10px solid #000000;
-    }
-
-    .light-theme #wrapper table div * {
-      all: unset;
-    }
-
-    .light-theme #wrapper table input:nth-of-type(2) {
-      
-      border: 5px solid #000000 !important;
-    }
-
-    /* AMOLED theme overrides for login page */
-    .amoled-theme #wrapper {
-      background: #000000 !important;
-      color: #ffffff !important;
-    }
-
-    .amoled-theme #wrapper * {
-      background: #000000 !important;
-      color: #ffffff !important;
-    }
-
-    .amoled-theme #wrapper table div {
-      border: 10px solid #ffffff !important;
-    }
-
-    .amoled-theme #wrapper table input:nth-of-type(2) {
-      border: 5px solid #ffffff !important;
-      background: #111111 !important;
-      color: #ffffff !important;
-    }
-
-    .amoled-theme a {
-      color: #5865f2 !important;
-    }
-  </style>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/themes.css">
+  <link rel="stylesheet" href="/css/components.css">
   <title>Discross - Login</title>
 </head>
 
-<body bgcolor="#303338" style="margin: 0;" {$WHITE_THEME_ENABLED}>
+<body {$WHITE_THEME_ENABLED}>
   <div id="wrapper">
-    <table>
+    <table class="header-table">
       <tr>
-        <td><img src="/resources/logo.gif" alt="Logo"></td>
-
+        <td class="header-logo"><img src="/resources/logo.gif" alt="Logo"></td>
+        <td class="header-title">discross</td>
+        <td class="header-menu">
+          <a href="./login.html">Login</a>
+          <a href="./register.html">Register</a>
+        </td>
         <td>
-          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
-        </td>
-        <td width="100%" align="right">
-          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a style="color: #dddddd;" href="./login.html">
-                <font color="#dddddd">Login</font>
-            </a>&#160;
-            <a style="color: #dddddd;" href="./register.html">
-                <font color="#dddddd">Register</font>
-            </a>&#160;&#160;
-          </font>
-        </td>
-        <td valign="right">
           <form action="/switchtheme" method="post">
-            <button type="submit" style="background: none; border: none;">
+            <button type="submit" class="theme-switch-button">
               <img src="/resources/images/themeswitch.gif" alt="Switch theme">
             </button>
           </form>
         </td>
       </tr>
     </table>
-    <hr style="margin: 0; position: relative; bottom: 4px;">
+    <hr>
     <br>
     <table>
       <tbody>
@@ -127,39 +46,30 @@
           </td>
           <td>
             <form action="/login" method="post">
-              <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Login</font><br><br>
-              <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+              <h2 class="form-title">Login</h2><br>
+              <span class="form-label">
                 Username:
                 <br><br>
-                <div style="padding: 16px;background: #393c40;width: 300px;"><input type="text"
+                <div class="form-input-wrapper"><input type="text"
                     name="username" id="username" value=""
-                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
+                    class="form-input"
                     placeholder="Username"></div>
                 <br>
                 Password:
                 <br><br>
-                <div style="padding: 16px;background: #393c40;width: 300px;"><input type="password"
+                <div class="form-input-wrapper"><input type="password"
                     name="password" id="password" value=""
-                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
+                    class="form-input"
                     placeholder="Password"></div>
                 <br>
-                <a href="/forgot.html" style="text-decoration: none;">
-                  <font color="#999999" size="4" face="'rodin', Arial, Helvetica, sans-serif">
-                    Forgot username or password
-                  </font>
+                <a href="/forgot.html" class="form-link">
+                  Forgot username or password
                 </a>
                 <br>
                 <br>{$ERROR}<br>
                 <input type="hidden" id="redirect" name="redirect" value="{$REDIRECT_URL}">
-                <input type="submit"
-                  style="color: #dddddd;height: 44px;width:150px;border: none;background: #393c40;"
-                  value="Login">
-                <!-- <br>
-                <br>
-                <a style="text-decoration: none;" href="/guest.html">
-                  <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#999999">Guest mode</font>
-                </a> !-->
-              </font>
+                <input type="submit" class="submit-button" value="Login">
+              </span>
             </form>
           </td>
         </tr>

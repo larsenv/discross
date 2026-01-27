@@ -3,6 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/components.css">
     <title>Discross - #{$CHANNEL_NAME}</title>
     <style>
         @font-face {
@@ -461,15 +464,14 @@
         <div id="c15" class="c-box" style="background:#ff00ff;" onclick="setColor('#ff00ff', 'c15')"></div>
         <div id="c16" class="c-box" style="background:#8b4513;" onclick="setColor('#8b4513', 'c16')"></div>
         
-        <br class="mobile-break">
-        <span style="margin: 0 10px; border-left: 1px solid #555;"></span>
+        <span class="toolbar-separator"></span>
 
         <div id="s1" class="s-btn" onclick="setSize(2, 's1')"><div class="s-inner" style="width:2px; height:2px;"></div></div>
         <div id="s2" class="s-btn" onclick="setSize(5, 's2')"><div class="s-inner" style="width:5px; height:5px;"></div></div>
         <div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div>
         <div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div>
 
-        <button type="button" id="btn-clear" style="flex: 0 0 auto; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; align-items: center; justify-content: center;" onclick="wipe()">Clear</button>
+        <button type="button" id="btn-clear" class="clear-button" onclick="wipe()">Clear</button>
     </div>
 
     <div id="canvas-wrapper">
@@ -479,69 +481,61 @@
     
     <div id="wrapper">
         <a href="../server/{$SERVER_ID}" class="menu-button">
-            <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
+            <img src="/resources/images/menu.gif" alt="Menu" class="menu-icon">
         </a>
 
-        <div style="padding-left: 60px; height: 100vh; position: relative;">
-            <div style="overflow-y: auto; padding: 16px; padding-bottom: 120px;">
+        <div class="content-padding">
+            <div class="scrollable-content">
                 <div id="emoji" style="display: none;">
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+                    <div class="emoji-grid">
                         <button onclick="document.getElementById('message').value += ' :sob:'">
-                            <img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f62d.gif" alt="sob" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
-                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
-                                style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :skull:'">
-                            <img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f480.gif" alt="skull" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :pleading_face:'">
-                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
-                                style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :heart:'">
-                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :thumbsup:'">
-                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
-                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :pray:'">
-                            <img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f64f.gif" alt="pray" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :tada:'">
-                            <img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f389.gif" alt="tada" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :slight_smile:'">
-                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
-                                style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile" class="emoji-icon">
                         </button>
                     </div>
                 </div>
                 <a id="end" name="end"></a>
             </div>
-            <div class="message-form-container" style="position: fixed; bottom: 0; left: 60px; right: 0;">
+            <div class="message-form-container">
                 <form action="../senddrawing" method="post" id="sendform">
                     <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                     <input type="hidden" id="drawinginput" name="drawinginput" value="">
                     <input type="hidden" id="lite" name="lite" value="False">
 
-                    <div style="background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
-                        <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                    <div class="message-input-wrapper">
+                        <table style="width: 100%; border-collapse: collapse;">
                             <tr>
                                 <td style="padding: 0;">
-                                    <div name="message" id="message" value=""
-                                        style="color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box; width: 100%; overflow: hidden; text-overflow: ellipsis;"
-                                        required=""></div>
+                                    <div name="message" id="message" value="" class="message-input" required=""></div>
                                 </td>
-                                <td style="padding: 0; width: 90px; min-width: 90px;">
-                                    <button type="submit"
-                                        style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; display: block; width: 82px;" 
-                                        onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
-                                        onmouseout="this.style.background='#5865f2'">Send</button>
+                                <td style="padding: 0; width: 80px;">
+                                    <button type="submit" class="send-button" onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Send</button>
                                 </td>
                             </tr>
                         </table>
