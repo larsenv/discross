@@ -17,7 +17,7 @@ const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSepara
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
-const { renderDiscordMarkdown } = require('./markdownUtils'); // ADDED: Import the custom renderer
+const { renderDiscordMarkdown } = require('./discordMarkdown');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
