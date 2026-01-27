@@ -22,10 +22,11 @@ const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/ch
 
 const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message.html', 'utf-8'));
 const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message.html', 'utf-8'));
+const message_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_mentioned.html', 'utf-8'));
+const message_forwarded_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message_mentioned.html', 'utf-8'));
 const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
 const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
 const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
-const mention_highlighted_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention_highlighted.html', 'utf-8'));
 
 const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
 const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
@@ -111,6 +112,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       messageid = 0;
       isForwarded = false;
       forwardData = {};
+      isMentioned = false;
       
       // Cache for member data to avoid repeated fetches
       const memberCache = new Map();
@@ -120,12 +122,20 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           // If the last message is not going to be merged with this one, put it into the response
           if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
 
-            // Choose template based on whether this is a forwarded message
-            if (isForwarded) {
+            // Choose template based on whether this is a forwarded message and if user is mentioned
+            if (isForwarded && isMentioned) {
+              currentmessage = message_forwarded_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
+              currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
+              currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
+              currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+            } else if (isForwarded) {
               currentmessage = message_forwarded_template.replace("{$MESSAGE_CONTENT}", currentmessage);
               currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
               currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
               currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+            } else if (isMentioned) {
+              currentmessage = message_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
+              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
             } else {
               currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
               currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
@@ -196,6 +206,29 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
+        // Check if current user is mentioned in this message
+        isMentioned = false;
+        
+        // Check for direct user mention
+        if (item.mentions && item.mentions.members) {
+          isMentioned = item.mentions.members.has(discordID);
+        }
+        
+        // Check for @everyone or @here mention
+        if (!isMentioned && item.mentions && item.mentions.everyone) {
+          isMentioned = true;
+        }
+        
+        // Check for role mention
+        if (!isMentioned && item.mentions && item.mentions.roles) {
+          item.mentions.roles.forEach(function (role) {
+            if (member.roles.cache.has(role.id)) {
+              isMentioned = true;
+            }
+          });
+        }
+        
+        // Process user mentions
         if (item.mentions) {
           item.mentions.members.forEach(function (user) {
             if (user) {
@@ -224,24 +257,21 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           }
         } while (m);
 
-        // Highlight @everyone and @here for the current user (only if actually mentioned)
+        // Process @everyone and @here mentions
         if (item.mentions && item.mentions.everyone) {
           if (messagetext.includes("@everyone")) {
-            messagetext = strReplace(messagetext, "@everyone", mention_highlighted_template.replace("{$USERNAME}", "@everyone"));
+            messagetext = strReplace(messagetext, "@everyone", mention_template.replace("{$USERNAME}", "@everyone"));
           }
           if (messagetext.includes("@here")) {
-            messagetext = strReplace(messagetext, "@here", mention_highlighted_template.replace("{$USERNAME}", "@here"));
+            messagetext = strReplace(messagetext, "@here", mention_template.replace("{$USERNAME}", "@here"));
           }
         }
 
-        // Handle role mentions
+        // Process role mentions
         if (item.mentions && item.mentions.roles) {
           item.mentions.roles.forEach(function (role) {
             if (role) {
-              // Check if the current user has this role
-              const userHasRole = member.roles.cache.has(role.id);
-              const template = userHasRole ? mention_highlighted_template : mention_template;
-              messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id + "&gt;", template.replace("{$USERNAME}", escape("@" + role.name)));
+              messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + role.name)));
             }
           });
         }
