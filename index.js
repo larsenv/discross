@@ -107,7 +107,33 @@ server.on('request', async (req, res) => {
         toggleTheme(req, res)
       } else if (parsedurl == "/toggleImages") {
         toggleImages(req, res)
-      }else if (parsedurl == "/senddrawing") {
+      } else if (parsedurl == "/toggleCategory") {
+        // Handle category toggle
+        (async () => {
+          const discordID = await auth.checkAuth(req, res, true)
+          if (discordID) {
+            try {
+              const data = JSON.parse(body)
+              const { serverID, categoryID, collapsed } = data
+              const result = auth.setChannelPreference(discordID, serverID, categoryID, collapsed ? 1 : 0)
+              if (result.success) {
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ success: true }))
+              } else {
+                res.writeHead(500, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ success: false, error: result.error }))
+              }
+            } catch (err) {
+              console.error('Error toggling category:', err)
+              res.writeHead(500, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ success: false, error: err.message }))
+            }
+          } else {
+            res.writeHead(401, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: false, error: 'Not authenticated' }))
+          }
+        })()
+      } else if (parsedurl == "/senddrawing") {
         senddrawingAsync(req, res, body).then(() => {}).catch((err) => {
           console.log(err)
           res.writeHead(500, { 'Content-Type': 'text/plain' })

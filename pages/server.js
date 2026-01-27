@@ -44,22 +44,48 @@ so imma leave it as is :)
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 
-function processServerChannels(server, member, response) {
+function processServerChannels(server, member, response, discordID) {
   try {
+    // Get user preferences for collapsed state
+    let preferences = [];
+    try {
+      preferences = auth.getChannelPreferences(discordID, server.id);
+    } catch (err) {
+      console.error("Error fetching channel preferences:", err);
+      // Continue with empty preferences array
+    }
+    const collapsedMap = {};
+    preferences.forEach(pref => {
+      collapsedMap[pref.channelID] = pref.collapsed === 1;
+    });
+
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
-    // Start with lone text channels (no category) and voice channels
-    let channelsSorted = [...server.channels.cache.filter(channel => (channel.isTextBased() || channel.type == ChannelType.GuildVoice) && !channel.parent).values()];
+    // Get all active (non-archived) threads from the guild
+    const allThreads = [];
+    if (server.threads?.cache) {
+      for (const thread of server.threads.cache.values()) {
+        if (!thread.archived) {
+          allThreads.push(thread);
+        }
+      }
+    }
+
+    // Helper function to get filtered and sorted threads for a channel
+    function getFilteredAndSortedThreads(parentId) {
+      return allThreads
+        .filter(thread => thread.parentId === parentId)
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    // Start with lone text channels (no category)
+    let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
+    // Add categories to the list (but NOT their children, since we'll render them nested inside)
     categoriesSorted.forEach(category => {
       channelsSorted.push(category);
-      channelsSorted = channelsSorted.concat(
-        [...category.children.cache.sort((a, b) => a.position - b.position)
-          .values()]
-          .filter(channel => channel.isTextBased() || channel.type == ChannelType.GuildVoice)
-      );
     });
 
     // Add threads from voice channels (voice channel threads)
@@ -232,7 +258,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           response = response.replace("{$DISCORD_NAME}", '<font color="#999999" size="6" face="Arial, Helvetica, sans-serif">' + targetServer.name + "</font><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
-            response = processServerChannels(targetServer, member, response);
+            response = processServerChannels(targetServer, member, response, discordID);
           } else {
             response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
           }
