@@ -34,11 +34,17 @@ function processEmbeds(embeds, imagesCookie) {
     // Process embed author
     let authorHtml = '';
     if (embed.author) {
-      authorHtml += `<span style="font-size: 14px; font-weight: 600; color: #ffffff;">${escape(embed.author.name)}</span>`;
+      // Create the author text span
+      let content = `<span style="font-size: 14px; font-weight: 600; color: #ffffff;">${escape(embed.author.name)}</span>`;
+      
+      // If URL exists, wrap the content in an anchor tag
       if (embed.author.url) {
-        authorHtml = `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${authorHtml}</a>`;
+        authorHtml = `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${content}</a>`;
+      } else {
+        authorHtml = content;
       }
-      authorHtml += '</div>';
+      
+      // REMOVED: authorHtml += '</div>'; (This was the bug closing the container early)
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_AUTHOR}', authorHtml);
     
@@ -84,12 +90,11 @@ function processEmbeds(embeds, imagesCookie) {
     // Process embed thumbnail (REMOVED)
     embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', '');
     
-    // Process embed footer (Text only, icon removed)
+    // Process embed footer
     let footerHtml = '';
     if (embed.footer || embed.timestamp) {
       footerHtml = '<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">';
       if (embed.footer) {
-        // Icon logic removed here
         footerHtml += `<span>${escape(embed.footer.text)}</span>`;
       }
       if (embed.timestamp) {
@@ -103,6 +108,7 @@ function processEmbeds(embeds, imagesCookie) {
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_FOOTER}', footerHtml);
     
+    // Margin right wrapper
     embedsHtml += `<div style="margin-right: 8px;">${embedHtml}</div>`;
   });
   
