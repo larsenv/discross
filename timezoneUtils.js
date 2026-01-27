@@ -1,5 +1,8 @@
 const geoip = require('geoip-lite');
 
+// Constants for date/time calculations
+const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
+
 /**
  * Get client's IP address from request, handling proxies
  * @param {Object} req - HTTP request object
@@ -108,13 +111,14 @@ function formatDateWithTimezone(date, timezone) {
     const messageComps = getDateComponentsInTimezone(date, userTimezone);
     const todayComps = getDateComponentsInTimezone(now, userTimezone);
     
-    // Create date-only objects in UTC for comparison (month is 0-indexed for Date.UTC)
+    // Create date-only objects in UTC for comparison
+    // Note: Date.UTC expects 0-indexed months (0-11), so we subtract 1
     const messageDateOnly = Date.UTC(messageComps.year, messageComps.month - 1, messageComps.day);
     const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
     
     // Calculate difference in days
     const diffTime = todayDateOnly - messageDateOnly;
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.round(diffTime / MILLISECONDS_PER_DAY);
     
     // Format time part (e.g., "12:30PM")
     const timeOptions = {
