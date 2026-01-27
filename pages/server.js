@@ -5,7 +5,7 @@ var escape = require('escape-html');
 var auth = require('../authentication.js');
 const path = require('path')
 const sharp = require("sharp")
-const sanitizer = require("path-sanitizer")
+const sanitizer = require("path-sanitizer").default
 const emojiRegex = require("./twemojiRegex").regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 
