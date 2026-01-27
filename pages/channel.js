@@ -282,6 +282,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
         // Check if current user is mentioned in this message
         isMentioned = false;
+                
+        // Process embeds (for bot messages)
+        if (item?.embeds && item.embeds.length > 0) {
+          messagetext += processEmbeds(item.embeds, imagesCookie);
+        }
         
         // Check for direct user mention
         if (item.mentions && item.mentions.members) {
