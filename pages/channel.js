@@ -2,7 +2,7 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
-var md = require('markdown-it')({ breaks: true, linkify: true });
+// var md = require('markdown-it')({ breaks: true, linkify: true }); // REMOVED: Replaced by custom renderer
 var he = require('he'); // Encodes HTML attributes
 const path = require('path');
 const sharp = require("sharp");
@@ -17,6 +17,8 @@ const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSepara
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
+const { renderDiscordMarkdown } = require('./markdownUtils'); // ADDED: Import the custom renderer
+
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
 
@@ -71,11 +73,11 @@ function removeExistingEndAnchors(html) {
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
-  
+   
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
   const clientTimezone = getTimezoneFromIP(clientIP);
-  
+   
   try {
     let response, chnl;
     try {
@@ -134,7 +136,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       lastMentioned = false;
       lastReply = false;
       lastReplyData = {};
-      
+       
       // Cache for member data to avoid repeated fetches
       const memberCache = new Map();
 
@@ -222,7 +224,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             isForwarded = true;
             forwardData = {
               author: forwardedAuthor,
-              content: md.renderInline(forwardedContent),
+              content: renderDiscordMarkdown(forwardedContent), // UPDATED: Use custom renderer
               date: forwardedDate
             };
           } catch (err) {
@@ -288,7 +290,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        messagetext = renderDiscordMarkdown(item.content); // UPDATED: Use custom renderer
         
         if (item?.attachments) {
           let urls = new Array()
@@ -454,7 +456,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-      
+       
       // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
       if (whiteThemeCookie == 1) {
         response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
@@ -480,8 +482,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           const points = [];
           let char = 0;
           let previous = 0;                  // This whole code block was "inspired" by the official Twitter Twemoji parser.
-          let i = 0;                         // I would have done it myself but my code wasn't ready for skin tones/emoji variation
-          let output                         // The Regex I wouldn't have done myself, so thanks for that too!
+          let i = 0;                          // I would have done it myself but my code wasn't ready for skin tones/emoji variation
+          let output                          // The Regex I wouldn't have done myself, so thanks for that too!
           while (i < match.length) {
             char = match.charCodeAt(i++);
             if (previous) {
@@ -499,7 +501,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       }
 
       const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                  // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
         response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 1em; height: 1em; vertical-align: -0.1em;" alt="emoji">`)    // Make it smaller if inline
       })
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
