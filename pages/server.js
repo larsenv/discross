@@ -17,6 +17,8 @@ const server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/ser
 
 const text_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8'));
 const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
+const voice_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/voicechannel.html', 'utf-8'));
+const thread_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8'));
 
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
@@ -46,8 +48,8 @@ function processServerChannels(server, member, response) {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
-    // Start with lone text channels (no category)
-    let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
+    // Start with lone text channels (no category) and voice channels
+    let channelsSorted = [...server.channels.cache.filter(channel => (channel.isTextBased() || channel.type == ChannelType.GuildVoice) && !channel.parent).values()];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
     categoriesSorted.forEach(category => {
@@ -55,8 +57,35 @@ function processServerChannels(server, member, response) {
       channelsSorted = channelsSorted.concat(
         [...category.children.cache.sort((a, b) => a.position - b.position)
           .values()]
-          .filter(channel => channel.isTextBased())
+          .filter(channel => channel.isTextBased() || channel.type == ChannelType.GuildVoice)
       );
+    });
+
+    // Add threads from voice channels (voice channel threads)
+    // Threads are in the guild's channels cache with parentId pointing to voice channels
+    const allThreads = server.channels.cache.filter(channel => 
+      channel.type == ChannelType.PublicThread || channel.type == ChannelType.PrivateThread
+    );
+    
+    allThreads.forEach(thread => {
+      if (thread.parentId) {
+        const parent = server.channels.cache.get(thread.parentId);
+        // Only add threads whose parent is a voice channel
+        if (parent && parent.type == ChannelType.GuildVoice) {
+          // Insert thread right after its parent voice channel
+          const parentIndex = channelsSorted.findIndex(ch => ch.id === thread.parentId);
+          if (parentIndex !== -1) {
+            // Find where to insert (after parent and any existing threads)
+            let insertIndex = parentIndex + 1;
+            while (insertIndex < channelsSorted.length && 
+                   (channelsSorted[insertIndex].type == ChannelType.PublicThread || 
+                    channelsSorted[insertIndex].type == ChannelType.PrivateThread)) {
+              insertIndex++;
+            }
+            channelsSorted.splice(insertIndex, 0, thread);
+          }
+        }
+      }
     });
 
 
@@ -66,6 +95,10 @@ function processServerChannels(server, member, response) {
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         if (item.type == ChannelType.GuildCategory) {
           channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.type == ChannelType.GuildVoice) {
+          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
+          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
         } else {
           channelList += text_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
         }
