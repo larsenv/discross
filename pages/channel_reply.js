@@ -246,8 +246,12 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
         // Highlight @everyone and @here for the current user (only if actually mentioned)
         if (item.mentions && item.mentions.everyone) {
-          messagetext = strReplace(messagetext, "@everyone", mention_highlighted_template.replace("{$USERNAME}", "@everyone"));
-          messagetext = strReplace(messagetext, "@here", mention_highlighted_template.replace("{$USERNAME}", "@here"));
+          if (messagetext.includes("@everyone")) {
+            messagetext = strReplace(messagetext, "@everyone", mention_highlighted_template.replace("{$USERNAME}", "@everyone"));
+          }
+          if (messagetext.includes("@here")) {
+            messagetext = strReplace(messagetext, "@here", mention_highlighted_template.replace("{$USERNAME}", "@here"));
+          }
         }
 
         // Handle role mentions
