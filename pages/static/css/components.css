@@ -27,6 +27,11 @@
   color: #dddddd;
 }
 
+.header-user-info {
+  color: #aaaaaa;
+  font-size: 0.75rem;
+}
+
 .theme-switch-button {
   background: none;
   border: none;
