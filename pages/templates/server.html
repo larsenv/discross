@@ -4,6 +4,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/components.css">
     <title>Discross - Menu</title>
     <style>
         @font-face {
@@ -98,17 +101,17 @@
     </script>
 </head>
 
-<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
+<body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <table>
+        <table class="server-layout">
             <tbody>
                 <tr>
-                    <td valign="top" style="vertical-align: top;">
+                    <td class="server-sidebar">
                         <a href="/server/"><img src="/resources/logo.gif" alt="Home"></a><br>
                         <hr noshade>
                         {$SERVER_LIST}
                     </td>
-                    <td valign="top" style="vertical-align: top;">
+                    <td class="server-main">
                         {$DISCORD_NAME}
 
                         {$CHANNEL_LIST}
