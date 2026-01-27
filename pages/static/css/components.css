@@ -765,23 +765,29 @@ canvas {
 }
 
 .spoiler {
-    background-color: #202225;
+    background-color: #202225; /* Dark theme default */
     color: transparent;
     border-radius: 3px;
     cursor: pointer;
-    filter: blur(5px); /* The "Shadow" effect */
-    transition: filter 0.2s;
     user-select: none;
     padding: 0 2px;
 }
 
-/* Revealed State: No shadow, readable text, no pointer cursor */
+/* Light Theme Support (if parent has class 'light-theme') */
+.light-theme .spoiler {
+    background-color: #e3e5e8;
+}
+
+/* Revealed State */
 .spoiler.revealed {
-    filter: none;
-    color: inherit;
     background-color: rgba(255, 255, 255, 0.1);
+    color: inherit;
     cursor: text;
     user-select: text;
+}
+
+.light-theme .spoiler.revealed {
+    background-color: rgba(0, 0, 0, 0.05); /* Slightly dark on light bg */
 }
 
 /* Subtext (-#) */
@@ -814,18 +820,21 @@ canvas {
     opacity: 0.9;
 }
 
+.light-theme .discord-quote {
+    color: #2e3338;
+}
+
 /* Lists */
 ul {
     margin: 4px 0;
-    padding-left: 24px; /* Sufficient padding for bullets */
+    padding-left: 24px;
     list-style-type: disc;
-    list-style-position: outside; /* Ensures bullets hang correctly */
+    list-style-position: outside;
 }
 
-/* Nested List Styling */
 ul ul {
     margin: 2px 0;
-    list-style-type: circle; /* Sub-bullets look different */
+    list-style-type: circle;
 }
 ul ul ul {
     list-style-type: square;
@@ -835,7 +844,7 @@ li {
     margin: 2px 0;
 }
 
-/* Headers inside lists need to reset margins to look good */
+/* Headers inside lists */
 li > h1, li > h2, li > h3 {
     display: inline-block;
     margin: 0;
@@ -854,10 +863,20 @@ pre {
     color: #dbdee1;
 }
 
+.light-theme pre {
+    background-color: #f2f3f5;
+    border-color: #e3e5e8;
+    color: #2e3338;
+}
+
 code {
     background-color: #2b2d31;
     padding: 2px;
     border-radius: 3px;
     font-family: Consolas, monospace;
     font-size: 0.85em;
+}
+
+.light-theme code {
+    background-color: #f2f3f5;
 }
