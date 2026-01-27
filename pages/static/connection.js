@@ -36,13 +36,22 @@ function addMessage(text) {
   messages = messages.concat(text);
   // console.log(text);
   // console.log(messages);
-  // var node = document.createElement("div");                 // Create a <li> node
-  // var textnode = document.createTextNode(text);         // Create a text node
-  // node.appendChild(textnode);                              // Append the text to <li>
-  // document.getElementById("myList").appendChild(node);     // Append <li> to <ul> with id="myList"
-  // ws.close();
-
-  document.getElementById("myList").innerHTML = messages.join("<br>");
+  
+  // Safely render messages to prevent XSS attacks
+  var myList = document.getElementById("myList");
+  myList.innerHTML = "";  // Clear existing content
+  
+  for (var i = 0; i < messages.length; i++) {
+    var node = document.createElement("div");
+    var textnode = document.createTextNode(messages[i]);
+    node.appendChild(textnode);
+    myList.appendChild(node);
+    
+    // Add line break between messages except for the last one
+    if (i < messages.length - 1) {
+      myList.appendChild(document.createElement("br"));
+    }
+  }
 }
 
 function addLongpoll(id) {
@@ -123,14 +132,26 @@ function longpoll_xhr(id) {
 function setup_xhr() {
   xhttp = Xhr();
   xhttp.onreadystatechange = function () {
-    // alert("test " + xhttp.responseText);
     if (xhttp.readyState == 4) {
-      // alert(xhttp.status);
-      // alert(xhttp.responseText);
-      eval(xhttp.responseText);
-      // addMessage(JSON.parse(this.responseText));
-      setup_xhr();
-      // longpoll_xhr(latest_message_id);
+      // Security: Parse JSON response instead of using eval()
+      try {
+        var response = JSON.parse(xhttp.responseText);
+        if (response.latestMessageID !== undefined) {
+          latest_message_id = response.latestMessageID;
+        }
+        if (response.messages && response.messages.length > 0) {
+          for (var i = 0; i < response.messages.length; i++) {
+            addMessage(response.messages[i]);
+          }
+        }
+        longpoll_xhr(latest_message_id);
+      } catch (e) {
+        console.error("Error parsing response:", e);
+        // Retry on error
+        setTimeout(function() {
+          longpoll_xhr(latest_message_id);
+        }, 1000);
+      }
     }
   }
   xhttp.open("GET", "/longpoll-xhr?" + latest_message_id, true);
