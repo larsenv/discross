@@ -338,6 +338,8 @@
           margin: 0 auto 5px auto; 
           border-radius: 8px;
           text-align: left;
+          position: relative;
+          z-index: 10;
         }
 
         .c-box {
@@ -368,13 +370,15 @@
 
         /* --- CANVAS STYLES --- */
         #canvas-wrapper {
-            margin: 0 auto;
+            margin: 0 auto 20px auto;
             display: block;
             background: #2f3136;
             padding: 5px;
             width: 610px; /* Snug fit wrapper */
             max-width: 100%; /* Responsive for mobile */
             box-sizing: border-box;
+            position: relative;
+            z-index: 10;
         }
 
         canvas {
@@ -391,14 +395,14 @@
             #toolbar-container {
                 width: calc(100% - 16px);
                 max-width: 100%;
-                margin: 0 8px 5px 8px;
+                margin: 8px 8px 5px 8px;
                 padding: 8px 5px;
                 box-sizing: border-box;
             }
 
             #canvas-wrapper {
                 width: calc(100% - 16px);
-                margin: 0 8px;
+                margin: 0 8px 20px 8px;
             }
 
             canvas {
@@ -424,6 +428,14 @@
             /* Show mobile break to put sizes on new line */
             .mobile-break {
                 display: block;
+            }
+            
+            /* Fix message form on mobile */
+            .message-form-container {
+                left: 0 !important;
+                right: 0 !important;
+                padding: 0 8px;
+                box-sizing: border-box;
             }
         }
     </style>
@@ -518,16 +530,16 @@
                     <input type="hidden" id="lite" name="lite" value="False">
 
                     <div style="background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
-                        <table style="width: 100%; border-collapse: collapse;">
+                        <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
                             <tr>
-                                <td style="padding: 0; width: auto;">
+                                <td style="padding: 0;">
                                     <div name="message" id="message" value=""
-                                        style="color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box; width: 100%;"
+                                        style="color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box; width: 100%; overflow: hidden; text-overflow: ellipsis;"
                                         required=""></div>
                                 </td>
-                                <td style="padding: 0; width: 90px;">
+                                <td style="padding: 0; width: 90px; min-width: 90px;">
                                     <button type="submit"
-                                        style="flex: 0 0 auto; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; align-items: center; justify-content: center; min-width: 70px;" 
+                                        style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; display: block; width: 82px;" 
                                         onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
                                         onmouseout="this.style.background='#5865f2'">Send</button>
                                 </td>
