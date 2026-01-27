@@ -8,9 +8,10 @@ const path = require('path');
 const sharp = require("sharp");
 const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer");
-const { PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const fetch = require("sync-fetch");
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
+const { processReactions } = require('./reactionUtils');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
@@ -21,6 +22,7 @@ const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/ch
 
 
 const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8'));
+const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message_reply.html', 'utf-8'));
 const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
 const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
 const first_message_content_large_emoji_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content_large_emoji.html', 'utf-8'));
@@ -33,6 +35,11 @@ const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templ
 const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'));
 
 const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'));
+
+const reactions_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'));
+const reaction_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'));
+// Constants
+const FORWARDED_CONTENT_MAX_LENGTH = 100;
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -125,6 +132,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       lastdate = new Date('1995-12-17T03:24:00');
       currentmessage = "";
       islastmessage = false;
+      isForwarded = false;
+      forwardData = {};
       
       // Cache for member data to avoid repeated fetches
       const memberCache = new Map();
@@ -134,8 +143,15 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           // If the last message is not going to be merged with this one, put it into the response
           if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
 
-
-            currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
+            // Choose template based on whether this is a forwarded message
+            if (isForwarded) {
+              currentmessage = message_forwarded_template.replace("{$MESSAGE_CONTENT}", currentmessage);
+              currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
+              currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
+              currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+            } else {
+              currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
+            }
             
             // Use helper functions for proper nickname and color
             const displayName = getDisplayName(lastmember, lastauthor);
@@ -158,6 +174,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
         messagetext = /* strReplace( */ renderDiscordMarkdown(item.content) /* , "\n", "<br>") */;
+        messagetext = md.render(item.content);
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
@@ -226,6 +243,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             messagetext = merged_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
           }
         }
+
+        // Process and add reactions to the message
+        const reactionsHtml = processReactions(item.reactions, imagesCookie, reactions_template, reaction_template);
+        messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
 
         lastauthor = item.author;
         // Ensure member data is populated - fetch if missing, using cache to avoid repeated fetches
