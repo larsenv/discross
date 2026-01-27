@@ -1,5 +1,3 @@
-/* Theme-specific styles */
-
 /* Default Dark Theme */
 body {
   background: #303338;
@@ -12,19 +10,75 @@ body {
 }
 
 /* Light Theme */
-.light-theme body {
-  background: #FFFFFF !important;
-  color: #000000 !important;
-}
-
+.light-theme body,
 .light-theme #wrapper {
-  background: #FFFFFF !important;
-  color: #000000 !important;
+  background: #ffffff !important;
+  color: #060607 !important; /* Discord's near-black text */
 }
 
-.light-theme #wrapper * {
-  background: #FFFFFF !important;
-  color: #000000 !important;
+/* Header & Menus */
+.light-theme .menu-button {
+  background: #f2f3f5 !important;
+  border-color: #e3e5e8 !important;
+}
+
+.light-theme .header-title,
+.light-theme .header-menu, 
+.light-theme .header-menu-link {
+    color: #060607 !important;
+}
+
+.light-theme .header-user-info {
+    color: #4f5660 !important;
+}
+
+/* Message List & Content */
+.light-theme .message {
+  border-bottom-color: #e3e5e8 !important;
+  background: transparent !important;
+}
+
+.light-theme .message:hover {
+  background: #f8f9f9 !important; /* Subtle hover gray */
+}
+
+.light-theme .message-author {
+  color: #060607 !important;
+}
+
+.light-theme .message-date {
+  color: #5c5e66 !important;
+}
+
+.light-theme .messagecontent {
+  color: #2e3338 !important;
+}
+
+/* Message Input Area (The bottom bar) */
+.light-theme .message-form-container {
+  background: #ffffff !important;
+  border-top-color: #e3e5e8 !important;
+}
+
+.light-theme .message-input-wrapper,
+.light-theme .message-input-disabled {
+  background: #ebedef !important; /* Light gray input background */
+  border: 1px solid #e3e5e8 !important;
+}
+
+.light-theme .message-input,
+.light-theme .message-input-disabled input {
+  color: #060607 !important;
+}
+
+.light-theme .icon-button:hover {
+    background: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Links & Buttons */
+.light-theme a,
+.light-theme .message-link {
+  color: #0067e0 !important; /* Discord Light Theme Blue */
 }
 
 .light-theme .discross-button {
@@ -36,152 +90,113 @@ body {
   background: #4752c4 !important;
 }
 
-.light-theme .discross-button.secondary {
-  background: #4f545c !important;
-  color: white !important;
-}
-
-.light-theme .discross-button.secondary:hover {
-  background: #5d6269 !important;
-}
-
-.light-theme a {
-  color: #647dcd !important;
-}
-
-.light-theme .message {
-  border-color: #e3e5e8 !important;
-}
-
-.light-theme .message .content,
-.light-theme .messagecontent {
-  color: #2e3338 !important;
-}
-
-.light-theme .message:hover {
-  background: rgba(6, 6, 7, 0.02) !important;
-}
-
-.light-theme pre {
-  background: #f6f6f7 !important;
-  border-color: #e3e5e8 !important;
-}
-
-.light-theme pre code {
-  color: #2e3338 !important;
-}
-
+/* Code Blocks */
+.light-theme pre, 
 .light-theme code {
-  background: #f6f6f7 !important;
+  background: #f2f3f5 !important;
+  border-color: #e3e5e8 !important;
   color: #2e3338 !important;
 }
 
-.light-theme .message-form-container,
-.light-theme .message-input-wrapper {
-  background: #ffffff !important;
-  border-top-color: #e3e5e8 !important;
+/* Embeds & Forwards */
+.light-theme .embed-content,
+.light-theme .forwarded-content-wrapper {
+    background-color: #f2f3f5 !important;
+    border-color: #e3e5e8 !important;
+}
+
+.light-theme .forwarded-text,
+.light-theme .reaction-count {
+    color: #4f5660 !important;
+}
+
+/* Emojis & Reactions */
+.light-theme #emoji {
+    background: #ffffff !important;
+    border-color: #e3e5e8 !important;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 .light-theme .reaction {
-  color: #2e3338 !important;
+    background: #f2f3f5 !important;
+    border: 1px solid transparent;
+}
+.light-theme .reaction:hover {
+    border-color: #e3e5e8 !important;
+    background: #ebedef !important;
 }
 
-.light-theme .form-input-wrapper {
-  border: 10px solid #000000 !important;
-}
 
-.light-theme .form-input {
-  border: 5px solid #000000 !important;
-}
+/* =========================================
+   AMOLED THEME
+   True Black (#000000) for OLED screens
+   ========================================= */
 
-.light-theme .submit-button {
-  border: 5px solid #000000 !important;
-}
-
-/* AMOLED Theme - True black for maximum contrast and battery savings */
-.amoled-theme body {
+.amoled-theme body,
+.amoled-theme #wrapper,
+.amoled-theme .content-padding, 
+.amoled-theme .scrollable-content {
   background: #000000 !important;
   color: #ffffff !important;
 }
 
-.amoled-theme #wrapper {
+/* Header & Menus */
+.amoled-theme .menu-button {
   background: #000000 !important;
-  color: #ffffff !important;
+  border: 1px solid #333333 !important;
 }
 
-.amoled-theme #wrapper * {
-  background: #000000 !important;
-  color: #ffffff !important;
-}
-
-.amoled-theme a {
-  color: #5865f2 !important;
-}
-
-.amoled-theme hr {
-  border-color: #555555 !important;
-}
-
+/* Message List */
 .amoled-theme .message {
-  border-color: #333333 !important;
+  border-bottom-color: #1a1a1a !important;
   background: #000000 !important;
 }
 
-.amoled-theme .message .content,
+.amoled-theme .message:hover {
+  background: #111111 !important;
+}
+
 .amoled-theme .messagecontent {
   color: #ffffff !important;
 }
 
-.amoled-theme .message:hover {
-  background: rgba(255, 255, 255, 0.05) !important;
+.amoled-theme .message-date {
+  color: #a0a0a0 !important;
 }
 
-.amoled-theme #emoji {
-  background: #111111 !important;
-  border-color: #333333 !important;
-}
-
-.amoled-theme #emoji button:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-}
-
-.amoled-theme .menu-button {
+/* Input Area */
+.amoled-theme .message-form-container {
   background: #000000 !important;
-  border-color: #333333 !important;
-  color: #ffffff !important;
+  border-top: 1px solid #333333 !important;
 }
 
-.amoled-theme .reaction {
-  color: #ffffff !important;
+.amoled-theme .message-input-wrapper,
+.amoled-theme .message-input-disabled {
+  background: #000000 !important;
+  border: 1px solid #333333 !important;
 }
 
-.amoled-theme pre {
-  background: #0d0d0d !important;
-  border-color: #1a1a1a !important;
+.amoled-theme .message-input {
+    color: #ffffff !important;
 }
 
-.amoled-theme pre code {
-  color: #ffffff !important;
-}
-
+/* Code Blocks */
+.amoled-theme pre,
 .amoled-theme code {
-  background: #0d0d0d !important;
+  background: #0a0a0a !important;
+  border-color: #222222 !important;
   color: #ffffff !important;
 }
 
-.amoled-theme .message-form-container,
-.amoled-theme .message-input-wrapper {
-  background: #000000 !important;
-  border-top-color: #333333 !important;
+/* Embeds */
+.amoled-theme .embed-content,
+.amoled-theme .forwarded-content-wrapper {
+    background: #0a0a0a !important;
+    border: 1px solid #222222 !important;
 }
 
-.amoled-theme .form-input-wrapper {
-  border: 10px solid #ffffff !important;
-}
-
-.amoled-theme .form-input,
-.amoled-theme .submit-button {
-  border: 5px solid #ffffff !important;
-  background: #111111 !important;
-  color: #ffffff !important;
+/* Emoji Picker */
+.amoled-theme #emoji {
+    background: #000000 !important;
+    border-color: #333333 !important;
 }
