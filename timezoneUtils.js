@@ -79,20 +79,36 @@ function getTimezoneFromIP(ip) {
  */
 function formatDateWithTimezone(date, timezone) {
   try {
-    // Get current date in the user's timezone
-    const now = new Date();
     const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     
-    // Create date objects for comparison in the user's timezone
-    const messageDate = new Date(date.toLocaleString('en-US', { timeZone: userTimezone }));
-    const todayDate = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+    // Get current date/time
+    const now = new Date();
     
-    // Reset time to midnight for date comparison
-    messageDate.setHours(0, 0, 0, 0);
-    todayDate.setHours(0, 0, 0, 0);
+    // Extract date components in the target timezone for both dates
+    const getDateComponents = (d) => {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: userTimezone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+      });
+      const parts = formatter.formatToParts(d);
+      const year = parseInt(parts.find(p => p.type === 'year').value);
+      const month = parseInt(parts.find(p => p.type === 'month').value) - 1; // 0-indexed
+      const day = parseInt(parts.find(p => p.type === 'day').value);
+      return { year, month, day };
+    };
     
-    const diffTime = todayDate - messageDate;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const messageComps = getDateComponents(date);
+    const todayComps = getDateComponents(now);
+    
+    // Create date-only objects in UTC for comparison
+    const messageDateOnly = Date.UTC(messageComps.year, messageComps.month, messageComps.day);
+    const todayDateOnly = Date.UTC(todayComps.year, todayComps.month, todayComps.day);
+    
+    // Calculate difference in days
+    const diffTime = todayDateOnly - messageDateOnly;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
     
     // Format time part (e.g., "12:30PM")
     const timeOptions = {
