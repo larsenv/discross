@@ -37,7 +37,17 @@ exports.processIndex = async function (bot, req, res, args) {
     const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
     const deviceInfo = deviceVendor || deviceModel ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})` : '';
     
-    userAgentDisplay = `<font color="#aaaaaa" size="2">Platform: ${browserInfo} on ${osInfo}${deviceInfo}</font>`;
+    // Build display text based on what information is available
+    let displayText = 'Platform: ';
+    if (browserInfo && osInfo) {
+      displayText += `${browserInfo} on ${osInfo}${deviceInfo}`;
+    } else if (browserInfo) {
+      displayText += `${browserInfo}${deviceInfo}`;
+    } else if (osInfo) {
+      displayText += `${osInfo}${deviceInfo}`;
+    }
+    
+    userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
   }
   
   if (discordID) {
