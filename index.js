@@ -244,9 +244,9 @@ server.on('request', async (req, res) => {
       let theme = 'dark';
       if (discordID) {
         const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-        if (whiteThemeCookie == 1) {
+        if (whiteThemeCookie === '1') {
           theme = 'light';
-        } else if (whiteThemeCookie == 2) {
+        } else if (whiteThemeCookie === '2') {
           theme = 'amoled';
         }
       }
