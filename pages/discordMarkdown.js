@@ -98,28 +98,30 @@ function renderDiscordMarkdown(text) {
         continue;
     }
     if (line.startsWith('>>>')) {
-        flushAccumulators(); // Close any previous list/quote
+        flushAccumulators(); 
         const content = line.substring(3).trim(); 
         inMultiLineQuote = true;
         // Even if empty, push it so the structure starts
-        if (content || content === "") multiLineQuoteContent.push(content);
+        // We push the raw content. If it was ">>>", content is "".
+        // If it was ">>> text", content is "text".
+        multiLineQuoteContent.push(content);
         continue;
     }
 
     // 3.2: Single-line Block Quote (>)
-    // Regex matches "> text" or just ">"
     if (line.match(/^>\s?.*$/)) {
-        if (inList) flushAccumulators(); // Quotes break lists
+        if (inList) flushAccumulators(); 
         inQuote = true;
         const content = line.replace(/^>\s?/, '');
         currentQuoteList.push(content);
         continue;
     } else {
-        // If we were in a quote, and this line is NOT a quote, flush it
         if (inQuote) flushAccumulators();
     }
 
     // 3.3: Headers (Levels 1-3)
+    // Matches #, ##, ###. 
+    // Does NOT match #### (which Discord treats as text)
     const headerMatch = line.match(/^(#{1,3})\s+(.+)$/);
     if (headerMatch) {
         flushAccumulators();
@@ -132,7 +134,6 @@ function renderDiscordMarkdown(text) {
     }
 
     // 3.4: Subtext (-# text)
-    // Supports chaining by simply being processed sequentially
     const subtextMatch = line.match(/^\s*-#\s+(.+)$/);
     if (subtextMatch) {
         flushAccumulators();
@@ -144,6 +145,7 @@ function renderDiscordMarkdown(text) {
     }
 
     // 3.5: Bullet Lists (With Indentation)
+    // Check regex: start of line, optional space, - or *, then space, then content
     const listMatch = line.match(/^(\s*)[-*]\s+(.*)$/);
     if (listMatch) {
       inList = true;
@@ -153,7 +155,6 @@ function renderDiscordMarkdown(text) {
       });
       continue;
     } else {
-      // Not a list item, flush list if active
       if (inList) flushAccumulators();
     }
 
@@ -161,7 +162,7 @@ function renderDiscordMarkdown(text) {
     processedLines.push(line);
   }
 
-  // Flush any remaining accumulators at end of document
+  // Flush any remaining accumulators
   flushAccumulators();
   
   if (inMultiLineQuote) {
@@ -211,13 +212,12 @@ function renderDiscordMarkdown(text) {
     return `<small class="subtext">${content}</small>`;
   });
 
-  // Restore Blockquotes (Handles both >>> and grouped >)
+  // Restore Blockquotes
   result = result.replace(/§§BLOCKQUOTE(\d+)§§/g, function(m, i) {
       const lines = blockQuotePlaceholders[parseInt(i)];
-      // Filter? No, we want to preserve empty lines in >>> to show spacing
       const processed = lines.map(l => {
-          // If line is empty string, renderInline returns ""
-          // join('<br>') will turn ["A", "", "B"] into "A<br><br>B"
+          // FIXED: If line is empty (blank line in quote), render as NBSP to preserve height
+          if (!l || l.trim() === '') return '\u00A0'; 
           return resolveNested(md.renderInline(l));
       }).join('<br>');
       
@@ -252,16 +252,10 @@ function renderDiscordMarkdown(text) {
         currentLevel = itemLevel;
 
         let content = item.content;
-        const headerMatch = content.match(/^(#{1,3})\s+(.+)$/);
         
-        let processedContent = '';
-        if (headerMatch) {
-             const hLevel = headerMatch[1].length;
-             const hText = headerMatch[2];
-             processedContent = `<h${hLevel}>${resolveNested(md.renderInline(hText))}</h${hLevel}>`;
-        } else {
-             processedContent = resolveNested(md.renderInline(content));
-        }
+        // FIXED: Removed the header detection inside lists. 
+        // Now, "* # text" just renders "# text" inside the LI.
+        let processedContent = resolveNested(md.renderInline(content));
 
         html += `<li>${processedContent}</li>`;
     });
