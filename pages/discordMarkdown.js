@@ -8,6 +8,7 @@
 // - _text_ is italic (single underscore, like standard markdown)
 // - ___text___ is bold italic with underscores
 // - # Header, ## Header, ### Header - headers (only in some contexts)
+// - Hyphenated bullet points (- item) converted to HTML bullet lists
 
 var md = require('markdown-it')({
   breaks: true,
@@ -25,6 +26,7 @@ function renderDiscordMarkdown(text) {
   const codePlaceholders = [];
   const underlinePlaceholders = [];
   const headerPlaceholders = [];
+  const bulletListPlaceholders = [];
   
   // Step 0: Protect code blocks (backticks) from all processing
   // Handle both inline code with content and empty code blocks
@@ -57,6 +59,44 @@ function renderDiscordMarkdown(text) {
     headerPlaceholders.push({ level, content });
     return `§§HEADER${index}§§`;
   });
+  
+  // Step 3.5: Process bullet lists (hyphenated items at the start of lines)
+  // Convert consecutive lines starting with "- " into HTML bullet lists
+  // Split by newlines to process line by line
+  const lines = text.split('\n');
+  const processedLines = [];
+  let inList = false;
+  let currentList = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Check if line starts with "- " (bullet point)
+    if (/^-\s+(.+)$/.test(line)) {
+      const match = line.match(/^-\s+(.+)$/);
+      currentList.push(match[1]);
+      inList = true;
+    } else {
+      // Not a bullet point line
+      if (inList && currentList.length > 0) {
+        // End the current list and add it
+        const listIndex = bulletListPlaceholders.length;
+        bulletListPlaceholders.push(currentList.slice());
+        processedLines.push(`§§BULLETLIST${listIndex}§§`);
+        currentList = [];
+        inList = false;
+      }
+      processedLines.push(line);
+    }
+  }
+  
+  // Handle any remaining list at the end
+  if (inList && currentList.length > 0) {
+    const listIndex = bulletListPlaceholders.length;
+    bulletListPlaceholders.push(currentList.slice());
+    processedLines.push(`§§BULLETLIST${listIndex}§§`);
+  }
+  
+  text = processedLines.join('\n');
   
   // Step 4: Let markdown-it process (handles **, *, ***, ~~, etc.)
   let result = md.renderInline(text);
@@ -105,6 +145,33 @@ function renderDiscordMarkdown(text) {
     // HTML escape the content
     const escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return `<code>${escaped}</code>`;
+  });
+  
+  // Step 8: Restore bullet lists with proper HTML
+  result = result.replace(/§§BULLETLIST(\d+)§§/g, function(match, index) {
+    const items = bulletListPlaceholders[parseInt(index)];
+    const listItems = items.map(item => {
+      // Use a similar approach as headers - process underlines with secondary placeholders
+      const processedUnderlines = [];
+      let processedItem = item.replace(/§§UNDERLINE(\d+)§§/g, function(m, i) {
+        const content = underlinePlaceholders[parseInt(i)];
+        const renderedContent = md.renderInline(content);
+        const idx = processedUnderlines.length;
+        processedUnderlines.push(`<u>${renderedContent}</u>`);
+        return `§§PROCUNDERLINE${idx}§§`;
+      });
+      
+      // Process rest of markdown
+      processedItem = md.renderInline(processedItem);
+      
+      // Restore the processed underlines
+      processedItem = processedItem.replace(/§§PROCUNDERLINE(\d+)§§/g, function(m, i) {
+        return processedUnderlines[parseInt(i)];
+      });
+      
+      return `<li>${processedItem}</li>`;
+    }).join('');
+    return `<ul>${listItems}</ul>`;
   });
   
   return result;
