@@ -17,7 +17,7 @@ const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSepara
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
-const { renderDiscordMarkdown } = require('./discordMarkdown');
+const { renderDiscordMarkdown } = require('./markdownUtils');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
@@ -459,11 +459,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
        
       // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
       if (whiteThemeCookie == 1) {
-        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
       } else if (whiteThemeCookie == 2) {
-        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
       } else {
-        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "");
       }
 
       let final;
