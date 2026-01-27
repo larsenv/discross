@@ -81,13 +81,9 @@ function processServerChannels(server, member, response, discordID) {
     let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
+    // Add categories to the list (but NOT their children, since we'll render them nested inside)
     categoriesSorted.forEach(category => {
       channelsSorted.push(category);
-      channelsSorted = channelsSorted.concat(
-        [...category.children.cache.sort((a, b) => a.position - b.position)
-          .values()]
-          .filter(channel => channel.isTextBased())
-      );
     });
 
 
