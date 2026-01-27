@@ -198,6 +198,12 @@
 .message-link {
   text-decoration: none;
   color: inherit;
+  display: block; /* Ensures the link wraps the div correctly */
+}
+
+/* 1. FORCE disable underline when hovering the message container */
+.message-link:hover {
+  text-decoration: none !important;
 }
 
 .messagecontent {
@@ -208,6 +214,20 @@
   word-wrap: break-word;
 }
 
+/* 2. BUT re-enable underline for actual links INSIDE the message text */
+.messagecontent a {
+  color: #00b0f4; /* Discord Blue for links */
+  text-decoration: none;
+}
+
+.messagecontent a:hover {
+  text-decoration: underline;
+}
+
+/* Add support for light theme links if not already covered */
+.light-theme .messagecontent a {
+  color: #5865f2;
+}
 /* Embeds */
 .embed {
   display: flex;
