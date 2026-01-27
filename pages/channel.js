@@ -16,6 +16,7 @@ const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUt
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator, areDifferentDays } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
+const { isEmojiOnlyMessage } = require('./messageUtils');
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
 
@@ -64,26 +65,6 @@ function removeExistingEndAnchors(html) {
 
 // Member utility functions (getDisplayName, getMemberColor, ensureMemberData) 
 // are now imported from memberUtils.js to avoid duplication
-
-// Check if text contains only emojis (1-4 emojis)
-function isEmojiOnlyMessage(text) {
-  // Remove HTML tags and whitespace
-  const cleanText = text.replace(/<[^>]*>/g, '').trim();
-  
-  // Check if the text matches only emoji pattern
-  const emojiMatches = cleanText.match(emojiRegex);
-  
-  if (!emojiMatches) {
-    return false;
-  }
-  
-  // Join all emoji matches and see if they equal the entire clean text
-  const allEmojis = emojiMatches.join('');
-  const isOnlyEmojis = allEmojis === cleanText;
-  
-  // Return true if 1-4 emojis and nothing else
-  return isOnlyEmojis && emojiMatches.length >= 1 && emojiMatches.length <= 4;
-}
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
