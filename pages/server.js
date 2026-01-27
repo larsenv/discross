@@ -279,20 +279,21 @@ function addUserAgentDisplay(response, req) {
     const deviceInfo = deviceVendor || deviceModel ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})` : '';
     
     // Build display text based on what information is available
-    let displayText = 'Platform: ';
     if (browserInfo && osInfo) {
-      displayText += `${browserInfo} on ${osInfo}${deviceInfo}`;
+      const displayText = `Platform: ${browserInfo} on ${osInfo}${deviceInfo}`;
+      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
     } else if (browserInfo) {
-      displayText += `${browserInfo}${deviceInfo}`;
+      const displayText = `Platform: ${browserInfo}${deviceInfo}`;
+      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
     } else if (osInfo) {
-      displayText += `${osInfo}${deviceInfo}`;
+      const displayText = `Platform: ${osInfo}${deviceInfo}`;
+      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
     }
-    
-    userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
+    // If neither browserInfo nor osInfo, userAgentDisplay remains empty
   }
   
-  // Add user agent display to response
-  response = response.replace("{$USER_AGENT}", userAgentDisplay);
+  // Add user agent display to response using strReplace for consistency
+  response = strReplace(response, "{$USER_AGENT}", userAgentDisplay);
   
   return response;
 }
