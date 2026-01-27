@@ -2,7 +2,6 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
-// var md = require('markdown-it')({ breaks: true, linkify: true }); // REMOVED: Replaced by custom renderer
 var he = require('he'); // Encodes HTML attributes
 const path = require('path');
 const sharp = require("sharp");
@@ -10,7 +9,6 @@ const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer").default;
 const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const { channel } = require('diagnostics_channel');
-// const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator, areDifferentDays } = require('../timezoneUtils');
@@ -22,14 +20,11 @@ const { renderDiscordMarkdown } = require('./markdownUtils');
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
 
-// Templates for viewing the messages in a channel
-const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
-
-
 const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message.html', 'utf-8'));
 const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message.html', 'utf-8'));
 const message_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_mentioned.html', 'utf-8'));
 const message_forwarded_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message_mentioned.html', 'utf-8'));
+const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
 const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
 const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
 const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
