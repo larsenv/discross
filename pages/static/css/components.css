@@ -30,7 +30,7 @@
 .header-menu-link {
   color: #dddddd;
   text-decoration: none;
-  font-size: 1.5rem;
+  font-size: 1.125rem;
   font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
@@ -58,7 +58,7 @@
 }
 
 .section-title {
-  font-size: 2.625rem;
+  font-size: 1.875rem;
   font-family: 'rodin', Arial, Helvetica, sans-serif;
   color: #dddddd;
 }
@@ -673,6 +673,7 @@ canvas {
 
 .server-sidebar {
   vertical-align: top;
+  text-align: center;
 }
 
 .server-main {
