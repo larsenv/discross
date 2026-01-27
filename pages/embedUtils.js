@@ -5,6 +5,7 @@
 
 const escape = require('escape-html');
 const md = require('markdown-it')({ breaks: true, linkify: true });
+const { renderDiscordMarkdown } = require('./discordMarkdown');
 const fs = require('fs');
 const HTMLMinifier = require('@bhavingajjar/html-minify');
 const minifier = new HTMLMinifier();
@@ -66,7 +67,7 @@ function processEmbeds(embeds, imagesCookie) {
     // Process embed description
     let descriptionHtml = '';
     if (embed.description) {
-      descriptionHtml = `<div style="font-size: 14px; color: #dcddde; margin-bottom: 8px; white-space: pre-wrap;">${md.renderInline(embed.description)}</div>`;
+      descriptionHtml = `<div style="font-size: 14px; color: #dcddde; margin-bottom: 8px; white-space: pre-wrap;">${renderDiscordMarkdown(embed.description)}</div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_DESCRIPTION}', descriptionHtml);
     
@@ -79,7 +80,7 @@ function processEmbeds(embeds, imagesCookie) {
         const fieldStyle = field.inline ? 'grid-column: span 1;' : 'grid-column: 1 / -1;';
         fieldsHtml += `<div style="${fieldStyle}">`;
         fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">${escape(field.name)}</div>`;
-        fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">${md.renderInline(field.value)}</div>`;
+        fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">${renderDiscordMarkdown(field.value)}</div>`;
         fieldsHtml += '</div>';
       });
       fieldsHtml += '</div>';
