@@ -12,6 +12,7 @@
     "discord.js": "^14.14.1",
     "dotenv": "^17.2.3",
     "escape-html": "^1.0.3",
+    "geoip-lite": "^1.4.10",
     "he": "^1.2.0",
     "markdown-it": "^14.1.0",
     "mime-types": "^3.0.1",

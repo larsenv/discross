@@ -11,6 +11,7 @@ const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const fetch = require("sync-fetch");
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
+const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
@@ -83,6 +84,11 @@ function isEmojiOnlyMessage(text) {
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+  
+  // Get client's timezone from IP
+  const clientIP = getClientIP(req);
+  const clientTimezone = getTimezoneFromIP(clientIP);
+  
   try {
     try {
       response = "";
@@ -158,7 +164,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
 
             // Remove avatar URL processing since we removed avatars
-            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", lastdate.toLocaleTimeString('en-US') + " " + lastdate.toDateString());
+            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatDateWithTimezone(lastdate, clientTimezone));
             currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
             response += currentmessage;
             currentmessage = "";
@@ -180,7 +186,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH 
               ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..." 
               : forwardedMessage.content;
-            const forwardedDate = forwardedMessage.createdAt.toLocaleString();
+            const forwardedDate = formatDateWithTimezone(forwardedMessage.createdAt, clientTimezone);
             
             isForwarded = true;
             forwardData = {
