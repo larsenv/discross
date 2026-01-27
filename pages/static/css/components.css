@@ -27,6 +27,13 @@
   color: #dddddd;
 }
 
+.header-menu-link {
+  color: #dddddd;
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+
 .header-user-info {
   color: #aaaaaa;
   font-size: 0.75rem;
@@ -564,6 +571,12 @@
   text-decoration: none;
   color: #999999;
   font-size: 1rem;
+  font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+
+.category-channel {
+  color: #999999;
+  font-size: 1.125rem;
   font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
