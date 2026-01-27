@@ -43,6 +43,7 @@ var chanelreplypage = require('./pages/channel_reply.js')
 var replypage = require('./pages/reply.js')
 var drawpage = require('./pages/draw.js')
 var senddrawing = require('./pages/senddrawing.js')
+var { handleServerIcon } = require('./pages/serverIconHandler.js')
 
 
 bot.startBot();
@@ -232,6 +233,25 @@ server.on('request', async (req, res) => {
       const filePath = parsedurl.path.slice(11)
       const fullFileUrl = `https://cdn.discordapp.com/attachments/${filePath}`
       await fileProxy(res, fullFileUrl);
+    } else if (args[1] === 'ico' && args[2] === 'server' && args[3] && args[4]) {
+      // Handle server icon requests: /ico/server/{serverID}/{iconHash}.gif
+      const discordID = await auth.checkAuth(req, res, true); // Don't redirect if not authenticated
+      const serverID = args[3];
+      const iconFilename = args[4];
+      const iconHash = iconFilename.replace('.gif', '');
+      
+      // Determine theme from cookies
+      let theme = 'dark';
+      if (discordID) {
+        const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+        if (whiteThemeCookie === '1') {
+          theme = 'light';
+        } else if (whiteThemeCookie === '2') {
+          theme = 'amoled';
+        }
+      }
+      
+      await handleServerIcon(bot, res, serverID, iconHash, theme);
     } else {
       const filename = path.resolve("pages/static", sanitizer(parsedurl.pathname));
       await servePage(filename, res)
