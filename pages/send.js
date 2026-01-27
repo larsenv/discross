@@ -123,6 +123,8 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
             let author_mention = `<@${author_id}>`;
 
             processedmessage = `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
+          } catch (err)
+            console.error("Failed to reply:", err);
           }
         }
 
