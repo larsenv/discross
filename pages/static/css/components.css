@@ -436,6 +436,63 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
+/* Mentions */
+.mention {
+  background-color: rgba(88, 101, 242, 0.3);
+  color: #dee0fc;
+  padding: 0 2px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+/* Forwarded Messages */
+.message.forwarded {
+  padding: 8px 16px;
+  border-left: 4px solid #4f545c;
+}
+
+.forwarded-label {
+  font-size: 12px;
+  color: #b9bbbe;
+  margin-bottom: 4px;
+  font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.forwarded-arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid #b9bbbe;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.forwarded-content-wrapper {
+  padding: 8px;
+  background: rgba(47, 49, 54, 0.6);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.forwarded-date {
+  font-size: 12px;
+  color: #72767d;
+  margin-bottom: 4px;
+}
+
+.forwarded-text {
+  color: #dcddde;
+  font-size: 14px;
+  font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Message Reply */
+.message-reply {
+  padding: 8px 16px;
+}
+
 /* Drawing Canvas Styles */
 #toolbar-container {
   background-color: #2f3136;
