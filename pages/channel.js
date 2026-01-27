@@ -232,27 +232,57 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           }
         }
         
-        // Check if this message is a reply
         isReply = false;
         replyData = {};
         if (item.reference && !isForwarded) {
           try {
-            const replyMessage = await item.fetchReference();
-            const replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
-            const replyAuthor = getDisplayName(replyMember, replyMessage.author);
-            
-            // Check if this reply mentions (pings) the replied-to user
-            const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
-            
-            isReply = true;
-            replyData = {
-              author: replyAuthor,
-              authorId: replyMessage.author.id,
-              mentionsPing: mentionsRepliedUser
-            };
+            let replyUser = item.mentions?.repliedUser; // Try getting from cache first
+            let replyMember = undefined;
+            let replyMessage = undefined;
+
+            // Step 1: Try to fetch the full referenced message
+            // This is preferred as it gives us the most accurate state, but might fail if deleted
+            try {
+              replyMessage = await item.fetchReference();
+              replyUser = replyMessage.author; // Update user from the fresh fetch
+            } catch (err) {
+              // Message was likely deleted or is inaccessible. 
+              // We fall back to 'replyUser' retrieved from item.mentions above.
+            }
+
+            // Step 2: If we have a user (either from fetch or fallback), try to get Member data
+            if (replyUser) {
+              try {
+                if (replyMessage) {
+                  // If we have the full message, use your existing utility
+                  replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
+                } else {
+                  // If we only have the User object (fallback), fetch member manually
+                  if (memberCache.has(replyUser.id)) {
+                    replyMember = memberCache.get(replyUser.id);
+                  } else {
+                    replyMember = await chnl.guild.members.fetch(replyUser.id);
+                    memberCache.set(replyUser.id, replyMember);
+                  }
+                }
+              } catch (err) {
+                // Member fetch failed (User likely left the server). 
+                // We ignore this error so we can still display the User's name.
+              }
+
+              // Step 3: Construct the display data
+              const replyAuthor = getDisplayName(replyMember, replyUser);
+              const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+
+              isReply = true;
+              replyData = {
+                author: replyAuthor,
+                authorId: replyUser.id,
+                mentionsPing: mentionsRepliedUser
+              };
+            }
           } catch (err) {
-            console.error("Could not fetch reply message:", err);
-            // Fallback: show indicator but don't fail
+            console.error("Could not process reply data:", err);
             isReply = false;
           }
         }
