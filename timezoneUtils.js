@@ -18,8 +18,38 @@ function getClientIP(req) {
     return realIP;
   }
   
-  // Fallback to connection remote address
-  return req.connection?.remoteAddress || req.socket?.remoteAddress || '127.0.0.1';
+  // Fallback to socket remote address
+  return req.socket?.remoteAddress || '127.0.0.1';
+}
+
+/**
+ * Check if an IP address is private/local
+ * @param {string} ip - IP address
+ * @returns {boolean} - True if private/local, false otherwise
+ */
+function isPrivateIP(ip) {
+  // IPv4 localhost
+  if (ip === '127.0.0.1') return true;
+  
+  // IPv6 localhost
+  if (ip === '::1') return true;
+  
+  // IPv4 private ranges
+  if (ip.startsWith('192.168.')) return true;
+  if (ip.startsWith('10.')) return true;
+  
+  // IPv4 172.16.0.0/12 range (172.16.x.x to 172.31.x.x)
+  const parts = ip.split('.');
+  if (parts.length === 4 && parts[0] === '172') {
+    const second = parseInt(parts[1], 10);
+    if (second >= 16 && second <= 31) return true;
+  }
+  
+  // IPv6 private ranges
+  if (ip.startsWith('fc') || ip.startsWith('fd')) return true; // fc00::/7
+  if (ip.startsWith('fe80:')) return true; // fe80::/10
+  
+  return false;
 }
 
 /**
@@ -29,7 +59,7 @@ function getClientIP(req) {
  */
 function getTimezoneFromIP(ip) {
   // Handle localhost and private IPs - default to UTC
-  if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+  if (isPrivateIP(ip)) {
     return null; // Will use default behavior
   }
   
