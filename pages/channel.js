@@ -25,6 +25,7 @@ const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/te
 const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
 const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
 const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
+const mention_highlighted_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention_highlighted.html', 'utf-8'));
 
 const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
 const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
@@ -223,8 +224,31 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           }
         } while (m);
 
-        messagetext = strReplace(messagetext, "@everyone", mention_template.replace("{$USERNAME}", "@everyone"));
-        messagetext = strReplace(messagetext, "@here", mention_template.replace("{$USERNAME}", "@here"));
+        // Highlight @everyone and @here for the current user
+        messagetext = strReplace(messagetext, "@everyone", mention_highlighted_template.replace("{$USERNAME}", "@everyone"));
+        messagetext = strReplace(messagetext, "@here", mention_highlighted_template.replace("{$USERNAME}", "@here"));
+
+        // Handle role mentions
+        var roleRegex = /&lt;@&amp;([0-9]{17,19})&gt;/g;
+        var roleMatch;
+        
+        do {
+          roleMatch = roleRegex.exec(messagetext);
+          if (roleMatch) {
+            try {
+              const roleId = roleMatch[1];
+              const role = await chnl.guild.roles.fetch(roleId);
+              if (role) {
+                // Check if the current user has this role
+                const userHasRole = member.roles.cache.has(roleId);
+                const template = userHasRole ? mention_highlighted_template : mention_template;
+                messagetext = strReplace(messagetext, roleMatch[0], template.replace("{$USERNAME}", escape("@" + role.name)));
+              }
+            } catch (err) {
+              console.log("Error fetching role:", err);
+            }
+          }
+        } while (roleMatch);
 
 
 
