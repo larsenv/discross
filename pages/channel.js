@@ -13,7 +13,7 @@ const { channel } = require('diagnostics_channel');
 // const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
-const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
+const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
@@ -38,6 +38,7 @@ const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templa
 
 const reactions_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'));
 const reaction_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'));
+const date_separator_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8'));
 // Constants
 const FORWARDED_CONTENT_MAX_LENGTH = 100;
 
@@ -117,6 +118,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       let lastauthor = undefined;
       let lastmember = undefined;
       let lastdate = new Date('1995-12-17T03:24:00');
+      let lastdateonly = null; // Track the date (without time) of the last message for day separators
       let currentmessage = "";
       let islastmessage = false;
       let messageid = 0;
@@ -159,6 +161,22 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         if (!item) { // When processing the last message outside of the forEach item is undefined
           return;
+        }
+        
+        // Check if we need to insert a date separator (when crossing day boundary)
+        if (item && clientTimezone) {
+          const itemDate = new Date(item.createdAt.toLocaleString('en-US', { timeZone: clientTimezone }));
+          itemDate.setHours(0, 0, 0, 0);
+          const itemDateOnly = itemDate.getTime();
+          
+          if (lastdateonly !== null && itemDateOnly !== lastdateonly) {
+            // Day has changed, insert date separator
+            const separatorText = formatDateSeparator(item.createdAt, clientTimezone);
+            const separator = date_separator_template.replace("{$DATE_SEPARATOR}", separatorText);
+            response += separator;
+          }
+          
+          lastdateonly = itemDateOnly;
         }
 
         // Check if this message is a forward and fetch forward data
