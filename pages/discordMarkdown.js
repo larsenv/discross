@@ -12,7 +12,7 @@
 var md = require('markdown-it')({
   breaks: true,
   linkify: true,
-  html: true  // Allow HTML for headers
+  html: false  // Don't allow raw HTML for security
 });
 
 // Custom renderer for emphasis to handle Discord's underline syntax
@@ -27,7 +27,8 @@ function renderDiscordMarkdown(text) {
   const headerPlaceholders = [];
   
   // Step 0: Protect code blocks (backticks) from all processing
-  text = text.replace(/`([^`]+)`/g, function(match, content) {
+  // Handle both inline code with content and empty code blocks
+  text = text.replace(/`([^`]*)`/g, function(match, content) {
     const index = codePlaceholders.length;
     codePlaceholders.push(content);
     return `§§CODE${index}§§`;
@@ -38,16 +39,18 @@ function renderDiscordMarkdown(text) {
   
   // Step 2: Protect double underscores (underline) with placeholders
   // This prevents markdown-it from treating __ as bold
-  text = text.replace(/__([^_]+?)__/g, function(match, content) {
+  // Allow underscores within the content
+  text = text.replace(/__(.+?)__/g, function(match, content) {
     const index = underlinePlaceholders.length;
     underlinePlaceholders.push(content);
     return `§§UNDERLINE${index}§§`;
   });
   
   // Step 3: Process headers at the start of lines (BEFORE markdown-it processing)
+  // Allow optional whitespace after # for flexibility
   // We need to capture the content with placeholders intact
   const originalText = text;
-  text = text.replace(/^(#{1,3})\s+(.+)$/gm, function(match, hashes, content) {
+  text = text.replace(/^(#{1,3})\s*(.+)$/gm, function(match, hashes, content) {
     const level = hashes.length;
     const index = headerPlaceholders.length;
     // Store content with placeholders - we'll process it in step 6
@@ -74,15 +77,25 @@ function renderDiscordMarkdown(text) {
     // Process the header content (which may contain underline placeholders)
     let headerContent = header.content;
     
-    // Replace underline placeholders in header content
+    // We need to process underlines before markdown-it to avoid escaping
+    // Use a different placeholder for processed underlines
+    const processedUnderlines = [];
     headerContent = headerContent.replace(/§§UNDERLINE(\d+)§§/g, function(m, i) {
       const content = underlinePlaceholders[parseInt(i)];
       const renderedContent = md.renderInline(content);
-      return `<u>${renderedContent}</u>`;
+      const idx = processedUnderlines.length;
+      processedUnderlines.push(`<u>${renderedContent}</u>`);
+      return `§§PROCUNDERLINE${idx}§§`;
     });
     
     // Process rest of markdown in header
-    const renderedContent = md.renderInline(headerContent);
+    let renderedContent = md.renderInline(headerContent);
+    
+    // Restore the processed underlines (after markdown-it escaping)
+    renderedContent = renderedContent.replace(/§§PROCUNDERLINE(\d+)§§/g, function(m, i) {
+      return processedUnderlines[parseInt(i)];
+    });
+    
     return `<h${header.level}>${renderedContent}</h${header.level}>`;
   });
   
