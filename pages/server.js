@@ -16,6 +16,7 @@ const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server.html', 'utf-8'));
 
 const text_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8'));
+const announcement_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/announcementchannel.html', 'utf-8'));
 const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
 
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
@@ -66,6 +67,9 @@ function processServerChannels(server, member, response) {
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         if (item.type == ChannelType.GuildCategory) {
           channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.type == ChannelType.GuildAnnouncement || item.type == ChannelType.GuildNews) {
+          // Use announcement template for announcement/news channels
+          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
         } else {
           channelList += text_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
         }
