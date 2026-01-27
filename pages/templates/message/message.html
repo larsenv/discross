@@ -1,15 +1,14 @@
-<div class="message" style="padding: 8px 0; margin: 0; border-bottom: 1px solid #2f3136; position: relative;">
-    <div style="display: flex; align-items: baseline; margin-bottom: 4px;">
-      <span onclick="document.getElementById('message').value += {$TAG}" 
-            style="font-weight: 600; color: {$AUTHOR_COLOR}; cursor: pointer; margin-right: 8px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+<div class="message">
+    <div class="message-header">
+      <span onclick="document.getElementById('message').value += {$TAG}" class="message-author" style="color: {$AUTHOR_COLOR};">
         {$MESSAGE_AUTHOR}
       </span>
-      <span style="font-size: 12px; color: #72767d; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+      <span class="message-date">
         {$MESSAGE_DATE}
       </span>
     </div>
-    <a href="{$MESSAGE_REPLY_LINK}#end" style="text-decoration: none; color: inherit;">
-      <div class="messagecontent" style="color: #dcddde; font-size: 16px; line-height: 20px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; word-wrap: break-word;">
+    <a href="{$MESSAGE_REPLY_LINK}#end" class="message-link">
+      <div class="messagecontent">
         {$MESSAGE_CONTENT}
       </div>
     </a>
