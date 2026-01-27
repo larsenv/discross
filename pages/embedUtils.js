@@ -39,10 +39,6 @@ function processEmbeds(embeds, imagesCookie) {
     // Process embed author
     let authorHtml = '';
     if (embed.author) {
-      authorHtml = '<div style="display: flex; align-items: center; margin-bottom: 8px;">';
-      if (embed.author.iconURL && imagesCookie == 1) {
-        authorHtml += `<img src="/imageProxy/${embed.author.iconURL.replace(/^(.*?)(\d+)/, '$2')}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;" alt="author icon">`;
-      }
       authorHtml += `<span style="font-size: 14px; font-weight: 600; color: #ffffff;">${escape(embed.author.name)}</span>`;
       if (embed.author.url) {
         authorHtml = `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${authorHtml}</a>`;
