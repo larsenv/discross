@@ -85,23 +85,27 @@ function processServerChannels(server, member, response) {
             }
           }
           
+          // HTML/CSS padlock icon - universally supported
+          const padlockIcon = '<span style="display:inline-block;width:8px;height:10px;border:1px solid #999;border-radius:2px;position:relative;margin:0 2px;"><span style="position:absolute;top:-3px;left:1px;width:4px;height:4px;border:1px solid #999;border-bottom:none;border-radius:3px 3px 0 0;"></span></span>';
+          const smallPadlockIcon = '<span style="display:inline-block;width:6px;height:7px;border:1px solid #999;border-radius:1px;position:relative;margin:0 1px;vertical-align:super;font-size:70%;"><span style="position:absolute;top:-2px;left:1px;width:2px;height:3px;border:1px solid #999;border-bottom:none;border-radius:2px 2px 0 0;"></span></span>';
+          
           if (!canSendMessages) {
             // User cannot send messages - use padlock icon instead of hashtag/voice icon
-            channelIcon = "🔒";
+            channelIcon = padlockIcon;
           } else {
             // User can send messages
             if (isVoiceChannel) {
-              // Voice channel with send permission
-              channelIcon = "🔊";
+              // Voice channel with send permission - using Unicode speaker character
+              channelIcon = "&#128264;"; // Speaker with sound waves (more universal than emoji)
               if (isLocked) {
                 // Show small padlock for locked voice channel
-                channelIcon += '<font size="2">🔒</font>';
+                channelIcon += smallPadlockIcon;
               }
             } else {
               // Text channel with send permission
               if (isLocked) {
                 // Show hashtag with small padlock for locked text channel
-                channelIcon = '#<font size="2">🔒</font>';
+                channelIcon = '#' + smallPadlockIcon;
               }
             }
           }
