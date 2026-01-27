@@ -71,9 +71,10 @@ function renderDiscordMarkdown(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     // Check if line starts with "- " (bullet point)
-    if (/^-\s+(.+)$/.test(line)) {
-      const match = line.match(/^-\s+(.+)$/);
-      currentList.push(match[1]);
+    // Allow empty bullets (just "- " with nothing after)
+    const match = line.match(/^-\s+(.*)$/);
+    if (match) {
+      currentList.push(match[1]); // match[1] could be empty string for empty bullets
       inList = true;
     } else {
       // Not a bullet point line
