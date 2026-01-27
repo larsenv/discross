@@ -7,6 +7,8 @@ var time;
 var xhttp;
 var xhttp2;
 var ws;
+var retryCount = 0;
+var maxRetryDelay = 30000; // 30 seconds max
 // nocache
 
 // https://stackoverflow.com/a/15339941
@@ -133,29 +135,46 @@ function setup_xhr() {
   xhttp = Xhr();
   xhttp.onreadystatechange = function () {
     if (xhttp.readyState == 4) {
-      // Security: Parse JSON response instead of using eval()
-      try {
-        var response = JSON.parse(xhttp.responseText);
-        if (response.latestMessageID !== undefined) {
-          latest_message_id = response.latestMessageID;
-        }
-        if (response.messages && response.messages.length > 0) {
-          for (var i = 0; i < response.messages.length; i++) {
-            addMessage(response.messages[i]);
+      // Check if request was successful
+      if (xhttp.status === 200) {
+        // Security: Parse JSON response instead of using eval()
+        try {
+          var response = JSON.parse(xhttp.responseText);
+          if (response.latestMessageID !== undefined) {
+            latest_message_id = response.latestMessageID;
           }
-        }
-        longpoll_xhr(latest_message_id);
-      } catch (e) {
-        console.error("Error parsing response:", e);
-        // Retry on error
-        setTimeout(function() {
+          if (response.messages && response.messages.length > 0) {
+            for (var i = 0; i < response.messages.length; i++) {
+              addMessage(response.messages[i]);
+            }
+          }
+          // Reset retry count on success
+          retryCount = 0;
           longpoll_xhr(latest_message_id);
-        }, 1000);
+        } catch (e) {
+          console.error("Error parsing response:", e);
+          // Retry with exponential backoff on parse error
+          retryWithBackoff();
+        }
+      } else {
+        // Server error - retry with exponential backoff
+        console.error("Server returned status:", xhttp.status);
+        retryWithBackoff();
       }
     }
   }
   xhttp.open("GET", "/longpoll-xhr?" + latest_message_id, true);
   xhttp.send(null);
+}
+
+function retryWithBackoff() {
+  retryCount++;
+  // Calculate delay: min(1000 * 2^retryCount, maxRetryDelay)
+  var delay = Math.min(1000 * Math.pow(2, retryCount), maxRetryDelay);
+  console.log("Retrying in " + delay + "ms (attempt " + retryCount + ")");
+  setTimeout(function() {
+    longpoll_xhr(latest_message_id);
+  }, delay);
 }
 
 xhttp2 = Xhr();
