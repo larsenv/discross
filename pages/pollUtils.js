@@ -101,7 +101,7 @@ function processPoll(poll, imagesCookie) {
     const now = Date.now();
     if (poll.expiresTimestamp && poll.expiresTimestamp < now) {
       footerParts.push('Poll ended');
-    } else if (poll.expiresAt) {
+    } else if (poll.expiresTimestamp) {
       const expiresDate = new Date(poll.expiresTimestamp);
       footerParts.push(`Ends ${expiresDate.toLocaleDateString()}`);
     }
