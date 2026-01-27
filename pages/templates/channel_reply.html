@@ -12,6 +12,9 @@
     <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
     <meta name="msapplication-TileColor" content="#2b5797">
     <meta name="theme-color" content="#ffffff">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/components.css">
     <title>Discross - #{$CHANNEL_NAME}</title>
     <script>
         window.onload = function () {
@@ -75,268 +78,6 @@
         };
     </script>
     <style>
-        @font-face {
-            font-family: 'rodin';
-            src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
-                 url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
-            font-weight: 400;
-        }
-
-        @font-face {
-            font-family: 'rodin';
-            src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
-                 url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
-            font-weight: 700;
-        }
-
-        /* Global reset + consistent box sizing and font */
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
-
-        html,
-        body,
-        #wrapper {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            font-size: 16px;
-            line-height: 1.45;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        body {
-            background: #36393f;
-            color: #dcddde;
-        }
-
-        /* Light theme overrides */
-        .light-theme body {
-            background: #ffffff !important;
-            color: #2e3338 !important;
-        }
-
-        .light-theme #wrapper {
-            background: #ffffff !important;
-            color: #2e3338 !important;
-        }
-
-        .light-theme .message {
-            border-color: #e3e5e8 !important;
-        }
-
-        .light-theme .message .content {
-            color: #2e3338 !important;
-        }
-
-        /* AMOLED theme overrides - true black theme for maximum contrast and battery savings */
-        .amoled-theme body {
-            background: #000000 !important;
-            color: #ffffff !important;
-        }
-
-        .amoled-theme #wrapper {
-            background: #000000 !important;
-            color: #ffffff !important;
-        }
-
-        .amoled-theme .message {
-            border-color: #333333 !important;
-            background: #000000 !important;
-        }
-
-        .amoled-theme .message .content {
-            color: #ffffff !important;
-        }
-
-        .amoled-theme .message:hover {
-            background: rgba(255, 255, 255, 0.05) !important;
-        }
-
-        .amoled-theme #emoji {
-            background: #111111 !important;
-            border-color: #333333 !important;
-        }
-
-        .amoled-theme #emoji button:hover {
-            background: rgba(255, 255, 255, 0.08) !important;
-        }
-
-        .amoled-theme .menu-button {
-            background: #000000 !important;
-            border-color: #333333 !important;
-            color: #ffffff !important;
-        }
-
-        .amoled-theme a {
-            color: #5865f2 !important;
-        }
-
-        /* Reaction styling */
-        .reactions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-top: 4px;
-        }
-
-        .reaction {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 3px 6px;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: default;
-            transition: background-color 0.1s ease;
-        }
-
-        .reaction:hover {
-            opacity: 0.9;
-        }
-
-        /* Light theme reactions */
-        .light-theme .reaction {
-            color: #2e3338 !important;
-        }
-
-        /* AMOLED theme reactions */
-        .amoled-theme .reaction {
-            color: #ffffff !important;
-        }
-
-        .message:hover {
-            background: rgba(4, 4, 5, 0.07);
-        }
-
-        .light-theme .message:hover {
-            background: rgba(6, 6, 7, 0.02) !important;
-        }
-
-        /* Hide legacy styling */
-        br.nodisp {
-            display: none;
-        }
-
-        /* Legacy table fixes */
-        table {
-            padding-bottom: 5px;
-        }
-
-        /* Links */
-        a {
-            color: #00aff4;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Emoji picker styling */
-        #emoji {
-            background: #2f3136;
-            border: 1px solid #40444b;
-            border-radius: 8px;
-            padding: 16px;
-            margin: 8px 0;
-        }
-
-        #emoji table {
-            width: 100%;
-        }
-
-        #emoji button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 4px;
-        }
-
-        #emoji button:hover {
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        /* Menu positioning */
-        .menu-button {
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 1000;
-            background: #36393f;
-            border: 1px solid #40444b;
-            border-radius: 4px;
-            padding: 8px;
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .menu-button {
-                top: 8px;
-                left: 8px;
-            }
-        }
-
-        /* Old browser compatibility fixes */
-        .message-form-container {
-            /* Use fixed positioning for compatibility with non-flexbox browsers */
-            position: fixed;
-            bottom: 0;
-            left: 60px;
-            right: 0;
-            /* Ensure it doesn't overflow */
-            width: auto;
-            max-width: 100%;
-            overflow: hidden;
-            /* Add background to ensure visibility */
-            background: #36393f;
-            /* Add border for separation */
-            border-top: 1px solid #40444b;
-            /* Add z-index to ensure it's above content */
-            z-index: 100;
-        }
-
-        .message-buttons-container {
-            /* Fallback layout for old browsers */
-            width: 100%;
-            max-width: 100%;
-            /* Use table-cell layout as flexbox fallback for very old browsers */
-            display: table;
-            table-layout: fixed;
-            box-sizing: border-box;
-            padding: 8px;
-        }
-
-        .message-button-cell {
-            display: table-cell;
-            width: 32px;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        /* Modern browsers will still use flex if supported */
-        .modern-flex {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* Light theme adjustments for message form */
-        .light-theme .message-form-container {
-            background: #ffffff !important;
-            border-top-color: #e3e5e8 !important;
-        }
-
-        /* AMOLED theme adjustments for message form */
-        .amoled-theme .message-form-container {
-            background: #000000 !important;
-            border-top-color: #333333 !important;
-        }
-
         /* Reply indicator positioning and theming */
         #replying_to {
             position: fixed;
@@ -358,213 +99,52 @@
             background: #000000 !important;
             border-top-color: #333333 !important;
         }
-
-        /* Chat container - consistent spacing */
-        .chat, .chat-container, #chat {
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-width: 920px;
-            margin: 0 auto;
-        }
-
-        /* Message list: readable box */
-        .message-list {
-            padding: 12px;
-            border-radius: 8px;
-            background: #2f3136;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            overflow-y: auto;
-            max-height: 60vh;
-        }
-
-        /* Chat input area: flex so input shrinks correctly and button won't overflow */
-        .chat-input, .composer, .message-composer {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            background: transparent;
-        }
-
-        /* Input/textarea should grow and allow content to wrap, but never force container width */
-        .chat-input input[type="text"],
-        .chat-input textarea,
-        .message-composer input[type="text"],
-        .message-composer textarea {
-            flex: 1 1 auto;
-            min-width: 0; /* critical to prevent overflow in flex layouts */
-            padding: 10px 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: #fff;
-            outline: none;
-        }
-
-        /* Textarea behavior */
-        .chat-input textarea, .message-composer textarea {
-            resize: vertical;
-            max-height: 30vh;
-        }
-
-        /* Send button: size, alignment, and prevent overflow */
-        .send-button, .btn-send, button.send, .chat-send {
-            flex: 0 0 auto; /* don't grow, don't shrink */
-            padding: 10px 14px;
-            border-radius: 8px;
-            background: #5865f2;
-            color: #fff;
-            border: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            align-self: stretch; /* match input height */
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            white-space: nowrap;
-            min-height: 44px; /* accessible tap target */
-        }
-
-        /* Focus outlines */
-        button:focus, input:focus, textarea:focus {
-            box-shadow: 0 0 0 3px rgba(88,101,242,0.12);
-            border-color: #5865f2;
-        }
-
-        /* Defensive override: if send button was absolutely positioned elsewhere,
-           prefer static/flex layout so it stays inside the viewport */
-        .chat-footer { position: relative; }
-        .chat-footer .send-button {
-            position: static !important;
-        }
-
-        /* Small screen adjustments */
-        @media (max-width: 640px) {
-            .chat, .chat-container {
-                padding: 12px;
-            }
-
-            .send-button, .btn-send {
-                padding: 8px 10px;
-                min-height: 40px;
-                font-size: 0.9rem;
-            }
-        }
-
-        /* Code block styling */
-        pre {
-            background: #2f3136;
-            border: 1px solid #202225;
-            border-radius: 4px;
-            padding: 8px;
-            margin: 4px 0;
-            overflow-x: auto;
-            max-height: 400px;
-            overflow-y: auto;
-            font-family: Consolas, Monaco, 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        pre code {
-            background: none;
-            border: none;
-            padding: 0;
-            font-family: inherit;
-            color: #dcddde;
-        }
-
-        /* Inline code styling */
-        code {
-            background: #2f3136;
-            border-radius: 3px;
-            padding: 2px 4px;
-            font-family: Consolas, Monaco, 'Courier New', monospace;
-            font-size: 14px;
-            color: #dcddde;
-        }
-
-        /* Light theme code blocks */
-        .light-theme pre {
-            background: #f6f6f7 !important;
-            border-color: #e3e5e8 !important;
-        }
-
-        .light-theme pre code {
-            color: #2e3338 !important;
-        }
-
-        .light-theme code {
-            background: #f6f6f7 !important;
-            color: #2e3338 !important;
-        }
-
-        /* AMOLED theme code blocks */
-        .amoled-theme pre {
-            background: #0d0d0d !important;
-            border-color: #1a1a1a !important;
-        }
-
-        .amoled-theme pre code {
-            color: #ffffff !important;
-        }
-
-        .amoled-theme code {
-            background: #0d0d0d !important;
-            color: #ffffff !important;
-        }
     </style>
 </head>
 
 <body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
         <a href="../server/{$SERVER_ID}" class="menu-button">
-            <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
+            <img src="/resources/images/menu.gif" alt="Menu" class="menu-icon">
         </a>
 
-        <div style="padding-left: 60px; height: 100vh; position: relative;">
-            <div style="overflow-y: auto; padding: 16px; padding-bottom: 120px;">
+        <div class="content-padding">
+            <div class="scrollable-content">
                 <div id="msgcontainer">
                     {$MESSAGES}
                 </div>
 
                 <div id="emoji" style="display: none;">
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+                    <div class="emoji-grid">
                         <button onclick="document.getElementById('message').value += ' :sob:'">
-                            <img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f62d.gif" alt="sob" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
-                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
-                                style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :skull:'">
-                            <img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f480.gif" alt="skull" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :pleading_face:'">
-                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
-                                style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :heart:'">
-                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :thumbsup:'">
-                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
-                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :pray:'">
-                            <img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f64f.gif" alt="pray" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :tada:'">
-                            <img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f389.gif" alt="tada" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :slight_smile:'">
-                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
-                                style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile" class="emoji-icon">
                         </button>
                     </div>
                 </div>
@@ -580,32 +160,21 @@
                     {$REPLY_MESSAGE_CONTENT}
                 </div>
             </div>
-            <div class="message-form-container" style="position: fixed; bottom: 0; left: 60px; right: 0;">
+            <div class="message-form-container">
                 <div class="modern-flex message-buttons-container">
                     <div class="message-button-cell">
-                        <button
-                            style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; width: 32px; height: 32px;"
-                            onclick="showEmoji()" type="button"
-                            onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                            onmouseout="this.style.background='none'">
-                            <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
-                                style="width: 24px; height: 24px;">
+                        <button class="icon-button" onclick="showEmoji()" type="button">
+                            <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji" class="emoji-icon">
                         </button>
                     </div>
                     <div class="message-button-cell">
-                        <a href="/draw/{$CHANNEL_ID}"
-                            style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
-                            onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                            onmouseout="this.style.background='none'">
-                            <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
+                        <a href="/draw/{$CHANNEL_ID}" class="icon-button">
+                            <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" class="emoji-icon">
                         </a>
                     </div>
                     <div class="message-button-cell">
-                        <a href="{$REFRESH_URL}"
-                            style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
-                            onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                            onmouseout="this.style.background='none'">
-                            <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
+                        <a href="{$REFRESH_URL}" class="icon-button">
+                            <img src="/resources/images/refresh.gif" alt="Refresh" class="emoji-icon">
                         </a>
                     </div>
                 </div>
