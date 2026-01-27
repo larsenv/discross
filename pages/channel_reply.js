@@ -169,34 +169,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           return;
         }
 
-        // Check if this message is a forward and fetch forward data
-        isForwarded = false;
-        forwardData = {};
-        if (item.reference?.type === MessageReferenceType.Forward) {
-          try {
-            const forwardedMessage = await item.fetchReference();
-            const forwardedMember = await ensureMemberData(forwardedMessage, chnl.guild, memberCache);
-            const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
-            const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH 
-              ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..." 
-              : forwardedMessage.content;
-            const forwardedDate = forwardedMessage.createdAt.toLocaleString();
-            
-            isForwarded = true;
-            forwardData = {
-              author: forwardedAuthor,
-              content: md.renderInline(forwardedContent),
-              date: forwardedDate
-            };
-          } catch (err) {
-            console.error("Could not fetch forwarded message:", err);
-            // Fallback: show indicator but don't fail
-            isForwarded = false;
-          }
-        }
-
-        // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        messagetext = md.render(item.content);
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
