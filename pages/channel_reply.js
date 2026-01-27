@@ -11,6 +11,7 @@ const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const fetch = require("sync-fetch");
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
+const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
@@ -191,6 +192,12 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
+        
+        // Process embeds (for bot messages)
+        if (item?.embeds && item.embeds.length > 0) {
+          messagetext += processEmbeds(item.embeds, imagesCookie);
+        }
+        
         if (item.mentions) {
           item.mentions.members.forEach(function (user) {
             if (user) {
