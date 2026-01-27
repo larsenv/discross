@@ -66,7 +66,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
     
     if (!clientIsReady) {
-      res.writeHead(503, { "Content-Type": "text/html" });
+      res.writeHead(503, { "Content-Type": "text/plain" });
       res.write("The bot isn't connected, try again in a moment");
       res.end();
       return;
