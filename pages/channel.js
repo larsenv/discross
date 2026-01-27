@@ -13,6 +13,7 @@ const { channel } = require('diagnostics_channel');
 // const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
+const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
@@ -65,6 +66,11 @@ function removeExistingEndAnchors(html) {
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+  
+  // Get client's timezone from IP
+  const clientIP = getClientIP(req);
+  const clientTimezone = getTimezoneFromIP(clientIP);
+  
   try {
     let response, chnl;
     try {
@@ -144,7 +150,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
 
             // Remove avatar URL processing since we removed avatars
-            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", lastdate.toLocaleTimeString('en-US') + " " + lastdate.toDateString());
+            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatDateWithTimezone(lastdate, clientTimezone));
             currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
             response += currentmessage;
             currentmessage = "";
@@ -166,7 +172,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH 
               ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..." 
               : forwardedMessage.content;
-            const forwardedDate = forwardedMessage.createdAt.toLocaleString();
+            const forwardedDate = formatDateWithTimezone(forwardedMessage.createdAt, clientTimezone);
             
             isForwarded = true;
             forwardData = {
