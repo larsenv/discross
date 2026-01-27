@@ -260,8 +260,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
         messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
         
-        // Convert http/https URLs to links manually (linkify disabled to prevent email/ftp links)
-        messagetext = messagetext.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
