@@ -361,6 +361,11 @@
         
         .s-inner { background: black; font-size: 1px; }
 
+        /* Hide mobile break on desktop */
+        .mobile-break {
+            display: none;
+        }
+
         /* --- CANVAS STYLES --- */
         #canvas-wrapper {
             margin: 0 auto;
@@ -415,6 +420,11 @@
                 height: 36px !important;
                 padding: 0 12px !important;
             }
+
+            /* Show mobile break to put sizes on new line */
+            .mobile-break {
+                display: block;
+            }
         }
     </style>
 </head>
@@ -439,6 +449,7 @@
         <div id="c15" class="c-box" style="background:#ff00ff;" onclick="setColor('#ff00ff', 'c15')"></div>
         <div id="c16" class="c-box" style="background:#8b4513;" onclick="setColor('#8b4513', 'c16')"></div>
         
+        <br class="mobile-break">
         <span style="margin: 0 10px; border-left: 1px solid #555;"></span>
 
         <div id="s1" class="s-btn" onclick="setSize(2, 's1')"><div class="s-inner" style="width:2px; height:2px;"></div></div>
@@ -509,14 +520,14 @@
                     <div style="background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
                         <table style="width: 100%; border-collapse: collapse;">
                             <tr>
-                                <td style="padding: 0;">
+                                <td style="padding: 0; width: auto;">
                                     <div name="message" id="message" value=""
                                         style="color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box; width: 100%;"
                                         required=""></div>
                                 </td>
-                                <td style="padding: 0; width: 80px;">
+                                <td style="padding: 0; width: 90px;">
                                     <button type="submit"
-                                        style="flex: 0 0 auto; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; align-items: center; justify-content: center;" 
+                                        style="flex: 0 0 auto; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; align-items: center; justify-content: center; min-width: 70px;" 
                                         onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
                                         onmouseout="this.style.background='#5865f2'">Send</button>
                                 </td>
