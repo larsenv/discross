@@ -2,12 +2,12 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
-var md = require('markdown-it')({ breaks: true, linkify: true });
+var { renderDiscordMarkdown } = require('./discordMarkdown');
 var he = require('he'); // Encodes HTML attributes
 const path = require('path');
 const sharp = require("sharp");
 const emojiRegex = require("./twemojiRegex").regex;
-const sanitizer = require("path-sanitizer");
+const sanitizer = require("path-sanitizer").default;
 const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const fetch = require("sync-fetch");
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
@@ -176,7 +176,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         }
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        let messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        let messagetext = /* strReplace( */ renderDiscordMarkdown(item.content) /* , "\n", "<br>") */;
+        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
         messagetext = md.render(item.content);
         if (item?.attachments) {
           let urls = new Array()
@@ -209,6 +210,15 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
               messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
             }
           });
+          
+          // Handle role mentions
+          if (item.mentions.roles) {
+            item.mentions.roles.forEach(function (role) {
+              if (role) {
+                messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + role.name)));
+              }
+            });
+          }
         }
 
         // https://stackoverflow.com/questions/6323417/regex-to-extract-all-matches-from-string-using-regexp-exec
