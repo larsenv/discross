@@ -72,6 +72,26 @@ function getTimezoneFromIP(ip) {
 }
 
 /**
+ * Extract date components (year, month, day) in a specific timezone
+ * @param {Date} date - Date object
+ * @param {string} timezone - Timezone string
+ * @returns {Object} - Object with year, month (1-indexed), and day
+ */
+function getDateComponentsInTimezone(date, timezone) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parseInt(parts.find(p => p.type === 'year').value);
+  const month = parseInt(parts.find(p => p.type === 'month').value); // 1-indexed (1-12)
+  const day = parseInt(parts.find(p => p.type === 'day').value);
+  return { year, month, day };
+}
+
+/**
  * Format a date with timezone - Discord style
  * @param {Date} date - Date object to format
  * @param {string|null} timezone - Timezone string (e.g., 'America/New_York') or null for default
@@ -85,26 +105,12 @@ function formatDateWithTimezone(date, timezone) {
     const now = new Date();
     
     // Extract date components in the target timezone for both dates
-    const getDateComponents = (d) => {
-      const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: userTimezone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric'
-      });
-      const parts = formatter.formatToParts(d);
-      const year = parseInt(parts.find(p => p.type === 'year').value);
-      const month = parseInt(parts.find(p => p.type === 'month').value) - 1; // 0-indexed
-      const day = parseInt(parts.find(p => p.type === 'day').value);
-      return { year, month, day };
-    };
+    const messageComps = getDateComponentsInTimezone(date, userTimezone);
+    const todayComps = getDateComponentsInTimezone(now, userTimezone);
     
-    const messageComps = getDateComponents(date);
-    const todayComps = getDateComponents(now);
-    
-    // Create date-only objects in UTC for comparison
-    const messageDateOnly = Date.UTC(messageComps.year, messageComps.month, messageComps.day);
-    const todayDateOnly = Date.UTC(todayComps.year, todayComps.month, todayComps.day);
+    // Create date-only objects in UTC for comparison (month is 0-indexed for Date.UTC)
+    const messageDateOnly = Date.UTC(messageComps.year, messageComps.month - 1, messageComps.day);
+    const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
     
     // Calculate difference in days
     const diffTime = todayDateOnly - messageDateOnly;
@@ -183,21 +189,11 @@ function areDifferentDays(date1, date2, timezone) {
     const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     
     // Extract date components for both dates
-    const getDateComponents = (d) => {
-      const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: userTimezone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric'
-      });
-      const parts = formatter.formatToParts(d);
-      const year = parseInt(parts.find(p => p.type === 'year').value);
-      const month = parseInt(parts.find(p => p.type === 'month').value);
-      const day = parseInt(parts.find(p => p.type === 'day').value);
-      return `${year}-${month}-${day}`;
-    };
+    const comp1 = getDateComponentsInTimezone(date1, userTimezone);
+    const comp2 = getDateComponentsInTimezone(date2, userTimezone);
     
-    return getDateComponents(date1) !== getDateComponents(date2);
+    // Compare year, month, and day
+    return comp1.year !== comp2.year || comp1.month !== comp2.month || comp1.day !== comp2.day;
   } catch (err) {
     console.error('Error comparing dates:', err);
     return false;
