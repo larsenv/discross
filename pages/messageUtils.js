@@ -6,12 +6,14 @@ const emojiRegex = require("./twemojiRegex").regex;
 
 /**
  * Check if text contains only emojis (1-4 emojis)
- * @param {string} text - The message text to check
+ * NOTE: This function is for detection only, not for HTML sanitization.
+ * The input text has already been processed by markdown-it which handles HTML escaping.
+ * @param {string} text - The message text to check (already HTML-escaped by markdown-it)
  * @returns {boolean} - True if message contains only 1-4 emojis, false otherwise
  */
 function isEmojiOnlyMessage(text) {
-  // Remove HTML tags and whitespace - using more thorough regex to avoid incomplete sanitization
-  // This is only for checking emoji-only status, not for security sanitization
+  // Remove HTML tags and HTML entities for emoji detection
+  // This is NOT for security sanitization - input is already escaped by markdown-it
   const cleanText = text.replace(/<[^>]+>/g, '').replace(/&[^;]+;/g, '').trim();
   
   // Check if the text matches only emoji pattern
