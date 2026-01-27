@@ -90,7 +90,7 @@ function processServerChannels(server, member, response, discordID) {
 
     // Add threads from voice channels (voice channel threads)
     // Threads are in the guild's channels cache with parentId pointing to voice channels
-    const allThreads = server.channels.cache.filter(channel => 
+    allThreads = server.channels.cache.filter(channel => 
       channel.type == ChannelType.PublicThread || channel.type == ChannelType.PrivateThread
     );
     
