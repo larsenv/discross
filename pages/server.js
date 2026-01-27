@@ -67,26 +67,29 @@ function processServerChannels(server, member, response) {
       channel.type == ChannelType.PublicThread || channel.type == ChannelType.PrivateThread
     );
     
+    // Group threads by their parent voice channel for efficient insertion
+    const threadsByParent = new Map();
     allThreads.forEach(thread => {
       if (thread.parentId) {
         const parent = server.channels.cache.get(thread.parentId);
-        // Only add threads whose parent is a voice channel
+        // Only collect threads whose parent is a voice channel
         if (parent && parent.type == ChannelType.GuildVoice) {
-          // Insert thread right after its parent voice channel
-          const parentIndex = channelsSorted.findIndex(ch => ch.id === thread.parentId);
-          if (parentIndex !== -1) {
-            // Find where to insert (after parent and any existing threads)
-            let insertIndex = parentIndex + 1;
-            while (insertIndex < channelsSorted.length && 
-                   (channelsSorted[insertIndex].type == ChannelType.PublicThread || 
-                    channelsSorted[insertIndex].type == ChannelType.PrivateThread)) {
-              insertIndex++;
-            }
-            channelsSorted.splice(insertIndex, 0, thread);
+          if (!threadsByParent.has(thread.parentId)) {
+            threadsByParent.set(thread.parentId, []);
           }
+          threadsByParent.get(thread.parentId).push(thread);
         }
       }
     });
+    
+    // Insert threads after their parent voice channels in reverse order to maintain positions
+    for (let i = channelsSorted.length - 1; i >= 0; i--) {
+      const channel = channelsSorted[i];
+      if (channel.type == ChannelType.GuildVoice && threadsByParent.has(channel.id)) {
+        const threads = threadsByParent.get(channel.id).sort((a, b) => a.position - b.position);
+        channelsSorted.splice(i + 1, 0, ...threads);
+      }
+    }
 
 
     let channelList = "";
