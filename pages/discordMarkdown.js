@@ -92,7 +92,7 @@ function renderDiscordMarkdown(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // 3.1: Multi-line Block Quote (>>>) - EATS EVERYTHING
+    // 3.1: Multi-line Block Quote (>>>)
     if (inMultiLineQuote) {
         multiLineQuoteContent.push(line);
         continue;
@@ -101,9 +101,6 @@ function renderDiscordMarkdown(text) {
         flushAccumulators(); 
         const content = line.substring(3).trim(); 
         inMultiLineQuote = true;
-        // Even if empty, push it so the structure starts
-        // We push the raw content. If it was ">>>", content is "".
-        // If it was ">>> text", content is "text".
         multiLineQuoteContent.push(content);
         continue;
     }
@@ -120,8 +117,6 @@ function renderDiscordMarkdown(text) {
     }
 
     // 3.3: Headers (Levels 1-3)
-    // Matches #, ##, ###. 
-    // Does NOT match #### (which Discord treats as text)
     const headerMatch = line.match(/^(#{1,3})\s+(.+)$/);
     if (headerMatch) {
         flushAccumulators();
@@ -144,8 +139,7 @@ function renderDiscordMarkdown(text) {
         continue;
     }
 
-    // 3.5: Bullet Lists (With Indentation)
-    // Check regex: start of line, optional space, - or *, then space, then content
+    // 3.5: Bullet Lists
     const listMatch = line.match(/^(\s*)[-*]\s+(.*)$/);
     if (listMatch) {
       inList = true;
@@ -162,7 +156,6 @@ function renderDiscordMarkdown(text) {
     processedLines.push(line);
   }
 
-  // Flush any remaining accumulators
   flushAccumulators();
   
   if (inMultiLineQuote) {
@@ -179,10 +172,12 @@ function renderDiscordMarkdown(text) {
   // Helper to resolve nested formatting
   function resolveNested(str) {
       // Restore Spoilers
+      // FIXED: Added event.preventDefault() and stopPropagation() on both click and mousedown
+      // to ensure no parent events (like Quote/Reply) are triggered.
       str = str.replace(/§§SPOILER(\d+)§§/g, function(m, i) {
           const content = spoilerPlaceholders[parseInt(i)];
           const rendered = md.renderInline(content); 
-          return `<span class="spoiler" onclick="event.stopPropagation(); this.classList.add('revealed');">${rendered}</span>`;
+          return `<span class="spoiler" onclick="event.preventDefault(); event.stopPropagation(); this.classList.add('revealed'); return false;" onmousedown="event.preventDefault(); event.stopPropagation();">${rendered}</span>`;
       });
 
       // Restore Underlines
@@ -194,7 +189,7 @@ function renderDiscordMarkdown(text) {
       return str;
   }
 
-  // Restore Nested items in main text
+  // Restore Nested items
   result = resolveNested(result);
 
   // Step 5: Restore Blocks
@@ -216,8 +211,7 @@ function renderDiscordMarkdown(text) {
   result = result.replace(/§§BLOCKQUOTE(\d+)§§/g, function(m, i) {
       const lines = blockQuotePlaceholders[parseInt(i)];
       const processed = lines.map(l => {
-          // FIXED: If line is empty (blank line in quote), render as NBSP to preserve height
-          if (!l || l.trim() === '') return '\u00A0'; 
+          if (!l || l.trim() === '') return '\u00A0'; // Preserve empty lines
           return resolveNested(md.renderInline(l));
       }).join('<br>');
       
@@ -252,11 +246,7 @@ function renderDiscordMarkdown(text) {
         currentLevel = itemLevel;
 
         let content = item.content;
-        
-        // FIXED: Removed the header detection inside lists. 
-        // Now, "* # text" just renders "# text" inside the LI.
         let processedContent = resolveNested(md.renderInline(content));
-
         html += `<li>${processedContent}</li>`;
     });
 
