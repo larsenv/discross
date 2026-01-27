@@ -80,7 +80,7 @@ function processEmbeds(embeds, imagesCookie) {
         const fieldStyle = field.inline ? 'grid-column: span 1;' : 'grid-column: 1 / -1;';
         fieldsHtml += `<div style="${fieldStyle}">`;
         fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">${escape(field.name)}</div>`;
-        fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">renderDiscordMarkdown(field.value)}</div>`;
+        fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">${renderDiscordMarkdown(field.value)}</div>`;
         fieldsHtml += '</div>';
       });
       fieldsHtml += '</div>';
