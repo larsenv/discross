@@ -26,11 +26,18 @@ exports.processIndex = async function (bot, req, res, args) {
   // Create user agent display string
   let userAgentDisplay = '';
   if (uaResult.browser.name || uaResult.os.name) {
-    const browserInfo = uaResult.browser.name ? `${uaResult.browser.name}${uaResult.browser.version ? ' ' + uaResult.browser.version : ''}` : '';
-    const osInfo = uaResult.os.name ? `${uaResult.os.name}${uaResult.os.version ? ' ' + uaResult.os.version : ''}` : '';
-    const deviceInfo = uaResult.device.vendor || uaResult.device.model ? ` (${[uaResult.device.vendor, uaResult.device.model].filter(Boolean).join(' ')})` : '';
+    const browserName = escape(uaResult.browser.name || '');
+    const browserVersion = escape(uaResult.browser.version || '');
+    const osName = escape(uaResult.os.name || '');
+    const osVersion = escape(uaResult.os.version || '');
+    const deviceVendor = escape(uaResult.device.vendor || '');
+    const deviceModel = escape(uaResult.device.model || '');
     
-    userAgentDisplay = `<font color="#aaaaaa" size="2">Platform: ${escape(browserInfo)} on ${escape(osInfo)}${escape(deviceInfo)}</font>`;
+    const browserInfo = browserName ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}` : '';
+    const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
+    const deviceInfo = deviceVendor || deviceModel ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})` : '';
+    
+    userAgentDisplay = `<font color="#aaaaaa" size="2">Platform: ${browserInfo} on ${osInfo}${deviceInfo}</font>`;
   }
   
   if (discordID) {
