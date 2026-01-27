@@ -200,6 +200,15 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
               messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
             }
           });
+          
+          // Handle role mentions
+          if (item.mentions.roles) {
+            item.mentions.roles.forEach(function (role) {
+              if (role) {
+                messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + role.name)));
+              }
+            });
+          }
         }
 
         // https://stackoverflow.com/questions/6323417/regex-to-extract-all-matches-from-string-using-regexp-exec
