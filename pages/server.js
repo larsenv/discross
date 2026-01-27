@@ -63,7 +63,7 @@ function processServerChannels(server, member, response, discordID) {
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
     // Get all active (non-archived) threads from the guild
-    const allThreads = [];
+    let allThreads = [];
     if (server.threads?.cache) {
       for (const thread of server.threads.cache.values()) {
         if (!thread.archived) {
