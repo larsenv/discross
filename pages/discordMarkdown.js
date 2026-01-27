@@ -4,7 +4,7 @@ var md = require('markdown-it')({
   html: false
 });
 
-// Helper to safely escape HTML manually for code blocks
+// Helper to safely escape HTML manually
 function escapeHtml(text) {
   return text
     .replace(/&/g, "&amp;")
@@ -21,12 +21,12 @@ function renderDiscordMarkdown(text) {
   const underlinePlaceholders = [];
   const spoilerPlaceholders = [];
   const headerPlaceholders = [];
-  const bulletListPlaceholders = [];
+  const bulletListPlaceholders = []; // Now stores objects: { indent: number, content: string }
   const blockQuotePlaceholders = [];
   const subtextPlaceholders = [];
 
   // Step 0: Protect Code Blocks (Triple Backticks)
-  // UPDATED: Regex now consumes the newline following the backticks (with or without a language)
+  // Consumes the first newline after backticks
   text = text.replace(/```(?:(\w+)(?:\r?\n|\r)|(?:\r?\n|\r))?([\s\S]*?)```/g, function(match, lang, content) {
     const index = codePlaceholders.length;
     codePlaceholders.push({ type: 'block', content: content || '', lang: lang || '' });
@@ -48,7 +48,7 @@ function renderDiscordMarkdown(text) {
     return `§§UNDERLINE${index}§§`;
   });
 
-  // Step 2: Protect Spoilers (||text||) - Non-greedy match
+  // Step 2: Protect Spoilers (||text||)
   text = text.replace(/\|\|([\s\S]+?)\|\|/g, function(match, content) {
     const index = spoilerPlaceholders.length;
     spoilerPlaceholders.push(content);
@@ -68,7 +68,7 @@ function renderDiscordMarkdown(text) {
   function finishList() {
       if (currentList.length > 0) {
         const listIndex = bulletListPlaceholders.length;
-        bulletListPlaceholders.push(currentList.slice());
+        bulletListPlaceholders.push(currentList.slice()); // Copy the array
         processedLines.push(`§§BULLETLIST${listIndex}§§`);
         currentList = [];
       }
@@ -123,11 +123,16 @@ function renderDiscordMarkdown(text) {
         continue;
     }
 
-    // 3.5: Bullet Lists (* or -)
-    const listMatch = line.match(/^\s*[-*]\s+(.*)$/);
+    // 3.5: Bullet Lists (* or -) with Indentation Support
+    // Captures (spaces)(bullet)(content)
+    const listMatch = line.match(/^(\s*)[-*]\s+(.*)$/);
     if (listMatch) {
-      currentList.push(listMatch[1]);
       inList = true;
+      // Store object with indent length and content
+      currentList.push({ 
+          indent: listMatch[1].length, 
+          content: listMatch[3] 
+      });
     } else {
       finishList();
       processedLines.push(line);
@@ -149,10 +154,12 @@ function renderDiscordMarkdown(text) {
   // Helper to resolve nested formatting inside placeholders
   function resolveNested(str) {
       // Restore Spoilers
+      // FIXED: Added event.stopPropagation() to prevent reply trigger
+      // FIXED: Used classList.add to prevent toggling off
       str = str.replace(/§§SPOILER(\d+)§§/g, function(m, i) {
           const content = spoilerPlaceholders[parseInt(i)];
           const rendered = md.renderInline(content); 
-          return `<span class="spoiler" onclick="this.classList.toggle('revealed')">${rendered}</span>`;
+          return `<span class="spoiler" onclick="event.stopPropagation(); this.classList.add('revealed');">${rendered}</span>`;
       });
 
       // Restore Underlines
@@ -189,14 +196,63 @@ function renderDiscordMarkdown(text) {
       return `<div class="blockquote-container"><div class="blockquote-bar"></div><blockquote class="discord-quote">${processed}</blockquote></div>`;
   });
 
-  // Restore Lists
+  // Restore Lists (With Nesting and Headers)
   result = result.replace(/§§BULLETLIST(\d+)§§/g, function(m, i) {
     const items = bulletListPlaceholders[parseInt(i)];
-    const listItems = items.map(item => `<li>${resolveNested(md.renderInline(item))}</li>`).join('');
-    return `<ul>${listItems}</ul>`;
+    let html = '';
+    let currentLevel = 0; // The conceptual indentation level
+    let openTags = 1; // We start with one <ul> implicit from the loop
+
+    html += '<ul>';
+
+    items.forEach(item => {
+        // Calculate indentation level (2 spaces = 1 level, but allow 1 space grace)
+        const itemLevel = Math.floor(item.indent / 2);
+
+        // Adjust open tags to match level
+        if (itemLevel > currentLevel) {
+            // Needed to go deeper: open ULs
+            const diff = itemLevel - currentLevel;
+            for(let k=0; k < diff; k++) {
+                html += '<ul>';
+                openTags++;
+            }
+        } else if (itemLevel < currentLevel) {
+            // Needed to go shallower: close ULs
+            const diff = currentLevel - itemLevel;
+            for(let k=0; k < diff; k++) {
+                html += '</ul>';
+                openTags--;
+            }
+        }
+        currentLevel = itemLevel;
+
+        // Process Content (Check for Headers inside List Items)
+        let content = item.content;
+        const headerMatch = content.match(/^(#{1,3})\s+(.+)$/);
+        
+        let processedContent = '';
+        if (headerMatch) {
+             const hLevel = headerMatch[1].length;
+             const hText = headerMatch[2];
+             processedContent = `<h${hLevel}>${resolveNested(md.renderInline(hText))}</h${hLevel}>`;
+        } else {
+             processedContent = resolveNested(md.renderInline(content));
+        }
+
+        html += `<li>${processedContent}</li>`;
+    });
+
+    // Close any remaining open tags
+    while (openTags > 0) {
+        html += '</ul>';
+        openTags--;
+    }
+
+    return html;
   });
 
-  // Restore Code (inlineblock) - MUST be last to avoid escaping html tags we just added
+  // Restore Code (Inline & Block) - MUST be last
   result = result.replace(/§§CODEINLINE(\d+)§§/g, (m, i) => {
       return `<code>${escapeHtml(codePlaceholders[parseInt(i)].content)}</code>`;
   });
