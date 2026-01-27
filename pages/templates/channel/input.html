@@ -1,13 +1,8 @@
-<div style="background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
-    <div style="display: flex; align-items: center; gap: 8px; padding: 0; width: 100%;">
+<div class="message-input-wrapper">
+    <div class="message-input-container">
         <input type="text" name="message" id="message" value=""
-            style="flex: 1 1 auto; min-width: 0; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box;"
+            class="message-input"
             required="" placeholder="Message #{$CHANNEL_NAME}">
-        <button type="submit"
-            style="flex: 0 0 auto; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; align-items: center; justify-content: center;"
-            onmouseover="this.style.background='#4752c4'"
-            onmouseout="this.style.background='#5865f2'">Send</button>
+        <button type="submit" class="send-button" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Send</button>
     </div>
 </div>
-</div>
-</td>
