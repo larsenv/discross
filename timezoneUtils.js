@@ -72,32 +72,54 @@ function getTimezoneFromIP(ip) {
 }
 
 /**
- * Format a date with timezone
+ * Format a date with timezone - Discord style
  * @param {Date} date - Date object to format
  * @param {string|null} timezone - Timezone string (e.g., 'America/New_York') or null for default
- * @returns {string} - Formatted date string
+ * @returns {string} - Formatted date string (e.g., "Today at 12:30PM", "Yesterday at 3:45AM", "01/15/26, 9:00PM")
  */
 function formatDateWithTimezone(date, timezone) {
   try {
-    if (!timezone) {
-      // Fallback to original format if no timezone
-      return date.toLocaleTimeString('en-US') + " " + date.toDateString();
-    }
+    // Get current date in the user's timezone
+    const now = new Date();
+    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     
-    // Format with timezone
-    const options = {
-      timeZone: timezone,
+    // Create date objects for comparison in the user's timezone
+    const messageDate = new Date(date.toLocaleString('en-US', { timeZone: userTimezone }));
+    const todayDate = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+    
+    // Reset time to midnight for date comparison
+    messageDate.setHours(0, 0, 0, 0);
+    todayDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = todayDate - messageDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Format time part (e.g., "12:30PM")
+    const timeOptions = {
+      timeZone: userTimezone,
       hour: 'numeric',
       minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      hour12: true
     };
+    const timeStr = date.toLocaleString('en-US', timeOptions);
     
-    return date.toLocaleString('en-US', options);
+    if (diffDays === 0) {
+      // Today
+      return `Today at ${timeStr}`;
+    } else if (diffDays === 1) {
+      // Yesterday
+      return `Yesterday at ${timeStr}`;
+    } else {
+      // 2+ days ago - use locale-aware date format
+      const dateOptions = {
+        timeZone: userTimezone,
+        month: '2-digit',
+        day: '2-digit',
+        year: '2-digit'
+      };
+      const dateStr = date.toLocaleString('en-US', dateOptions);
+      return `${dateStr}, ${timeStr}`;
+    }
   } catch (err) {
     // If timezone is invalid, fall back to default format
     console.error('Error formatting date with timezone:', err);
@@ -105,8 +127,33 @@ function formatDateWithTimezone(date, timezone) {
   }
 }
 
+/**
+ * Format a date separator for display between different days
+ * @param {Date} date - Date object to format
+ * @param {string|null} timezone - Timezone string (e.g., 'America/New_York') or null for default
+ * @returns {string} - Formatted date separator string (e.g., "January 25, 2026")
+ */
+function formatDateSeparator(date, timezone) {
+  try {
+    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    const options = {
+      timeZone: userTimezone,
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    };
+    
+    return date.toLocaleString('en-US', options);
+  } catch (err) {
+    console.error('Error formatting date separator:', err);
+    return date.toDateString();
+  }
+}
+
 module.exports = {
   getClientIP,
   getTimezoneFromIP,
-  formatDateWithTimezone
+  formatDateWithTimezone,
+  formatDateSeparator
 };
