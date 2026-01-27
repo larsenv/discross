@@ -2,6 +2,7 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
+var UAParser = require('ua-parser-js');
 var auth = require('../authentication.js');
 const path = require('path')
 const sharp = require("sharp")
@@ -204,6 +205,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
     })
     
+    // Parse and add user agent display
+    response = addUserAgentDisplay(response, req);
+    
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(response);
     res.end();
@@ -252,4 +256,43 @@ function createServerHTML(server, member) {
   serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
   serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", server.name);
   return serverHTML;
+}
+
+function addUserAgentDisplay(response, req) {
+  // Parse user agent
+  const userAgent = req.headers['user-agent'] || '';
+  const parser = new UAParser(userAgent);
+  const uaResult = parser.getResult();
+  
+  // Create user agent display string
+  let userAgentDisplay = '';
+  if (uaResult.browser.name || uaResult.os.name) {
+    const browserName = escape(uaResult.browser.name || '');
+    const browserVersion = escape(uaResult.browser.version || '');
+    const osName = escape(uaResult.os.name || '');
+    const osVersion = escape(uaResult.os.version || '');
+    const deviceVendor = escape(uaResult.device.vendor || '');
+    const deviceModel = escape(uaResult.device.model || '');
+    
+    const browserInfo = browserName ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}` : '';
+    const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
+    const deviceInfo = deviceVendor || deviceModel ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})` : '';
+    
+    // Build display text based on what information is available
+    let displayText = 'Platform: ';
+    if (browserInfo && osInfo) {
+      displayText += `${browserInfo} on ${osInfo}${deviceInfo}`;
+    } else if (browserInfo) {
+      displayText += `${browserInfo}${deviceInfo}`;
+    } else if (osInfo) {
+      displayText += `${osInfo}${deviceInfo}`;
+    }
+    
+    userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
+  }
+  
+  // Add user agent display to response
+  response = response.replace("{$USER_AGENT}", userAgentDisplay);
+  
+  return response;
 }
