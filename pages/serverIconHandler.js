@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
-const { default: sanitizer } = require('path-sanitizer');
+const sanitizer = require('path-sanitizer');
 const { generatePlaceholderIconAsGif } = require('./iconGenerator.js');
 
 // Note: Using built-in fetch API (Node.js 18+)
