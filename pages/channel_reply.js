@@ -12,6 +12,8 @@ const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const fetch = require("sync-fetch");
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
+const { processEmbeds } = require('./embedUtils');
+const { processReactions } = require('./reactionUtils');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
@@ -36,6 +38,8 @@ const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/t
 
 const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'));
 
+const reactions_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'));
+const reaction_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'));
 // Constants
 const FORWARDED_CONTENT_MAX_LENGTH = 100;
 
@@ -90,6 +94,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const clientTimezone = getTimezoneFromIP(clientIP);
   
   try {
+    let response, chnl;
     try {
       response = "";
       chnl = await bot.client.channels.fetch(args[2]);
@@ -98,10 +103,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     }
 
     if (chnl) {
-      botMember = await chnl.guild.members.fetch(bot.client.user.id)
-      member = await chnl.guild.members.fetch(discordID);
-      user = member.user;
-      username = user.tag;
+      const botMember = await chnl.guild.members.fetch(bot.client.user.id);
+      const member = await chnl.guild.members.fetch(discordID);
+      const user = member.user;
+      let username = user.tag;
       if (member.displayName != user.username) {
         username = member.displayName + " (@" + user.tag + ")";
       }
@@ -113,9 +118,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
-        template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
+        let template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
         template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
 
+        let final;
         if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
           final = strReplace(template, "{$INPUT}", input_template);
         } else {
@@ -129,19 +135,19 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       console.log("Processed valid channel request");
-      messages = await bot.getHistoryCached(chnl);
-      lastauthor = undefined;
-      lastmember = undefined;
-      lastdate = new Date('1995-12-17T03:24:00');
-      currentmessage = "";
-      islastmessage = false;
+      const messages = await bot.getHistoryCached(chnl);
+      let lastauthor = undefined;
+      let lastmember = undefined;
+      let lastdate = new Date('1995-12-17T03:24:00');
+      let currentmessage = "";
+      let islastmessage = false;
       isForwarded = false;
       forwardData = {};
       
       // Cache for member data to avoid repeated fetches
       const memberCache = new Map();
 
-      handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
+      const handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
         if (lastauthor) { // Only consider the last message if this is not the first
           // If the last message is not going to be merged with this one, put it into the response
           if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
@@ -202,7 +208,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         }
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        let messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        messagetext = md.render(item.content);
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
@@ -221,6 +228,12 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
+        
+        // Process embeds (for bot messages)
+        if (item?.embeds && item.embeds.length > 0) {
+          messagetext += processEmbeds(item.embeds, imagesCookie);
+        }
+        
         if (item.mentions) {
           item.mentions.members.forEach(function (user) {
             if (user) {
@@ -238,6 +251,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         do {
           m = regex.exec(messagetext);
           if (m) {
+            let channel;
             try {
               channel = await bot.client.channels.cache.get(m[1]);
             } catch (err) {
@@ -272,6 +286,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           }
         }
 
+        // Process and add reactions to the message
+        const reactionsHtml = processReactions(item.reactions, imagesCookie, reactions_template, reaction_template);
+        messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
+
         lastauthor = item.author;
         // Ensure member data is populated - fetch if missing, using cache to avoid repeated fetches
         lastmember = await ensureMemberData(item, chnl.guild, memberCache);
@@ -290,7 +308,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       islastmessage = true;
       await handlemessage();
 
-      template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
+      let template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
@@ -304,6 +322,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         response = strReplace(response, "{$WHITE_THEME_ENABLED}", "");
       }
 
+      let final;
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
         final = strReplace(template, "{$INPUT}", input_disabled_template);
         final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
