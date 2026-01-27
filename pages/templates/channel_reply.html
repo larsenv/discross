@@ -174,6 +174,39 @@
             color: #5865f2 !important;
         }
 
+        /* Reaction styling */
+        .reactions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .reaction {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 6px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: default;
+            transition: background-color 0.1s ease;
+        }
+
+        .reaction:hover {
+            opacity: 0.9;
+        }
+
+        /* Light theme reactions */
+        .light-theme .reaction {
+            color: #2e3338 !important;
+        }
+
+        /* AMOLED theme reactions */
+        .amoled-theme .reaction {
+            color: #ffffff !important;
+        }
+
         .message:hover {
             background: rgba(4, 4, 5, 0.07);
         }
@@ -420,12 +453,75 @@
                 font-size: 0.9rem;
             }
         }
+
+        /* Code block styling */
+        pre {
+            background: #2f3136;
+            border: 1px solid #202225;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 4px 0;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: Consolas, Monaco, 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-family: inherit;
+            color: #dcddde;
+        }
+
+        /* Inline code styling */
+        code {
+            background: #2f3136;
+            border-radius: 3px;
+            padding: 2px 4px;
+            font-family: Consolas, Monaco, 'Courier New', monospace;
+            font-size: 14px;
+            color: #dcddde;
+        }
+
+        /* Light theme code blocks */
+        .light-theme pre {
+            background: #f6f6f7 !important;
+            border-color: #e3e5e8 !important;
+        }
+
+        .light-theme pre code {
+            color: #2e3338 !important;
+        }
+
+        .light-theme code {
+            background: #f6f6f7 !important;
+            color: #2e3338 !important;
+        }
+
+        /* AMOLED theme code blocks */
+        .amoled-theme pre {
+            background: #0d0d0d !important;
+            border-color: #1a1a1a !important;
+        }
+
+        .amoled-theme pre code {
+            color: #ffffff !important;
+        }
+
+        .amoled-theme code {
+            background: #0d0d0d !important;
+            color: #ffffff !important;
+        }
     </style>
 </head>
 
 <body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <a href="../server/{$SERVER_ID}" class="menu-button">
+        <a href="/server/{$SERVER_ID}" class="menu-button">
             <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
         </a>
 
