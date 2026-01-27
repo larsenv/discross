@@ -84,6 +84,16 @@ function isEmojiOnlyMessage(text) {
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   try {
+    // Check if bot is connected
+    const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+    
+    if (!clientIsReady) {
+      res.writeHead(503, { "Content-Type": "text/html" });
+      res.write("The bot isn't connected, try again in a moment");
+      res.end();
+      return;
+    }
+
     try {
       response = "";
       chnl = await bot.client.channels.fetch(args[2]);
