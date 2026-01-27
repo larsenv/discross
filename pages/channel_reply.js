@@ -134,6 +134,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       isForwarded = false;
       forwardData = {};
       isMentioned = false;
+      isReply = false;
+      replyData = {};
       
       // Cache for member data to avoid repeated fetches
       const memberCache = new Map();
@@ -166,6 +168,21 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
+            
+            // Add ping indicator (@) if this is a reply with ping
+            const pingIndicator = (isReply && replyData.mentionsPing) ? ' <span style="color: #72767d;">@</span>' : '';
+            currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", pingIndicator);
+            
+            // Add reply indicator (L-shaped line) if this is a reply
+            let replyIndicator = '';
+            if (isReply) {
+              replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px; margin-left: 16px;">' +
+                '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
+                '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
+                '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(replyData.author) + '</span>' +
+                '</div>';
+            }
+            currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
 
             // Remove avatar URL processing since we removed avatars
             currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", lastdate.toLocaleTimeString('en-US') + " " + lastdate.toDateString());
@@ -204,6 +221,31 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             isForwarded = false;
           }
         }
+        
+        // Check if this message is a reply
+        isReply = false;
+        replyData = {};
+        if (item.reference && !isForwarded) {
+          try {
+            const replyMessage = await item.fetchReference();
+            const replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
+            const replyAuthor = getDisplayName(replyMember, replyMessage.author);
+            
+            // Check if this reply mentions (pings) the replied-to user
+            const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+            
+            isReply = true;
+            replyData = {
+              author: replyAuthor,
+              authorId: replyMessage.author.id,
+              mentionsPing: mentionsRepliedUser
+            };
+          } catch (err) {
+            console.error("Could not fetch reply message:", err);
+            // Fallback: show indicator but don't fail
+            isReply = false;
+          }
+        }
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
         messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
@@ -234,6 +276,11 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         // Check for direct user mention
         if (item.mentions && item.mentions.members) {
           isMentioned = item.mentions.members.has(discordID);
+        }
+        
+        // Check for reply with ping to current user
+        if (!isMentioned && isReply && replyData.mentionsPing && replyData.authorId === discordID) {
+          isMentioned = true;
         }
         
         // Check for @everyone or @here mention
