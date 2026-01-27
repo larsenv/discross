@@ -73,7 +73,8 @@ function processEmbeds(embeds, imagesCookie) {
     // Process embed fields
     let fieldsHtml = '';
     if (embed.fields && embed.fields.length > 0) {
-      fieldsHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px;">';
+      // Discord allows up to 3 inline fields per row with proper spacing
+      fieldsHtml = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">';
       embed.fields.forEach(field => {
         const fieldStyle = field.inline ? 'grid-column: span 1;' : 'grid-column: 1 / -1;';
         fieldsHtml += `<div style="${fieldStyle}">`;
