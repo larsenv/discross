@@ -2,7 +2,7 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
-var md = require('markdown-it')({ breaks: true, linkify: true });
+var md = require('markdown-it')({ breaks: true, linkify: false });
 var he = require('he'); // Encodes HTML attributes
 const path = require('path');
 const sharp = require("sharp");
@@ -188,6 +188,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         // messagetext = strReplace(escape(item.content), "\n", "<br>");
         messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */;
+        
+        // Convert http/https URLs to links manually (linkify disabled to prevent email/ftp links)
+        messagetext = messagetext.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
@@ -237,6 +240,21 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             }
           });
         }
+        
+        // Handle any remaining user mentions (unknown users not in cache)
+        messagetext = messagetext.replace(/&lt;@!?(\d{17,19})&gt;/g, function(match, userId) {
+          // Try to find in guild members cache
+          try {
+            const cachedMember = chnl.guild.members.cache.get(userId);
+            if (cachedMember) {
+              return mention_template.replace("{$USERNAME}", escape("@" + cachedMember.displayName));
+            }
+          } catch (err) {
+            // Ignore errors
+          }
+          // If not found, show as unknown-user
+          return mention_template.replace("{$USERNAME}", "@unknown-user");
+        });
 
         // https://stackoverflow.com/questions/6323417/regex-to-extract-all-matches-from-string-using-regexp-exec
 
