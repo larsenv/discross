@@ -51,6 +51,16 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         parsedurl = urlQuery;
       }
       if (parsedurl.message !== "") {
+        // Check if bot is connected
+        const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+        
+        if (!clientIsReady) {
+          res.writeHead(503, { "Content-Type": "text/plain" });
+          res.write("The bot isn't connected, try again in a moment");
+          res.end();
+          return;
+        }
+
         const channel = await bot.client.channels.fetch(parsedurl.channel);
         const member = await channel.guild.members.fetch(discordID);
 
