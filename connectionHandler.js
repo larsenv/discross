@@ -74,7 +74,7 @@ exports.processRequest = async function (req, res) {
     }))
   } else if (parsedurl.pathname === '/api.js') {
     // console.log(parsedurl.query)
-    processMessage('longpoll', true, parsedurl.query.message)
+    processMessage('longpoll', true, '', parsedurl.query.message)
     // console.log(req.url);
     // res.write("send?");
     // sendToAll(req.url);
