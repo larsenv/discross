@@ -249,26 +249,23 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         messagetext = strReplace(messagetext, "@here", mention_highlighted_template.replace("{$USERNAME}", "@here"));
 
         // Handle role mentions
-        var roleRegex = /&lt;@&amp;([0-9]{17,19})&gt;/g;
-        var roleMatch;
+        const roleRegex = /&lt;@&amp;([0-9]{17,19})&gt;/g;
+        const roleMatches = [...messagetext.matchAll(roleRegex)];
         
-        do {
-          roleMatch = roleRegex.exec(messagetext);
-          if (roleMatch) {
-            try {
-              const roleId = roleMatch[1];
-              const role = await chnl.guild.roles.fetch(roleId);
-              if (role) {
-                // Check if the current user has this role
-                const userHasRole = member.roles.cache.has(roleId);
-                const template = userHasRole ? mention_highlighted_template : mention_template;
-                messagetext = strReplace(messagetext, roleMatch[0], template.replace("{$USERNAME}", escape("@" + role.name)));
-              }
-            } catch (err) {
-              console.log("Error fetching role:", err);
+        for (const roleMatch of roleMatches) {
+          try {
+            const roleId = roleMatch[1];
+            const role = await chnl.guild.roles.fetch(roleId);
+            if (role) {
+              // Check if the current user has this role
+              const userHasRole = member.roles.cache.has(roleId);
+              const template = userHasRole ? mention_highlighted_template : mention_template;
+              messagetext = strReplace(messagetext, roleMatch[0], template.replace("{$USERNAME}", escape("@" + role.name)));
             }
+          } catch (err) {
+            console.log("Error fetching role:", err);
           }
-        } while (roleMatch);
+        }
 
 
 
