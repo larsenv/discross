@@ -16,6 +16,7 @@ const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUt
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
+const { processPoll } = require('./pollUtils');
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
 
@@ -211,6 +212,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // Process embeds (for bot messages)
         if (item?.embeds && item.embeds.length > 0) {
           messagetext += processEmbeds(item.embeds, imagesCookie);
+        }
+        
+        // Process polls
+        if (item?.poll) {
+          messagetext += processPoll(item.poll, imagesCookie);
         }
         
         if (item.mentions) {
