@@ -189,8 +189,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           itemDate.setHours(0, 0, 0, 0);
           const itemDateOnly = itemDate.getTime();
           
-          if (lastdateonly !== null && itemDateOnly !== lastdateonly) {
-            // Day has changed, insert date separator
+          if (lastdateonly === null || itemDateOnly !== lastdateonly) {
+            // Day has changed (or first message), insert date separator
             const separatorText = formatDateSeparator(item.createdAt, clientTimezone);
             const separator = date_separator_template.replace("{$DATE_SEPARATOR}", separatorText);
             response += separator;
