@@ -58,13 +58,6 @@ exports.processRequest = async function (req, res) {
     const initialID = /* latestMessageID */ Number(req.url.slice(13, req.url.length));
     res.write('latestMessageID = ' + JSON.stringify(latestMessageID) + '; addMessage(' + JSON.stringify(messages.slice(initialID, messages.length)) + '); addLongpoll(latestMessageID);')
   } else if (parsedurl.pathname === '/longpoll-xhr') {
-    /* console.log(req.url);
-    console.log("User polling (xhr)");
-    var initialID = latestMessageID;
-    while (initialID == latestMessageID) {
-      await sleep(25);
-    }
-    res.write(JSON.stringify("<circuit10> " + latestMessage)); */
     // console.log(req.url)
     // console.log('User polling (xhr)')
     var initialID = /* latestMessageID */ Number(req.url.slice(14, req.url.length).split('&')[0])
@@ -73,7 +66,12 @@ exports.processRequest = async function (req, res) {
       // console.log(initialID, latestMessageID);
       await sleep(25)
     }
-    res.write('latestMessageID = ' + JSON.stringify(latestMessageID) + '; addMessage(' + JSON.stringify(messages.slice(initialID, messages.length)) + '); longpoll_xhr(latestMessageID);')
+    // Security: Return JSON instead of JavaScript code
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.write(JSON.stringify({
+      latestMessageID: latestMessageID,
+      messages: messages.slice(initialID, messages.length)
+    }))
   } else if (parsedurl.pathname === '/api.js') {
     // console.log(parsedurl.query)
     processMessage('longpoll', true, parsedurl.query.message)
