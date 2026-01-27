@@ -67,7 +67,53 @@ function processServerChannels(server, member, response) {
         if (item.type == ChannelType.GuildCategory) {
           channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
         } else {
-          channelList += text_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
+          // Determine the appropriate icon based on channel type and permissions
+          let channelIcon = "#"; // Default hashtag for text channels
+          const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
+          
+          // Check if this is a voice text channel
+          const isVoiceChannel = item.type == ChannelType.GuildVoice;
+          
+          // Check if channel is "locked" - has permission overwrites that restrict ViewChannel for @everyone
+          let isLocked = false;
+          if (item.permissionOverwrites && item.permissionOverwrites.cache.size > 0) {
+            const everyoneOverwrite = item.permissionOverwrites.cache.find(
+              overwrite => overwrite.id === item.guild.id // @everyone role has same ID as guild
+            );
+            if (everyoneOverwrite && everyoneOverwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
+              isLocked = true;
+            }
+          }
+          
+          // HTML/CSS padlock icon - universally supported
+          const padlockIcon = '<span style="display:inline-block;width:8px;height:10px;border:1px solid #999;border-radius:2px;position:relative;margin:0 2px;"><span style="position:absolute;top:-3px;left:1px;width:4px;height:4px;border:1px solid #999;border-bottom:none;border-radius:3px 3px 0 0;"></span></span>';
+          const smallPadlockIcon = '<span style="display:inline-block;width:6px;height:7px;border:1px solid #999;border-radius:1px;position:relative;margin:0 1px;vertical-align:super;font-size:70%;"><span style="position:absolute;top:-2px;left:1px;width:2px;height:3px;border:1px solid #999;border-bottom:none;border-radius:2px 2px 0 0;"></span></span>';
+          
+          if (!canSendMessages) {
+            // User cannot send messages - use padlock icon instead of hashtag/voice icon
+            channelIcon = padlockIcon;
+          } else {
+            // User can send messages
+            if (isVoiceChannel) {
+              // Voice channel with send permission - using Unicode speaker character
+              channelIcon = "&#128264;"; // Speaker with sound waves (more universal than emoji)
+              if (isLocked) {
+                // Show small padlock for locked voice channel
+                channelIcon += smallPadlockIcon;
+              }
+            } else {
+              // Text channel with send permission
+              if (isLocked) {
+                // Show hashtag with small padlock for locked text channel
+                channelIcon = '#' + smallPadlockIcon;
+              }
+            }
+          }
+          
+          channelList += text_channel_template
+            .replace("{$CHANNEL_NAME}", escape(item.name))
+            .replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`)
+            .replace("{$CHANNEL_ICON}", channelIcon);
         }
       }
     });
