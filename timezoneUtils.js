@@ -167,9 +167,47 @@ function formatDateSeparator(date, timezone) {
   }
 }
 
+/**
+ * Check if two dates are on different days in the given timezone
+ * @param {Date} date1 - First date
+ * @param {Date} date2 - Second date or null (if null, always returns true)
+ * @param {string|null} timezone - Timezone string or null for default
+ * @returns {boolean} - True if dates are on different days (or date2 is null)
+ */
+function areDifferentDays(date1, date2, timezone) {
+  if (!date2) {
+    return true; // First message, always show separator
+  }
+  
+  try {
+    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    // Extract date components for both dates
+    const getDateComponents = (d) => {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: userTimezone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+      });
+      const parts = formatter.formatToParts(d);
+      const year = parseInt(parts.find(p => p.type === 'year').value);
+      const month = parseInt(parts.find(p => p.type === 'month').value);
+      const day = parseInt(parts.find(p => p.type === 'day').value);
+      return `${year}-${month}-${day}`;
+    };
+    
+    return getDateComponents(date1) !== getDateComponents(date2);
+  } catch (err) {
+    console.error('Error comparing dates:', err);
+    return false;
+  }
+}
+
 module.exports = {
   getClientIP,
   getTimezoneFromIP,
   formatDateWithTimezone,
-  formatDateSeparator
+  formatDateSeparator,
+  areDifferentDays
 };
