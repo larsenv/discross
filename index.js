@@ -7,7 +7,7 @@ const { SnowTransfer } = require('snowtransfer')
 const bot = require('./bot.js')
 const connectionHandler = require('./connectionHandler.js')
 const sharp = require("sharp")
-const sanitizer = require("path-sanitizer").default
+const sanitizer = require("path-sanitizer").default;
 
 const options = {}
 
@@ -43,6 +43,7 @@ var chanelreplypage = require('./pages/channel_reply.js')
 var replypage = require('./pages/reply.js')
 var drawpage = require('./pages/draw.js')
 var senddrawing = require('./pages/senddrawing.js')
+var { handleServerIcon } = require('./pages/serverIconHandler.js')
 
 
 bot.startBot();
@@ -106,7 +107,33 @@ server.on('request', async (req, res) => {
         toggleTheme(req, res)
       } else if (parsedurl == "/toggleImages") {
         toggleImages(req, res)
-      }else if (parsedurl == "/senddrawing") {
+      } else if (parsedurl == "/toggleCategory") {
+        // Handle category toggle
+        (async () => {
+          const discordID = await auth.checkAuth(req, res, true)
+          if (discordID) {
+            try {
+              const data = JSON.parse(body)
+              const { serverID, categoryID, collapsed } = data
+              const result = auth.setChannelPreference(discordID, serverID, categoryID, collapsed ? 1 : 0)
+              if (result.success) {
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ success: true }))
+              } else {
+                res.writeHead(500, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ success: false, error: result.error }))
+              }
+            } catch (err) {
+              console.error('Error toggling category:', err)
+              res.writeHead(500, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ success: false, error: err.message }))
+            }
+          } else {
+            res.writeHead(401, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: false, error: 'Not authenticated' }))
+          }
+        })()
+      } else if (parsedurl == "/senddrawing") {
         senddrawingAsync(req, res, body).then(() => {}).catch((err) => {
           console.log(err)
           res.writeHead(500, { 'Content-Type': 'text/plain' })
@@ -232,6 +259,25 @@ server.on('request', async (req, res) => {
       const filePath = parsedurl.path.slice(11)
       const fullFileUrl = `https://cdn.discordapp.com/attachments/${filePath}`
       await fileProxy(res, fullFileUrl);
+    } else if (args[1] === 'ico' && args[2] === 'server' && args[3] && args[4]) {
+      // Handle server icon requests: /ico/server/{serverID}/{iconHash}.gif
+      const discordID = await auth.checkAuth(req, res, true); // Don't redirect if not authenticated
+      const serverID = args[3];
+      const iconFilename = args[4];
+      const iconHash = iconFilename.replace('.gif', '');
+      
+      // Determine theme from cookies
+      let theme = 'dark';
+      if (discordID) {
+        const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+        if (whiteThemeCookie === '1') {
+          theme = 'light';
+        } else if (whiteThemeCookie === '2') {
+          theme = 'amoled';
+        }
+      }
+      
+      await handleServerIcon(bot, res, serverID, iconHash, theme);
     } else {
       const filename = path.resolve("pages/static", sanitizer(parsedurl.pathname));
       await servePage(filename, res)

@@ -21,6 +21,7 @@
     "sharp": "^0.34.4",
     "snowtransfer": "^0.15.0",
     "sync-fetch": "^0.6.0-2",
+    "ua-parser-js": "^2.0.8",
     "uuid": "^13.0.0",
     "ws": "^8.17.0"
   },
@@ -37,5 +38,8 @@
   "bugs": {
     "url": "https://github.com/Heath123/discross/issues"
   },
-  "homepage": "https://github.com/Heath123/discross#readme"
+  "homepage": "https://github.com/Heath123/discross#readme",
+  "overrides": {
+    "undici": "^7.0.0"
+  }
 }

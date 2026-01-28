@@ -2,10 +2,11 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
+var UAParser = require('ua-parser-js');
 var auth = require('../authentication.js');
 const path = require('path')
 const sharp = require("sharp")
-const sanitizer = require("path-sanitizer").default
+const sanitizer = require("path-sanitizer").default;
 const emojiRegex = require("./twemojiRegex").regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 
@@ -17,6 +18,8 @@ const server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/ser
 
 const text_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8'));
 const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
+const voice_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/voicechannel.html', 'utf-8'));
+const thread_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8'));
 
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
@@ -46,8 +49,8 @@ function processServerChannels(server, member, response) {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
-    // Start with lone text channels (no category)
-    let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
+    // Start with lone text channels (no category) and voice channels
+    let channelsSorted = [...server.channels.cache.filter(channel => (channel.isTextBased() || channel.type == ChannelType.GuildVoice) && !channel.parent).values()];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
     categoriesSorted.forEach(category => {
@@ -55,9 +58,39 @@ function processServerChannels(server, member, response) {
       channelsSorted = channelsSorted.concat(
         [...category.children.cache.sort((a, b) => a.position - b.position)
           .values()]
-          .filter(channel => channel.isTextBased())
+          .filter(channel => channel.isTextBased() || channel.type == ChannelType.GuildVoice)
       );
     });
+
+    // Add threads from voice channels (voice channel threads)
+    // Threads are in the guild's channels cache with parentId pointing to voice channels
+    const allThreads = server.channels.cache.filter(channel => 
+      channel.type == ChannelType.PublicThread || channel.type == ChannelType.PrivateThread
+    );
+    
+    // Group threads by their parent voice channel for efficient insertion
+    const threadsByParent = new Map();
+    allThreads.forEach(thread => {
+      if (thread.parentId) {
+        const parent = server.channels.cache.get(thread.parentId);
+        // Only collect threads whose parent is a voice channel
+        if (parent && parent.type == ChannelType.GuildVoice) {
+          if (!threadsByParent.has(thread.parentId)) {
+            threadsByParent.set(thread.parentId, []);
+          }
+          threadsByParent.get(thread.parentId).push(thread);
+        }
+      }
+    });
+    
+    // Insert threads after their parent voice channels in reverse order to maintain positions
+    for (let i = channelsSorted.length - 1; i >= 0; i--) {
+      const channel = channelsSorted[i];
+      if (channel.type == ChannelType.GuildVoice && threadsByParent.has(channel.id)) {
+        const threads = threadsByParent.get(channel.id).sort((a, b) => a.position - b.position);
+        channelsSorted.splice(i + 1, 0, ...threads);
+      }
+    }
 
 
     let channelList = "";
@@ -66,6 +99,10 @@ function processServerChannels(server, member, response) {
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         if (item.type == ChannelType.GuildCategory) {
           channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.type == ChannelType.GuildVoice) {
+          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
+          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
         } else {
           // Determine the appropriate icon based on channel type and permissions
           let channelIcon = "#"; // Default hashtag for text channels
@@ -252,6 +289,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
     })
     
+    // Parse and add user agent display
+    response = addUserAgentDisplay(response, req);
+    
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(response);
     res.end();
@@ -300,4 +340,44 @@ function createServerHTML(server, member) {
   serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
   serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", server.name);
   return serverHTML;
+}
+
+function addUserAgentDisplay(response, req) {
+  // Parse user agent
+  const userAgent = req.headers['user-agent'] || '';
+  const parser = new UAParser(userAgent);
+  const uaResult = parser.getResult();
+  
+  // Create user agent display string
+  let userAgentDisplay = '';
+  if (uaResult.browser.name || uaResult.os.name) {
+    const browserName = escape(uaResult.browser.name || '');
+    const browserVersion = escape(uaResult.browser.version || '');
+    const osName = escape(uaResult.os.name || '');
+    const osVersion = escape(uaResult.os.version || '');
+    const deviceVendor = escape(uaResult.device.vendor || '');
+    const deviceModel = escape(uaResult.device.model || '');
+    
+    const browserInfo = browserName ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}` : '';
+    const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
+    const deviceInfo = deviceVendor || deviceModel ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})` : '';
+    
+    // Build display text based on what information is available
+    if (browserInfo && osInfo) {
+      const displayText = `Platform: ${browserInfo} on ${osInfo}${deviceInfo}`;
+      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
+    } else if (browserInfo) {
+      const displayText = `Platform: ${browserInfo}${deviceInfo}`;
+      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
+    } else if (osInfo) {
+      const displayText = `Platform: ${osInfo}${deviceInfo}`;
+      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
+    }
+    // If neither browserInfo nor osInfo, userAgentDisplay remains empty
+  }
+  
+  // Add user agent display to response using strReplace for consistency
+  response = strReplace(response, "{$USER_AGENT}", userAgentDisplay);
+  
+  return response;
 }
