@@ -9,9 +9,11 @@ body {
   color: #dddddd;
 }
 
+.light-theme body,
 .light-theme html,
-.light-theme .content-padding,
-.light-theme .server-sidebar {
+.light-theme #wrapper,
+.light-theme .content-padding, 
+.light-theme .scrollable-content {
   background: #ffffff !important;
   color: #060607 !important;
 }
@@ -125,6 +127,7 @@ body {
 
 .amoled-theme body,
 .amoled-theme html,
+.amoled-theme #wrapper,
 .amoled-theme .content-padding, 
 .amoled-theme .scrollable-content {
   background: #000000 !important;
