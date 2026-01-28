@@ -1,3 +1,12 @@
+TL;DR
+
+I have merged the two CSS blocks into a single, clean stylesheet. The "Rodin" font styles and core layout from the first block were preserved, while the "defensive overrides," legacy browser fixes, and improved mobile responsiveness (especially for the canvas and chat input) from the second block were integrated to overwrite the simpler versions.
+CSS
+
+/* =========================================
+   CORE LAYOUT & TYPOGRAPHY
+   ========================================= */
+
 /* Component-specific styles */
 
 /* Header and Navigation */
@@ -68,7 +77,10 @@
   color: #dddddd;
 }
 
-/* Buttons */
+/* =========================================
+   BUTTONS & INPUTS
+   ========================================= */
+
 .discross-button {
   background: #5865f2 !important;
   color: white !important;
@@ -98,24 +110,25 @@
   background: #5d6269;
 }
 
+/* Send Button - Optimized for Flex layouts */
 .send-button, .btn-send, button.send, .chat-send {
-  flex: 0 0 auto;
+  flex: 0 0 auto; /* don't grow, don't shrink */
   background: #5865f2;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   color: white;
-  padding: 0 16px;
+  padding: 10px 14px;
   cursor: pointer;
   font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  height: 44px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-height: 44px;
   white-space: nowrap;
   margin-right: 8px;
+  align-self: stretch; /* match input height */
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  display: inline-flex;
-  min-height: 44px;
 }
 
 .send-button:hover {
@@ -129,6 +142,24 @@
   border: none;
   background: #393c40;
   cursor: pointer;
+}
+
+/* Icon Buttons */
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.icon-button:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* Forms */
@@ -164,7 +195,16 @@
   font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
-/* Messages */
+/* Focus outlines */
+button:focus, input:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(88,101,242,0.12);
+  border-color: #5865f2;
+}
+
+/* =========================================
+   MESSAGES & CHAT
+   ========================================= */
+
 .message {
   padding: 8px 0;
   margin: 0;
@@ -198,10 +238,10 @@
 .message-link {
   text-decoration: none;
   color: inherit;
-  display: block; /* Ensures the link wraps the div correctly */
+  display: block;
 }
 
-/* 1. FORCE disable underline when hovering the message container */
+/* FORCE disable underline when hovering the message container */
 .message-link:hover {
   text-decoration: none !important;
 }
@@ -214,7 +254,7 @@
   word-wrap: break-word;
 }
 
-/* 2. BUT re-enable underline for actual links INSIDE the message text */
+/* Re-enable underline for actual links INSIDE the message text */
 .messagecontent a {
   color: #00b0f4; /* Discord Blue for links */
   text-decoration: none;
@@ -224,10 +264,10 @@
   text-decoration: underline;
 }
 
-/* Add support for light theme links if not already covered */
 .light-theme .messagecontent a {
   color: #5865f2;
 }
+
 /* Embeds */
 .embed {
   display: flex;
@@ -283,7 +323,7 @@
   font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-/* Chat/Channel Layout */
+/* Chat Layout */
 .chat, .chat-container, #chat {
   padding: 16px;
   display: flex;
@@ -302,6 +342,7 @@
   max-height: 60vh;
 }
 
+/* Chat Input Area */
 .chat-input, .composer, .message-composer {
   display: flex;
   align-items: center;
@@ -315,7 +356,7 @@
 .message-composer input[type="text"],
 .message-composer textarea {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: 0; /* critical to prevent overflow */
   padding: 10px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -329,6 +370,7 @@
   max-height: 30vh;
 }
 
+/* Message Form Container (Fixed Position) */
 .message-form-container {
   position: fixed;
   bottom: 0;
@@ -342,6 +384,17 @@
   z-index: 100;
 }
 
+.light-theme .message-form-container {
+  background: #ffffff !important;
+  border-top-color: #e3e5e8 !important;
+}
+
+.amoled-theme .message-form-container {
+  background: #000000 !important;
+  border-top-color: #333333 !important;
+}
+
+/* Table fallback layouts for older browsers */
 .message-buttons-container {
   width: 100%;
   max-width: 100%;
@@ -397,7 +450,42 @@
   box-sizing: border-box;
 }
 
-/* Emoji Picker */
+/* Input Disabled */
+.message-input-disabled {
+  display: flex;
+  align-items: center;
+  background: #40444b;
+  border-radius: 8px;
+  padding: 4px;
+  margin: 8px 0;
+}
+
+.message-input-disabled input {
+  flex: 1;
+  color: #72767d;
+  background: transparent;
+  border: none;
+  outline: none;
+  height: 44px;
+  padding: 11px 16px;
+  font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.chat-footer {
+  position: relative;
+}
+
+/* Defensive override: prefer static/flex layout for send button */
+.chat-footer .send-button {
+  position: static !important;
+}
+
+/* =========================================
+   EMOJI PICKER & MENUS
+   ========================================= */
+
 #emoji {
   background: #2f3136;
   border: 1px solid #40444b;
@@ -438,6 +526,8 @@
   top: 16px;
   left: 16px;
   z-index: 1000;
+  background: #36393f;
+  border: 1px solid #40444b;
   border-radius: 4px;
   padding: 8px;
 }
@@ -447,25 +537,7 @@
   height: 24px;
 }
 
-/* Icon Buttons */
-.icon-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  width: 32px;
-  height: 32px;
-  display: inline-block;
-  text-align: center;
-  text-decoration: none;
-}
-
-.icon-button:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-/* Mentions */
+/* Mentions & Formatting */
 .mention {
   background-color: rgba(88, 101, 242, 0.3);
   color: #dee0fc;
@@ -474,10 +546,149 @@
   font-weight: 500;
 }
 
-/* Large Emoji Messages */
 .large-emoji {
   font-size: 48px;
   line-height: 56px;
+}
+
+.spoiler {
+  background-color: #202225;
+  color: transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+  padding: 0 2px;
+}
+
+.light-theme .spoiler {
+  background-color: #e3e5e8;
+}
+
+.spoiler.revealed {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  cursor: text;
+  user-select: text;
+}
+
+.light-theme .spoiler.revealed {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.subtext {
+  font-size: 0.75rem;
+  line-height: 1.33;
+  color: #949ba4;
+  display: block;
+  margin-top: 4px;
+}
+
+/* Blockquotes */
+.blockquote-container {
+  display: flex;
+  margin: 4px 0;
+}
+
+.blockquote-bar {
+  width: 4px;
+  border-radius: 4px;
+  background-color: #4e5058;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.discord-quote {
+  margin: 0;
+  padding: 0;
+  color: #dbdee1;
+  opacity: 0.9;
+}
+
+.light-theme .discord-quote {
+  color: #2e3338;
+}
+
+/* =========================================
+   LISTS & CODE BLOCKS
+   ========================================= */
+
+ul {
+  margin: 4px 0;
+  padding-left: 24px;
+  list-style-type: disc;
+  list-style-position: outside;
+}
+
+ul ul {
+  margin: 2px 0;
+  list-style-type: circle;
+}
+
+ul ul ul {
+  list-style-type: square;
+}
+
+li {
+  margin: 2px 0;
+}
+
+li > h1, li > h2, li > h3 {
+  display: inline-block;
+  margin: 0;
+}
+
+pre {
+  background-color: #2b2d31;
+  border: 1px solid #1e1f22;
+  border-radius: 4px;
+  padding: 8px;
+  margin: 6px 0;
+  font-family: Consolas, monospace;
+  font-size: 0.875rem;
+  overflow-x: auto;
+  color: #dbdee1;
+}
+
+.light-theme pre {
+  background-color: #f2f3f5;
+  border-color: #e3e5e8;
+  color: #2e3338;
+}
+
+code {
+  background-color: #2b2d31;
+  padding: 2px;
+  border-radius: 3px;
+  font-family: Consolas, monospace;
+  font-size: 0.85em;
+}
+
+.light-theme code {
+  background-color: #f2f3f5;
+}
+
+/* =========================================
+   UTILITIES & SPECIAL CONTENT
+   ========================================= */
+
+/* Legacy table fixes */
+table {
+  padding-bottom: 5px;
+}
+
+/* General Links */
+a {
+  color: #00aff4;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Hide legacy styling */
+br.nodisp {
+  display: none;
 }
 
 /* Forwarded Messages */
@@ -527,7 +738,6 @@
   font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-/* Message Reply */
 .message-reply {
   padding: 8px 16px;
 }
@@ -561,29 +771,6 @@
   width: 40px;
 }
 
-/* Input Disabled */
-.message-input-disabled {
-  display: flex;
-  align-items: center;
-  background: #40444b;
-  border-radius: 8px;
-  padding: 4px;
-  margin: 8px 0;
-}
-
-.message-input-disabled input {
-  flex: 1;
-  color: #72767d;
-  background: transparent;
-  border: none;
-  outline: none;
-  height: 44px;
-  padding: 11px 16px;
-  font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 20px;
-}
-
 /* Channel List */
 .channel-link {
   text-decoration: none;
@@ -598,7 +785,10 @@
   font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
-/* Drawing Canvas Styles */
+/* =========================================
+   DRAWING CANVAS & TOOLBAR
+   ========================================= */
+
 #toolbar-container {
   background-color: #2f3136;
   padding: 5px;
@@ -606,6 +796,9 @@
   display: table;
   margin: 0 auto 5px auto;
   border-radius: 8px;
+  text-align: left;
+  position: relative;
+  z-index: 10;
 }
 
 .c-box {
@@ -633,12 +826,21 @@
   font-size: 1px;
 }
 
+/* Hide mobile break on desktop */
+.mobile-break {
+  display: none;
+}
+
 #canvas-wrapper {
-  margin: 0 auto;
+  margin: 0 auto 20px auto;
   display: block;
   background: #2f3136;
   padding: 5px;
   width: 610px;
+  max-width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 10;
 }
 
 canvas {
@@ -646,6 +848,8 @@ canvas {
   cursor: crosshair;
   display: block;
   border: 1px solid #202225;
+  max-width: 100%;
+  height: auto;
 }
 
 .clear-button {
@@ -684,7 +888,10 @@ canvas {
   padding-bottom: 120px;
 }
 
-/* Server Page */
+/* =========================================
+   SERVER PAGES
+   ========================================= */
+
 .server-layout {
   display: table;
 }
@@ -760,141 +967,76 @@ canvas {
   margin: 8px;
 }
 
-/* Responsive adjustments */
+/* =========================================
+   RESPONSIVE DESIGN & MOBILE FIXES
+   ========================================= */
+
+@media (max-width: 768px) {
+  .menu-button {
+    top: 8px;
+    left: 8px;
+  }
+}
+
 @media (max-width: 640px) {
+  /* Chat padding adjustments */
   .chat, .chat-container {
     padding: 12px;
   }
 
+  /* Send button adjustments */
   .send-button, .btn-send {
     padding: 8px 10px;
     min-height: 40px;
     font-size: 0.9rem;
   }
-}
 
-/* Defensive overrides */
-.chat-footer {
-  position: relative;
-}
+  /* Canvas Toolbar Mobile */
+  #toolbar-container {
+    width: calc(100% - 16px);
+    max-width: 100%;
+    margin: 8px 8px 5px 8px;
+    padding: 8px 5px;
+    box-sizing: border-box;
+  }
 
-.chat-footer .send-button {
-  position: static !important;
-}
+  /* Canvas Wrapper Mobile */
+  #canvas-wrapper {
+    width: calc(100% - 16px);
+    margin: 0 8px 20px 8px;
+  }
 
-.spoiler {
-    background-color: #202225; /* Dark theme default */
-    color: transparent;
-    border-radius: 3px;
-    cursor: pointer;
-    user-select: none;
-    padding: 0 2px;
-}
+  canvas {
+    width: 100%;
+  }
 
-/* Light Theme Support (if parent has class 'light-theme') */
-.light-theme .spoiler {
-    background-color: #e3e5e8;
-}
+  /* Canvas Controls Mobile */
+  .c-box {
+    width: 20px;
+    height: 20px;
+    margin: 2px;
+  }
 
-/* Revealed State */
-.spoiler.revealed {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: inherit;
-    cursor: text;
-    user-select: text;
-}
+  .s-btn {
+    margin: 0 2px;
+  }
 
-.light-theme .spoiler.revealed {
-    background-color: rgba(0, 0, 0, 0.05); /* Slightly dark on light bg */
-}
+  #btn-clear {
+    font-size: 12px !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+  }
 
-/* Subtext (-#) */
-.subtext {
-    font-size: 0.75rem;
-    line-height: 1.33;
-    color: #949ba4;
+  /* Show mobile break to put sizes on new line */
+  .mobile-break {
     display: block;
-    margin-top: 4px;
-}
+  }
 
-/* Blockquotes */
-.blockquote-container {
-    display: flex;
-    margin: 4px 0;
-}
-
-.blockquote-bar {
-    width: 4px;
-    border-radius: 4px;
-    background-color: #4e5058;
-    margin-right: 12px;
-    flex-shrink: 0;
-}
-
-.discord-quote {
-    margin: 0;
-    padding: 0;
-    color: #dbdee1;
-    opacity: 0.9;
-}
-
-.light-theme .discord-quote {
-    color: #2e3338;
-}
-
-/* Lists */
-ul {
-    margin: 4px 0;
-    padding-left: 24px;
-    list-style-type: disc;
-    list-style-position: outside;
-}
-
-ul ul {
-    margin: 2px 0;
-    list-style-type: circle;
-}
-ul ul ul {
-    list-style-type: square;
-}
-
-li {
-    margin: 2px 0;
-}
-
-/* Headers inside lists */
-li > h1, li > h2, li > h3 {
-    display: inline-block;
-    margin: 0;
-}
-
-/* Code Blocks */
-pre {
-    background-color: #2b2d31;
-    border: 1px solid #1e1f22;
-    border-radius: 4px;
-    padding: 8px;
-    margin: 6px 0;
-    font-family: Consolas, monospace;
-    font-size: 0.875rem;
-    overflow-x: auto;
-    color: #dbdee1;
-}
-
-.light-theme pre {
-    background-color: #f2f3f5;
-    border-color: #e3e5e8;
-    color: #2e3338;
-}
-
-code {
-    background-color: #2b2d31;
-    padding: 2px;
-    border-radius: 3px;
-    font-family: Consolas, monospace;
-    font-size: 0.85em;
-}
-
-.light-theme code {
-    background-color: #f2f3f5;
+  /* Fix message form on mobile */
+  .message-form-container {
+    left: 0 !important;
+    right: 0 !important;
+    padding: 0 8px;
+    box-sizing: border-box;
+  }
 }
