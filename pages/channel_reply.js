@@ -480,13 +480,13 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             }
             output = points.join("-")
           }
-          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 1em; height: 1em; vertical-align: -0.1em;" alt="emoji">`)
+          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 1.375em; height: 1.375em; vertical-align: -0.2em;" alt="emoji">`)
         });
       }
 
       const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
       if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 1em; height: 1em; vertical-align: -0.1em;" alt="emoji">`)    // Make it smaller if inline
+        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 1.375em; height: 1.375em; vertical-align: -0.2em;"  alt="emoji">`)    // Inline emoji size
       })
       let reply_message_id = args[3];
 
