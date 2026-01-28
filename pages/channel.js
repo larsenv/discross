@@ -67,6 +67,15 @@ function removeExistingEndAnchors(html) {
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
+  const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+  
+  if (!clientIsReady) {
+    res.writeHead(503, { "Content-Type": "text/plain" });
+    res.write("The bot isn't connected, try again in a moment");
+    res.end();
+    return;
+  }
+  
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
    
