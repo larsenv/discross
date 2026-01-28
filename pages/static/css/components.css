@@ -1041,51 +1041,62 @@ canvas {
 .message-composer,
 .message-form-container form,
 .message-input-container {
-    display: table !important;
-    width: 100% !important;
-    border-collapse: separate !important; /* Allows spacing */
-    border-spacing: 8px 0 !important;     /* Adds gap between input and button */
-    box-sizing: border-box !important;
+    display: table; /* Force table layout for Wii */
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+    box-sizing: border-box;
 }
 
-/* 2. The Input Field becomes a Table Cell */
-/* It will automatically fill the remaining width */
 .message-input-wrapper,
 .chat-input input,
 .chat-input textarea,
 .message-input {
-    display: table-cell !important;
-    width: 100% !important;
-    vertical-align: middle !important;
-    float: none !important;
-    height: 44px !important; /* Force matching height */
-    margin: 0 !important;
+    display: table-cell;
+    width: 100%; /* Take up all available space */
+    vertical-align: middle;
+    margin: 0;
 }
 
-/* 3. The Send Button becomes a Table Cell */
-/* It will shrink to fit the text 'Send' */
 .send-button, 
 .btn-send, 
 .chat-send {
-    display: table-cell !important;
-    width: 1% !important;     /* Shrink to fit */
-    white-space: nowrap !important;
-    vertical-align: middle !important;
-    float: none !important;
-    position: static !important;
-    height: 44px !important;  /* Force matching height */
-    padding: 0 16px !important;
+    display: table-cell;
+    width: 1%; /* Shrink to fit the text */
+    white-space: nowrap;
+    vertical-align: middle;
+    padding: 0 16px;
 }
 
-/* 4. Ensure the footer bar stays stuck to the bottom on Wii */
-.message-form-container {
-    display: block !important; /* Reset any flex on the main container */
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 9999 !important;
-    background: #36393f !important;
-    border-top: 1px solid #40444b !important;
-    padding: 4px 8px !important;
+/* PHASE 2: The "Modern Reset" (For Mobile/Desktop)
+   The Wii DOES NOT support '@supports', so it ignores this entire block.
+   Mobile phones DO support it, so they enter this block and restore the layout.
+*/
+@supports (display: flex) {
+    .chat-input, 
+    .message-composer,
+    .message-form-container form,
+    .message-input-container {
+        display: flex; /* Restore Flexbox */
+        width: auto;
+        border-spacing: 0;
+        gap: 8px;
+    }
+
+    .message-input-wrapper,
+    .chat-input input,
+    .chat-input textarea,
+    .message-input {
+        display: block;
+        width: auto;
+        flex: 1 1 auto; /* Let input grow naturally */
+    }
+
+    .send-button, 
+    .btn-send, 
+    .chat-send {
+        display: inline-flex;
+        width: auto;
+        align-self: stretch;
+    }
 }
