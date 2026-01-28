@@ -16,7 +16,6 @@ function sleep(ms) {
 
 function sendToAll(message, channel) {
   for (const i in sockets) {
-    console.log(listenChannels[i], channel)
     if (listenChannels[i] === channel) {
       sockets[i].send(message)
     }
@@ -26,11 +25,11 @@ function sendToAll(message, channel) {
 exports.sendToAll = sendToAll
 
 function processMessage(connectionType, isAuthed, listenChannel, message) {
-  console.log('received: %s', message)
+  // console.log('received: %s', message)
   const split = message
   const action = split[0]
   const params = message.slice(action.length + 1, message.length)
-  console.log('Action: ' + action + ', params: ' + params)
+  // console.log('Action: ' + action + ', params: ' + params)
   if (action === 'AUTH' && connectionType === 'websockets') { // IMPORTANT TODO: Add proper auth!
     if (params === 'authpls') {
       sendToAll('Authed!')
@@ -45,7 +44,7 @@ function processMessage(connectionType, isAuthed, listenChannel, message) {
       sendToAll('Please log in')
     }
   } else if (action === 'LISTEN') { // IMPORTANT TODO: Check channel permissions
-    console.log('Client listening on channel ' + params)
+    // console.log('Client listening on channel ' + params)
     listenChannel = params
   }
   return { isAuthed: isAuthed, listenChannel: listenChannel }
@@ -54,30 +53,28 @@ function processMessage(connectionType, isAuthed, listenChannel, message) {
 exports.processRequest = async function (req, res) {
   const parsedurl = url.parse(req.url, true)
   if (parsedurl.pathname === '/longpoll.js') {
-    console.log(req.url)
-    console.log('User polling (js)')
+    // console.log(req.url)
+    // console.log('User polling (js)')
     const initialID = /* latestMessageID */ Number(req.url.slice(13, req.url.length));
     res.write('latestMessageID = ' + JSON.stringify(latestMessageID) + '; addMessage(' + JSON.stringify(messages.slice(initialID, messages.length)) + '); addLongpoll(latestMessageID);')
   } else if (parsedurl.pathname === '/longpoll-xhr') {
-    /* console.log(req.url);
-    console.log("User polling (xhr)");
-    var initialID = latestMessageID;
-    while (initialID == latestMessageID) {
-      await sleep(25);
-    }
-    res.write(JSON.stringify("<circuit10> " + latestMessage)); */
-    console.log(req.url)
-    console.log('User polling (xhr)')
+    // console.log(req.url)
+    // console.log('User polling (xhr)')
     var initialID = /* latestMessageID */ Number(req.url.slice(14, req.url.length).split('&')[0])
-    console.log(initialID)
+    // console.log(initialID)
     while (initialID >= latestMessageID) {
       // console.log(initialID, latestMessageID);
       await sleep(25)
     }
-    res.write('latestMessageID = ' + JSON.stringify(latestMessageID) + '; addMessage(' + JSON.stringify(messages.slice(initialID, messages.length)) + '); longpoll_xhr(latestMessageID);')
+    // Security: Return JSON instead of JavaScript code
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.write(JSON.stringify({
+      latestMessageID: latestMessageID,
+      messages: messages.slice(initialID, messages.length)
+    }))
   } else if (parsedurl.pathname === '/api.js') {
-    console.log(parsedurl.query)
-    processMessage('longpoll', true, parsedurl.query.message)
+    // console.log(parsedurl.query)
+    processMessage('longpoll', true, '', parsedurl.query.message)
     // console.log(req.url);
     // res.write("send?");
     // sendToAll(req.url);
