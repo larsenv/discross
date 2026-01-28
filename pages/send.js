@@ -54,6 +54,16 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       if (typeof query.message === 'string' && query.message !== "") {
         const channelId = (query.channel || query.channel_id || args?.[2]);
 
+        // Check if bot is connected
+        const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+        
+        if (!clientIsReady) {
+          res.writeHead(503, { "Content-Type": "text/plain" });
+          res.write("The bot isn't connected, try again in a moment");
+          res.end();
+          return;
+        }
+
         // Validate channel id format early
         if (!channelId || !isValidSnowflake(channelId)) {
           res.writeHead(404, { "Content-Type": "text/plain" });
