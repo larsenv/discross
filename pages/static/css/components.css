@@ -70,9 +70,9 @@
 
 /* Buttons */
 .discross-button {
+  background: #5865f2 !important;
+  color: white !important;
   display: inline-block;
-  background: #5865f2;
-  color: white;
   padding: 12px 24px;
   border-radius: 8px;
   text-decoration: none;
