@@ -1,110 +1,37 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="manifest" href="/site.webmanifest">
-  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
-  <meta name="msapplication-TileColor" content="#2b5797">
-  <meta name="theme-color" content="#ffffff">
-  <style>
-    @font-face {
-      font-family: 'rodin';
-      src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
-           url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
-      font-weight: 400;
-    }
-
-    @font-face {
-      font-family: 'rodin';
-      src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
-           url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
-      font-weight: 700;
-    }
-
-    html,
-    body,
-    #wrapper {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: 'rodin', Arial, Helvetica, sans-serif;
-    }
-
-    .light-theme #wrapper {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-    }
-
-    .light-theme #wrapper * {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-    }
-
-    .light-theme #wrapper table input {
-      border: 5px solid #000000 !important;
-      padding: 5px;
-    }
-
-    /* AMOLED theme overrides for register page */
-    .amoled-theme #wrapper {
-      background: #000000 !important;
-      color: #ffffff !important;
-    }
-
-    .amoled-theme #wrapper * {
-      background: #000000 !important;
-      color: #ffffff !important;
-    }
-
-    .amoled-theme #wrapper table input {
-      border: 5px solid #ffffff !important;
-      background: #111111 !important;
-      color: #ffffff !important;
-      padding: 5px;
-    }
-
-    .amoled-theme a {
-      color: #5865f2 !important;
-    }
-    }
-  </style>
-  <title>Discross - Register</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#2b5797">
+    <meta name="theme-color" content="#ffffff">
+    <title>Discross - Register</title>
 </head>
-
-<body bgcolor="#303338" style="margin: 0;" {$WHITE_THEME_ENABLED}>
+<body {$WHITE_THEME_ENABLED}>
   <div id="wrapper">
-    <table>
+    <table class="header-table">
       <tr>
-        <td><img src="/resources/logo.gif" alt="Logo"></td>
-
+        <td class="header-logo"><img src="/resources/logo.gif" alt="Logo"></td>
+        <td class="header-title">discross</td>
+        <td class="header-menu">
+          <a href="./login.html">Login</a>
+          <a href="./register.html">Register</a>
+        </td>
         <td>
-          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
-        </td>
-        <td width="100%" align="right">
-          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a style="color: #dddddd;" href="./login.html">
-                <font color="#dddddd">Login</font>
-            </a>&#160;
-            <a style="color: #dddddd;" href="./register.html">
-                <font color="#dddddd">Register</font>
-            </a>&#160;&#160;
-          </font>
-        </td>
-        <td valign="right">
           <form action="/switchtheme" method="post">
-            <button type="submit" style="background: none; border: none;">
+            <button type="submit" class="theme-switch-button">
                 <img src="/resources/images/themeswitch.gif" alt="Switch theme">
             </button>
           </form>
         </td>
       </tr>
     </table>
-    <hr style="margin: 0; position: relative; bottom: 4px;">
+    <hr>
     <br>
     <table>
       <tbody>
@@ -118,54 +45,48 @@
                 <tbody>
                   <tr>
                     <td>
-                      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Register</font><br><br>
-                      <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+                      <h2 class="form-title">Register</h2><br>
+                      <span class="form-label">
                         Username:
                         <br><br>
-                        <div style="padding: 16px;background: #393c40;width: 300px;"><input
+                        <div class="form-input-wrapper"><input
                           type="text" name="username" id="username" value=""
-                          style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
+                          class="form-input"
                           placeholder="Username"></div>
                         <br><br>
                         Password:<br><br>(don't use your Discord password)
                         <br><br>
-                        <div style="padding: 16px;background: #393c40;width: 300px;"><input
+                        <div class="form-input-wrapper"><input
                             type="password" name="password" id="password" value=""
-                            style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
+                            class="form-input"
                             placeholder="Password"></div>
                         <br><br>
-                        <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
-                          Confirm password:
-                          <br><br>
-                          <div style="padding: 16px;background: #393c40;width: 300px;"><input
-                              type="password" name="confirm" id="confirm" value=""
-                              style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
-                              placeholder="Confirm password"></div>
-                          <br><br>
-                          <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
-                          <br>{$ERROR}<br>
-                          <input type="submit"
-                            style="color: #dddddd;height: 44px;width:150px;border: none;background: #393c40;;"
-                            value="Register">
-                          </font>
-                        </font>
-                      </font>
+                        Confirm password:
+                        <br><br>
+                        <div class="form-input-wrapper"><input
+                            type="password" name="confirm" id="confirm" value=""
+                            class="form-input"
+                            placeholder="Confirm password"></div>
+                        <br><br>
+                        <br>{$ERROR}<br>
+                        <input type="submit" class="submit-button" value="Register">
+                      </span>
                     </td>
                     <td valign="top">
                       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     </td>
                     <td style="vertical-align: top;" valign="top">
                       <br><br><br>
-                      <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+                      <span class="form-label">
                         Verification code:
                         <br><br>
                         Type ^connect on a server with Discross to get this.
                         <br><br>
-                        <div style="padding: 16px;background: #393c40;width: 300px;"><input
+                        <div class="form-input-wrapper"><input
                             type="text" name="token" id="token" value=""
-                            style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
+                            class="form-input"
                             placeholder="Verification code"></div>
-                      </font>
+                      </span>
                     </td>
                   </tr>
                 </tbody>
