@@ -10,12 +10,11 @@ const sanitizer = require("path-sanitizer").default;
 const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const { channel } = require('diagnostics_channel');
 const fetch = require("sync-fetch");
-const { getDisplayName, getMemberColor, ensureMemberData } = require('./discordMarkdown');
+const { renderDiscordMarkdown, getDisplayName, getMemberColor, ensureMemberData } = require('./discordMarkdown');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator, areDifferentDays } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
-const { renderDiscordMarkdown } = require('./markdownUtils');
 
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
