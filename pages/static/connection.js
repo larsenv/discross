@@ -7,6 +7,8 @@ var time;
 var xhttp;
 var xhttp2;
 var ws;
+var retryCount = 0;
+var maxRetryDelay = 30000; // 30 seconds max
 // nocache
 
 // https://stackoverflow.com/a/15339941
@@ -36,13 +38,22 @@ function addMessage(text) {
   messages = messages.concat(text);
   // console.log(text);
   // console.log(messages);
-  // var node = document.createElement("div");                 // Create a <li> node
-  // var textnode = document.createTextNode(text);         // Create a text node
-  // node.appendChild(textnode);                              // Append the text to <li>
-  // document.getElementById("myList").appendChild(node);     // Append <li> to <ul> with id="myList"
-  // ws.close();
-
-  document.getElementById("myList").innerHTML = messages.join("<br>");
+  
+  // Safely render messages to prevent XSS attacks
+  var myList = document.getElementById("myList");
+  myList.innerHTML = "";  // Clear existing content
+  
+  for (var i = 0; i < messages.length; i++) {
+    var node = document.createElement("div");
+    var textnode = document.createTextNode(messages[i]);
+    node.appendChild(textnode);
+    myList.appendChild(node);
+    
+    // Add line break between messages except for the last one
+    if (i < messages.length - 1) {
+      myList.appendChild(document.createElement("br"));
+    }
+  }
 }
 
 function addLongpoll(id) {
@@ -123,18 +134,47 @@ function longpoll_xhr(id) {
 function setup_xhr() {
   xhttp = Xhr();
   xhttp.onreadystatechange = function () {
-    // alert("test " + xhttp.responseText);
     if (xhttp.readyState == 4) {
-      // alert(xhttp.status);
-      // alert(xhttp.responseText);
-      eval(xhttp.responseText);
-      // addMessage(JSON.parse(this.responseText));
-      setup_xhr();
-      // longpoll_xhr(latest_message_id);
+      // Check if request was successful
+      if (xhttp.status === 200) {
+        // Security: Parse JSON response instead of using eval()
+        try {
+          var response = JSON.parse(xhttp.responseText);
+          if (response.latestMessageID !== undefined) {
+            latest_message_id = response.latestMessageID;
+          }
+          if (response.messages && response.messages.length > 0) {
+            for (var i = 0; i < response.messages.length; i++) {
+              addMessage(response.messages[i]);
+            }
+          }
+          // Reset retry count on success
+          retryCount = 0;
+          longpoll_xhr(latest_message_id);
+        } catch (e) {
+          console.error("Error parsing response:", e);
+          // Retry with exponential backoff on parse error
+          retryWithBackoff();
+        }
+      } else {
+        // Server error - retry with exponential backoff
+        console.error("Server returned status:", xhttp.status);
+        retryWithBackoff();
+      }
     }
   }
   xhttp.open("GET", "/longpoll-xhr?" + latest_message_id, true);
   xhttp.send(null);
+}
+
+function retryWithBackoff() {
+  retryCount++;
+  // Calculate delay: min(1000 * 2^retryCount, maxRetryDelay)
+  var delay = Math.min(1000 * Math.pow(2, retryCount), maxRetryDelay);
+  console.log("Retrying in " + delay + "ms (attempt " + retryCount + ")");
+  setTimeout(function() {
+    longpoll_xhr(latest_message_id);
+  }, delay);
 }
 
 xhttp2 = Xhr();

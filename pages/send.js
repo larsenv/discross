@@ -124,8 +124,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
             processedmessage = `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
           } catch (err) {
-            console.error("Failed to fetch reply message:", err);
-            // Continue sending the message without the reply quote if fetching fails
+            console.error("Failed to reply:", err);
           }
         }
 

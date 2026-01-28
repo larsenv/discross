@@ -1,5 +1,8 @@
 const geoip = require('geoip-lite');
 
+// Constants for date/time calculations
+const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
+
 /**
  * Get client's IP address from request, handling proxies
  * @param {Object} req - HTTP request object
@@ -72,32 +75,77 @@ function getTimezoneFromIP(ip) {
 }
 
 /**
- * Format a date with timezone
+ * Extract date components (year, month, day) in a specific timezone
+ * @param {Date} date - Date object
+ * @param {string} timezone - Timezone string
+ * @returns {Object} - Object with year, month (1-indexed), and day
+ */
+function getDateComponentsInTimezone(date, timezone) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parseInt(parts.find(p => p.type === 'year').value);
+  const month = parseInt(parts.find(p => p.type === 'month').value); // 1-indexed (1-12)
+  const day = parseInt(parts.find(p => p.type === 'day').value);
+  return { year, month, day };
+}
+
+/**
+ * Format a date with timezone - Discord style
  * @param {Date} date - Date object to format
  * @param {string|null} timezone - Timezone string (e.g., 'America/New_York') or null for default
- * @returns {string} - Formatted date string
+ * @returns {string} - Formatted date string (e.g., "Today at 12:30PM", "Yesterday at 3:45AM", "01/15/26, 9:00PM")
  */
 function formatDateWithTimezone(date, timezone) {
   try {
-    if (!timezone) {
-      // Fallback to original format if no timezone
-      return date.toLocaleTimeString('en-US') + " " + date.toDateString();
-    }
+    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     
-    // Format with timezone
-    const options = {
-      timeZone: timezone,
+    // Get current date/time
+    const now = new Date();
+    
+    // Extract date components in the target timezone for both dates
+    const messageComps = getDateComponentsInTimezone(date, userTimezone);
+    const todayComps = getDateComponentsInTimezone(now, userTimezone);
+    
+    // Create date-only objects in UTC for comparison
+    // Note: Date.UTC expects 0-indexed months (0-11), so we subtract 1
+    const messageDateOnly = Date.UTC(messageComps.year, messageComps.month - 1, messageComps.day);
+    const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
+    
+    // Calculate difference in days
+    const diffTime = todayDateOnly - messageDateOnly;
+    const diffDays = Math.round(diffTime / MILLISECONDS_PER_DAY);
+    
+    // Format time part (e.g., "12:30PM")
+    const timeOptions = {
+      timeZone: userTimezone,
       hour: 'numeric',
       minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      hour12: true
     };
+    const timeStr = date.toLocaleString('en-US', timeOptions);
     
-    return date.toLocaleString('en-US', options);
+    if (diffDays === 0) {
+      // Today
+      return `Today at ${timeStr}`;
+    } else if (diffDays === 1) {
+      // Yesterday
+      return `Yesterday at ${timeStr}`;
+    } else {
+      // 2+ days ago - use locale-aware date format
+      const dateOptions = {
+        timeZone: userTimezone,
+        month: '2-digit',
+        day: '2-digit',
+        year: '2-digit'
+      };
+      const dateStr = date.toLocaleString('en-US', dateOptions);
+      return `${dateStr}, ${timeStr}`;
+    }
   } catch (err) {
     // If timezone is invalid, fall back to default format
     console.error('Error formatting date with timezone:', err);
@@ -105,8 +153,61 @@ function formatDateWithTimezone(date, timezone) {
   }
 }
 
+/**
+ * Format a date separator for display between different days
+ * @param {Date} date - Date object to format
+ * @param {string|null} timezone - Timezone string (e.g., 'America/New_York') or null for default
+ * @returns {string} - Formatted date separator string (e.g., "January 25, 2026")
+ */
+function formatDateSeparator(date, timezone) {
+  try {
+    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    const options = {
+      timeZone: userTimezone,
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    };
+    
+    return date.toLocaleString('en-US', options);
+  } catch (err) {
+    console.error('Error formatting date separator:', err);
+    return date.toDateString();
+  }
+}
+
+/**
+ * Check if two dates are on different days in the given timezone
+ * @param {Date} date1 - First date
+ * @param {Date} date2 - Second date or null (if null, always returns true)
+ * @param {string|null} timezone - Timezone string or null for default
+ * @returns {boolean} - True if dates are on different days (or date2 is null)
+ */
+function areDifferentDays(date1, date2, timezone) {
+  if (!date2) {
+    return true; // First message, always show separator
+  }
+  
+  try {
+    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    // Extract date components for both dates
+    const comp1 = getDateComponentsInTimezone(date1, userTimezone);
+    const comp2 = getDateComponentsInTimezone(date2, userTimezone);
+    
+    // Compare year, month, and day
+    return comp1.year !== comp2.year || comp1.month !== comp2.month || comp1.day !== comp2.day;
+  } catch (err) {
+    console.error('Error comparing dates:', err);
+    return false;
+  }
+}
+
 module.exports = {
   getClientIP,
   getTimezoneFromIP,
-  formatDateWithTimezone
+  formatDateWithTimezone,
+  formatDateSeparator,
+  areDifferentDays
 };

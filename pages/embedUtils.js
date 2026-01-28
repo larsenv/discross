@@ -1,8 +1,3 @@
-/**
- * Utility module for processing Discord embeds
- * Shared between channel.js and channel_reply.js
- */
-
 const escape = require('escape-html');
 const md = require('markdown-it')({ breaks: true, linkify: true });
 const { renderDiscordMarkdown } = require('./discordMarkdown');
@@ -39,15 +34,17 @@ function processEmbeds(embeds, imagesCookie) {
     // Process embed author
     let authorHtml = '';
     if (embed.author) {
-      authorHtml = '<div style="display: flex; align-items: center; margin-bottom: 8px;">';
-      if (embed.author.iconURL && imagesCookie == 1) {
-        authorHtml += `<img src="/imageProxy/${embed.author.iconURL.replace(/^(.*?)(\d+)/, '$2')}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;" alt="author icon">`;
-      }
-      authorHtml += `<span style="font-size: 14px; font-weight: 600; color: #ffffff;">${escape(embed.author.name)}</span>`;
+      // Create the author text span
+      let content = `<span style="font-size: 14px; font-weight: 600; color: #ffffff;">${escape(embed.author.name)}</span>`;
+      
+      // If URL exists, wrap the content in an anchor tag
       if (embed.author.url) {
-        authorHtml = `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${authorHtml}</a>`;
+        authorHtml = `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${content}</a>`;
+      } else {
+        authorHtml = content;
       }
-      authorHtml += '</div>';
+      
+      // REMOVED: authorHtml += '</div>'; (This was the bug closing the container early)
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_AUTHOR}', authorHtml);
     
@@ -87,28 +84,17 @@ function processEmbeds(embeds, imagesCookie) {
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_FIELDS}', fieldsHtml);
     
-    // Process embed image
-    let imageHtml = '';
-    if (embed.image && embed.image.url && imagesCookie == 1) {
-      imageHtml = `<div style="margin-top: 16px;"><a href="${escape(embed.image.url)}" target="_blank"><img src="/imageProxy/${embed.image.url.replace(/^(.*?)(\d+)/, '$2')}" style="max-width: 100%; border-radius: 4px;" alt="embed image"></a></div>`;
-    }
-    embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
+    // Process embed image (REMOVED)
+    embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', '');
     
-    // Process embed thumbnail
-    let thumbnailHtml = '';
-    if (embed.thumbnail && embed.thumbnail.url && imagesCookie == 1) {
-      thumbnailHtml = `<div style="float: right; max-width: 80px; margin-left: 16px;"><img src="/imageProxy/${embed.thumbnail.url.replace(/^(.*?)(\d+)/, '$2')}" style="max-width: 100%; border-radius: 4px;" alt="thumbnail"></div>`;
-    }
-    embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', thumbnailHtml);
+    // Process embed thumbnail (REMOVED)
+    embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', '');
     
     // Process embed footer
     let footerHtml = '';
     if (embed.footer || embed.timestamp) {
       footerHtml = '<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">';
       if (embed.footer) {
-        if (embed.footer.iconURL && imagesCookie == 1) {
-          footerHtml += `<img src="/imageProxy/${embed.footer.iconURL.replace(/^(.*?)(\d+)/, '$2')}" style="width: 20px; height: 20px; border-radius: 50%; margin-right: 8px;" alt="footer icon">`;
-        }
         footerHtml += `<span>${escape(embed.footer.text)}</span>`;
       }
       if (embed.timestamp) {
@@ -122,7 +108,8 @@ function processEmbeds(embeds, imagesCookie) {
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_FOOTER}', footerHtml);
     
-    embedsHtml += embedHtml;
+    // Margin right wrapper
+    embedsHtml += `<div style="margin-right: 8px;">${embedHtml}</div>`;
   });
   
   return embedsHtml;
