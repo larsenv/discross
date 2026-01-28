@@ -433,13 +433,11 @@
   height: 24px;
 }
 
-/* Menu Button */
 .menu-button {
   position: fixed;
   top: 16px;
   left: 16px;
   z-index: 1000;
-  background: #36393f;
   border-radius: 4px;
   padding: 8px;
 }
