@@ -9,7 +9,6 @@ body {
   color: #dddddd;
 }
 
-/* Light Theme */
 .light-theme body,
 .light-theme #wrapper {
   background: #ffffff !important;
@@ -54,7 +53,7 @@ body {
   color: #2e3338 !important;
 }
 
-/* Message Input Area (The bottom bar) */
+/* Message Input Area */
 .light-theme .message-form-container {
   background: #ffffff !important;
   border-top-color: #e3e5e8 !important;
@@ -82,7 +81,7 @@ body {
 }
 
 .light-theme .discross-button {
-  background: #5865f2 !important;
+  background: #5865f2 !important; /* Discord Purple */
   color: white !important;
 }
 
@@ -140,10 +139,27 @@ body {
   color: #ffffff !important;
 }
 
+/* Sidebar Fix: Force black background */
+.amoled-theme .server-sidebar,
+.amoled-theme .server-select-note {
+  background: #000000 !important;
+  border-color: #333333 !important;
+}
+
 /* Header & Menus */
 .amoled-theme .menu-button {
-  background: #000000 !important;
-  border: 1px solid #333333 !important;
+  background: transparent !important; /* Removed background */
+  border: none !important;            /* Removed border */
+}
+
+/* Buttons: Force Purple */
+.amoled-theme .discross-button {
+  background: #5865f2 !important; /* Discord Purple */
+  color: white !important;
+}
+
+.amoled-theme .discross-button:hover {
+  background: #4752c4 !important;
 }
 
 /* Message List */
