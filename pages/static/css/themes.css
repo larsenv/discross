@@ -123,6 +123,7 @@ body {
    True Black (#000000) for OLED screens
    ========================================= */
 
+.amoled-theme body,
 .amoled-theme html,
 .amoled-theme .content-padding, 
 .amoled-theme .scrollable-content {
