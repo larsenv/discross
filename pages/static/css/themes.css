@@ -9,7 +9,7 @@ body {
   color: #dddddd;
 }
 
-.light-theme body,
+body.light-theme,
 .light-theme html,
 .light-theme #wrapper,
 .light-theme .content-padding, 
@@ -125,7 +125,7 @@ body {
    True Black (#000000) for OLED screens
    ========================================= */
 
-.amoled-theme body,
+body.amoled-theme,
 .amoled-theme html,
 .amoled-theme #wrapper,
 .amoled-theme .content-padding, 
