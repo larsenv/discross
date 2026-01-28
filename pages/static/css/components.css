@@ -69,6 +69,10 @@
    BUTTONS & INPUTS
    ========================================= */
 
+.buttons {
+  margin: 16px 0;
+}
+
 .discross-button {
   background: #5865f2 !important;
   color: white !important;
@@ -377,7 +381,7 @@ button:focus, input:focus, textarea:focus {
   border-top-color: #e3e5e8 !important;
 }
 
-.amoled-theme .message-form-container {
+
   background: #000000 !important;
   border-top-color: #333333 !important;
 }
