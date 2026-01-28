@@ -1,15 +1,3 @@
-TL;DR
-
-I have merged the two CSS blocks into a single, clean stylesheet. The "Rodin" font styles and core layout from the first block were preserved, while the "defensive overrides," legacy browser fixes, and improved mobile responsiveness (especially for the canvas and chat input) from the second block were integrated to overwrite the simpler versions.
-CSS
-
-/* =========================================
-   CORE LAYOUT & TYPOGRAPHY
-   ========================================= */
-
-/* Component-specific styles */
-
-/* Header and Navigation */
 .header-table {
   width: 100%;
 }
