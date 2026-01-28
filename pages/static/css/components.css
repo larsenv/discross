@@ -197,6 +197,10 @@ button:focus, input:focus, textarea:focus {
    MESSAGES & CHAT
    ========================================= */
 
+.message:last-child {
+  border-bottom: none;
+}
+
 .message {
   padding: 8px 0;
   margin: 0;
