@@ -18,9 +18,6 @@ const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
 
-// Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
-// Is that a bad idea?
-
 const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message.html', 'utf-8'));
 const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message.html', 'utf-8'));
 const message_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_mentioned.html', 'utf-8'));
@@ -132,7 +129,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       lastMentioned = false;
       lastReply = false;
       lastReplyData = {};
-       
+        
       // Cache for member data to avoid repeated fetches
       const memberCache = new Map();
 
@@ -239,13 +236,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             let replyMessage = undefined;
 
             // Step 1: Try to fetch the full referenced message
-            // This is preferred as it gives us the most accurate state, but might fail if deleted
             try {
               replyMessage = await item.fetchReference();
               replyUser = replyMessage.author; // Update user from the fresh fetch
             } catch (err) {
               // Message was likely deleted or is inaccessible. 
-              // We fall back to 'replyUser' retrieved from item.mentions above.
             }
 
             // Step 2: If we have a user (either from fetch or fallback), try to get Member data
@@ -265,7 +260,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                 }
               } catch (err) {
                 // Member fetch failed (User likely left the server). 
-                // We ignore this error so we can still display the User's name.
               }
 
               // Step 3: Construct the display data
@@ -285,9 +279,69 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           }
         }
 
-        // messagetext = strReplace(escape(item.content), "\n", "<br>");
         messagetext = renderDiscordMarkdown(item.content); // UPDATED: Use custom renderer
         
+        // Detect "Jumbo" Emoji status (<= 29 emojis and no other text)
+        let isJumbo = false;
+        if (imagesCookie == 1) {
+            // Check raw content for "emoji only" status
+            const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
+            // Match custom emojis and unicode emojis
+            const customMatches = item.content.match(customEmojiRegex) || [];
+            const unicodeMatches = item.content.match(emojiRegex) || [];
+            const totalEmojis = customMatches.length + unicodeMatches.length;
+            
+            // Remove all emojis and whitespace to see if anything else remains
+            const strippedContent = item.content.replace(customEmojiRegex, '').replace(emojiRegex, '').trim();
+            
+            if (strippedContent.length === 0 && totalEmojis > 0 && totalEmojis <= 29) {
+                isJumbo = true;
+            }
+        }
+
+        // Standard size 1.375em. Jumbo size 2.75em (200%).
+        // Note: 'em' is supported in IE3+ (1996), so it is very safe for "older browsers".
+        const emojiSize = isJumbo ? "2.75em" : "1.375em";
+
+        if (imagesCookie == 1) {
+            // Process Unicode Emojis
+            if (messagetext.match(emojiRegex)) {
+                 const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
+                 unicode_emoji_matches.forEach(match => {
+                    const points = [];
+                    let char = 0;
+                    let previous = 0;
+                    let i = 0;
+                    let output;
+                    while (i < match.length) {
+                        char = match.charCodeAt(i++);
+                        if (previous) {
+                            points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
+                            previous = 0;
+                        } else if (char > 0xd800 && char <= 0xdbff) {
+                            previous = char;
+                        } else {
+                            points.push(char.toString(16));
+                        }
+                        output = points.join("-");
+                    }
+                    messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
+                 });
+            }
+
+            // Process Custom Emojis
+            // Regex detects HTML escaped format &lt;:name:id&gt; which usually comes from renderDiscordMarkdown if not processed
+            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+            if (custom_emoji_matches.length > 0) {
+                 custom_emoji_matches.forEach(match => {
+                    // Convert to gif if animated (match[2] is 'a'), otherwise png. Or force gif for simplicity if proxy supports it.
+                    // User requested animated to be lightweight and work, so we use the proxy logic.
+                    const ext = match[2] ? "gif" : "png";
+                    messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
+                 });
+            }
+        }
+
         if (item?.attachments) {
           let urls = new Array()
           item.attachments.forEach(attachment => {
@@ -306,6 +360,18 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
+        
+        // Process Stickers
+        if (item.stickers && item.stickers.size > 0 && imagesCookie == 1) {
+          item.stickers.forEach(sticker => {
+             // Convert all stickers to GIF via proxy to ensure animation support and lightweight
+             // Note: Discord stickers can be Lottie (json), PNG, or APNG. 
+             // Requesting .gif from the proxy should trigger conversion if implemented on backend, or serve readable format.
+             const stickerURL = `/imageProxy/sticker/${sticker.id}.gif`;
+             messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
+          });
+        }
+
         // Check if current user is mentioned in this message
         isMentioned = false;
                 
@@ -416,8 +482,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           });
         }
 
-
-
         // If the last message is not going to be merged with this one, use the template for the first message, otherwise use the template for merged messages
         if (!lastauthor || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
           messagetext = first_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
@@ -457,7 +521,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-       
+        
       // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
       if (whiteThemeCookie == 1) {
         template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
@@ -477,34 +541,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         final = strReplace(template, "{$INPUT}", input_disabled_template);
       }
 
-      if (response.match?.(emojiRegex) && imagesCookie == 1) {
-        const unicode_emoji_matches = [...response.match?.(emojiRegex)]
-        unicode_emoji_matches.forEach(match => {
-          const points = [];
-          let char = 0;
-          let previous = 0;                  // This whole code block was "inspired" by the official Twitter Twemoji parser.
-          let i = 0;                          // I would have done it myself but my code wasn't ready for skin tones/emoji variation
-          let output                          // The Regex I wouldn't have done myself, so thanks for that too!
-          while (i < match.length) {
-            char = match.charCodeAt(i++);
-            if (previous) {
-              points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
-              previous = 0;
-            } else if (char > 0xd800 && char <= 0xdbff) {
-              previous = char;
-            } else {
-              points.push(char.toString(16));
-            }
-            output = points.join("-")
-          }
-          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 1.375em; height: 1.375em; vertical-align: -0.2em;" alt="emoji">`)
-        });
-      }
-
-      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 1.375em; height: 1.375em; vertical-align: -0.2em;"  alt="emoji">`)    // Inline emoji size
-      })
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
       final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
