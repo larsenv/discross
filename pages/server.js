@@ -2,10 +2,11 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
+var UAParser = require('ua-parser-js');
 var auth = require('../authentication.js');
 const path = require('path')
 const sharp = require("sharp")
-const sanitizer = require("path-sanitizer")
+const sanitizer = require("path-sanitizer").default;
 const emojiRegex = require("./twemojiRegex").regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 
@@ -16,7 +17,10 @@ const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server.html', 'utf-8'));
 
 const text_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8'));
+const announcement_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/announcementchannel.html', 'utf-8'));
 const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
+const voice_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/voicechannel.html', 'utf-8'));
+const thread_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8'));
 
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
@@ -46,8 +50,8 @@ function processServerChannels(server, member, response) {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
-    // Start with lone text channels (no category)
-    let channelsSorted = [...server.channels.cache.filter(channel => channel.isTextBased() && !channel.parent).values()];
+    // Start with lone text channels (no category) and voice channels
+    let channelsSorted = [...server.channels.cache.filter(channel => (channel.isTextBased() || channel.type == ChannelType.GuildVoice) && !channel.parent).values()];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
     categoriesSorted.forEach(category => {
@@ -55,9 +59,39 @@ function processServerChannels(server, member, response) {
       channelsSorted = channelsSorted.concat(
         [...category.children.cache.sort((a, b) => a.position - b.position)
           .values()]
-          .filter(channel => channel.isTextBased())
+          .filter(channel => channel.isTextBased() || channel.type == ChannelType.GuildVoice)
       );
     });
+
+    // Add threads from voice channels (voice channel threads)
+    // Threads are in the guild's channels cache with parentId pointing to voice channels
+    const allThreads = server.channels.cache.filter(channel => 
+      channel.type == ChannelType.PublicThread || channel.type == ChannelType.PrivateThread
+    );
+    
+    // Group threads by their parent voice channel for efficient insertion
+    const threadsByParent = new Map();
+    allThreads.forEach(thread => {
+      if (thread.parentId) {
+        const parent = server.channels.cache.get(thread.parentId);
+        // Only collect threads whose parent is a voice channel
+        if (parent && parent.type == ChannelType.GuildVoice) {
+          if (!threadsByParent.has(thread.parentId)) {
+            threadsByParent.set(thread.parentId, []);
+          }
+          threadsByParent.get(thread.parentId).push(thread);
+        }
+      }
+    });
+    
+    // Insert threads after their parent voice channels in reverse order to maintain positions
+    for (let i = channelsSorted.length - 1; i >= 0; i--) {
+      const channel = channelsSorted[i];
+      if (channel.type == ChannelType.GuildVoice && threadsByParent.has(channel.id)) {
+        const threads = threadsByParent.get(channel.id).sort((a, b) => a.position - b.position);
+        channelsSorted.splice(i + 1, 0, ...threads);
+      }
+    }
 
 
     let channelList = "";
@@ -66,8 +100,61 @@ function processServerChannels(server, member, response) {
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         if (item.type == ChannelType.GuildCategory) {
           channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.type == ChannelType.GuildAnnouncement || item.type == ChannelType.GuildNews) {
+          // Use announcement template for announcement/news channels
+          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
+        } else if (item.type == ChannelType.GuildVoice) {
+          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
+          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
         } else {
-          channelList += text_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
+          // Determine the appropriate icon based on channel type and permissions
+          let channelIcon = "#"; // Default hashtag for text channels
+          const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
+          
+          // Check if this is a voice text channel
+          const isVoiceChannel = item.type == ChannelType.GuildVoice;
+          
+          // Check if channel is "locked" - has permission overwrites that restrict ViewChannel for @everyone
+          let isLocked = false;
+          if (item.permissionOverwrites && item.permissionOverwrites.cache.size > 0) {
+            const everyoneOverwrite = item.permissionOverwrites.cache.find(
+              overwrite => overwrite.id === item.guild.id // @everyone role has same ID as guild
+            );
+            if (everyoneOverwrite && everyoneOverwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
+              isLocked = true;
+            }
+          }
+          
+          // HTML/CSS padlock icon - universally supported
+          const padlockIcon = '<span style="display:inline-block;width:8px;height:10px;border:1px solid #999;border-radius:2px;position:relative;margin:0 2px;"><span style="position:absolute;top:-3px;left:1px;width:4px;height:4px;border:1px solid #999;border-bottom:none;border-radius:3px 3px 0 0;"></span></span>';
+          const smallPadlockIcon = '<span style="display:inline-block;width:6px;height:7px;border:1px solid #999;border-radius:1px;position:relative;margin:0 1px;vertical-align:super;font-size:70%;"><span style="position:absolute;top:-2px;left:1px;width:2px;height:3px;border:1px solid #999;border-bottom:none;border-radius:2px 2px 0 0;"></span></span>';
+          
+          if (!canSendMessages) {
+            // User cannot send messages - use padlock icon instead of hashtag/voice icon
+            channelIcon = padlockIcon;
+          } else {
+            // User can send messages
+            if (isVoiceChannel) {
+              // Voice channel with send permission - using Unicode speaker character
+              channelIcon = "&#128264;"; // Speaker with sound waves (more universal than emoji)
+              if (isLocked) {
+                // Show small padlock for locked voice channel
+                channelIcon += smallPadlockIcon;
+              }
+            } else {
+              // Text channel with send permission
+              if (isLocked) {
+                // Show hashtag with small padlock for locked text channel
+                channelIcon = '#' + smallPadlockIcon;
+              }
+            }
+          }
+          
+          channelList += text_channel_template
+            .replace("{$CHANNEL_NAME}", escape(item.name))
+            .replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`)
+            .replace("{$CHANNEL_ICON}", channelIcon);
         }
       }
     });
@@ -87,9 +174,11 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     let serverList = "";
     let serversDeleted = 0; // Track if servers were deleted due to sync issues
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-    const data = auth.dbQueryAll("SELECT * FROM servers WHERE discordID=?", [discordID]);
 
+    // Acquire lock for this user to prevent race conditions where users might see other users' servers
     await lock.acquire(discordID, async () => {
+      const data = auth.dbQueryAll("SELECT * FROM servers WHERE discordID=?", [discordID]);
+      
       for (let serverData of data) {
         const serverID = serverData.serverID;
         let server = bot.client.guilds.cache.get(serverID);
@@ -204,6 +293,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
     })
     
+    // Parse and add user agent display
+    response = addUserAgentDisplay(response, req);
+    
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(response);
     res.end();
@@ -252,4 +344,44 @@ function createServerHTML(server, member) {
   serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
   serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", server.name);
   return serverHTML;
+}
+
+function addUserAgentDisplay(response, req) {
+  // Parse user agent
+  const userAgent = req.headers['user-agent'] || '';
+  const parser = new UAParser(userAgent);
+  const uaResult = parser.getResult();
+  
+  // Create user agent display string
+  let userAgentDisplay = '';
+  if (uaResult.browser.name || uaResult.os.name) {
+    const browserName = escape(uaResult.browser.name || '');
+    const browserVersion = escape(uaResult.browser.version || '');
+    const osName = escape(uaResult.os.name || '');
+    const osVersion = escape(uaResult.os.version || '');
+    const deviceVendor = escape(uaResult.device.vendor || '');
+    const deviceModel = escape(uaResult.device.model || '');
+    
+    const browserInfo = browserName ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}` : '';
+    const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
+    const deviceInfo = deviceVendor || deviceModel ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})` : '';
+    
+    // Build display text based on what information is available
+    if (browserInfo && osInfo) {
+      const displayText = `Platform: ${browserInfo} on ${osInfo}${deviceInfo}`;
+      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
+    } else if (browserInfo) {
+      const displayText = `Platform: ${browserInfo}${deviceInfo}`;
+      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
+    } else if (osInfo) {
+      const displayText = `Platform: ${osInfo}${deviceInfo}`;
+      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
+    }
+    // If neither browserInfo nor osInfo, userAgentDisplay remains empty
+  }
+  
+  // Add user agent display to response using strReplace for consistency
+  response = strReplace(response, "{$USER_AGENT}", userAgentDisplay);
+  
+  return response;
 }
