@@ -18,6 +18,9 @@ const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
 
+// Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
+// Is that a bad idea?
+
 const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message.html', 'utf-8'));
 const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message.html', 'utf-8'));
 const message_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_mentioned.html', 'utf-8'));
@@ -72,15 +75,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   const clientTimezone = getTimezoneFromIP(clientIP);
    
   try {
-    const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-    
-    if (!clientIsReady) {
-      res.writeHead(503, { "Content-Type": "text/plain" });
-      res.write("The bot isn't connected, try again in a moment");
-      res.end();
-      return;
-    }
-       
     let response, chnl;
     try {
       response = "";
