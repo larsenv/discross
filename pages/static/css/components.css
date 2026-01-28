@@ -1037,6 +1037,16 @@ canvas {
   }
 }
 
+.message-form-container {
+    left: 0 !important;       /* Remove the 60px gap on the left */
+    right: 0 !important;      /* Touch the right edge */
+    width: 100% !important;   /* Force full screen width */
+    max-width: none !important;
+    padding: 8px !important;  /* Add internal breathing room */
+    box-sizing: border-box !important; /* Include padding in width calculation */
+}
+
+/* 2. PHASE 1: The "Fallback" (For Wii / Opera 9) */
 .chat-input, 
 .message-composer,
 .message-form-container form,
@@ -1044,8 +1054,7 @@ canvas {
     display: table; /* Force table layout for Wii */
     width: 100%;
     border-collapse: separate;
-    border-spacing: 4px;
-    box-sizing: border-box;
+    border-spacing: 4px; /* Space between input and button */
 }
 
 .message-input-wrapper,
@@ -1053,9 +1062,10 @@ canvas {
 .chat-input textarea,
 .message-input {
     display: table-cell;
-    width: 100%; /* Take up all available space */
+    width: 99%; /* Take up most space (99% prevents table blowout on Wii) */
     vertical-align: middle;
     margin: 0;
+    box-sizing: border-box;
 }
 
 .send-button, 
@@ -1068,17 +1078,14 @@ canvas {
     padding: 0 16px;
 }
 
-/* PHASE 2: The "Modern Reset" (For Mobile/Desktop)
-   The Wii DOES NOT support '@supports', so it ignores this entire block.
-   Mobile phones DO support it, so they enter this block and restore the layout.
-*/
+/* 3. PHASE 2: The "Modern Reset" (For Mobile/Desktop) */
 @supports (display: flex) {
     .chat-input, 
     .message-composer,
     .message-form-container form,
     .message-input-container {
         display: flex; /* Restore Flexbox */
-        width: auto;
+        width: 100%;
         border-spacing: 0;
         gap: 8px;
     }
@@ -1089,7 +1096,7 @@ canvas {
     .message-input {
         display: block;
         width: auto;
-        flex: 1 1 auto; /* Let input grow naturally */
+        flex: 1 1 auto; /* Grow to fill space */
     }
 
     .send-button, 
@@ -1097,6 +1104,6 @@ canvas {
     .chat-send {
         display: inline-flex;
         width: auto;
-        align-self: stretch;
+        align-self: stretch; /* Match height of input */
     }
 }
