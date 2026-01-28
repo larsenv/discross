@@ -82,15 +82,6 @@ body {
   color: #0067e0 !important;
 }
 
-.light-theme .discross-button {
-  background: #5865f2 !important; /* Discord Purple */
-  color: white !important;
-}
-
-.light-theme .discross-button:hover {
-  background: #4752c4 !important;
-}
-
 /* Code Blocks */
 .light-theme pre, 
 .light-theme code {
@@ -153,16 +144,6 @@ body {
 .amoled-theme .menu-button {
   background: transparent !important;
   border: none !important;
-}
-
-/* Buttons: Force Purple */
-.amoled-theme .discross-button {
-  background: #5865f2 !important;
-  color: white !important;
-}
-
-.amoled-theme .discross-button:hover {
-  background: #4752c4 !important;
 }
 
 /* Message List */
