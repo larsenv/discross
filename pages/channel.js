@@ -72,7 +72,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   const clientTimezone = getTimezoneFromIP(clientIP);
    
   try {
-    // Check if bot is connected
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
     
     if (!clientIsReady) {
@@ -81,7 +80,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       res.end();
       return;
     }
-
+    
     let response, chnl;
     try {
       response = "";
@@ -374,9 +373,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // Process Stickers
         if (item.stickers && item.stickers.size > 0 && imagesCookie == 1) {
           item.stickers.forEach(sticker => {
-             // Convert all stickers to GIF via proxy to ensure animation support and lightweight
-             // Note: Discord stickers can be Lottie (json), PNG, or APNG. 
-             // Requesting .gif from the proxy should trigger conversion if implemented on backend, or serve readable format.
+             // User requested GIF format explicitly.
              const stickerURL = `/imageProxy/sticker/${sticker.id}.gif`;
              messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
           });
