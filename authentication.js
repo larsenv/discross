@@ -143,6 +143,7 @@ function setup() {
   queryRun('CREATE TABLE IF NOT EXISTS webhooks (serverID TEXT, webhookID TEXT, token STRING)')
   queryRun('CREATE TABLE IF NOT EXISTS verificationcodes (discordID TEXT, code STRING, expires INT)')
   queryRun('CREATE TABLE IF NOT EXISTS servers (serverID TEXT, discordID TEXT, unique (serverID, discordID))')
+  queryRun('CREATE TABLE IF NOT EXISTS channel_preferences (discordID TEXT, serverID TEXT, channelID TEXT, collapsed INTEGER DEFAULT 0, PRIMARY KEY (discordID, serverID, channelID))')
 }
 
 setup();
@@ -263,3 +264,17 @@ exports.dbQueryRun = queryRun
 exports.dbQuerySingle = querySingle
 
 exports.dbQueryAll = queryAll
+
+exports.getChannelPreferences = function (discordID, serverID) {
+  return queryAll('SELECT channelID, collapsed FROM channel_preferences WHERE discordID=? AND serverID=?', [discordID, serverID])
+}
+
+exports.setChannelPreference = function (discordID, serverID, channelID, collapsed) {
+  try {
+    queryRun('INSERT OR REPLACE INTO channel_preferences (discordID, serverID, channelID, collapsed) VALUES (?, ?, ?, ?)', [discordID, serverID, channelID, collapsed])
+    return { success: true }
+  } catch (err) {
+    console.error('Error setting channel preference:', err)
+    return { success: false, error: err.message }
+  }
+}

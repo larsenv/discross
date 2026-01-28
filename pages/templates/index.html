@@ -16,170 +16,29 @@
   <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
   <meta name="msapplication-TileColor" content="#2b5797">
   <meta name="theme-color" content="#ffffff">
-  <style>
-    @font-face {
-      font-family: 'rodin';
-      src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
-           url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
-      font-weight: 400;
-    }
-
-    @font-face {
-      font-family: 'rodin';
-      src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
-           url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
-      font-weight: 700;
-    }
-
-    /* Global reset + consistent box sizing and font */
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      font-size: 16px;
-      line-height: 1.45;
-      background-color: #303338;
-      color: #dddddd;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    .light-theme #wrapper {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-    }
-
-    .light-theme #wrapper * {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-    }
-
-    /* Homepage container spacing */
-    .homepage, .home, #home {
-      padding: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    /* Styled buttons for homepage */
-    .discross-button {
-      display: inline-block;
-      background: #5865f2;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 16px;
-      font-weight: 500;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-      margin: 8px 0;
-    }
-
-    .light-theme .discross-button {
-      background: #5865f2 !important;
-      color: white !important;
-    }
-
-    .light-theme .discross-button:hover {
-      background: #4752c4 !important;
-    }
-
-    .light-theme .discross-button.secondary {
-      background: #4f545c !important;
-      color: white !important;
-    }
-
-    .light-theme .discross-button.secondary:hover {
-      background: #5d6269 !important;
-    }
-
-    /* AMOLED theme */
-    .amoled-theme #wrapper {
-      background: #000000 !important;
-      color: #ffffff !important;
-    }
-
-    .amoled-theme #wrapper * {
-      background: #000000 !important;
-      color: #ffffff !important;
-    }
-
-    .amoled-theme a {
-      color: #5865f2 !important;
-    }
-
-    /* Headings and content rhythm */
-    h1,
-    h2 {
-      margin-top: 24px;
-      margin-bottom: 12px;
-      font-size: 1.75rem;
-      font-weight: 600;
-    }
-
-    p,
-    ul,
-    .section {
-      line-height: 1.5;
-      margin: 0 0 12px 0;
-      font-size: 0.95rem;
-    }
-
-    ul {
-      padding-left: 20px;
-    }
-
-    .buttons {
-      margin: 16px 0;
-    }
-
-    /* Focus outlines */
-    button:focus, input:focus, textarea:focus {
-      box-shadow: 0 0 0 3px rgba(88,101,242,0.12);
-      border-color: #5865f2;
-    }
-
-    /* Small screen adjustments */
-    @media (max-width: 640px) {
-      .homepage, .home, #home {
-        padding: 12px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/themes.css">
+  <link rel="stylesheet" href="/css/components.css">
 </head>
-
 <body id="wrapper" {$WHITE_THEME_ENABLED}>
   <div>
-    <table style="width: 100%;">
+    <table class="header-table">
       <tr>
-        <td><img src="/resources/logo.gif" alt="Logo"></td>
+        <td class="header-logo"><img src="/resources/logo.gif" alt="Logo"></td>
+        <td class="header-title">discross</td>
+        <td class="header-menu">{$MENU_OPTIONS}</td>
         <td>
-          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
-        </td>
-        <td width="100%" align="right">
-          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; {$MENU_OPTIONS}</font>
-        </td>
-        <td valign="right">
           <form action="/switchtheme" method="post">
-            <button type="submit" style="background: none; border: none;">
+            <button type="submit" class="theme-switch-button">
               <img src="/resources/images/themeswitch.gif" alt="Switch theme">
             </button>
           </form>
         </td>
       </tr>
     </table>
-    <hr style="margin: 0; position: relative; bottom: 4px;">
+    <hr>
 
-    <div style="padding: 17px 17px 17px 17px;">
+    <div class="content-section">
       <div class="buttons">
         <a class="discross-button"
           href="http://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8">Add
@@ -191,34 +50,34 @@
       </div>
       
       <div class="section">
-        <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
-          Questions or feedback? Contact us at <a href="mailto:admin@discross.net" style="color:#647dcd;">admin@discross.net</a>
-        </font>
+        <span class="section-text">
+          Questions or feedback? Contact us at <a href="mailto:admin@discross.net">admin@discross.net</a>
+        </span>
       </div>
       
       <div class="section">
-        <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
-          <a style="color: #647dcd;" href="/privacy.html">Privacy Policy</a> / <a style="color: #647dcd;" href="/terms.html">Terms</a>
-        </font>
+        <span class="section-text">
+          <a href="/privacy.html">Privacy Policy</a> / <a href="/terms.html">Terms</a>
+        </span>
       </div>
   
       <div class="section">
-        <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">By logging in or registering you agree to the use of cookies</font>
+        <span class="section-text">By logging in or registering you agree to the use of cookies</span>
       </div>
   
       <div class="section">
-        <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">What is Discross?</font>
-        <p><font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+        <h2 class="section-title">What is Discross?</h2>
+        <p class="section-text">
           A work-in-progress unofficial Discord relay (that acts like a client) aiming to support all platforms that support
           HTML.
           It uses webhooks and a bot so it doesn't need your user token, which would allow anyone to control your account.
           However, this means it only works on servers with the bot.
-        </font></p>
+        </p>
       </div>
   
       <div class="section">
-        <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">What platforms are supported?</font>
-        <p><font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+        <h2 class="section-title">What platforms are supported?</h2>
+        <p class="section-text">
           Almost any platform that has a browser. Platforms that are confirmed to work, to some extent:
           <ul>
             <li>iOS</li>
@@ -247,26 +106,25 @@
             <li>Xbox One</li>
             <li>Xbox Series X</li>
           </ul>
-        </font></p>
+        </p>
       </div>
   
       <div class="section">
-        <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Forwarder</font>
-        <p><font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Install these to access Discross quicker.</font></p>
-        <p><font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+        <h2 class="section-title">Forwarder</h2>
+        <p class="section-text">Install these to access Discross quicker.</p>
+        <p class="section-text">
           <ul>
-            <li>Nintendo 3DS - CIA (<a style="color: #647dcd;" href='/forwarder/discross.cia'>Direct</a> / <a
-                style="color: #647dcd;" href='/forwarder/discross.png'>QR</a>)</li>
-            <li>PSP - <a style="color: #647dcd;" href='http://banner.rc24.xyz/discross.prs'>Click here on a PSP to install
+            <li>Nintendo 3DS - CIA (<a href='/forwarder/discross.cia'>Direct</a> / <a href='/forwarder/discross.png'>QR</a>)</li>
+            <li>PSP - <a href='http://banner.rc24.xyz/discross.prs'>Click here on a PSP to install
                 this forwarder</a></li>
-            <li>Wii - <a style="color: #647dcd;" href='/forwarder/discross.wad'>WAD</a></li>
+            <li>Wii - <a href='/forwarder/discross.wad'>WAD</a></li>
           </ul>
-        </font></p>
+        </p>
       </div>
   
       <div class="section">
-        <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Credits</font>
-        <p><font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+        <h2 class="section-title">Credits</h2>
+        <p class="section-text">
           <ul>
             <li>AndreMor - Implementation of OAuth support</li>
             <li>circuit10 - Creator of the project</li>
@@ -275,7 +133,7 @@
             <li>Larsenv - Maintainer of project</li>
             <li>zlc1004 - Implementation of reply and other features</li>
           </ul>
-        </font></p>
+        </p>
     </div>
   </div>
 </body>

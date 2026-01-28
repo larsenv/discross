@@ -90,8 +90,8 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         let author_id = reply_message.author.id;
         let author_mention = "<@" + author_id + ">";
 
-        processedmessage = "> Replying to \"" + reply_message_content + "\" from " + author_mention + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
-
+        processedmessage = "> Replying to " + reply_message_content + " from " + author_mention + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
+        
         await webhook.edit({ channel: channel });
         const message = await webhook.send({
           content: processedmessage,
