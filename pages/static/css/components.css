@@ -1107,3 +1107,16 @@ canvas {
         align-self: stretch; /* Match height of input */
     }
 }
+
+body, .chat, .chat-container {
+    padding-bottom: 120px !important; /* Huge gap at bottom for the input bar */
+    box-sizing: border-box !important;
+}
+
+/* 2. Ensure the message list allows the body to handle scrolling */
+/* (This helps the Wii scroll smoother than using overflow:auto on a div) */
+.message-list {
+    max-height: none !important;
+    overflow: visible !important;
+    height: auto !important;
+}
