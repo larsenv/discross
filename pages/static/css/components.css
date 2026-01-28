@@ -1036,3 +1036,56 @@ canvas {
     box-sizing: border-box;
   }
 }
+
+.chat-input, 
+.message-composer,
+.message-form-container form,
+.message-input-container {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: separate !important; /* Allows spacing */
+    border-spacing: 8px 0 !important;     /* Adds gap between input and button */
+    box-sizing: border-box !important;
+}
+
+/* 2. The Input Field becomes a Table Cell */
+/* It will automatically fill the remaining width */
+.message-input-wrapper,
+.chat-input input,
+.chat-input textarea,
+.message-input {
+    display: table-cell !important;
+    width: 100% !important;
+    vertical-align: middle !important;
+    float: none !important;
+    height: 44px !important; /* Force matching height */
+    margin: 0 !important;
+}
+
+/* 3. The Send Button becomes a Table Cell */
+/* It will shrink to fit the text 'Send' */
+.send-button, 
+.btn-send, 
+.chat-send {
+    display: table-cell !important;
+    width: 1% !important;     /* Shrink to fit */
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+    float: none !important;
+    position: static !important;
+    height: 44px !important;  /* Force matching height */
+    padding: 0 16px !important;
+}
+
+/* 4. Ensure the footer bar stays stuck to the bottom on Wii */
+.message-form-container {
+    display: block !important; /* Reset any flex on the main container */
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    background: #36393f !important;
+    border-top: 1px solid #40444b !important;
+    padding: 4px 8px !important;
+}
