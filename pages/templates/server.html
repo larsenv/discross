@@ -2,64 +2,81 @@
 <html>
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="manifest" href="/site.webmanifest">
-  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
-  <meta name="msapplication-TileColor" content="#2b5797">
-  <meta name="theme-color" content="#ffffff">
-  <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/themes.css">
-  <link rel="stylesheet" href="/css/components.css">
-  <title>Discross - Menu</title>
-    <script>
-        function toggleCategory(categoryId) {
-            var categoryDiv = document.getElementById('category_' + categoryId);
-            var arrowSpan = document.getElementById('arrow_' + categoryId);
-            
-            if (categoryDiv && arrowSpan) {
-                // Check current display using getComputedStyle for reliability
-                var currentDisplay = window.getComputedStyle(categoryDiv).display;
-                var isCollapsed = currentDisplay === 'none';
-                categoryDiv.style.display = isCollapsed ? 'block' : 'none';
-                arrowSpan.textContent = isCollapsed ? '▼' : '▶';
-                
-                // Save preference to server
-                var serverID = window.location.pathname.split('/').pop();
-                if (serverID && serverID.length > 0 && serverID !== 'server') {
-                    fetch('/toggleCategory', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            serverID: serverID,
-                            categoryID: categoryId,
-                            collapsed: !isCollapsed
-                        })
-                    }).catch(function(err) {
-                        console.error('Error saving category preference:', err);
-                    });
-                }
-            }
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Discross - Menu</title>
+    <style>
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
+            font-weight: 400;
         }
-    </script>
+
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
+            font-weight: 700;
+        }
+
+        html,
+        body,
+        #wrapper {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'rodin', Arial, Helvetica, sans-serif;
+        }
+
+        .light-theme #wrapper {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+        }
+
+        .light-theme #wrapper * {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+
+
+        }
+
+        /* AMOLED theme overrides for server page */
+        .amoled-theme #wrapper {
+            background: #000000 !important;
+            color: #ffffff !important;
+        }
+
+        .amoled-theme #wrapper * {
+            background: #000000 !important;
+            color: #ffffff !important;
+        }
+
+        .amoled-theme hr {
+            border-color: #555555 !important;
+        }
+
+        .amoled-theme a {
+            color: #5865f2 !important;
+        }
+
+        hr {
+            border: solid 1px #494c50;
+        }
+    </style>
 </head>
 
-<body {$WHITE_THEME_ENABLED}>
+<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <table class="server-layout">
+        <table>
             <tbody>
                 <tr>
-                    <td class="server-sidebar">
+                    <td valign="top" style="vertical-align: top;">
                         <a href="/server/"><img src="/resources/logo.gif" alt="Home"></a><br>
                         <hr noshade>
                         {$SERVER_LIST}
                     </td>
-                    <td class="server-main">
+                    <td valign="top" style="vertical-align: top;">
                         {$DISCORD_NAME}
 
                         {$CHANNEL_LIST}
