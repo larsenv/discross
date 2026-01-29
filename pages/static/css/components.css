@@ -17,6 +17,13 @@
   box-sizing: border-box;
 }
 
+html, body {
+    max-width: 100% !important;
+    overflow-x: hidden !important; /* formatting safety belt */
+    width: 100% !important;
+    margin: 0 !important;
+}
+
 html, body, #wrapper {
   margin: 0;
   padding: 0;
@@ -471,107 +478,94 @@ button:focus, input:focus, textarea:focus {
   max-height: 30vh;
 }
 
-/* Message Form Container (Fixed/Compat Override - NEW) */
 .message-form-container {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 60px !important;
-  right: 0 !important;
-  width: auto;
-  max-width: 100%;
-  overflow: visible;
-  background: #36393f;
-  border-top: 1px solid #40444b;
-  z-index: 100;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 4px !important;
+    background: #36393f !important;
+    z-index: 9999 !important;
+    box-sizing: border-box !important;
 }
 
-/* Fallback layouts for older browsers */
-.message-buttons-container {
-  width: 100%;
-  max-width: 100%;
-  display: table; /* or inline-block per new CSS logic, keeping table for safety on old */
-  table-layout: fixed;
-  box-sizing: border-box;
-  padding: 8px;
-  text-align: left;
-  overflow: visible;
-}
-
-.message-button-cell {
-  display: inline-block; /* Updated from new CSS */
-  width: 32px;
-  height: 32px;
-  text-align: center;
-  vertical-align: middle;
-  margin-right: 4px;
-}
-
-.modern-flex {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.message-input-wrapper {
-  background: #40444b;
-  border-radius: 8px;
-  padding: 4px;
-  margin: 8px 0;
-  width: 100%;
-  box-sizing: border-box;
-}
-
+/* 2. LAYOUT ENGINE: Table with "Fixed" rules */
+/* This prevents the table from growing wider than the screen */
+.message-buttons-container,
+.message-form-container form,
 .message-input-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0;
-  width: 100%;
+    display: table !important;
+    width: 100% !important;
+    table-layout: fixed !important; /* CRITICAL FIX FOR ZOOM */
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+}
+
+/* 3. ROW 1: The Buttons (Emoji, Draw, Refresh) */
+.message-button-cell {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    width: 33% !important; /* Distribute evenly */
+    height: 40px !important;
+}
+
+/* 4. ROW 2: The Input Field */
+.message-input-wrapper {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    width: auto !important; /* Takes remaining space */
 }
 
 .message-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  color: #dcddde;
-  background: transparent;
-  border: none;
-  outline: none;
-  height: 44px;
-  padding: 11px 16px;
-  font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 20px;
-  box-sizing: border-box;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    height: 40px !important;
+    margin: 0 !important;
 }
 
-/* Input Disabled */
-.message-input-disabled {
-  display: flex;
-  align-items: center;
-  background: #40444b;
-  border-radius: 8px;
-  padding: 4px;
-  margin: 8px 0;
+/* 5. ROW 2: The Send Button */
+/* We give it a fixed width so it never breaks layout */
+.send-button, 
+.btn-send, 
+.chat-send {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    width: 70px !important; /* Fixed width for stability */
+    height: 40px !important;
+    padding: 0 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
 }
 
-.message-input-disabled input {
-  flex: 1;
-  color: #72767d;
-  background: transparent;
-  border: none;
-  outline: none;
-  height: 44px;
-  padding: 11px 16px;
-  font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 20px;
+/* LIGHT THEME OVERRIDE */
+.light-theme .message-form-container {
+    background: #ffffff !important;
+    border-top: 1px solid #e3e5e8 !important;
 }
 
-.chat-footer { position: relative; }
-.chat-footer .send-button { position: static !important; }
+/* MODERN BROWSERS RESTORE (Feature Query) */
+@supports (display: flex) {
+    .message-buttons-container,
+    .message-form-container form,
+    .message-input-container {
+        display: flex !important;
+        table-layout: auto !important;
+        width: 100% !important;
+        gap: 8px;
+    }
+    
+    .message-button-cell, .send-button, .btn-send {
+        display: block !important;
+        width: auto !important;
+    }
+    
+    .message-input-wrapper {
+        display: block !important;
+        flex: 1 !important;
+    }
+}
 
 /* =========================================
    EMOJI PICKER & FORMATTING
