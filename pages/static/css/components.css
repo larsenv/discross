@@ -87,15 +87,13 @@ body {
 }
 
 .scrollable-content {
+    padding: 16px;
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 60px; /* Adjust to match your input bar height */
-    height: auto !important; /* Override the 100% */
-    overflow-y: auto;
-    padding: 16px;
-    -webkit-overflow-scrolling: touch;
+    bottom: 85px; /* Leave room for the input bar */
+    height: auto !important;
 }
 
 .header-table { width: 100%; }
@@ -179,9 +177,9 @@ body {
 .message {
   padding: 8px 16px;
   margin: 0;
-  border-bottom: 1px solid #2f3136;
   position: relative;
 }
+
 .message:last-child { border-bottom: none; }
 
 .message-header { margin-bottom: 4px; display: flex; align-items: baseline; }
@@ -223,24 +221,24 @@ body {
    ========================================= */
 
 .message-form-container {
-    position: absolute !important;
+    position: absolute !important; /* Pin to bottom overlay */
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    width: 100% !important;
-    height: 60px; /* Match the bottom value above */
-    z-index: 100;
-    background-color: #36393f; /* Ensure messages don't show through */
+    width: auto !important; /* FIX: Prevents horizontal stretching */
+    height: auto !important;
+    z-index: 50;
+    overflow: hidden;
+    background-color: #36393f;
     border-top: 1px solid #2f3136;
 }
 
-/* ROW 1: The Buttons */
-.message-buttons-container {
+/* Fix inner elements stretching */
+.message-buttons-container,
+.message-form-container form {
+    width: auto !important; /* Don't force 100% width */
     display: block !important;
-    width: 100% !important;
-    padding: 6px 8px 2px 8px !important;
-    text-align: left;
-    box-sizing: border-box;
+    box-sizing: border-box !important; /* Ensure padding is calculated inside */
 }
 
 .message-button-cell {
@@ -392,76 +390,52 @@ canvas { background: #ffffff; cursor: crosshair; display: block; border: 1px sol
    ========================================= */
 
 @supports (display: flex) {
-    /* Restore Padding for Desktop */
-    .message-form-container {
-        padding: 8px !important;
-        background: #36393f !important;
-    }
-    
-    /* Make buttons flex again */
-    .message-buttons-container {
+
+    /* 1. Turn the main container into a Flex Column */
+    .content-padding {
         display: flex !important;
-        background: transparent !important;
+        flex-direction: column !important;
+        height: 100vh !important; /* Force full viewport height */
+        overflow: hidden !important; /* No double scrollbars */
+        position: static !important; /* Reset legacy positioning */
         padding: 0 !important;
-        margin-bottom: 8px !important;
-        gap: 8px;
-    }
-    
-    .message-button-cell {
-        display: block !important;
-        margin-right: 0 !important;
     }
 
-    /* Restore Flex Input for Desktop */
+    /* 2. Message list expands to fill available space */
+    .scrollable-content {
+        flex: 1 !important; /* Grow to fill space */
+        height: auto !important; /* Stop forcing 100% height */
+        overflow-y: auto !important; /* Scroll strictly inside this box */
+        position: static !important;
+        padding-bottom: 0 !important;
+    }
+    
+    /* 3. Input Bar sits naturally at the bottom */
+    .message-form-container {
+        position: static !important; /* Reset legacy absolute/relative */
+        flex-shrink: 0 !important; /* Don't let it shrink */
+        width: 100% !important;
+        padding: 8px !important;
+        background: #36393f !important;
+        border-top: 1px solid #2f3136 !important;
+    }
+    
+    /* Restore Flex layout for buttons/input */
+    .message-buttons-container {
+        display: flex !important;
+        gap: 8px;
+        padding: 0 0 8px 0 !important;
+        width: auto !important;
+    }
+    
+    .message-form-container form {
+        padding: 0 !important;
+        width: auto !important;
+    }
+
     .message-input-container {
         display: flex !important;
         width: 100% !important;
-        table-layout: auto !important;
         background: #40444b !important;
-        border-radius: 8px !important;
-        border: 1px solid #40444b !important;
-        overflow: hidden !important;
     }
-
-    .message-input {
-        display: block !important;
-        flex: 1 !important; /* Grow to fill space */
-        width: auto !important;
-        background: transparent !important;
-    }
-
-    .send-button, .btn-send, button.send, .chat-send {
-        flex: 0 0 auto; /* don't grow, don't shrink */
-        padding: 10px 14px;
-        border-radius: 8px;
-        background: #5865f2;
-        color: #fff;
-        border: none;
-        font-weight: 600;
-        font-size: 0.95rem;
-        cursor: pointer;
-        align-self: stretch; /* match input height */
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        white-space: nowrap;
-        min-height: 44px; /* accessible tap target */
-    }
-
-          @media (max-width: 640px) {
-        .send-button, .btn-send {
-          padding: 10px;
-          /* Remove min-width or change it to auto */
-          min-width: auto; 
-          font-size: 0.9rem;
-          /* Allow the button to shrink if necessary */
-          flex-shrink: 1; 
-        }
-        
-        .message-input {
-          /* Ensure the input box gives up space first */
-          flex: 1;
-          min-width: 0; 
-        }
-      }
 }
