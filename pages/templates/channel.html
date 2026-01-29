@@ -86,7 +86,7 @@
         }
     </script>
     <style>
-        @font-face {
+@font-face {
             font-family: 'rodin';
             src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
                  url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
@@ -387,7 +387,7 @@
         }
 
         /* Defensive override: if send button was absolutely positioned elsewhere,
-           prefer static/flex layout so it stays inside the viewport */
+            prefer static/flex layout so it stays inside the viewport */
         .chat-footer { position: relative; }
         .chat-footer .send-button {
             position: static !important;
@@ -404,6 +404,305 @@
                 min-height: 40px;
                 font-size: 0.9rem;
             }
+        }
+
+        /* Base extensions */
+        /* Typography */
+        h1, h2 { margin: 24px 0 12px 0; font-size: 1.75rem; font-weight: 600; }
+        p, ul { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
+
+        /* FIX: Scope UL padding to message content only so reactions aren't indented */
+        .messagecontent ul { padding-left: 20px; }
+
+        /* Header */
+        .header-table { width: 100%; }
+        .header-logo img { display: block; }
+        .header-title {
+            font-size: 2.625rem;
+            font-family: 'rodin', Arial, Helvetica, sans-serif;
+            color: #dddddd;
+        }
+        .header-menu {
+            width: 100%;
+            text-align: right;
+            font-size: 1.5rem;
+            font-family: 'rodin', Arial, Helvetica, sans-serif;
+            color: #dddddd;
+        }
+        .header-menu a,
+        .header-menu-link {
+            color: #dddddd;
+            text-decoration: none;
+            font-size: 1.125rem;
+            font-family: 'rodin', Arial, Helvetica, sans-serif;
+        }
+        .header-user-info {
+            color: #aaaaaa;
+            font-size: 0.75rem;
+        }
+
+        /* Homepage */
+        .homepage, .home, #home {
+            padding: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Code */
+        pre {
+            background: #2f3136;
+            border: 1px solid #202225;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 4px 0;
+            overflow: auto;
+            max-height: 400px;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 14px;
+        }
+        code {
+            background: #2f3136;
+            border-radius: 3px;
+            padding: 2px 4px;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 14px;
+            color: #dcddde;
+        }
+        pre code { background: none; border: none; padding: 0; }
+
+        /* Layout - SIMPLE for Wii compatibility */
+        .content-padding {
+            padding-left: 60px;
+            padding-bottom: 160px; /* Increased bottom padding to account for larger input bar */
+        }
+
+        .scrollable-content {
+            padding: 16px;
+        }
+
+        /* Menu Icon specifically */
+        .menu-icon { width: 24px; height: 24px; display: block; }
+
+        /* Messages */
+        .message {
+            padding: 8px 16px;
+            margin: 0;
+            border-bottom: 1px solid #2f3136;
+        }
+        .message:last-child { border-bottom: none; }
+        .message-header { margin-bottom: 4px; }
+        .message-author {
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 8px;
+            color: #ffffff;
+            display: inline;
+        }
+        .message-date { 
+            font-size: 12px; 
+            color: #72767d; 
+            display: inline;
+        }
+        .message-link { text-decoration: none; color: inherit; display: block; }
+        .messagecontent {
+            color: #dcddde;
+            font-size: 16px;
+            line-height: 20px;
+            word-wrap: break-word;
+        }
+        .firstmessage { margin: 0; }
+
+        /* Message mentions */
+        .message.mentioned {
+            border-left: 4px solid #faa61a;
+            background-color: rgba(250, 166, 26, 0.1);
+            padding-left: 12px;
+        }
+        .mention {
+            color: #00aff4;
+            background: rgba(88, 101, 242, 0.3);
+            padding: 0 2px;
+            border-radius: 3px;
+        }
+
+        /* Embeds */
+        .embed { margin-top: 8px; max-width: 520px; }
+        .embed-content {
+            background-color: #2f3136;
+            border: 1px solid #202225;
+            border-radius: 4px;
+            padding: 8px 12px;
+        }
+
+        /* Reactions */
+        .reaction {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #2f3136;
+            border-radius: 4px;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+        .reaction img { width: 16px; height: 16px; vertical-align: middle; }
+        .reaction-count { color: #dcddde; font-size: 12px; margin-left: 4px; }
+
+        /* Forwarded */
+        .forwarded-content-wrapper {
+            padding: 8px;
+            background: rgba(47, 49, 54, 0.6);
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        /* Buttons Row specifically */
+        .icon-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .icon-button:hover { background: rgba(255, 255, 255, 0.06); }
+        .emoji-icon { width: 24px; height: 24px; vertical-align: middle; }
+
+        /* Input Row - SEND BUTTON ON SAME LINE */
+        .message-input-wrapper { 
+            width: 100%; 
+            background: transparent;
+            padding: 0;
+        }
+
+        .message-input-container {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: separate; 
+            border-spacing: 10px 0; /* Creates spacing between input and button */
+        }
+
+        .message-input {
+            display: table-cell;
+            width: 100%;
+            height: 44px;
+            padding: 0 12px;
+            border: none;
+            background: #40444b;
+            color: #dcddde;
+            font-size: 16px;
+            vertical-align: middle;
+            font-family: 'rodin', Arial, Helvetica, sans-serif;
+            outline: none;
+            border-radius: 8px;
+        }
+
+        /* Buttons */
+        .buttons { margin: 16px 0; }
+        .discross-button {
+            background: #5865f2;
+            color: white;
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            margin: 8px 0;
+            font-family: 'rodin', Arial, Helvetica, sans-serif;
+        }
+        .discross-button:hover { background: #4752c4; }
+        .discross-button.secondary { background: #4f545c; }
+        .discross-button.secondary:hover { background: #5d6269; }
+
+        /* Form inputs - Nice styling for login page */
+        input[type="text"],
+        input[type="password"],
+        input[type="email"],
+        textarea {
+            background: #40444b;
+            border: 1px solid #40444b;
+            border-radius: 8px;
+            color: #dcddde;
+            padding: 10px 12px;
+            font-size: 16px;
+            font-family: 'rodin', Arial, Helvetica, sans-serif;
+            width: 100%;
+            max-width: 400px;
+            margin: 8px 0;
+            outline: none;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        input[type="email"]:focus,
+        textarea:focus {
+            border-color: #5865f2;
+            background: #383a40;
+        }
+
+        label {
+            display: block;
+            margin: 12px 0 4px 0;
+            font-weight: 600;
+            color: #dcddde;
+        }
+
+        /* Server Pages */
+        .server-layout { display: table; width: 100%; }
+        .server-sidebar, .server-main { vertical-align: top; }
+        .server-icon { height: 48px; width: 48px; }
+        .server-select-title {
+            font-size: 1.875rem;
+            color: #5865f2;
+            font-weight: bold;
+            font-family: 'rodin', Arial, Helvetica, sans-serif;
+        }
+        .server-select-text {
+            font-size: 1.5rem;
+            color: #dddddd;
+            font-family: 'rodin', Arial, Helvetica, sans-serif;
+        }
+
+        /* Drawing */
+        #toolbar-container {
+            background: #2f3136;
+            padding: 5px;
+            border-bottom: 1px solid #202225;
+            margin: 0 auto 5px auto;
+            border-radius: 8px;
+        }
+        .c-box {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #555;
+            display: inline-block;
+            margin: 1px;
+            cursor: pointer;
+        }
+        #canvas-wrapper {
+            margin: 0 auto 20px auto;
+            background: #2f3136;
+            padding: 5px;
+            width: 610px;
+            max-width: 100%;
+        }
+        canvas {
+            background: #fff;
+            cursor: crosshair;
+            display: block;
+            border: 1px solid #202225;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Additional Small screen adjustments */
+        @media (max-width: 640px) {
+            .content-padding { padding-left: 50px; padding-bottom: 160px; }
+            .homepage, .home, #home { padding: 12px; }
         }
     </style>
 </head>
