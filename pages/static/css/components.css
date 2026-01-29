@@ -305,21 +305,22 @@ body {
     vertical-align: middle;
 }
 
-.send-button {
-    display: table-cell !important;
-    width: 1px;
-    white-space: nowrap;
-    vertical-align: middle;
-    padding: 0 20px;
-    height: 44px;
+.send-button, .btn-send, button.send, .chat-send {
+    flex: 0 0 auto; /* don't grow, don't shrink */
+    padding: 10px 14px;
+    border-radius: 8px;
     background: #5865f2;
-    color: white;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
+    color: #fff;
     border: none;
-    border-radius: 0;
-    margin: 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    align-self: stretch; /* match input height */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    min-height: 44px; /* accessible tap target */
 }
 
 /* =========================================
@@ -435,10 +436,21 @@ canvas { background: #ffffff; cursor: crosshair; display: block; border: 1px sol
         background: transparent !important;
     }
 
-    .send-button {
-        display: block !important;
-        flex: 0 0 auto !important; /* Don't grow, just fit content */
-        width: auto !important;
-        padding: 0 20px !important;
+    .send-button, .btn-send, button.send, .chat-send {
+        flex: 0 0 auto; /* don't grow, don't shrink */
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: #5865f2;
+        color: #fff;
+        border: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        align-self: stretch; /* match input height */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        min-height: 44px; /* accessible tap target */
     }
 }
