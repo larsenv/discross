@@ -65,7 +65,6 @@ body.light-theme,
 .light-theme .message-input-wrapper,
 .light-theme .message-input-disabled {
   background: #ebedef !important;
-  border: 1px solid #e3e5e8 !important;
 }
 
 .light-theme .message-input,
@@ -175,7 +174,6 @@ body.amoled-theme,
 .amoled-theme .message-input-wrapper,
 .amoled-theme .message-input-disabled {
   background: #000000 !important;
-  border: 1px solid #333333 !important;
 }
 
 .amoled-theme .message-input {
