@@ -13,6 +13,79 @@
     <meta name="theme-color" content="#ffffff">
     <title>Discross - #{$CHANNEL_NAME}</title>
     <script>
+        window.onload = function () {
+            // Enhanced scroll-to-bottom for old browser compatibility
+            function scrollToBottom() {
+                var end = document.getElementById("end");
+                var msgContainer = document.getElementById("msgcontainer");
+                var scrollContainer = msgContainer ? msgContainer.parentNode : null;
+                
+                // Try multiple scroll methods for maximum compatibility
+                var scrolled = false;
+                
+                // Method 1: scrollIntoView on #end element (modern browsers)
+                if (end && end.scrollIntoView) {
+                    try {
+                        end.scrollIntoView();
+                        scrolled = true;
+                    } catch (e) {
+                        // Continue to fallback methods
+                    }
+                }
+                
+                // Method 2: Scroll the container holding msgcontainer
+                if (!scrolled && scrollContainer && scrollContainer.scrollTop !== undefined) {
+                    try {
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                        scrolled = true;
+                    } catch (e) {
+                        // Continue to fallback methods
+                    }
+                }
+                
+                // Method 3: Scroll msgcontainer itself
+                if (!scrolled && msgContainer && msgContainer.scrollTop !== undefined) {
+                    try {
+                        msgContainer.scrollTop = msgContainer.scrollHeight;
+                        scrolled = true;
+                    } catch (e) {
+                        // Continue to fallback methods
+                    }
+                }
+                
+                // Method 4: Scroll window to #end anchor (old browser fallback)
+                if (!scrolled && end) {
+                    try {
+                        window.location.hash = 'end';
+                        scrolled = true;
+                    } catch (e) {
+                        // Final fallback - scroll window to bottom
+                        try {
+                            window.scrollTo(0, document.body.scrollHeight);
+                        } catch (e2) {
+                            // If all else fails, at least try basic body scroll
+                            document.body.scrollTop = document.body.scrollHeight;
+                        }
+                    }
+                }
+            }
+            
+            scrollToBottom();
+        };
+
+        var emojiShowing = false;
+
+        function showEmoji() {
+            if (emojiShowing) {
+                document.getElementById("emoji").style.display = "none";
+                emojiShowing = false;
+            } else {
+                document.getElementById("emoji").style.display = "block";
+                emojiShowing = true;
+            }
+        }
+    </script>
+    <style>
         @font-face {
             font-family: 'rodin';
             src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
@@ -148,7 +221,6 @@
 
         /* Messages */
         .message {
-            padding: 8px 16px;
             margin: 0;
             border-bottom: 1px solid #2f3136;
         }
@@ -577,7 +649,6 @@
                 </div>
                 <a id="end" name="end"></a>
             </div>
-
             <div id="replying_to">
                 <div style="color: #b9bbbe; font-size: 14px; margin-bottom: 4px;">
                     <strong>Replying to {$REPLY_MESSAGE_AUTHOR}</strong>
@@ -588,41 +659,31 @@
                 </div>
             </div>
             <div class="message-form-container" style="position: sticky; bottom: 0;">
-                <form action="/send" style="position: relative;">
-                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                    <input type="hidden" id="reply_message_id" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">
-                    <input type="hidden" id="lite" name="lite" value="False">
-
-                    {$INPUT}
-
-                    <div class="modern-flex message-buttons-container">
-                        <div class="message-button-cell">
-                            <button
-                                style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; width: 32px; height: 32px;"
-                                onclick="showEmoji()" type="button"
-                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                                onmouseout="this.style.background='none'">
-                                <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
-                                    style="width: 24px; height: 24px;">
-                            </button>
-                        </div>
-                        <div class="message-button-cell">
-                            <a href="/draw/{$CHANNEL_ID}"
-                                style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
-                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                                onmouseout="this.style.background='none'">
-                                <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
-                            </a>
-                        </div>
-                        <div class="message-button-cell">
-                            <a href="{$REFRESH_URL}"
-                                style="display: inline-block; padding: 4px; border-radius: 4px; text-decoration: none; width: 32px; height: 32px; text-align: center;"
-                                onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                                onmouseout="this.style.background='none'">
-                                <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
-                            </a>
-                        </div>
+                <form action="../send" style="position: relative;">
+                    <div>
+                        <button type="button" onclick="showEmoji()"
+                            style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.06)'" 
+                            onmouseout="this.style.background='none'">
+                            <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
+                                style="width: 24px; height: 24px;">
+                        </button>
+                        <a href="/draw/{$CHANNEL_ID}"
+                            style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.06)'" 
+                            onmouseout="this.style.background='none'">
+                            <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="{$REFRESH_URL}"
+                            style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.06)'" 
+                            onmouseout="this.style.background='none'" >
+                            <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
+                        </a>
                     </div>
+                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                    <input type="hidden" id="lite" name="lite" value="False">
+                    {$INPUT}
                 </form>
             </div>
         </div>
