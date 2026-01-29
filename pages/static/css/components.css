@@ -12,36 +12,33 @@
   font-weight: 700;
 }
 
-/* Global reset and box sizing */
+/* CRITICAL FIX: Prevents elements from protruding off the screen */
 *, *::before, *::after {
   box-sizing: border-box !important;
 }
 
-html, body {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important; /* Prevents side-scrolling */
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-body, #wrapper {
+html, body, #wrapper {
+  margin: 0;
+  padding: 0;
   height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden; /* Prevents side scrolling */
   font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 16px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #303338;
-  color: #dddddd;
-  /* Add padding to bottom so footer doesn't cover text */
-  padding-bottom: 140px !important; 
 }
 
-/* =========================================
-   2. TYPOGRAPHY & ELEMENTS
-   ========================================= */
+body {
+  background: #303338;
+  color: #dddddd;
+  /* Add padding to bottom so the fixed footer doesn't cover text */
+  padding-bottom: 120px;
+}
 
+/* Typography */
 h1, h2 {
   margin-top: 24px;
   margin-bottom: 12px;
@@ -93,6 +90,10 @@ br.nodisp {
   display: none;
 }
 
+/* =========================================
+   2. UI COMPONENTS & CHAT
+   ========================================= */
+
 /* Code blocks */
 pre {
   background: #2f3136;
@@ -126,219 +127,301 @@ code {
   color: #dcddde;
 }
 
-/* =========================================
-   3. MENU BUTTON & RESPONSIVE
-   ========================================= */
-
-/* GLOBAL FIX: Force transparency on the menu button across ALL themes */
-.menu-button {
-  background: transparent !important;
-  border: none !important;
-  padding: 8px; /* Maintain padding for clickability */
-}
-
-/* Ensure position is fixed for all screens */
+/* Menu Button (Hamburger) */
 .menu-button {
   position: fixed;
   top: 16px;
   left: 16px;
   z-index: 1000;
+  background: transparent !important; /* Force transparent */
+  border: none !important;
+  padding: 4px;
+}
+
+.menu-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+/* Chat Container */
+.chat, .chat-container, #chat {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.message-list {
+  padding: 12px;
+  border-radius: 8px;
+  background: #2f3136;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+/* Message Styles */
+.message {
+  padding: 8px 0;
+  margin: 0;
+  border-bottom: 1px solid #2f3136;
+  position: relative;
+}
+
+.message:hover {
+  background: rgba(4, 4, 5, 0.07);
+}
+
+/* Remove border from the very last message */
+.message:last-of-type {
+    border-bottom: none !important;
+}
+
+/* Hide the Date Divider Lines (Opacity 0.6 divs) */
+#msgcontainer > div[style*="opacity: 0.6"] {
+    display: none !important;
+}
+
+.message-header {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.message-author {
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 8px;
+  font-family: 'rodin', sans-serif;
+}
+
+.message-date {
+  font-size: 12px;
+  color: #72767d;
+  font-family: 'rodin', sans-serif;
+}
+
+.messagecontent {
+  color: #dcddde;
+  font-size: 16px;
+  line-height: 20px;
+  font-family: 'rodin', sans-serif;
+  word-wrap: break-word;
+}
+
+/* Embeds & Reactions */
+.embed { display: flex; margin-top: 8px; max-width: 520px; }
+.embed-color-bar { width: 4px; border-radius: 3px 0 0 3px; flex-shrink: 0; }
+.embed-content { background-color: #2f3136; border: 1px solid #202225; border-left: 0; border-radius: 0 4px 4px 0; padding: 8px 12px; flex: 1; }
+.reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.reaction { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 8px; font-size: 14px; cursor: default; transition: background-color 0.1s ease; }
+.reaction:hover { opacity: 0.9; }
+.reaction-emoji { display: inline-flex; align-items: center; }
+.reaction-count { color: #dcddde; font-family: 'rodin', sans-serif; }
+
+/* Icon Buttons (General) */
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+.icon-button:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* =========================================
+   3. THEME OVERRIDES (Merged)
+   ========================================= */
+
+/* Light Theme */
+body.light-theme, .light-theme html, .light-theme #wrapper,
+.light-theme .content-padding, .light-theme .scrollable-content {
+  background: #ffffff !important;
+  color: #060607 !important;
+}
+.light-theme .menu-button { background: transparent !important; border: none !important; }
+.light-theme .header-title, .light-theme .header-menu, .light-theme .header-menu-link { color: #060607 !important; }
+.light-theme .header-user-info { color: #4f5660 !important; }
+.light-theme .message { border-bottom-color: #e3e5e8 !important; background: transparent !important; }
+.light-theme .message:hover { background: #f8f9f9 !important; }
+.light-theme .message-author { color: #060607 !important; }
+.light-theme .message-date { color: #5c5e66 !important; }
+.light-theme .messagecontent { color: #2e3338 !important; }
+.light-theme .message-form-container { background: #ffffff !important; border-top-color: #e3e5e8 !important; }
+.light-theme .message-input-wrapper, .light-theme .message-input-disabled { background: #ebedef !important; border: 1px solid #e3e5e8 !important; }
+.light-theme .message-input, .light-theme .message-input-disabled input { color: #060607 !important; }
+.light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08) !important; }
+.light-theme a, .light-theme .message-link { color: #0067e0 !important; }
+.light-theme pre, .light-theme code { background: #f2f3f5 !important; border-color: #e3e5e8 !important; color: #2e3338 !important; }
+.light-theme .embed-content, .light-theme .forwarded-content-wrapper { background-color: #f2f3f5 !important; border-color: #e3e5e8 !important; }
+.light-theme .forwarded-text, .light-theme .reaction-count { color: #4f5660 !important; }
+.light-theme #emoji { background: #ffffff !important; border-color: #e3e5e8 !important; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+.light-theme .reaction { background: #f2f3f5 !important; border: 1px solid transparent; }
+.light-theme .reaction:hover { border-color: #e3e5e8 !important; background: #ebedef !important; }
+
+/* AMOLED Theme */
+body.amoled-theme, .amoled-theme html, .amoled-theme #wrapper,
+.amoled-theme .content-padding, .amoled-theme .scrollable-content {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+.amoled-theme .server-sidebar, .amoled-theme .server-select-note, .amoled-theme .server-main { background: #000000 !important; border-color: #333333 !important; }
+.amoled-theme .menu-button { background: transparent !important; border: none !important; }
+.amoled-theme .message { border-bottom-color: #1a1a1a !important; background: #000000 !important; }
+.amoled-theme .message:hover { background: #111111 !important; }
+.amoled-theme .messagecontent { color: #ffffff !important; }
+.amoled-theme .message-date { color: #a0a0a0 !important; }
+.amoled-theme .message-form-container { background: #000000 !important; border-top: 1px solid #333333 !important; }
+.amoled-theme .message-input-wrapper, .amoled-theme .message-input-disabled { background: #000000 !important; border: 1px solid #333333 !important; }
+.amoled-theme .message-input { color: #ffffff !important; }
+.amoled-theme pre, .amoled-theme code { background: #0a0a0a !important; border-color: #222222 !important; color: #ffffff !important; }
+.amoled-theme .embed-content, .amoled-theme .forwarded-content-wrapper { background: #0a0a0a !important; border: 1px solid #222222 !important; }
+.amoled-theme #emoji { background: #000000 !important; border-color: #333333 !important; }
+
+/* =========================================
+   4. LAYOUT & FOOTER (WII & MODERN SPLIT)
+   ========================================= */
+
+/* --- WII / OPERA 9 (DEFAULT) --- */
+/* We use strict TABLE display here because Wii ignores Flexbox */
+
+.message-form-container {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important; /* Forces full width */
+    height: auto !important;
+    padding: 2px !important;
+    background: #303338 !important;
+    border-top: 1px solid #494c50 !important;
+    z-index: 9999 !important;
+}
+
+/* Top Row: Icons */
+.message-buttons-container {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 4px !important;
+    text-align: left !important;
+}
+.message-button-cell {
+    display: inline-block !important;
+    width: 30px !important;
+    margin-right: 10px !important;
+    vertical-align: middle !important;
+}
+
+/* Bottom Row: Input & Send (Table Layout for Wii) */
+.message-form-container form,
+.message-input-wrapper {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+}
+
+.message-input-container {
+    display: table !important;
+    width: 100% !important;
+    table-layout: fixed !important; /* Prevents overflow */
+    border-collapse: separate !important;
+    border-spacing: 2px !important;
+}
+
+/* Input Box */
+.message-input {
+    display: table-cell !important;
+    width: 100% !important;
+    height: 38px !important;
+    padding: 4px 8px !important;
+    border: 1px solid #555 !important;
+    background: #202225 !important;
+    color: #fff !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+}
+
+/* Send Button */
+.send-button, .btn-send {
+    display: table-cell !important;
+    width: 1% !important; /* Shrink to fit */
+    white-space: nowrap !important;
+    height: 38px !important;
+    padding: 0 12px !important;
+    background: #5865f2 !important;
+    color: #fff !important;
+    border: none !important;
+    cursor: pointer !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+}
+
+/* --- MODERN DEVICES (RESTORE FLEXBOX) --- */
+/* Devices that support Flexbox will override the Wii styles above */
+@supports (display: flex) {
+    .message-form-container {
+        padding: 16px !important; /* Restores padding for Computer View */
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .message-buttons-container {
+        display: flex !important;
+        gap: 12px !important;
+        padding: 0 !important;
+    }
+
+    .message-input-container {
+        display: flex !important;
+        width: 100% !important;
+        gap: 8px !important;
+        border-spacing: 0 !important;
+    }
+
+    .message-input-wrapper {
+        display: flex !important;
+        flex: 1 !important;
+        width: auto !important;
+        background: #40444b !important;
+        border-radius: 8px !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+
+    .message-input {
+        display: block !important;
+        flex: 1 !important;
+        border: none !important;
+        background: transparent !important;
+        height: 44px !important;
+        padding: 10px 16px !important;
+    }
+
+    .send-button, .btn-send {
+        display: block !important;
+        width: auto !important;
+        height: 44px !important;
+        border-radius: 8px !important;
+        padding: 0 24px !important;
+    }
 }
 
 /* Small screen adjustments */
 @media (max-width: 640px) {
-  .homepage, .home, #home {
-    padding: 12px;
-  }
+  .homepage, .home, #home { padding: 12px; }
+  .message-form-container { padding: 8px !important; }
 }
 
 @media (max-width: 768px) {
-  .menu-button {
-    top: 8px;
-    left: 8px;
-  }
-}
-
-/* =========================================
-   4. LIGHT THEME OVERRIDES (From themes.css)
-   ========================================= */
-
-body.light-theme,
-.light-theme html,
-.light-theme #wrapper,
-.light-theme .content-padding, 
-.light-theme .scrollable-content {
-  background: #ffffff !important;
-  color: #060607 !important;
-}
-
-.light-theme .header-title,
-.light-theme .header-menu, 
-.light-theme .header-menu-link {
-    color: #060607 !important;
-}
-
-.light-theme .header-user-info {
-    color: #4f5660 !important;
-}
-
-/* Message List & Content */
-.light-theme .message {
-  border-bottom-color: #e3e5e8 !important;
-  background: transparent !important;
-}
-
-.light-theme .message:hover {
-  background: #f8f9f9 !important;
-}
-
-.light-theme .message-author {
-  color: #060607 !important;
-}
-
-.light-theme .message-date {
-  color: #5c5e66 !important;
-}
-
-.light-theme .messagecontent {
-  color: #2e3338 !important;
-}
-
-/* Message Input Area */
-.light-theme .message-form-container {
-  background: #ffffff !important;
-  border-top-color: #e3e5e8 !important;
-}
-
-.light-theme .message-input-wrapper,
-.light-theme .message-input-disabled {
-  background: #ebedef !important;
-  border: 1px solid #e3e5e8 !important;
-}
-
-.light-theme .message-input,
-.light-theme .message-input-disabled input {
-  color: #060607 !important;
-}
-
-.light-theme .icon-button:hover {
-    background: rgba(0, 0, 0, 0.08) !important;
-}
-
-/* Links & Buttons */
-.light-theme a,
-.light-theme .message-link {
-  color: #0067e0 !important;
-}
-
-/* Code Blocks */
-.light-theme pre, 
-.light-theme code {
-  background: #f2f3f5 !important;
-  border-color: #e3e5e8 !important;
-  color: #2e3338 !important;
-}
-
-/* Embeds & Forwards */
-.light-theme .embed-content,
-.light-theme .forwarded-content-wrapper {
-    background-color: #f2f3f5 !important;
-    border-color: #e3e5e8 !important;
-}
-
-.light-theme .forwarded-text,
-.light-theme .reaction-count {
-    color: #4f5660 !important;
-}
-
-/* Emojis & Reactions */
-.light-theme #emoji {
-    background: #ffffff !important;
-    border-color: #e3e5e8 !important;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-
-.light-theme .reaction {
-    background: #f2f3f5 !important;
-    border: 1px solid transparent;
-}
-.light-theme .reaction:hover {
-    border-color: #e3e5e8 !important;
-    background: #ebedef !important;
-}
-
-/* =========================================
-   5. AMOLED THEME OVERRIDES (From themes.css)
-   ========================================= */
-
-body.amoled-theme,
-.amoled-theme html,
-.amoled-theme #wrapper,
-.amoled-theme .content-padding, 
-.amoled-theme .scrollable-content {
-  background: #000000 !important;
-  color: #ffffff !important;
-}
-
-/* FIX: Ensure Sidebar and Server Note are black */
-.amoled-theme .server-sidebar,
-.amoled-theme .server-select-note,
-.amoled-theme .server-main {
-  background: #000000 !important;
-  border-color: #333333 !important;
-}
-
-/* Message List */
-.amoled-theme .message {
-  border-bottom-color: #1a1a1a !important;
-  background: #000000 !important;
-}
-
-.amoled-theme .message:hover {
-  background: #111111 !important;
-}
-
-.amoled-theme .messagecontent {
-  color: #ffffff !important;
-}
-
-.amoled-theme .message-date {
-  color: #a0a0a0 !important;
-}
-
-/* Input Area */
-.amoled-theme .message-form-container {
-  background: #000000 !important;
-  border-top: 1px solid #333333 !important;
-}
-
-.amoled-theme .message-input-wrapper,
-.amoled-theme .message-input-disabled {
-  background: #000000 !important;
-  border: 1px solid #333333 !important;
-}
-
-.amoled-theme .message-input {
-    color: #ffffff !important;
-}
-
-/* Code Blocks */
-.amoled-theme pre,
-.amoled-theme code {
-  background: #0a0a0a !important;
-  border-color: #222222 !important;
-  color: #ffffff !important;
-}
-
-/* Embeds */
-.amoled-theme .embed-content,
-.amoled-theme .forwarded-content-wrapper {
-    background: #0a0a0a !important;
-    border: 1px solid #222222 !important;
-}
-
-/* Emoji Picker */
-.amoled-theme #emoji {
-    background: #000000 !important;
-    border-color: #333333 !important;
+  .menu-button { top: 8px; left: 8px; }
 }
