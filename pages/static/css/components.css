@@ -92,7 +92,7 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    bottom: 85px; /* Leave room for the input bar */
+    bottom: 111px; /* Leave room for the input bar */
     height: auto !important;
 }
 
@@ -298,7 +298,11 @@ body {
 }
 
 .send-button, .btn-send, button.send, .chat-send {
-    flex: 0 0 auto; /* don't grow, don't shrink */
+    display: table-cell; 
+    vertical-align: middle;
+    width: 1%;
+    white-space: nowrap;
+    flex: 0 0 auto;
     padding: 10px 14px;
     border-radius: 8px;
     background: #5865f2;
@@ -307,12 +311,8 @@ body {
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
-    align-self: stretch; /* match input height */
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-    min-height: 44px; /* accessible tap target */
+    align-self: stretch;
+    min-height: 44px;
 }
 
 /* =========================================
@@ -390,24 +390,21 @@ canvas { background: #ffffff; cursor: crosshair; display: block; border: 1px sol
    ========================================= */
 
 @supports (display: flex) {
-
-    /* 1. Turn the main container into a Flex Column */
     .content-padding {
+        /* Use 100% to respect parent height instead of 100vh */
+        height: 100% !important; 
+        /* ... existing properties ... */
         display: flex !important;
         flex-direction: column !important;
-        height: 100vh !important; /* Force full viewport height */
-        overflow: hidden !important; /* No double scrollbars */
-        position: static !important; /* Reset legacy positioning */
+        overflow: hidden !important;
+        position: static !important;
         padding: 0 !important;
     }
 
-    /* 2. Message list expands to fill available space */
-    .scrollable-content {
-        flex: 1 !important; /* Grow to fill space */
-        height: auto !important; /* Stop forcing 100% height */
-        overflow-y: auto !important; /* Scroll strictly inside this box */
-        position: static !important;
-        padding-bottom: 0 !important;
+    /* Add this to reset the Wii Table fix for modern browsers */
+    .send-button, .btn-send, button.send, .chat-send {
+        display: inline-flex;
+        width: auto;
     }
     
     /* 3. Input Bar sits naturally at the bottom */
