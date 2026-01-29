@@ -75,8 +75,6 @@ body {
   top: 16px;
   left: 16px;
   z-index: 1000;
-  background: #36393f;
-  border: 1px solid #40444b;
   border-radius: 4px;
   padding: 8px;
 }
@@ -260,6 +258,7 @@ body {
 .icon-button {
     background: none;
     border: none;
+    padding: 4px 8px 8px 8px !important;
     cursor: pointer;
     padding: 4px;
     width: 32px;
