@@ -18,13 +18,17 @@ const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
 
-// Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
-// Is that a bad idea?
+function readTemplate(filePath) {
+  let content = fs.readFileSync(filePath, 'utf-8');
+  // Remove #end if it appears right before a closing quote in an href
+  content = content.replace(/#end(?=["'])/g, ""); 
+  return minifier.htmlMinify(content);
+}
 
-const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message.html', 'utf-8'));
-const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message.html', 'utf-8'));
-const message_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_mentioned.html', 'utf-8'));
-const message_forwarded_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message_mentioned.html', 'utf-8'));
+const message_template = readTemplate('pages/templates/message/message.html');
+const message_forwarded_template = readTemplate('pages/templates/message/forwarded_message.html');
+const message_mentioned_template = readTemplate('pages/templates/message/message_mentioned.html');
+const message_forwarded_mentioned_template = readTemplate('pages/templates/message/forwarded_message_mentioned.html');
 const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
 const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
 const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
