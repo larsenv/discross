@@ -142,7 +142,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       lastReply = false;
       lastReplyData = {};
         
-      // Cache for member data to avoid repeated fetches
       const memberCache = new Map();
 
       const handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
@@ -385,9 +384,43 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // Check if current user is mentioned in this message
         isMentioned = false;
                 
-        // Process embeds (for bot messages)
+        // Process embeds (for bot messages and links)
         if (item?.embeds && item.embeds.length > 0) {
-          messagetext += processEmbeds(item.embeds, imagesCookie);
+            const embedsToProcess = [];
+            item.embeds.forEach(embed => {
+                // UPDATED: Handle Tenor embeds manually to fix empty embed issue
+                // Check if it's a Tenor embed and has a thumbnail (which contains the GIF)
+                const isTenor = (embed.provider?.name === 'Tenor' || embed.url?.includes('tenor.com')) && embed.thumbnail?.url;
+                
+                if (isTenor && imagesCookie == 1) {
+                    const gifUrl = embed.thumbnail.url;
+                    const urlToFind = embed.url;
+                    
+                    let replaced = false;
+                    // Try to find and replace the anchor tag created by markdown
+                    if (urlToFind) {
+                        const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+                        const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
+                        
+                        if (anchorRegex.test(messagetext)) {
+                            messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`);
+                            replaced = true;
+                        }
+                    }
+                    
+                    // If replacement failed (e.g. link not in text), append the image
+                    if (!replaced) {
+                        messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`;
+                    }
+                    // Do NOT add to embedsToProcess (prevents double rendering/empty box)
+                } else {
+                    embedsToProcess.push(embed);
+                }
+            });
+            
+            if (embedsToProcess.length > 0) {
+                messagetext += processEmbeds(embedsToProcess, imagesCookie);
+            }
         }
         
         // Process polls
@@ -554,8 +587,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
       final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
-      
-      // REMOVED: Tenor GIF processing block was here
       
       // Remove any existing end anchors from messages HTML before appending exactly one
       response = removeExistingEndAnchors(response);
