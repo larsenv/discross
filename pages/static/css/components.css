@@ -12,18 +12,20 @@
   font-weight: 700;
 }
 
-/* CRITICAL FIX: Prevents elements from protruding off the screen */
+/* CRITICAL FIX: Forces padding to stay inside the box (Fixes Right Protrusion) */
 *, *::before, *::after {
   box-sizing: border-box !important;
 }
 
-html, body, #wrapper {
+html,
+body,
+#wrapper {
   margin: 0;
   padding: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important; /* Prevents side scrolling */
   height: 100%;
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden; /* Prevents side scrolling */
   font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 16px;
   line-height: 1.45;
@@ -34,11 +36,14 @@ html, body, #wrapper {
 body {
   background: #303338;
   color: #dddddd;
-  /* Add padding to bottom so the fixed footer doesn't cover text */
-  padding-bottom: 120px;
+  /* Add padding so the footer doesn't cover the last message */
+  padding-bottom: 130px !important; 
 }
 
-/* Typography */
+/* =========================================
+   2. TYPOGRAPHY & ELEMENTS (From base.css)
+   ========================================= */
+
 h1, h2 {
   margin-top: 24px;
   margin-bottom: 12px;
@@ -90,10 +95,6 @@ br.nodisp {
   display: none;
 }
 
-/* =========================================
-   2. UI COMPONENTS & CHAT
-   ========================================= */
-
 /* Code blocks */
 pre {
   background: #2f3136;
@@ -127,90 +128,69 @@ code {
   color: #dcddde;
 }
 
-/* Menu Button (Hamburger) */
+/* =========================================
+   3. RESPONSIVE & MENU (Updated)
+   ========================================= */
+
+/* FIX: Force menu button transparent on ALL themes */
 .menu-button {
-  position: fixed;
-  top: 16px;
-  left: 16px;
-  z-index: 1000;
-  background: transparent !important; /* Force transparent */
-  border: none !important;
-  padding: 4px;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    background: transparent !important;
+    border: none !important;
+    padding: 4px;
 }
 
-.menu-icon {
-  width: 24px;
-  height: 24px;
-  display: block;
+.menu-icon { width: 24px; height: 24px; }
+
+@media (max-width: 640px) {
+  .homepage, .home, #home {
+    padding: 12px;
+  }
 }
 
-/* Chat Container */
-.chat, .chat-container, #chat {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 920px;
-  margin: 0 auto;
+@media (max-width: 768px) {
+  .menu-button {
+    top: 8px;
+    left: 8px;
+  }
 }
 
-.message-list {
-  padding: 12px;
-  border-radius: 8px;
-  background: #2f3136;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  overflow-y: auto;
-  max-height: 60vh;
-}
+/* =========================================
+   4. CHAT MESSAGES (Specific Fixes Added)
+   ========================================= */
 
-/* Message Styles */
 .message {
   padding: 8px 0;
   margin: 0;
-  border-bottom: 1px solid #2f3136;
+  border-bottom: 1px solid #2f3136; /* Default border */
   position: relative;
+}
+
+/* FIX: Remove border from the last message */
+#msgcontainer > .message:last-of-type {
+    border-bottom: none !important;
+}
+
+/* FIX: Hide Date Lines (Divs with opacity 0.6) */
+#msgcontainer > div[style*="opacity: 0.6"] {
+    display: none !important;
 }
 
 .message:hover {
   background: rgba(4, 4, 5, 0.07);
 }
 
-/* Remove border from the very last message */
-.message:last-of-type {
-    border-bottom: none !important;
-}
-
-/* Hide the Date Divider Lines (Opacity 0.6 divs) */
-#msgcontainer > div[style*="opacity: 0.6"] {
-    display: none !important;
-}
-
-.message-header {
-  display: flex;
-  align-items: baseline;
-  margin-bottom: 4px;
-}
-
-.message-author {
-  font-weight: 600;
-  cursor: pointer;
-  margin-right: 8px;
-  font-family: 'rodin', sans-serif;
-}
-
-.message-date {
-  font-size: 12px;
-  color: #72767d;
-  font-family: 'rodin', sans-serif;
-}
-
-.messagecontent {
-  color: #dcddde;
-  font-size: 16px;
-  line-height: 20px;
-  font-family: 'rodin', sans-serif;
-  word-wrap: break-word;
-}
+.message-header { display: flex; align-items: baseline; margin-bottom: 4px; }
+.message-author { font-weight: 600; cursor: pointer; margin-right: 8px; font-family: 'rodin', sans-serif; }
+.message-date { font-size: 12px; color: #72767d; font-family: 'rodin', sans-serif; }
+.message-link { text-decoration: none; color: inherit; display: block; }
+.message-link:hover { text-decoration: none !important; }
+.messagecontent { color: #dcddde; font-size: 16px; line-height: 20px; font-family: 'rodin', sans-serif; word-wrap: break-word; }
+.messagecontent a { color: #00b0f4; text-decoration: none; }
+.messagecontent a:hover { text-decoration: underline; }
 
 /* Embeds & Reactions */
 .embed { display: flex; margin-top: 8px; max-width: 520px; }
@@ -222,26 +202,14 @@ code {
 .reaction-emoji { display: inline-flex; align-items: center; }
 .reaction-count { color: #dcddde; font-family: 'rodin', sans-serif; }
 
-/* Icon Buttons (General) */
-.icon-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  width: 32px;
-  height: 32px;
-  display: inline-block;
-  text-align: center;
-  text-decoration: none;
-}
-.icon-button:hover { background: rgba(255, 255, 255, 0.06); }
+/* Chat Layout */
+.chat, .chat-container, #chat { padding: 16px; display: flex; flex-direction: column; gap: 12px; max-width: 920px; margin: 0 auto; }
+.message-list { padding: 12px; border-radius: 8px; background: #2f3136; box-shadow: 0 1px 2px rgba(0,0,0,0.1); overflow-y: auto; max-height: 60vh; }
 
 /* =========================================
-   3. THEME OVERRIDES (Merged)
+   5. LIGHT THEME (From themes.css)
    ========================================= */
 
-/* Light Theme */
 body.light-theme, .light-theme html, .light-theme #wrapper,
 .light-theme .content-padding, .light-theme .scrollable-content {
   background: #ffffff !important;
@@ -267,7 +235,10 @@ body.light-theme, .light-theme html, .light-theme #wrapper,
 .light-theme .reaction { background: #f2f3f5 !important; border: 1px solid transparent; }
 .light-theme .reaction:hover { border-color: #e3e5e8 !important; background: #ebedef !important; }
 
-/* AMOLED Theme */
+/* =========================================
+   6. AMOLED THEME (From themes.css)
+   ========================================= */
+
 body.amoled-theme, .amoled-theme html, .amoled-theme #wrapper,
 .amoled-theme .content-padding, .amoled-theme .scrollable-content {
   background: #000000 !important;
@@ -287,89 +258,112 @@ body.amoled-theme, .amoled-theme html, .amoled-theme #wrapper,
 .amoled-theme #emoji { background: #000000 !important; border-color: #333333 !important; }
 
 /* =========================================
-   4. LAYOUT & FOOTER (WII & MODERN SPLIT)
+   7. FOOTER & INPUT LAYOUT (Wii Fixes)
    ========================================= */
 
-/* --- WII / OPERA 9 (DEFAULT) --- */
-/* We use strict TABLE display here because Wii ignores Flexbox */
+/* --- PHASE 1: WII / OPERA 9 DEFAULT --- */
+/* This matches Image 3: Black Bar, Icons Top, Input Bottom */
+/* STRICT TABLE LAYOUT to fix Zoom issues */
 
 .message-form-container {
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
-    width: 100% !important; /* Forces full width */
+    width: 100% !important;
     height: auto !important;
-    padding: 2px !important;
-    background: #303338 !important;
-    border-top: 1px solid #494c50 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #000000 !important; /* Force Black for Wii */
+    border-top: 2px solid #333 !important;
     z-index: 9999 !important;
 }
 
-/* Top Row: Icons */
+/* Row 1: Icons (Simple Block) */
 .message-buttons-container {
     display: block !important;
     width: 100% !important;
-    padding: 0 4px !important;
     text-align: left !important;
+    padding: 4px 8px !important;
+    background: #000000 !important;
 }
+
 .message-button-cell {
     display: inline-block !important;
-    width: 30px !important;
-    margin-right: 10px !important;
+    width: auto !important;
+    margin-right: 16px !important;
     vertical-align: middle !important;
 }
 
-/* Bottom Row: Input & Send (Table Layout for Wii) */
+/* Icon Buttons */
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+  text-align: center;
+}
+.icon-button img { width: 24px; height: 24px; }
+
+/* Row 2: Input + Send (Strict Table Layout) */
+/* We remove formatting from the form wrapper so the table works */
 .message-form-container form,
 .message-input-wrapper {
     display: block !important;
     width: 100% !important;
-    padding: 0 !important;
     margin: 0 !important;
+    padding: 0 !important;
     background: transparent !important;
+    border: none !important;
 }
 
+/* The Table Container */
 .message-input-container {
     display: table !important;
     width: 100% !important;
-    table-layout: fixed !important; /* Prevents overflow */
-    border-collapse: separate !important;
-    border-spacing: 2px !important;
+    table-layout: fixed !important; /* CRITICAL: Prevents zoom explosion */
+    border-collapse: collapse !important;
+    background: #000000 !important;
 }
 
-/* Input Box */
+/* Cell 1: Input Box */
 .message-input {
     display: table-cell !important;
     width: 100% !important;
-    height: 38px !important;
+    height: 44px !important;
     padding: 4px 8px !important;
-    border: 1px solid #555 !important;
-    background: #202225 !important;
-    color: #fff !important;
+    border: 1px solid #333 !important;
+    background: #000000 !important;
+    color: #ffffff !important;
     vertical-align: middle !important;
     box-sizing: border-box !important;
 }
 
-/* Send Button */
+/* Cell 2: Send Button */
 .send-button, .btn-send {
     display: table-cell !important;
-    width: 1% !important; /* Shrink to fit */
-    white-space: nowrap !important;
-    height: 38px !important;
-    padding: 0 12px !important;
+    width: 80px !important; /* Fixed width */
+    height: 44px !important;
     background: #5865f2 !important;
     color: #fff !important;
     border: none !important;
     cursor: pointer !important;
-    vertical-align: middle !important;
     text-align: center !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+    padding: 0 !important;
+    border-radius: 0 !important; /* Square corners for Wii */
 }
 
-/* --- MODERN DEVICES (RESTORE FLEXBOX) --- */
-/* Devices that support Flexbox will override the Wii styles above */
+/* --- PHASE 2: MODERN DEVICES (Restores Padding & Flex) --- */
 @supports (display: flex) {
     .message-form-container {
-        padding: 16px !important; /* Restores padding for Computer View */
+        padding: 16px !important; /* Restore Padding */
+        background: #36393f !important;
+        border-top: 1px solid #40444b !important;
         display: flex !important;
         flex-direction: column !important;
         gap: 8px !important;
@@ -377,32 +371,33 @@ body.amoled-theme, .amoled-theme html, .amoled-theme #wrapper,
 
     .message-buttons-container {
         display: flex !important;
-        gap: 12px !important;
+        background: transparent !important;
         padding: 0 !important;
+        gap: 12px !important;
     }
 
     .message-input-container {
         display: flex !important;
         width: 100% !important;
-        gap: 8px !important;
-        border-spacing: 0 !important;
+        background: #40444b !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+        table-layout: auto !important;
     }
-
+    
     .message-input-wrapper {
         display: flex !important;
         flex: 1 !important;
         width: auto !important;
-        background: #40444b !important;
-        border-radius: 8px !important;
-        padding: 0 !important;
-        border: none !important;
     }
 
     .message-input {
         display: block !important;
         flex: 1 !important;
-        border: none !important;
+        width: auto !important;
         background: transparent !important;
+        border: none !important;
+        color: #dcddde !important;
         height: 44px !important;
         padding: 10px 16px !important;
     }
@@ -410,18 +405,15 @@ body.amoled-theme, .amoled-theme html, .amoled-theme #wrapper,
     .send-button, .btn-send {
         display: block !important;
         width: auto !important;
-        height: 44px !important;
-        border-radius: 8px !important;
         padding: 0 24px !important;
+        border-radius: 0 !important;
     }
-}
-
-/* Small screen adjustments */
-@media (max-width: 640px) {
-  .homepage, .home, #home { padding: 12px; }
-  .message-form-container { padding: 8px !important; }
-}
-
-@media (max-width: 768px) {
-  .menu-button { top: 8px; left: 8px; }
+    
+    /* Theme overrides for modern layout */
+    .light-theme .message-form-container { background: #ffffff !important; border-top-color: #e3e5e8 !important; }
+    .light-theme .message-input-container { background: #ebedef !important; }
+    .light-theme .message-input { color: #060607 !important; }
+    
+    .amoled-theme .message-form-container { background: #000000 !important; border-top-color: #333333 !important; }
+    .amoled-theme .message-input-container { background: #000000 !important; border: 1px solid #333333 !important; }
 }
