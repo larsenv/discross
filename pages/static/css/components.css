@@ -391,21 +391,22 @@ canvas { background: #ffffff; cursor: crosshair; display: block; border: 1px sol
 
 @supports (display: flex) {
     .content-padding {
-        /* Use 100% to respect parent height instead of 100vh */
-        height: 100% !important; 
-        /* ... existing properties ... */
         display: flex !important;
         flex-direction: column !important;
-        overflow: hidden !important;
-        position: static !important;
+        height: 100vh !important; /* Force full viewport height */
+        overflow: hidden !important; /* No double scrollbars */
+        position: static !important; /* Reset legacy positioning */
         padding: 0 !important;
     }
 
-    /* Add this to reset the Wii Table fix for modern browsers */
-    .send-button, .btn-send, button.send, .chat-send {
-        display: inline-flex;
-        width: auto;
-    }
+    /* 2. Message list expands to fill available space */
+    .scrollable-content {
+        flex: 1 !important; /* Grow to fill space */
+        height: auto !important; /* Stop forcing 100% height */
+        overflow-y: auto !important; /* Scroll strictly inside this box */
+        position: static !important;
+        padding-bottom: 0 !important;
+    }    
     
     /* 3. Input Bar sits naturally at the bottom */
     .message-form-container {
