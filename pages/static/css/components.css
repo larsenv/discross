@@ -219,16 +219,15 @@ body {
    ========================================= */
 
 .message-form-container {
-    position: absolute !important;
+    position: relative !important;
     bottom: 0 !important;
     left: 0 !important;
-    right: 0 !important; /* Anchor to the right edge */
-    width: auto !important; /* Let the anchors calculate the width */
-    height: 90px;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden;
     background-color: #36393f;
-    z-index: 100;
-    margin: 0 !important; /* Ensure no external gaps */
-    padding: 0 !important; /* Ensure no internal stretching */
+    border-top: 1px solid #2f3136;
 }
 
 /* ROW 1: The Buttons */
