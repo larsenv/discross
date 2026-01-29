@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
@@ -11,270 +12,562 @@
     <meta name="msapplication-TileColor" content="#2b5797">
     <meta name="theme-color" content="#ffffff">
     <title>Discross - #{$CHANNEL_NAME}</title>
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/themes.css">
-    <link rel="stylesheet" href="/css/components.css">
+    <style>
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
+            font-weight: 400;
+        }
+
+        @font-face {
+            font-family: 'rodin';
+            src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
+                 url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
+            font-weight: 700;
+        }
+
+        /* Discord-inspired base styling */
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body,
+        #wrapper {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'rodin', Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: #36393f;
+            color: #dcddde;
+        }
+
+        /* Light theme overrides */
+        .light-theme body {
+            background: #ffffff !important;
+            color: #2e3338 !important;
+        }
+
+        .light-theme #wrapper {
+            background: #ffffff !important;
+            color: #2e3338 !important;
+        }
+
+        /* Canvas styling */
+        #sketchpad {
+            border: 2px solid #40444b;
+            border-radius: 8px;
+            background: white;
+            display: block;
+            margin: 16px auto;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        /* Drawing controls */
+        .drawing-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin: 16px;
+            padding: 12px;
+            background: #2f3136;
+            border: 1px solid #40444b;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-label {
+            color: #b9bbbe;
+            font-size: 14px;
+            margin-right: 4px;
+        }
+
+        .color-button {
+            width: 32px;
+            height: 32px;
+            border: 2px solid #40444b;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .color-button:hover {
+            transform: scale(1.1);
+        }
+
+        .color-button.active {
+            border-color: #5865f2;
+            box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.3);
+        }
+
+        .tool-button {
+            background: #40444b;
+            border: 2px solid #40444b;
+            border-radius: 4px;
+            color: #dcddde;
+            cursor: pointer;
+            padding: 6px 12px;
+            font-size: 14px;
+            transition: all 0.1s;
+        }
+
+        .tool-button:hover {
+            background: #4e5058;
+        }
+
+        .tool-button.active {
+            background: #5865f2;
+            border-color: #5865f2;
+            color: white;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slider {
+            width: 100px;
+            height: 4px;
+            border-radius: 2px;
+            background: #40444b;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #5865f2;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #5865f2;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            color: #dcddde;
+            font-size: 14px;
+            min-width: 25px;
+        }
+
+        /* Hide legacy styling */
+        br.nodisp {
+            display: none;
+        }
+
+        /* Legacy table fixes */
+        table {
+            padding-bottom: 5px;
+        }
+
+        /* Links */
+        a {
+            color: #00aff4;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Emoji picker styling */
+        #emoji {
+            background: #2f3136;
+            border: 1px solid #40444b;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px 0;
+        }
+
+        #emoji button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        #emoji button:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        /* Menu positioning */
+        .menu-button {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1000;
+            background: #36393f;
+            border: 1px solid #40444b;
+            border-radius: 4px;
+            padding: 8px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .menu-button {
+                top: 8px;
+                left: 8px;
+            }
+
+            #sketchpad {
+                margin: 8px;
+                max-width: calc(100vw - 80px);
+                max-height: 300px;
+            }
+
+            .slider {
+                width: 60px;
+            }
+        }
+    </style>
 </head>
 
-<body>
-    <div id="toolbar-container">
-        <div id="c1" class="c-box" style="background:#000000;" onclick="setColor('#000000', 'c1')"></div>
-        <div id="c2" class="c-box" style="background:#555555;" onclick="setColor('#555555', 'c2')"></div>
-        <div id="c3" class="c-box" style="background:#aaaaaa;" onclick="setColor('#aaaaaa', 'c3')"></div>
-        <div id="c4" class="c-box" style="background:#ffffff;" onclick="setColor('#ffffff', 'c4')"></div>
-        <div id="c5" class="c-box" style="background:#800000;" onclick="setColor('#800000', 'c5')"></div>
-        <div id="c6" class="c-box" style="background:#ff0000;" onclick="setColor('#ff0000', 'c6')"></div>
-        <div id="c7" class="c-box" style="background:#ff9900;" onclick="setColor('#ff9900', 'c7')"></div>
-        <div id="c8" class="c-box" style="background:#ffff00;" onclick="setColor('#ffff00', 'c8')"></div>
-        <br>
-        <div id="c9" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c9')"></div>
-        <div id="c10" class="c-box" style="background:#004d00;" onclick="setColor('#004d00', 'c10')"></div>
-        <div id="c11" class="c-box" style="background:#00ff00;" onclick="setColor('#00ff00', 'c11')"></div>
-        <div id="c12" class="c-box" style="background:#000080;" onclick="setColor('#000080', 'c12')"></div>
-        <div id="c13" class="c-box" style="background:#00ffff;" onclick="setColor('#00ffff', 'c13')"></div>
-        <div id="c14" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c14')"></div>
-        <div id="c15" class="c-box" style="background:#ff00ff;" onclick="setColor('#ff00ff', 'c15')"></div>
-        <div id="c16" class="c-box" style="background:#8b4513;" onclick="setColor('#8b4513', 'c16')"></div>
-        
-        <span class="toolbar-separator"></span>
-
-        <div id="s1" class="s-btn" onclick="setSize(2, 's1')"><div class="s-inner" style="width:2px; height:2px;"></div></div>
-        <div id="s2" class="s-btn" onclick="setSize(5, 's2')"><div class="s-inner" style="width:5px; height:5px;"></div></div>
-        <div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div>
-        <div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div>
-
-        <button type="button" id="btn-clear" class="clear-button" onclick="wipe()">Clear</button>
-    </div>
-
-    <div id="canvas-wrapper">
-        <canvas id="sketchpad" width="600" height="350"></canvas>
-    </div>
-
-    
+<body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
         <a href="../server/{$SERVER_ID}" class="menu-button">
-            <img src="/resources/images/menu.gif" alt="Menu" class="menu-icon">
+            <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
         </a>
 
-        <div class="content-padding">
-            <div class="scrollable-content">
+        <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
+            <div style="flex: 1; overflow-y: auto; padding: 16px;">
+                <div style="text-align: center;">
+                    <canvas id="sketchpad"></canvas>
+                </div>
+
+                <div class="drawing-controls">
+                    <div class="control-group">
+                        <span class="control-label">Colors:</span>
+                        <div class="color-button active" style="background: #000000;" data-color="#000000"
+                            title="Black"></div>
+                        <div class="color-button" style="background: #ed4245;" data-color="#ed4245"
+                            title="Red"></div>
+                        <div class="color-button" style="background: #57f287;" data-color="#57f287"
+                            title="Green"></div>
+                        <div class="color-button" style="background: #3498db;" data-color="#3498db"
+                            title="Blue"></div>
+                        <div class="color-button" style="background: #f1c40f;" data-color="#f1c40f"
+                            title="Yellow"></div>
+                        <div class="color-button" style="background: #9b59b6;" data-color="#9b59b6"
+                            title="Purple"></div>
+                        <div class="color-button" style="background: #ffffff;" data-color="#ffffff"
+                            title="White"></div>
+                    </div>
+
+                    <div class="control-group">
+                        <span class="control-label">Brush Size:</span>
+                        <input type="range" class="slider" id="brushSize" min="1" max="50" value="3">
+                        <span class="slider-value" id="brushSizeValue">3</span>
+                    </div>
+
+                    <div class="control-group">
+                        <button class="tool-button active" id="drawMode" title="Draw">✏️ Draw</button>
+                        <button class="tool-button" id="eraseMode" title="Erase">🧹 Erase</button>
+                        <button class="tool-button" id="clearCanvas" title="Clear Canvas">🗑️ Clear</button>
+                    </div>
+                </div>
+
                 <div id="emoji" style="display: none;">
-                    <div class="emoji-grid">
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
                         <button onclick="document.getElementById('message').value += ' :sob:'">
-                            <img src="/resources/twemoji/1f62d.gif" alt="sob" class="emoji-icon">
+                            <img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
-                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" class="emoji-icon">
+                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
+                                style="width: 24px; height: 24px;">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :skull:'">
-                            <img src="/resources/twemoji/1f480.gif" alt="skull" class="emoji-icon">
+                            <img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :pleading_face:'">
-                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face" class="emoji-icon">
+                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
+                                style="width: 24px; height: 24px;">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :heart:'">
-                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" class="emoji-icon">
+                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :thumbsup:'">
-                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" class="emoji-icon">
+                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
-                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" class="emoji-icon">
+                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :pray:'">
-                            <img src="/resources/twemoji/1f64f.gif" alt="pray" class="emoji-icon">
+                            <img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :tada:'">
-                            <img src="/resources/twemoji/1f389.gif" alt="tada" class="emoji-icon">
+                            <img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :slight_smile:'">
-                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile" class="emoji-icon">
+                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
+                                style="width: 24px; height: 24px;">
                         </button>
                     </div>
                 </div>
                 <a id="end" name="end"></a>
             </div>
-            <div class="message-form-container">
+            <div
+                style="position: sticky; bottom: 0; background: #36393f; padding: 16px; border-top: 1px solid #40444b;">
                 <form action="../senddrawing" method="post" id="sendform">
                     <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                     <input type="hidden" id="drawinginput" name="drawinginput" value="">
                     <input type="hidden" id="lite" name="lite" value="False">
 
-                    <div class="message-input-wrapper">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td style="padding: 0;">
-                                    <div name="message" id="message" value="" class="message-input" required=""></div>
-                                </td>
-                                <td style="padding: 0; width: 80px;">
-                                    <button type="submit" class="send-button" onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Send</button>
-                                </td>
-                            </tr>
-                        </table>
+                    <div
+                        style="display: flex; align-items: center; background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0;">
+                        <input type="text" name="message" id="message" value=""
+                            style="flex: 1; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px;"
+                            required="" placeholder="Message #{$CHANNEL_NAME}">
+                        <button type="button" id="fakesend"
+                            style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; margin: 0 8px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 32px; right: 17px;"
+                            onmouseover="this.style.background='#4752c4'"
+                            onmouseout="this.style.background='#5865f2'">Send Drawing</button>
+                    </div>
+
+                    <div
+                        style="color: #b9bbbe; font-size: 14px; margin-bottom: 8px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+                        Drawing mode: Use the canvas above to draw, then click "Send Drawing" to share.
                     </div>
                 </form>
             </div>
         </div>
+        <script src="/connection.js"></script>
     </div>
+    <script>
+        // Lightweight drawing implementation
+        (function() {
+            // Configuration constants
+            const CANVAS_PADDING = 140;
+            const CANVAS_MAX_WIDTH = 1200;
+            const CANVAS_HEIGHT_OFFSET = 200;
+            const CANVAS_MAX_HEIGHT = 800;
+            const ERASER_SIZE_MULTIPLIER = 2;
 
-    <script type="text/javascript">
-        var canvas = document.getElementById('sketchpad');
-        var ctx = canvas.getContext('2d');
-        
-        var isDrawing = false;
-        var lastX = 0;
-        var lastY = 0;
-        var currColor = '#000000';
-        var currSize = 5;
+            let canvas, ctx;
+            let isDrawing = false;
+            let currentColor = '#000000';
+            let currentSize = 3;
+            let isErasing = false;
+            let lastX = 0;
+            let lastY = 0;
 
-        // Defaults
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.lineWidth = currSize;
-        ctx.strokeStyle = currColor;
-        // Fill canvas with white immediately (transparent canvas turns black on some Wii conversions)
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = currColor;
+            function initDrawing() {
+                canvas = document.getElementById("sketchpad");
+                ctx = canvas.getContext("2d");
+                
+                // Set canvas size
+                canvas.width = Math.min(window.innerWidth - CANVAS_PADDING, CANVAS_MAX_WIDTH);
+                canvas.height = Math.min(window.innerHeight - CANVAS_HEIGHT_OFFSET, CANVAS_MAX_HEIGHT);
+                
+                // Set white background
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Set up canvas properties
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                // Set up event listeners
+                setupCanvasEvents();
+                setupControlEvents();
+                setupFormEvents();
+            }
 
-        // --- COORDINATE SYSTEM ---
-        function getPos(e) {
-            if (e.offsetX) {
-                return { x: e.offsetX, y: e.offsetY };
-            } else if (e.layerX) {
-                return { x: e.layerX, y: e.layerY };
+            function setupCanvasEvents() {
+                // Mouse events
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('mouseout', stopDrawing);
+                
+                // Touch events for mobile
+                canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
+                canvas.addEventListener('touchmove', handleTouchMove, {passive: false});
+                canvas.addEventListener('touchend', stopDrawing);
+            }
+
+            function setupControlEvents() {
+                // Color buttons
+                document.querySelectorAll('.color-button').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        currentColor = this.getAttribute('data-color');
+                        isErasing = false;
+                        updateActiveButton('color', this);
+                        updateToolButtons('draw');
+                    });
+                });
+
+                // Brush size slider
+                const brushSlider = document.getElementById('brushSize');
+                const brushValue = document.getElementById('brushSizeValue');
+                brushSlider.addEventListener('input', function() {
+                    currentSize = parseInt(this.value);
+                    brushValue.textContent = currentSize;
+                });
+
+                // Tool buttons
+                document.getElementById('drawMode').addEventListener('click', function() {
+                    isErasing = false;
+                    updateToolButtons('draw');
+                });
+
+                document.getElementById('eraseMode').addEventListener('click', function() {
+                    isErasing = true;
+                    updateToolButtons('erase');
+                });
+
+                document.getElementById('clearCanvas').addEventListener('click', function() {
+                    if (confirm('Are you sure you want to clear the canvas?')) {
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                });
+            }
+
+            function setupFormEvents() {
+                const fakesend = document.getElementById("fakesend");
+                const sendform = document.getElementById("sendform");
+                const drawinginput = document.getElementById("drawinginput");
+                const messagedom = document.getElementById("message");
+
+                function sendDrawing() {
+                    drawinginput.value = canvas.toDataURL();
+                    sendform.submit();
+                }
+
+                fakesend.onclick = sendDrawing;
+
+                sendform.onkeyup = function (event) {
+                    if (event.key !== 'Enter') return;
+                    sendDrawing();
+                    if (event.preventDefault) event.preventDefault();
+                };
+
+                messagedom.onkeypress = function (e) {
+                    if (e.key === 'Enter') {
+                        if (e.preventDefault) e.preventDefault();
+                    }
+                };
+            }
+
+            function updateActiveButton(type, activeBtn) {
+                if (type === 'color') {
+                    document.querySelectorAll('.color-button').forEach(btn => 
+                        btn.classList.remove('active')
+                    );
+                    activeBtn.classList.add('active');
+                }
+            }
+
+            function updateToolButtons(mode) {
+                const drawBtn = document.getElementById('drawMode');
+                const eraseBtn = document.getElementById('eraseMode');
+                
+                if (mode === 'draw') {
+                    drawBtn.classList.add('active');
+                    eraseBtn.classList.remove('active');
+                } else {
+                    drawBtn.classList.remove('active');
+                    eraseBtn.classList.add('active');
+                }
+            }
+
+            function getCoordinates(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                
+                if (e.type.includes('touch')) {
+                    const touch = e.touches[0] || e.changedTouches[0];
+                    return {
+                        x: (touch.clientX - rect.left) * scaleX,
+                        y: (touch.clientY - rect.top) * scaleY
+                    };
+                } else {
+                    return {
+                        x: (e.clientX - rect.left) * scaleX,
+                        y: (e.clientY - rect.top) * scaleY
+                    };
+                }
+            }
+
+            function startDrawing(e) {
+                isDrawing = true;
+                const coords = getCoordinates(e);
+                lastX = coords.x;
+                lastY = coords.y;
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                
+                e.preventDefault();
+                const coords = getCoordinates(e);
+                
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(coords.x, coords.y);
+                
+                if (isErasing) {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = currentSize * ERASER_SIZE_MULTIPLIER;
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = currentColor;
+                    ctx.lineWidth = currentSize;
+                }
+                
+                ctx.stroke();
+                
+                lastX = coords.x;
+                lastY = coords.y;
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+            }
+
+            function handleTouchStart(e) {
+                e.preventDefault();
+                startDrawing(e);
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                draw(e);
+            }
+
+            // Initialize when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initDrawing);
             } else {
-                var rect = canvas.getBoundingClientRect();
-                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                initDrawing();
             }
-        }
-
-        // --- DRAWING EVENTS ---
-        canvas.onmousedown = function(e) {
-            if(e.preventDefault) e.preventDefault(); // Stop Wii Drag
-            isDrawing = true;
-            var pos = getPos(e);
-            lastX = pos.x;
-            lastY = pos.y;
-            
-            ctx.beginPath();
-            ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
-            ctx.fillStyle = currColor;
-            ctx.fill();
-            ctx.beginPath();
-            
-            return false;
-        };
-
-        canvas.onmousemove = function(e) {
-            if (!isDrawing) return;
-            if(e.preventDefault) e.preventDefault(); 
-
-            var pos = getPos(e);
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            
-            lastX = pos.x;
-            lastY = pos.y;
-        };
-
-        canvas.onmouseup = function() { isDrawing = false; };
-        canvas.onmouseout = function() { isDrawing = false; };
-
-        // --- TOUCH SUPPORT FOR MOBILE ---
-        // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
-        function getTouchPos(e) {
-            if (!e.touches || e.touches.length === 0) return null;
-            var touch = e.touches[0];
-            var rect = canvas.getBoundingClientRect();
-            return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-        }
-
-        canvas.addEventListener('touchstart', function(e) {
-            if(e.preventDefault) e.preventDefault(); // Prevent scrolling
-            isDrawing = true;
-            var pos = getTouchPos(e);
-            if (!pos) return;
-            lastX = pos.x;
-            lastY = pos.y;
-            
-            ctx.beginPath();
-            ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
-            ctx.fillStyle = currColor;
-            ctx.fill();
-            ctx.beginPath();
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', function(e) {
-            if (!isDrawing) return;
-            if(e.preventDefault) e.preventDefault(); // Prevent scrolling
-            
-            var pos = getTouchPos(e);
-            if (!pos) return;
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            
-            lastX = pos.x;
-            lastY = pos.y;
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', function(e) {
-            if(e.preventDefault) e.preventDefault();
-            isDrawing = false;
-        }, { passive: false });
-
-        canvas.addEventListener('touchcancel', function(e) {
-            if(e.preventDefault) e.preventDefault();
-            isDrawing = false;
-        }, { passive: false });
-
-        // --- UI FUNCTIONS ---
-        function setColor(col, id) {
-            currColor = col;
-            ctx.strokeStyle = currColor;
-            
-            // Reset borders
-            for(var i=1; i<=16; i++) {
-                var el = document.getElementById('c'+i);
-                if(el) el.style.border = "2px solid #555";
-            }
-            document.getElementById(id).style.border = "2px solid white";
-        }
-
-        function setSize(s, id) {
-            currSize = s;
-            ctx.lineWidth = currSize;
-
-            for(var i=1; i<=4; i++) {
-                var el = document.getElementById('s'+i);
-                if(el) el.style.border = "2px solid #000";
-            }
-            document.getElementById(id).style.border = "2px solid blue";
-        }
-
-        function wipe() {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = currColor;
-        }
-
-        // --- SEND LOGIC ---
-        function prepareAndSend() {
-            var inputField = document.getElementById('drawinginput');
-            var form = document.getElementById('sendform');
-            var btn = document.getElementById('btn-send');
-            var data = canvas.toDataURL("image/png");
-            inputField.value = data;
-            form.submit();
-        }
-
-        // Initialize UI
-        setColor('#000000', 'c1');
-        setSize(5, 's2');
+        })();
     </script>
+
 </body>
+
 </html>

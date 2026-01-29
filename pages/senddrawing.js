@@ -51,16 +51,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         parsedurl = urlQuery;
       }
       if (parsedurl.message !== "") {
-        // Check if bot is connected
-        const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-        
-        if (!clientIsReady) {
-          res.writeHead(503, { "Content-Type": "text/plain" });
-          res.write("The bot isn't connected, try again in a moment");
-          res.end();
-          return;
-        }
-
         const channel = await bot.client.channels.fetch(parsedurl.channel);
         const member = await channel.guild.members.fetch(discordID);
 
@@ -94,14 +84,8 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         const base64Image = base64Data.split(';base64,').pop();
         const imageBuffer = Buffer.from(base64Image, 'base64');
 
-        const messageCont = "";
-
-        if (processedmessage) {
-          messageCont = processedmessage;
-        }
-
         const message = await webhook.send({
-          content: messageCont,
+          content: "Sent a drawing:\n" + processedmessage,
           username: member.displayName || member.user.tag,
           avatarURL: await member.user.avatarURL(),
           files: [{ attachment: imageBuffer, name: "image.png" }]
