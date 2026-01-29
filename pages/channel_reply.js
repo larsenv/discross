@@ -2,14 +2,14 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
-var md = require('markdown-it')({ breaks: true, linkify: false });
-var he = require('he'); // Encodes HTML attributes
+var he = require('he');
 const path = require('path');
 const sharp = require("sharp");
 const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer").default;
 const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const fetch = require("sync-fetch");
+const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator, areDifferentDays } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
@@ -20,19 +20,17 @@ const { isEmojiOnlyMessage } = require('./messageUtils');
 // Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
 // Is that a bad idea?
 
-// Templates for viewing the messages in a channel
-// const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
+// Templates for viewing the messages in a channel (Reply Context)
 const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel_reply.html', 'utf-8'));
 
-
+// Note: Using _reply versions of message templates
 const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8'));
 const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message_reply.html', 'utf-8'));
 const message_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_reply_mentioned.html', 'utf-8'));
 const message_forwarded_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message_reply_mentioned.html', 'utf-8'));
+
 const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
 const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
-const first_message_content_large_emoji_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content_large_emoji.html', 'utf-8'));
-const merged_message_content_large_emoji_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content_large_emoji.html', 'utf-8'));
 const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
 
 const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
@@ -45,6 +43,7 @@ const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templa
 const reactions_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'));
 const reaction_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'));
 const date_separator_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8'));
+
 // Constants
 const FORWARDED_CONTENT_MAX_LENGTH = 100;
 
@@ -66,10 +65,6 @@ function removeExistingEndAnchors(html) {
   return html.replace(/<a[^>]*(?:id=['"]end['"]|name=['"]end['"])[^>]*>[\s\S]*?<\/a>/gi, '');
 }
 
-// Member utility functions (getDisplayName, getMemberColor, ensureMemberData) 
-// are now imported from memberUtils.js to avoid duplication
-
-// https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
@@ -81,7 +76,6 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const clientTimezone = getTimezoneFromIP(clientIP);
   
   try {
-    // Check if bot is connected
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
     
     if (!clientIsReady) {
@@ -131,7 +125,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         return;
       }
 
-      console.log("Processed valid channel request");
+      console.log("Processed valid channel reply request");
       const messages = await bot.getHistoryCached(chnl);
       let lastauthor = undefined;
       let lastmember = undefined;
@@ -139,6 +133,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       let lastmessagedate = null; // Track the last message date for day separator detection
       let currentmessage = "";
       let islastmessage = false;
+      let messageid = 0;
       isForwarded = false;
       forwardData = {};
       isMentioned = false;
@@ -157,6 +152,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
 
             // Choose template based on whether this is a forwarded message and if user is mentioned
+            // Using the _reply templates defined at the top
             if (isForwarded && lastMentioned) {
               currentmessage = message_forwarded_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
               currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
@@ -233,7 +229,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             isForwarded = true;
             forwardData = {
               author: forwardedAuthor,
-              content: md.renderInline(forwardedContent),
+              content: renderDiscordMarkdown(forwardedContent), 
               date: forwardedDate
             };
           } catch (err) {
@@ -248,28 +244,109 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         replyData = {};
         if (item.reference && !isForwarded) {
           try {
-            const replyMessage = await item.fetchReference();
-            const replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
-            const replyAuthor = getDisplayName(replyMember, replyMessage.author);
-            
-            // Check if this reply mentions (pings) the replied-to user
-            const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
-            
-            isReply = true;
-            replyData = {
-              author: replyAuthor,
-              authorId: replyMessage.author.id,
-              mentionsPing: mentionsRepliedUser
-            };
+            let replyUser = item.mentions?.repliedUser; // Try getting from cache first
+            let replyMember = undefined;
+            let replyMessage = undefined;
+
+            // Step 1: Try to fetch the full referenced message
+            try {
+              replyMessage = await item.fetchReference();
+              replyUser = replyMessage.author; // Update user from the fresh fetch
+            } catch (err) {
+              // Message was likely deleted or is inaccessible. 
+            }
+
+            // Step 2: If we have a user (either from fetch or fallback), try to get Member data
+            if (replyUser) {
+              try {
+                if (replyMessage) {
+                  replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
+                } else {
+                  if (memberCache.has(replyUser.id)) {
+                    replyMember = memberCache.get(replyUser.id);
+                  } else {
+                    replyMember = await chnl.guild.members.fetch(replyUser.id);
+                    memberCache.set(replyUser.id, replyMember);
+                  }
+                }
+              } catch (err) {
+                // Member fetch failed
+              }
+
+              // Step 3: Construct the display data
+              const replyAuthor = getDisplayName(replyMember, replyUser);
+              const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+
+              isReply = true;
+              replyData = {
+                author: replyAuthor,
+                authorId: replyUser.id,
+                mentionsPing: mentionsRepliedUser
+              };
+            }
           } catch (err) {
-            console.error("Could not fetch reply message:", err);
-            // Fallback: show indicator but don't fail
+            console.error("Could not process reply data:", err);
             isReply = false;
           }
         }
 
-        // messagetext = strReplace(escape(item.content), "\n", "<br>");
-        messagetext = /* strReplace( */ md.renderInline(item.content) /* , "\n", "<br>") */
+        messagetext = renderDiscordMarkdown(item.content); 
+
+        // Detect "Jumbo" Emoji status (<= 29 emojis and no other text)
+        let isJumbo = false;
+        if (imagesCookie == 1) {
+            // Check raw content for "emoji only" status
+            const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
+            const customMatches = item.content.match(customEmojiRegex) || [];
+            const unicodeMatches = item.content.match(emojiRegex) || [];
+            const totalEmojis = customMatches.length + unicodeMatches.length;
+            
+            // Remove all emojis and whitespace to see if anything else remains
+            const strippedContent = item.content.replace(customEmojiRegex, '').replace(emojiRegex, '').trim();
+            
+            if (strippedContent.length === 0 && totalEmojis > 0 && totalEmojis <= 29) {
+                isJumbo = true;
+            }
+        }
+
+        // Standard size 1.375em. Jumbo size 2.75em (200%).
+        const emojiSize = isJumbo ? "2.75em" : "1.375em";
+
+        if (imagesCookie == 1) {
+            // Process Unicode Emojis
+            if (messagetext.match(emojiRegex)) {
+                 const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
+                 unicode_emoji_matches.forEach(match => {
+                    const points = [];
+                    let char = 0;
+                    let previous = 0;
+                    let i = 0;
+                    let output;
+                    while (i < match.length) {
+                        char = match.charCodeAt(i++);
+                        if (previous) {
+                            points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
+                            previous = 0;
+                        } else if (char > 0xd800 && char <= 0xdbff) {
+                            previous = char;
+                        } else {
+                            points.push(char.toString(16));
+                        }
+                        output = points.join("-");
+                    }
+                    messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
+                 });
+            }
+
+            // Process Custom Emojis
+            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+            if (custom_emoji_matches.length > 0) {
+                 custom_emoji_matches.forEach(match => {
+                    const ext = match[2] ? "gif" : "png";
+                    messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
+                 });
+            }
+        }
         
         if (item?.attachments) {
           let urls = new Array()
@@ -289,6 +366,15 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
+        
+        // Process Stickers
+        if (item.stickers && item.stickers.size > 0 && imagesCookie == 1) {
+          item.stickers.forEach(sticker => {
+             const stickerURL = `/imageProxy/sticker/${sticker.id}.gif`;
+             messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
+          });
+        }
+
         // Check if current user is mentioned in this message
         isMentioned = false;
         
@@ -360,8 +446,6 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           return mention_template.replace("{$USERNAME}", "@unknown-user");
         });
 
-        // https://stackoverflow.com/questions/6323417/regex-to-extract-all-matches-from-string-using-regexp-exec
-
         var regex = /&lt;#([0-9]{18})&gt;/g; // Regular expression to detect channel IDs
         var m;
 
@@ -399,24 +483,11 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           });
         }
 
-
-
         // If the last message is not going to be merged with this one, use the template for the first message, otherwise use the template for merged messages
-        // Also check if this is an emoji-only message to use larger sizing
-        const isLargeEmoji = isEmojiOnlyMessage(messagetext);
-        
         if (!lastauthor || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
-          if (isLargeEmoji) {
-            messagetext = first_message_content_large_emoji_template.replace("{$MESSAGE_TEXT}", messagetext);
-          } else {
-            messagetext = first_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
-          }
+          messagetext = first_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
         } else {
-          if (isLargeEmoji) {
-            messagetext = merged_message_content_large_emoji_template.replace("{$MESSAGE_TEXT}", messagetext);
-          } else {
-            messagetext = merged_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
-          }
+          messagetext = merged_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
         }
 
         // Process and add reactions to the message
@@ -424,10 +495,11 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
 
         lastauthor = item.author;
-        // Ensure member data is populated - fetch if missing, using cache to avoid repeated fetches
+        // Ensure member data is populated
         lastmember = await ensureMemberData(item, chnl.guild, memberCache);
         lastdate = item.createdAt;
         currentmessage += messagetext;
+        messageid = item.id;
         
         // Save mention and reply state for next iteration
         lastMentioned = isMentioned;
@@ -441,8 +513,6 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       // Handle the last message
-      // Uses the function in the foreach from earlier
-
       islastmessage = true;
       await handlemessage();
 
@@ -451,13 +521,13 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
       
-      // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
+      // Apply theme class based on cookie value
       if (whiteThemeCookie == 1) {
-        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
       } else if (whiteThemeCookie == 2) {
-        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
       } else {
-        response = strReplace(response, "{$WHITE_THEME_ENABLED}", "");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "");
       }
 
       let final;
@@ -470,34 +540,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         final = strReplace(template, "{$INPUT}", input_disabled_template);
       }
 
-      if (response.match?.(emojiRegex) && imagesCookie == 1) {
-        const unicode_emoji_matches = [...response.match?.(emojiRegex)]
-        unicode_emoji_matches.forEach(match => {
-          const points = [];
-          let char = 0;
-          let previous = 0;                  // This whole code block was "inspired" by the official Twitter Twemoji parser.
-          let i = 0;                         // I would have done it myself but my code wasn't ready for skin tones/emoji variation
-          let output                         // The Regex I wouldn't have done myself, so thanks for that too!
-          while (i < match.length) {
-            char = match.charCodeAt(i++);
-            if (previous) {
-              points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
-              previous = 0;
-            } else if (char > 0xd800 && char <= 0xdbff) {
-              previous = char;
-            } else {
-              points.push(char.toString(16));
-            }
-            output = points.join("-")
-          }
-          response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: 1.375em; height: 1.375em; vertical-align: -0.2em;" alt="emoji">`)
-        });
-      }
-
-      const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 1.375em; height: 1.375em; vertical-align: -0.2em;"  alt="emoji">`)    // Inline emoji size
-      })
+      // --- Reply Context Logic (Specific to this function) ---
       let reply_message_id = args[3];
 
       try {
@@ -522,10 +565,11 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         final = strReplace(final, "{$REPLY_MESSAGE_CONTENT}", message_content);
       } catch (err) {
         res.writeHead(404, { "Content-Type": "text/html" });
-        res.write("Invalid message!"); //write a response to the client
+        res.write("Invalid message to reply to!"); //write a response to the client
         res.end(); //end the response
         return
       }
+      
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
       final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
