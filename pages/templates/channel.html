@@ -18,29 +18,29 @@
     <script type="text/javascript">
         window.onload = function() {
             var attempts = 0;
-            var maxAttempts = 15; // Try for about 3 seconds
-            
-            var intervalId = setInterval(function() {
+            // Try periodically for 2 seconds to catch slow rendering
+            var interval = setInterval(function() {
                 attempts++;
                 
-                // Method 1: Scroll Window
-                window.scrollTo(0, 9999999);
-                
-                // Method 2: Scroll Body
-                if(document.body) {
-                    document.body.scrollTop = document.body.scrollHeight;
-                }
-                
-                // Method 3: Scroll HTML element
-                if(document.documentElement) {
-                    document.documentElement.scrollTop = document.documentElement.scrollHeight;
+                // Method 1: The "Anchor Jump" (Best for Wii)
+                // This forces the browser to look for the <a id="end"> tag
+                if (window.location.hash !== "#end") {
+                     window.location.hash = "end";
+                } else {
+                     // If hash is already set, reset it to force a jump
+                     window.location.hash = "";
+                     window.location.hash = "end";
                 }
     
-                // Stop trying after 3 seconds
-                if (attempts >= maxAttempts) {
-                    clearInterval(intervalId);
+                // Method 2: Element View
+                var endEl = document.getElementById("end");
+                if (endEl && endEl.scrollIntoView) {
+                    endEl.scrollIntoView(false);
                 }
-            }, 205);
+    
+                // Stop after 10 attempts (approx 2.5 seconds)
+                if (attempts > 10) clearInterval(interval);
+            }, 250);
         };
     </script>
 </head>
