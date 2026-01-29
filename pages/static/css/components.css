@@ -1,3 +1,20 @@
+Here are the fixes for your components.css file.
+
+Summary of Changes:
+
+    Wii Compatibility: Switched the input bar table layout to border-collapse: separate with border-spacing. This creates the gap you wanted between the input and button without breaking on older browsers (like the Wii) that struggle with Flexbox margins.
+
+    Hamburger Menu: Removed background and border styles so it floats cleanly.
+
+    Layout Padding: Increased padding on .message-form-container to give the emoji/input bar more breathing room.
+
+    Send Button: Rounded the corners (now that it's separated from the input box) and ensured it sits to the right via the table structure.
+
+    Reactions Indentation: Changed the global ul rule to .messagecontent ul. This prevents reaction lists (or other UI lists) from being indented unintentionally; only lists inside your message text will be indented.
+
+components.css
+CSS
+
 @font-face {
   font-family: 'rodin';
   src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
@@ -30,7 +47,10 @@ body {
 /* Typography */
 h1, h2 { margin: 24px 0 12px 0; font-size: 1.75rem; font-weight: 600; }
 p, ul { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
-ul { padding-left: 20px; }
+
+/* FIX: Scope UL padding to message content only so reactions aren't indented */
+.messagecontent ul { padding-left: 20px; }
+
 a { color: #00aff4; text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -93,7 +113,7 @@ pre code { background: none; border: none; padding: 0; }
 /* Layout - SIMPLE for Wii compatibility */
 .content-padding {
   padding-left: 60px;
-  padding-bottom: 130px; /* Space for fixed input bar */
+  padding-bottom: 160px; /* Increased bottom padding to account for larger input bar */
 }
 
 .scrollable-content {
@@ -106,9 +126,8 @@ pre code { background: none; border: none; padding: 0; }
   top: 16px;
   left: 16px;
   z-index: 1000;
-  background: #36393f;
-  border: 1px solid #40444b;
-  border-radius: 4px;
+  background: transparent; /* FIX: Removed background */
+  border: none;            /* FIX: Removed border */
   padding: 8px;
   cursor: pointer;
 }
@@ -197,7 +216,7 @@ pre code { background: none; border: none; padding: 0; }
   z-index: 50;
   background: #36393f;
   border-top: 1px solid #40444b;
-  padding: 8px;
+  padding: 12px; /* FIX: Added more padding */
 }
 
 /* Buttons Row */
@@ -227,17 +246,18 @@ pre code { background: none; border: none; padding: 0; }
 /* Input Row - SEND BUTTON ON SAME LINE */
 .message-input-wrapper { 
   width: 100%; 
-  background: #40444b;
-  border-radius: 8px;
+  /* FIX: Removed background here, handled by input element */
+  background: transparent;
   padding: 0;
-  overflow: hidden;
 }
 
 .message-input-container {
   display: table;
   width: 100%;
   table-layout: fixed;
-  border-collapse: collapse;
+  /* FIX: Switch to separate to allow spacing between input and button */
+  border-collapse: separate; 
+  border-spacing: 10px 0; /* FIX: This creates the gap/space you wanted */
 }
 
 .message-input {
@@ -246,12 +266,13 @@ pre code { background: none; border: none; padding: 0; }
   height: 44px;
   padding: 0 12px;
   border: none;
-  background: transparent;
+  background: #40444b; /* Background moved here */
   color: #dcddde;
   font-size: 16px;
   vertical-align: middle;
   font-family: 'rodin', Arial, Helvetica, sans-serif;
   outline: none;
+  border-radius: 8px; /* Rounded corners for input */
 }
 
 .send-button {
@@ -259,7 +280,7 @@ pre code { background: none; border: none; padding: 0; }
   vertical-align: middle;
   width: 1%;
   white-space: nowrap;
-  padding: 10px 16px;
+  padding: 10px 24px; /* FIX: More padding inside button */
   background: #5865f2;
   color: #fff;
   border: none;
@@ -267,7 +288,7 @@ pre code { background: none; border: none; padding: 0; }
   font-size: 14px;
   cursor: pointer;
   font-family: 'rodin', Arial, Helvetica, sans-serif;
-  border-radius: 0 8px 8px 0;
+  border-radius: 8px; /* FIX: Fully rounded corners */
 }
 .send-button:hover { background: #4752c4; }
 
@@ -399,7 +420,7 @@ br.nodisp { display: none; }
 .light-theme #wrapper { background: #fff; color: #060607; }
 .light-theme .content-padding,
 .light-theme .scrollable-content { background: #fff; color: #060607; }
-.light-theme .menu-button { background: #fff; border-color: #e3e5e8; }
+.light-theme .menu-button { background: transparent; border-color: transparent; }
 .light-theme .header-title,
 .light-theme .header-menu,
 .light-theme .header-menu-link { color: #060607; }
@@ -411,8 +432,8 @@ br.nodisp { display: none; }
 .light-theme .messagecontent { color: #2e3338; }
 .light-theme .messagecontent a { color: #0067e0; }
 .light-theme .message-form-container { background: #fff; border-top-color: #e3e5e8; }
-.light-theme .message-input-wrapper { background: #ebedef; }
-.light-theme .message-input { color: #060607; }
+.light-theme .message-input-wrapper { background: transparent; }
+.light-theme .message-input { color: #060607; background: #ebedef; }
 .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
 .light-theme pre,
 .light-theme code { background: #f2f3f5; border-color: #e3e5e8; color: #2e3338; }
@@ -443,7 +464,7 @@ br.nodisp { display: none; }
 .amoled-theme #wrapper { background: #000; color: #fff; }
 .amoled-theme .content-padding,
 .amoled-theme .scrollable-content { background: #000; color: #fff; }
-.amoled-theme .menu-button { background: #000; border-color: #333; }
+.amoled-theme .menu-button { background: transparent; border-color: transparent; }
 .amoled-theme .header-title,
 .amoled-theme .header-menu,
 .amoled-theme .header-menu-link { color: #fff; }
@@ -455,7 +476,7 @@ br.nodisp { display: none; }
 .amoled-theme .messagecontent a { color: #5865f2; }
 .amoled-theme .message-form-container { background: #000; border-top-color: #333; }
 .amoled-theme .message-input-wrapper { background: #0a0a0a; }
-.amoled-theme .message-input { color: #fff; }
+.amoled-theme .message-input { color: #fff; background: #0a0a0a; }
 .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08); }
 .amoled-theme pre,
 .amoled-theme code { background: #0a0a0a; border-color: #222; color: #fff; }
@@ -486,7 +507,7 @@ br.nodisp { display: none; }
 
 /* Small screens */
 @media (max-width: 640px) {
-  .content-padding { padding-left: 50px; padding-bottom: 140px; }
+  .content-padding { padding-left: 50px; padding-bottom: 160px; }
   .homepage, .home, #home { padding: 12px; }
 }
 
