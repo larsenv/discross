@@ -1,17 +1,3 @@
-Based on your feedback and screenshots, here is the fixed, conflict-free components.css.
-What I have fixed:
-
-    Zoom Breaking (The Drop-Down Issue): I have completely removed Flexbox and replaced it with a display: table layout. Unlike Flexbox (which is unsupported/buggy on Wii) or Blocks (which wrap when zoomed), Table Cells cannot drop to a new line. They are forced to stay side-by-side.
-
-    Positioning: I enforced position: fixed; bottom: 0; with high priority to keep the bar stuck to the bottom of the viewport.
-
-    Spacing (The "Close Together" Issue): I added specific padding to the .message-button-cell class. This adds the breathing room you wanted between the Emoji, Draw, and Refresh buttons without breaking the Wii layout.
-
-    Send Button Alignment: The Send button is now part of the table structure, meaning it will perfectly match the height of the input box and never misalign.
-
-Replace your entire components.css with this code:
-CSS
-
 @font-face {
   font-family: 'rodin';
   src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
@@ -36,7 +22,7 @@ html, body {
     overflow-x: hidden !important;
     width: 100% !important;
     margin: 0 !important;
-    height: 100%; /* Critical for bottom positioning */
+    height: 100%;
 }
 
 body {
@@ -57,8 +43,9 @@ body {
 .light-theme .message:hover { background: rgba(6, 6, 7, 0.02) !important; }
 .light-theme .messagecontent { color: #2e3338 !important; }
 .light-theme .messagecontent a { color: #5865f2; }
+
+/* Light Theme - Footer Specifics */
 .light-theme .message-form-container { background: #ffffff !important; border-top-color: #e3e5e8 !important; }
-/* Input background for light theme */
 .light-theme .message-input-container { background: #ebedef !important; border-color: #e3e5e8 !important; }
 .light-theme .message-input { color: #060607 !important; }
 
@@ -67,8 +54,9 @@ body {
 .amoled-theme .message { border-color: #333333 !important; background: #000000 !important; }
 .amoled-theme .message:hover { background: rgba(255, 255, 255, 0.05) !important; }
 .amoled-theme .messagecontent { color: #ffffff !important; }
+
+/* AMOLED Theme - Footer Specifics */
 .amoled-theme .message-form-container { background: #000000 !important; border-top-color: #333333 !important; }
-/* Input background for amoled theme */
 .amoled-theme .message-input-container { background: #000000 !important; border-color: #333333 !important; }
 .amoled-theme .message-input { color: #ffffff !important; }
 
@@ -91,7 +79,7 @@ body {
 .menu-icon { width: 24px; height: 24px; }
 
 .content-padding {
-  padding-left: 0; /* Adjusted for mobile-first view */
+  padding-left: 0;
   height: 100%;
   position: relative;
 }
@@ -100,7 +88,7 @@ body {
 .scrollable-content {
   overflow-y: auto;
   padding: 16px;
-  padding-bottom: 80px; /* Space for the fixed input bar */
+  padding-bottom: 120px; /* Extra space so messages don't get hidden behind the 2-row footer */
   height: 100%; 
   -webkit-overflow-scrolling: touch;
 }
@@ -128,13 +116,11 @@ body {
 #msgcontainer > .message:last-of-type { border-bottom: none !important; }
 
 /* =========================================
-   MESSAGE INPUT BAR (THE FIX)
+   MESSAGE INPUT BAR (FIXED STACKED LAYOUT)
    ========================================= */
-/* We use display: table because it is the ONLY robust way 
-   to keep elements on one line in Opera 9 (Wii) without Flexbox.
-*/
 
 .message-form-container {
+    /* Anchors the bar to the bottom */
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
@@ -142,37 +128,32 @@ body {
     width: 100% !important;
     z-index: 9999;
     
-    /* Force Table Layout */
-    display: table !important;
-    border-collapse: collapse;
-    margin: 0;
-    padding: 0;
+    /* Layout: BLOCK (Stacks items vertically to create the 2-row look) */
+    display: block !important;
     height: auto;
     
-    /* Default Background (Dark) */
+    /* Visuals */
     background-color: #36393f;
     border-top: 1px solid #2f3136;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
-/* LEFT SIDE: Buttons (Emoji, Draw, Refresh) */
+/* --- ROW 1: The Buttons (Emoji, Draw, Refresh) --- */
 .message-buttons-container {
-    display: table-cell;
-    vertical-align: middle;
-    width: 1%; /* Shrink to fit content */
-    white-space: nowrap; /* Prevent wrapping */
-    
-    /* SPACING: Padding here pushes the group away from the edge and form */
-    padding-left: 8px;
-    padding-right: 4px;
+    display: block !important; /* Forces it to be its own row */
+    width: 100% !important;
+    padding: 6px 8px 2px 8px !important; /* Spacing: Top Side Bottom Side */
+    text-align: left; /* Aligns buttons to the left */
+    box-sizing: border-box;
 }
 
 /* Individual Button Cells */
 .message-button-cell {
-    display: inline-block;
+    display: inline-block !important; /* Sits buttons side-by-side */
     vertical-align: middle;
-    
-    /* SPACING: This adds the "margin" you wanted between icons */
-    padding: 0 6px; 
+    margin-right: 12px; /* Space between icons */
+    width: auto !important;
 }
 
 .icon-button {
@@ -186,39 +167,41 @@ body {
 }
 .emoji-icon { width: 24px; height: 24px; vertical-align: middle; }
 
-/* RIGHT SIDE: Form */
+/* --- ROW 2: The Input Form + Send Button --- */
 .message-form-container form {
-    display: table-cell;
-    vertical-align: middle;
-    width: 99%; /* Take up all remaining space */
-    padding: 8px 12px 8px 0; /* Padding: Top, Right, Bottom, Left */
-    margin: 0;
+    display: block !important;
+    width: 100% !important;
+    padding: 4px 8px 8px 8px !important; /* Spacing around the input box */
+    margin: 0 !important;
+    box-sizing: border-box;
 }
 
 .message-input-wrapper {
     width: 100%;
 }
 
-/* INPUT BOX + SEND BUTTON TABLE */
-/* This nested table ensures the Send button stays attached to the Input */
+/* NOTE: We use display: TABLE here only.
+   This ensures the Send button stays perfectly attached to the Input 
+   on the same line, even on Wii/Opera 9. */
 .message-input-container {
-    display: table;
-    width: 100%;
-    border-collapse: separate; /* Allows border-radius */
+    display: table !important;
+    width: 100% !important;
+    table-layout: fixed; /* Prevents input from expanding too wide */
+    border-collapse: separate;
     border-spacing: 0;
     
-    /* Default Dark Theme Input Style */
+    /* Visuals for the Input Bar */
     background: #40444b;
     border-radius: 8px;
     border: 1px solid #40444b;
     overflow: hidden; 
 }
 
+/* Cell 1: The Typing Area */
 .message-input {
-    display: table-cell;
-    vertical-align: middle;
-    width: 100%;
-    height: 44px; /* Explicit height for touch targets */
+    display: table-cell !important;
+    width: 100% !important; /* Takes all available space */
+    height: 44px; /* Touch friendly height */
     padding: 0 12px;
     margin: 0;
     border: none;
@@ -226,13 +209,15 @@ body {
     color: #dcddde;
     font-size: 16px;
     outline: none;
+    vertical-align: middle;
 }
 
+/* Cell 2: The Send Button */
 .send-button {
-    display: table-cell;
-    vertical-align: middle;
-    width: 1%;
+    display: table-cell !important;
+    width: 1px; /* Shrinks to fit text size */
     white-space: nowrap;
+    vertical-align: middle;
     padding: 0 20px;
     height: 44px; /* Matches input height */
     
@@ -242,10 +227,8 @@ body {
     font-size: 14px;
     cursor: pointer;
     border: none;
-    
-    /* Reset margins/radius for table cell */
+    border-radius: 0; /* Container handles radius */
     margin: 0;
-    border-radius: 0; 
 }
 
 /* =========================================
@@ -256,7 +239,7 @@ body {
   border: 1px solid #40444b;
   border-radius: 8px;
   padding: 16px;
-  margin: 16px; /* Added margin so it doesn't touch edges */
+  margin: 16px; 
 }
 .emoji-grid {
   display: grid;
@@ -269,11 +252,27 @@ body {
 #emoji button:hover { background: rgba(255, 255, 255, 0.06); }
 
 /* =========================================
-   UTILITIES
+   UTILITIES & EXTRAS
    ========================================= */
 a { color: #00aff4; text-decoration: none; }
 a:hover { text-decoration: underline; }
 img { max-width: 100%; height: auto; }
+
 .reaction { display: inline-flex; padding: 2px 6px; background: #2f3136; border-radius: 4px; margin-right: 4px; }
 .reaction img { width: 16px; height: 16px; }
+.reaction-count { color: #dcddde; font-size: 12px; margin-left: 4px; }
+
 .mention { background: rgba(88,101,242,0.3); color: #dee0fc; padding: 0 2px; border-radius: 3px; }
+
+/* Drawing Canvas - Basic sizing */
+canvas {
+  background: #ffffff;
+  cursor: crosshair;
+  display: block;
+  border: 1px solid #202225;
+  max-width: 100%;
+}
+
+/* Channel / Server list specific text */
+.channel-link { color: #8e9297; font-size: 16px; display: block; padding: 4px 0; }
+.category-channel { color: #8e9297; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-top: 16px; }
