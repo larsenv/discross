@@ -471,20 +471,27 @@ button:focus, input:focus, textarea:focus {
   max-height: 30vh;
 }
 
-/* Message Form Container (Fixed/Compat Override - NEW) */
 .message-form-container {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 60px !important;
-  right: 0 !important;
-  width: auto;
-  max-width: 100%;
-  overflow: visible;
-  background: #36393f;
-  border-top: 1px solid #40444b;
-  z-index: 100;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+    /* Anchoring */
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    
+    /* Dimension - Do NOT use 'right: 0' here, it breaks Wii Zoom */
+    width: 100% !important;
+    margin: 0 !important;
+    
+    /* Box Model */
+    padding: 8px !important;
+    box-sizing: border-box !important;
+    z-index: 9999 !important; /* Force it on top of everything */
+    background: #36393f !important; /* Ensure background is opaque */
+}
+
+/* Light Theme Override for the container */
+.light-theme .message-form-container {
+    background: #ffffff !important;
+    border-top: 1px solid #e3e5e8 !important;
 }
 
 /* Fallback layouts for older browsers */
