@@ -78,11 +78,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
-   
+    
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
   const clientTimezone = getTimezoneFromIP(clientIP);
-   
+    
   try {
     let response, chnl;
     try {
@@ -554,17 +554,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
       final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
-      const tensorLinksRegex = /<a href="https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)">https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)<\/a>/g;
-      let tmpTensorLinks = [...response.toString().matchAll(tensorLinksRegex)];
-      let resp_,gifLink,description;
-      tmpTensorLinks.forEach(link => {
-        resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
-        try { resp_ = resp_.json();
-          gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
-          description = resp_["results"][0]["content_description"];}
-        catch { return }
-        response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
-      });
+      
+      // REMOVED: Tenor GIF processing block was here
+      
       // Remove any existing end anchors from messages HTML before appending exactly one
       response = removeExistingEndAnchors(response);
       response += '<a id="end" name="end"></a>';
