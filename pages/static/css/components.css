@@ -333,6 +333,10 @@ button:focus, input:focus, textarea:focus {
   position: relative;
 }
 
+.message:last-of-type {
+    border-bottom: none !important;
+}
+
 .message:hover {
   background: rgba(4, 4, 5, 0.07);
 }
@@ -483,87 +487,119 @@ button:focus, input:focus, textarea:focus {
     bottom: 0 !important;
     left: 0 !important;
     width: 100% !important;
-    height: auto !important;
-    padding: 4px !important;
+    padding: 6px !important;
     background: #36393f !important;
     z-index: 9999 !important;
     box-sizing: border-box !important;
+    border-top: 1px solid #2f3136 !important;
 }
 
-/* 2. LAYOUT ENGINE: Table with "Fixed" rules */
-/* This prevents the table from growing wider than the screen */
-.message-buttons-container,
-.message-form-container form,
-.message-input-container {
-    display: table !important;
+/* 2. TOP ROW: The Icon Buttons (Emoji, Draw, Refresh) */
+.message-buttons-container {
+    display: table !important; /* Wii Table Layout */
     width: 100% !important;
-    table-layout: fixed !important; /* CRITICAL FIX FOR ZOOM */
-    border-collapse: collapse !important;
-    border-spacing: 0 !important;
+    table-layout: fixed !important;
+    margin-bottom: 6px !important;
 }
 
-/* 3. ROW 1: The Buttons (Emoji, Draw, Refresh) */
 .message-button-cell {
     display: table-cell !important;
     vertical-align: middle !important;
     text-align: center !important;
-    width: 33% !important; /* Distribute evenly */
-    height: 40px !important;
 }
 
-/* 4. ROW 2: The Input Field */
-.message-input-wrapper {
-    display: table-cell !important;
-    vertical-align: middle !important;
-    width: auto !important; /* Takes remaining space */
-}
-
-.message-input {
+/* 3. BOTTOM ROW: The Input & Send Button */
+/* We turn this container into a table so the input and button align perfectly */
+.message-input-container {
+    display: table !important; /* Wii Table Layout */
     width: 100% !important;
-    box-sizing: border-box !important;
-    height: 40px !important;
-    margin: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    background: #40444b !important; /* Background for the input area */
+    border-radius: 8px !important;
+    overflow: hidden !important; /* Clips the corners */
 }
 
-/* 5. ROW 2: The Send Button */
-/* We give it a fixed width so it never breaks layout */
+/* The Text Input Field (Cell 1) */
+.message-input {
+    display: table-cell !important;
+    width: 100% !important; /* Takes all spare width */
+    height: 40px !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    background: transparent !important;
+    color: #dcddde !important;
+    box-sizing: border-box !important;
+    vertical-align: middle !important;
+}
+
+/* The Send Button (Cell 2) */
 .send-button, 
 .btn-send, 
 .chat-send {
     display: table-cell !important;
-    vertical-align: middle !important;
-    width: 70px !important; /* Fixed width for stability */
-    height: 40px !important;
-    padding: 0 !important;
-    text-align: center !important;
+    width: 1% !important; /* Shrink to fit text */
     white-space: nowrap !important;
+    height: 40px !important;
+    padding: 0 16px !important;
+    border: none !important;
+    cursor: pointer !important;
+    vertical-align: middle !important;
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+
+/* 4. Hide the wrapper div that gets in the way */
+.message-input-wrapper {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    width: 100% !important;
 }
 
 /* LIGHT THEME OVERRIDE */
 .light-theme .message-form-container {
     background: #ffffff !important;
-    border-top: 1px solid #e3e5e8 !important;
+    border-top-color: #e3e5e8 !important;
+}
+.light-theme .message-input-container {
+    background: #ebedef !important;
+}
+.light-theme .message-input {
+    color: #2e3338 !important;
 }
 
-/* MODERN BROWSERS RESTORE (Feature Query) */
+/* =========================================
+   MODERN DEVICE RESTORE (Flexbox)
+   ========================================= */
 @supports (display: flex) {
-    .message-buttons-container,
-    .message-form-container form,
-    .message-input-container {
+    .message-buttons-container {
         display: flex !important;
-        table-layout: auto !important;
-        width: 100% !important;
-        gap: 8px;
+        justify-content: flex-start;
+        gap: 16px;
     }
     
-    .message-button-cell, .send-button, .btn-send {
+    .message-button-cell {
         display: block !important;
         width: auto !important;
     }
-    
-    .message-input-wrapper {
+
+    .message-input-container {
+        display: flex !important;
+        align-items: stretch !important;
+    }
+
+    .message-input {
         display: block !important;
         flex: 1 !important;
+        width: auto !important;
+    }
+
+    .send-button {
+        display: block !important;
+        width: auto !important;
     }
 }
 
