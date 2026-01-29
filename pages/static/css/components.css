@@ -500,79 +500,84 @@ button:focus, input:focus, textarea:focus {
     margin-bottom: 0 !important;
 }
 
-/* 3. MAIN FOOTER BAR (Reset everything) */
 .message-form-container {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: #000000 !important; /* Force black for contrast */
-    border-top: 2px solid #333 !important;
-    z-index: 9999 !important;
+  /* Ensure it sticks to bottom */
+  position: fixed; 
+  bottom: 0; 
+  left: 0; 
+  right: 0;
+  width: 100%;
+  z-index: 100;
+  
+  /* LAYOUT FIX: Use Table instead of Flex */
+  display: table;
+  border-collapse: collapse; /* Removes gaps */
+  padding: 0;
+  margin: 0;
 }
 
-/* 4. TOP ROW: ICONS (Using simple centered text alignment) */
+/* 2. The Buttons Area (Emoji, Draw, Refresh) */
 .message-buttons-container {
-    display: block !important;
-    width: 100% !important;
-    text-align: left !important;
-    padding: 4px 8px !important;
-    background: #000000 !important;
+  display: table-cell;
+  vertical-align: middle;
+  width: 1%; /* Shrink to fit content */
+  white-space: nowrap; /* Force icons to stay on one line */
+  
+  /* PADDING REQUEST: Adds space around the buttons */
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 .message-button-cell {
-    display: inline-block !important;
-    width: 32px !important;
-    margin-right: 15px !important;
+  display: inline-block; /* Keeps them side-by-side inside the cell */
+  padding: 0 4px; /* Extra breathing room between individual icons */
 }
 
-/* 5. BOTTOM ROW: INPUT & SEND (Strict Table) */
-/* We strip the wrapper divs of any layout influence */
-.message-form-container form,
+/* 3. The Form Area */
+.message-form-container form {
+  display: table-cell;
+  vertical-align: middle;
+  width: 99%; /* Take up the rest of the space */
+  padding-right: 8px; /* Spacing on the far right */
+}
+
 .message-input-wrapper {
-    display: block !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+  width: 100%;
 }
 
-/* The actual table that holds Input + Button */
+/* 4. The Input + Send Button Group */
 .message-input-container {
-    display: table !important;
-    width: 100% !important;
-    table-layout: fixed !important; /* Prevents zoom blowouts */
-    border-collapse: collapse !important;
-    background: #ffffff !important; /* White background for input area */
+  /* LAYOUT FIX: Nested table ensures button never wraps */
+  display: table;
+  width: 100%;
+  border-collapse: separate; /* Allows border-radius to work */
+  border-spacing: 0;
 }
 
-/* Cell 1: The Input Box */
 .message-input {
-    display: table-cell !important;
-    width: 100% !important;
-    height: 40px !important;
-    border: none !important;
-    margin: 0 !important;
-    padding: 4px 8px !important;
-    background: #ffffff !important;
-    color: #000000 !important;
-    vertical-align: middle !important;
+  display: table-cell;
+  width: 100%; /* Input takes all available space */
+  vertical-align: middle;
+  height: 36px; /* Enforce height */
+  margin: 0;
+  
+  /* Radius fix for table-cell */
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
-/* Cell 2: The Send Button */
-.send-button, .btn-send {
-    display: table-cell !important;
-    width: 80px !important; /* Fixed width */
-    height: 40px !important;
-    background: #5865f2 !important;
-    color: #fff !important;
-    border: none !important;
-    cursor: pointer !important;
-    text-align: center !important;
-    vertical-align: middle !important;
-    white-space: nowrap !important;
+.send-button {
+  display: table-cell;
+  width: 1%; /* Button takes only what it needs */
+  white-space: nowrap;
+  vertical-align: middle;
+  padding: 0 16px;
+  height: 36px; /* Match input height */
+  cursor: pointer;
+  
+  /* Radius fix for table-cell */
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 /* 6. MODERN RESTORE (Flexbox for phones) */
