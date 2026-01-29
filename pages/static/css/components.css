@@ -471,27 +471,20 @@ button:focus, input:focus, textarea:focus {
   max-height: 30vh;
 }
 
+/* Message Form Container (Fixed/Compat Override - NEW) */
 .message-form-container {
-    /* Anchoring */
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    
-    /* Dimension - Do NOT use 'right: 0' here, it breaks Wii Zoom */
-    width: 100% !important;
-    margin: 0 !important;
-    
-    /* Box Model */
-    padding: 8px !important;
-    box-sizing: border-box !important;
-    z-index: 9999 !important; /* Force it on top of everything */
-    background: #36393f !important; /* Ensure background is opaque */
-}
-
-/* Light Theme Override for the container */
-.light-theme .message-form-container {
-    background: #ffffff !important;
-    border-top: 1px solid #e3e5e8 !important;
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 60px !important;
+  right: 0 !important;
+  width: auto;
+  max-width: 100%;
+  overflow: visible;
+  background: #36393f;
+  border-top: 1px solid #40444b;
+  z-index: 100;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 /* Fallback layouts for older browsers */
@@ -618,6 +611,7 @@ button:focus, input:focus, textarea:focus {
   left: 16px;
   z-index: 1000;
   background: #36393f;
+  border: 1px solid #40444b;
   border-radius: 4px;
   padding: 8px;
 }
@@ -1041,88 +1035,4 @@ canvas {
     padding: 0 8px;
     box-sizing: border-box;
   }
-}
-
-.message-form-container {
-    left: 0 !important;       /* Remove the 60px gap on the left */
-    right: 0 !important;      /* Touch the right edge */
-    width: 100% !important;   /* Force full screen width */
-    max-width: none !important;
-    padding: 8px !important;  /* Add internal breathing room */
-    box-sizing: border-box !important; /* Include padding in width calculation */
-}
-
-/* 2. PHASE 1: The "Fallback" (For Wii / Opera 9) */
-.chat-input, 
-.message-composer,
-.message-form-container form,
-.message-input-container {
-    display: table; /* Force table layout for Wii */
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 4px; /* Space between input and button */
-}
-
-.message-input-wrapper,
-.chat-input input,
-.chat-input textarea,
-.message-input {
-    display: table-cell;
-    width: 99%; /* Take up most space (99% prevents table blowout on Wii) */
-    vertical-align: middle;
-    margin: 0;
-    box-sizing: border-box;
-}
-
-.send-button, 
-.btn-send, 
-.chat-send {
-    display: table-cell;
-    width: 1%; /* Shrink to fit the text */
-    white-space: nowrap;
-    vertical-align: middle;
-    padding: 0 16px;
-}
-
-/* 3. PHASE 2: The "Modern Reset" (For Mobile/Desktop) */
-@supports (display: flex) {
-    .chat-input, 
-    .message-composer,
-    .message-form-container form,
-    .message-input-container {
-        display: flex; /* Restore Flexbox */
-        width: 100%;
-        border-spacing: 0;
-        gap: 8px;
-    }
-
-    .message-input-wrapper,
-    .chat-input input,
-    .chat-input textarea,
-    .message-input {
-        display: block;
-        width: auto;
-        flex: 1 1 auto; /* Grow to fill space */
-    }
-
-    .send-button, 
-    .btn-send, 
-    .chat-send {
-        display: inline-flex;
-        width: auto;
-        align-self: stretch; /* Match height of input */
-    }
-}
-
-body, .chat, .chat-container {
-    padding-bottom: 120px !important; /* Huge gap at bottom for the input bar */
-    box-sizing: border-box !important;
-}
-
-/* 2. Ensure the message list allows the body to handle scrolling */
-/* (This helps the Wii scroll smoother than using overflow:auto on a div) */
-.message-list {
-    max-height: none !important;
-    overflow: visible !important;
-    height: auto !important;
 }
