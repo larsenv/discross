@@ -443,4 +443,21 @@ canvas { background: #ffffff; cursor: crosshair; display: block; border: 1px sol
         white-space: nowrap;
         min-height: 44px; /* accessible tap target */
     }
+
+    @media (max-width: 640px) {
+        .send-button, .btn-send {
+          padding: 10px;
+          /* Remove min-width or change it to auto */
+          min-width: auto; 
+          font-size: 0.9rem;
+          /* Allow the button to shrink if necessary */
+          flex-shrink: 1; 
+        }
+        
+        .message-input {
+          /* Ensure the input box gives up space first */
+          flex: 1;
+          min-width: 0; 
+        }
+      }
 }
