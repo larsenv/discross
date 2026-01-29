@@ -17,22 +17,30 @@
     <title>Discross - #{$CHANNEL_NAME}</title>
     <script type="text/javascript">
         window.onload = function() {
-            // WII FIX: Wait 0.5 seconds for the table layout to finish rendering
-            setTimeout(function() {
+            var attempts = 0;
+            var maxAttempts = 15; // Try for about 3 seconds
+            
+            var intervalId = setInterval(function() {
+                attempts++;
                 
-                // METHOD 1: The "Nuclear" Option
-                // Force the main window to scroll to infinity
+                // Method 1: Scroll Window
                 window.scrollTo(0, 9999999);
                 
-                // METHOD 2: Element Target (Backup)
-                // If you have a <div id="end"></div> at the bottom, this aligns it
-                var endElement = document.getElementById("end");
-                if (endElement) {
-                    // "false" aligns the element to the bottom of the view
-                    endElement.scrollIntoView(false);
+                // Method 2: Scroll Body
+                if(document.body) {
+                    document.body.scrollTop = document.body.scrollHeight;
+                }
+                
+                // Method 3: Scroll HTML element
+                if(document.documentElement) {
+                    document.documentElement.scrollTop = document.documentElement.scrollHeight;
                 }
     
-            }, 500); // 500ms delay
+                // Stop trying after 3 seconds
+                if (attempts >= maxAttempts) {
+                    clearInterval(intervalId);
+                }
+            }, 205);
         };
     </script>
 </head>
