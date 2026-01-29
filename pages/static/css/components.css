@@ -68,7 +68,16 @@ body {
    HEADER & GENERAL LAYOUT
    ========================================= */
 
-#wrapper { height: 100%; width: 100%; }
+#wrapper {
+    position: absolute; /* Back to absolute (safer) */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0; /* Forces the box to stretch to the bottom */
+    width: 100%;
+    overflow: hidden;
+    z-index: 1;
+}
 
 .menu-button {
   position: fixed;
@@ -86,12 +95,16 @@ body {
   position: relative;
 }
 
-/* Scrollable Content Area */
 .scrollable-content {
-  overflow-y: auto;
-  padding: 16px;
-  height: 100%; 
-  -webkit-overflow-scrolling: touch;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 90px; /* Leave space for the input bar */
+    height: auto;
+    overflow-y: auto;
+    padding: 16px;
+    z-index: 5;
 }
 
 .header-table { width: 100%; }
@@ -219,15 +232,13 @@ body {
    ========================================= */
 
 .message-form-container {
-    position: relative !important;
+    position: absolute !important; /* Move relative to the wrapper */
     bottom: 0 !important;
     left: 0 !important;
-    right: 0 !important;
     width: 100% !important;
-    max-width: 100% !important;
-    overflow: hidden;
+    height: 90px;
     background-color: #36393f;
-    border-top: 1px solid #2f3136;
+    z-index: 100;
 }
 
 /* ROW 1: The Buttons */
