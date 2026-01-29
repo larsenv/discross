@@ -14,7 +14,7 @@
 
 /* Reset */
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow-x: hidden; }
+html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; }
 
 /* Base */
 body {
@@ -25,11 +25,7 @@ body {
   line-height: 1.45;
 }
 
-#wrapper { 
-  width: 100%; 
-  height: 100%;
-  position: relative;
-}
+#wrapper { width: 100%; }
 
 /* Typography */
 h1, h2 { margin: 24px 0 12px 0; font-size: 1.75rem; font-weight: 600; }
@@ -94,24 +90,13 @@ code {
 }
 pre code { background: none; border: none; padding: 0; }
 
-/* Layout - Desktop gets scrollable container, Wii gets simple layout */
+/* Layout - SIMPLE for Wii compatibility */
 .content-padding {
-  position: absolute;
-  top: 0;
-  left: 60px;
-  right: 0;
-  bottom: 0;
-  height: 100%;
+  padding-left: 60px;
+  padding-bottom: 130px; /* Space for fixed input bar */
 }
 
 .scrollable-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 120px;
-  overflow-y: auto;
-  overflow-x: hidden;
   padding: 16px;
 }
 
@@ -202,9 +187,9 @@ pre code { background: none; border: none; padding: 0; }
   margin-bottom: 8px;
 }
 
-/* Message Input - FIXED AT BOTTOM */
+/* Message Input - FIXED AT BOTTOM with proper styling */
 .message-form-container {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -216,7 +201,10 @@ pre code { background: none; border: none; padding: 0; }
 }
 
 /* Buttons Row */
-.message-buttons-container { padding: 0 0 8px 0; }
+.message-buttons-container { 
+  padding: 0 0 8px 0; 
+  margin: 0;
+}
 .message-button-cell {
   display: inline-block;
   vertical-align: middle;
@@ -231,19 +219,25 @@ pre code { background: none; border: none; padding: 0; }
   width: 32px;
   height: 32px;
   border-radius: 4px;
+  display: inline-block;
 }
 .icon-button:hover { background: rgba(255, 255, 255, 0.06); }
 .emoji-icon { width: 24px; height: 24px; vertical-align: middle; }
 
-/* Input - TABLE LAYOUT FOR WII COMPATIBILITY */
-.message-input-wrapper { width: 100%; }
+/* Input Row - SEND BUTTON ON SAME LINE */
+.message-input-wrapper { 
+  width: 100%; 
+  background: #40444b;
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+}
+
 .message-input-container {
   display: table;
   width: 100%;
   table-layout: fixed;
-  background: #40444b;
-  border-radius: 8px;
-  border: 1px solid #40444b;
+  border-collapse: collapse;
 }
 
 .message-input {
@@ -257,6 +251,7 @@ pre code { background: none; border: none; padding: 0; }
   font-size: 16px;
   vertical-align: middle;
   font-family: 'rodin', Arial, Helvetica, sans-serif;
+  outline: none;
 }
 
 .send-button {
@@ -264,16 +259,15 @@ pre code { background: none; border: none; padding: 0; }
   vertical-align: middle;
   width: 1%;
   white-space: nowrap;
-  padding: 10px 14px;
-  border-radius: 4px;
+  padding: 10px 16px;
   background: #5865f2;
   color: #fff;
   border: none;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 14px;
   cursor: pointer;
-  min-height: 44px;
   font-family: 'rodin', Arial, Helvetica, sans-serif;
+  border-radius: 0 8px 8px 0;
 }
 .send-button:hover { background: #4752c4; }
 
@@ -297,6 +291,7 @@ pre code { background: none; border: none; padding: 0; }
 #emoji button:hover { background: rgba(255, 255, 255, 0.06); }
 
 /* Buttons */
+.buttons { margin: 16px 0; }
 .discross-button {
   background: #5865f2;
   color: white;
@@ -313,6 +308,40 @@ pre code { background: none; border: none; padding: 0; }
 }
 .discross-button:hover { background: #4752c4; }
 .discross-button.secondary { background: #4f545c; }
+.discross-button.secondary:hover { background: #5d6269; }
+
+/* Form inputs - Nice styling for login page */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea {
+  background: #40444b;
+  border: 1px solid #40444b;
+  border-radius: 8px;
+  color: #dcddde;
+  padding: 10px 12px;
+  font-size: 16px;
+  font-family: 'rodin', Arial, Helvetica, sans-serif;
+  width: 100%;
+  max-width: 400px;
+  margin: 8px 0;
+  outline: none;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus {
+  border-color: #5865f2;
+  background: #383a40;
+}
+
+label {
+  display: block;
+  margin: 12px 0 4px 0;
+  font-weight: 600;
+  color: #dcddde;
+}
 
 /* Server Pages */
 .server-layout { display: table; width: 100%; }
@@ -382,7 +411,7 @@ br.nodisp { display: none; }
 .light-theme .messagecontent { color: #2e3338; }
 .light-theme .messagecontent a { color: #0067e0; }
 .light-theme .message-form-container { background: #fff; border-top-color: #e3e5e8; }
-.light-theme .message-input-container { background: #ebedef; border-color: #e3e5e8; }
+.light-theme .message-input-wrapper { background: #ebedef; }
 .light-theme .message-input { color: #060607; }
 .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
 .light-theme pre,
@@ -393,6 +422,21 @@ br.nodisp { display: none; }
 .light-theme .reaction { background: #f2f3f5; }
 .light-theme #emoji button:hover { background: rgba(0, 0, 0, 0.08); }
 .light-theme a { color: #0067e0; }
+.light-theme input[type="text"],
+.light-theme input[type="password"],
+.light-theme input[type="email"],
+.light-theme textarea {
+  background: #ebedef;
+  border-color: #e3e5e8;
+  color: #060607;
+}
+.light-theme input[type="text"]:focus,
+.light-theme input[type="password"]:focus,
+.light-theme input[type="email"]:focus,
+.light-theme textarea:focus {
+  border-color: #5865f2;
+  background: #e3e5e8;
+}
 
 /* ========== AMOLED THEME ========== */
 .amoled-theme body,
@@ -410,7 +454,7 @@ br.nodisp { display: none; }
 .amoled-theme .messagecontent { color: #fff; }
 .amoled-theme .messagecontent a { color: #5865f2; }
 .amoled-theme .message-form-container { background: #000; border-top-color: #333; }
-.amoled-theme .message-input-container { background: #0a0a0a; border-color: #333; }
+.amoled-theme .message-input-wrapper { background: #0a0a0a; }
 .amoled-theme .message-input { color: #fff; }
 .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08); }
 .amoled-theme pre,
@@ -424,28 +468,28 @@ br.nodisp { display: none; }
 .amoled-theme .server-sidebar,
 .amoled-theme .server-select-note,
 .amoled-theme .server-main { background: #000; border-color: #333; }
+.amoled-theme input[type="text"],
+.amoled-theme input[type="password"],
+.amoled-theme input[type="email"],
+.amoled-theme textarea {
+  background: #0a0a0a;
+  border-color: #333;
+  color: #fff;
+}
+.amoled-theme input[type="text"]:focus,
+.amoled-theme input[type="password"]:focus,
+.amoled-theme input[type="email"]:focus,
+.amoled-theme textarea:focus {
+  border-color: #5865f2;
+  background: #111;
+}
 
 /* Small screens */
 @media (max-width: 640px) {
-  .content-padding { left: 50px; }
-  .send-button { padding: 8px 10px; font-size: 0.9rem; }
+  .content-padding { padding-left: 50px; padding-bottom: 140px; }
   .homepage, .home, #home { padding: 12px; }
 }
 
-/* Wii fallback - absolute positioning doesn't work well on Wii */
-@media (max-width: 768px) and (max-height: 480px) {
-  .content-padding {
-    position: static;
-    padding-left: 60px;
-    padding-bottom: 140px;
-    height: auto;
-  }
-  .scrollable-content {
-    position: static;
-    overflow: visible;
-    padding: 16px;
-  }
-  .message-form-container {
-    position: fixed;
-  }
+@media (max-width: 768px) {
+  .menu-button { top: 8px; left: 8px; }
 }
