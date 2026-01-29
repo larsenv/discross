@@ -1,20 +1,3 @@
-Here are the fixes for your components.css file.
-
-Summary of Changes:
-
-    Wii Compatibility: Switched the input bar table layout to border-collapse: separate with border-spacing. This creates the gap you wanted between the input and button without breaking on older browsers (like the Wii) that struggle with Flexbox margins.
-
-    Hamburger Menu: Removed background and border styles so it floats cleanly.
-
-    Layout Padding: Increased padding on .message-form-container to give the emoji/input bar more breathing room.
-
-    Send Button: Rounded the corners (now that it's separated from the input box) and ensured it sits to the right via the table structure.
-
-    Reactions Indentation: Changed the global ul rule to .messagecontent ul. This prevents reaction lists (or other UI lists) from being indented unintentionally; only lists inside your message text will be indented.
-
-components.css
-CSS
-
 @font-face {
   font-family: 'rodin';
   src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
