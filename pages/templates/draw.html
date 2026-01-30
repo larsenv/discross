@@ -33,13 +33,11 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            width: 100%;
             font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             font-size: 16px;
             line-height: 1.45;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
         }
 
         body {
@@ -47,10 +45,85 @@
             color: #dcddde;
         }
 
-        /* Typography */
-        h1, h2 { margin: 24px 0 12px 0; font-size: 1.75rem; font-weight: 600; }
-        p, ul { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
-        .messagecontent ul { padding-left: 20px; }
+        /* Light theme overrides */
+        .light-theme body {
+            background: #ffffff !important;
+            color: #2e3338 !important;
+        }
+
+        .light-theme #wrapper {
+            background: #ffffff !important;
+            color: #2e3338 !important;
+        }
+
+        .light-theme .message {
+            border-color: #e3e5e8 !important;
+        }
+
+        .light-theme .message .content {
+            color: #2e3338 !important;
+        }
+
+        /* AMOLED theme overrides - true black theme for maximum contrast and battery savings */
+        .amoled-theme body {
+            background: #000000 !important;
+            color: #ffffff !important;
+        }
+
+        .amoled-theme #wrapper {
+            background: #000000 !important;
+            color: #ffffff !important;
+        }
+
+        .amoled-theme .message {
+            border-color: #333333 !important;
+            background: #000000 !important;
+        }
+
+        .amoled-theme .message .content {
+            color: #ffffff !important;
+        }
+
+        .amoled-theme .message:hover {
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        .amoled-theme #emoji {
+            background: #111111 !important;
+            border-color: #333333 !important;
+        }
+
+        .amoled-theme #emoji button:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        .amoled-theme .menu-button {
+            background: #000000 !important;
+            border-color: #333333 !important;
+            color: #ffffff !important;
+        }
+
+        .amoled-theme a {
+            color: #5865f2 !important;
+        }
+
+        .message:hover {
+            background: rgba(4, 4, 5, 0.07);
+        }
+
+        .light-theme .message:hover {
+            background: rgba(6, 6, 7, 0.02) !important;
+        }
+
+        /* Hide legacy styling */
+        br.nodisp {
+            display: none;
+        }
+
+        /* Legacy table fixes */
+        table {
+            padding-bottom: 5px;
+        }
 
         /* Links */
         a {
@@ -62,247 +135,7 @@
             text-decoration: underline;
         }
 
-        /* Header */
-        .header-table { width: 100%; }
-        .header-logo img { display: block; }
-        .header-title {
-            font-size: 2.625rem;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-            color: #dddddd;
-        }
-        .header-menu {
-            width: 100%;
-            text-align: right;
-            font-size: 1.5rem;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-            color: #dddddd;
-        }
-        .header-menu a,
-        .header-menu-link {
-            color: #dddddd;
-            text-decoration: none;
-            font-size: 1.125rem;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-        }
-        .header-user-info {
-            color: #aaaaaa;
-            font-size: 0.75rem;
-        }
-
-        /* Homepage */
-        .homepage, .home, #home {
-            padding: 24px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        /* Code */
-        pre {
-            background: #2f3136;
-            border: 1px solid #202225;
-            border-radius: 4px;
-            padding: 8px;
-            margin: 4px 0;
-            overflow: auto;
-            max-height: 400px;
-            font-family: Consolas, Monaco, monospace;
-            font-size: 14px;
-        }
-        code {
-            background: #2f3136;
-            border-radius: 3px;
-            padding: 2px 4px;
-            font-family: Consolas, Monaco, monospace;
-            font-size: 14px;
-            color: #dcddde;
-        }
-        pre code { background: none; border: none; padding: 0; }
-
-        /* Layout */
-        .content-padding {
-            padding-left: 60px;
-            padding-bottom: 160px;
-        }
-
-        .scrollable-content {
-            padding: 16px;
-        }
-
-        /* Menu */
-        .menu-button {
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 1000;
-            background: transparent;
-            border: none;
-            padding: 8px;
-            cursor: pointer;
-        }
-        .menu-icon { width: 24px; height: 24px; display: block; }
-
-        /* Messages */
-        .message {
-            padding: 8px 16px;
-            margin: 0;
-            border-bottom: 1px solid #2f3136;
-        }
-        .message:hover {
-            background: rgba(4, 4, 5, 0.07);
-        }
-        .message:last-child { border-bottom: none; }
-        .message-header { margin-bottom: 4px; }
-        .message-author {
-            font-weight: 600;
-            cursor: pointer;
-            margin-right: 8px;
-            color: #ffffff;
-            display: inline;
-        }
-        .message-date {
-            font-size: 12px;
-            color: #72767d;
-            display: inline;
-        }
-        .message-link { text-decoration: none; color: inherit; display: block; }
-        .messagecontent {
-            color: #dcddde;
-            font-size: 16px;
-            line-height: 20px;
-            word-wrap: break-word;
-        }
-        .messagecontent a { color: #00b0f4; }
-
-        /* Message mentions */
-        .message.mentioned {
-            border-left: 4px solid #faa61a;
-            background-color: rgba(250, 166, 26, 0.1);
-            padding-left: 12px;
-        }
-        .mention {
-            color: #00aff4;
-            background: rgba(88, 101, 242, 0.3);
-            padding: 0 2px;
-            border-radius: 3px;
-        }
-
-        /* Embeds */
-        .embed { margin-top: 8px; max-width: 520px; }
-        .embed-content {
-            background-color: #2f3136;
-            border: 1px solid #202225;
-            border-radius: 4px;
-            padding: 8px 12px;
-        }
-
-        /* Reactions */
-        .reaction {
-            display: inline-block;
-            padding: 2px 6px;
-            background: #2f3136;
-            border-radius: 4px;
-            margin-right: 4px;
-            margin-bottom: 4px;
-        }
-        .reaction img { width: 16px; height: 16px; vertical-align: middle; }
-        .reaction-count { color: #dcddde; font-size: 12px; margin-left: 4px; }
-
-        /* Forwarded */
-        .forwarded-content-wrapper {
-            padding: 8px;
-            background: rgba(47, 49, 54, 0.6);
-            border-radius: 4px;
-            margin-bottom: 8px;
-        }
-
-        /* Message Input - FIXED AT BOTTOM */
-        .message-form-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            z-index: 100;
-            background: #36393f;
-            border-top: 1px solid #40444b;
-            padding: 12px;
-        }
-
-        /* Buttons Row */
-        .message-buttons-container {
-            padding: 0 0 8px 0;
-            margin: 0;
-            display: table;
-            width: 100%;
-        }
-        .message-button-cell {
-            display: table-cell;
-            width: 32px;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        .icon-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            display: inline-block;
-        }
-        .icon-button:hover { background: rgba(255, 255, 255, 0.06); }
-        .emoji-icon { width: 24px; height: 24px; vertical-align: middle; }
-
-        /* Input Row */
-        .message-input-wrapper {
-            width: 100%;
-            background: transparent;
-            padding: 0;
-        }
-
-        .message-input-container {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: separate;
-            border-spacing: 10px 0;
-        }
-
-        .message-input {
-            display: table-cell;
-            width: 100%;
-            height: 44px;
-            padding: 0 12px;
-            border: none;
-            background: #40444b;
-            color: #dcddde;
-            font-size: 16px;
-            vertical-align: middle;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-            outline: none;
-            border-radius: 8px;
-        }
-
-        .send-button {
-            display: table-cell;
-            vertical-align: middle;
-            width: 1%;
-            white-space: nowrap;
-            padding: 10px 24px;
-            background: #5865f2;
-            color: #fff;
-            border: none;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-            border-radius: 8px;
-        }
-        .send-button:hover { background: #4752c4; }
-
-        /* Emoji Picker */
+        /* Emoji picker styling */
         #emoji {
             background: #2f3136;
             border: 1px solid #40444b;
@@ -310,7 +143,11 @@
             padding: 16px;
             margin: 8px 0;
         }
-        #emoji table { width: 100%; }
+
+        #emoji table {
+            width: 100%;
+        }
+
         #emoji button {
             background: none;
             border: none;
@@ -318,73 +155,198 @@
             padding: 8px;
             border-radius: 4px;
         }
-        #emoji button:hover { background: rgba(255, 255, 255, 0.06); }
 
-        /* Custom Form elements */
-        input[type="text"],
-        input[type="password"],
-        input[type="email"],
-        textarea {
-            background: #40444b;
+        #emoji button:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        /* Menu positioning */
+        .menu-button {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1000;
+            background: #36393f;
             border: 1px solid #40444b;
-            border-radius: 8px;
-            color: #dcddde;
-            padding: 10px 12px;
-            font-size: 16px;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
+            border-radius: 4px;
+            padding: 8px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .menu-button {
+                top: 8px;
+                left: 8px;
+            }
+        }
+
+        /* Old browser compatibility fixes */
+        .message-form-container {
+            /* Use fixed positioning for compatibility with non-flexbox browsers */
+            position: fixed;
+            bottom: 0;
+            left: 60px;
+            right: 0;
+            /* Ensure it doesn't overflow */
+            width: auto;
+            max-width: 100%;
+            overflow: hidden;
+            /* Add background to ensure visibility */
+            background: #36393f;
+            /* Add border for separation */
+            border-top: 1px solid #40444b;
+            /* Add z-index to ensure it's above content */
+            z-index: 100;
+        }
+
+        .message-buttons-container {
+            /* Fallback layout for old browsers */
             width: 100%;
-            max-width: 400px;
-            margin: 8px 0;
+            max-width: 100%;
+            /* Use table-cell layout as flexbox fallback for very old browsers */
+            display: table;
+            table-layout: fixed;
+            box-sizing: border-box;
+            padding: 8px;
+        }
+
+        .message-button-cell {
+            display: table-cell;
+            width: 32px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Modern browsers will still use flex if supported */
+        .modern-flex {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Light theme adjustments for message form */
+        .light-theme .message-form-container {
+            background: #ffffff !important;
+            border-top-color: #e3e5e8 !important;
+        }
+
+        /* AMOLED theme adjustments for message form */
+        .amoled-theme .message-form-container {
+            background: #000000 !important;
+            border-top-color: #333333 !important;
+        }
+
+        /* Chat container - consistent spacing */
+        .chat, .chat-container, #chat {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 920px;
+            margin: 0 auto;
+        }
+
+        /* Message list: readable box */
+        .message-list {
+            padding: 12px;
+            border-radius: 8px;
+            background: #2f3136;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        /* Chat input area: flex so input shrinks correctly and button won't overflow */
+        .chat-input, .composer, .message-composer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: transparent;
+        }
+
+        /* Input/textarea should grow and allow content to wrap, but never force container width */
+        .chat-input input[type="text"],
+        .chat-input textarea,
+        .message-composer input[type="text"],
+        .message-composer textarea {
+            flex: 1 1 auto;
+            min-width: 0; /* critical to prevent overflow in flex layouts */
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: #fff;
             outline: none;
         }
 
-        input[type="text"]:focus,
-        input[type="password"]:focus,
-        input[type="email"]:focus,
-        textarea:focus {
-            border-color: #5865f2;
-            background: #383a40;
+        /* Textarea behavior */
+        .chat-input textarea, .message-composer textarea {
+            resize: vertical;
+            max-height: 30vh;
         }
 
-        label {
-            display: block;
-            margin: 12px 0 4px 0;
-            font-weight: 600;
-            color: #dcddde;
-        }
-
-        /* Server Pages */
-        .server-layout { display: table; width: 100%; }
-        .server-sidebar, .server-main { vertical-align: top; }
-        .server-icon { height: 48px; width: 48px; }
-        .server-select-title {
-            font-size: 1.875rem;
-            color: #5865f2;
-            font-weight: bold;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-        }
-        .server-select-text {
-            font-size: 1.5rem;
-            color: #dddddd;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-        }
-
-        /* Drawing / Canvas */
-        #toolbar-container {
-            background-color: #2f3136;
-            padding: 5px;
-            border-bottom: 1px solid #202225;
-            display: table;
-            margin: 0 auto 5px auto;
+        /* Send button: size, alignment, and prevent overflow */
+        .send-button, .btn-send, button.send, .chat-send {
+            flex: 0 0 auto; /* don't grow, don't shrink */
+            padding: 10px 14px;
             border-radius: 8px;
-            text-align: left;
-            position: relative;
-            z-index: 10;
+            background: #5865f2;
+            color: #fff;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            align-self: stretch; /* match input height */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            min-height: 44px; /* accessible tap target */
+        }
+
+        /* Focus outlines */
+        button:focus, input:focus, textarea:focus {
+            box-shadow: 0 0 0 3px rgba(88,101,242,0.12);
+            border-color: #5865f2;
+        }
+
+        /* Defensive override: if send button was absolutely positioned elsewhere,
+           prefer static/flex layout so it stays inside the viewport */
+        .chat-footer { position: relative; }
+        .chat-footer .send-button {
+            position: static !important;
+        }
+
+        /* Small screen adjustments */
+        @media (max-width: 640px) {
+            .chat, .chat-container {
+                padding: 12px;
+            }
+
+            .send-button, .btn-send {
+                padding: 8px 10px;
+                min-height: 40px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* --- TOOLBAR STYLES --- */
+        #toolbar-container {
+          background-color: #2f3136;
+          padding: 5px;
+          border-bottom: 1px solid #202225;
+          display: table;
+          margin: 0 auto 5px auto; 
+          border-radius: 8px;
+          text-align: left;
+          position: relative;
+          z-index: 10;
         }
 
         .c-box {
-            width: 24px;
-            height: 24px;
+            width: 24px; height: 24px; /* Smaller to fit snug */
             border: 2px solid #555;
             display: inline-block;
             margin: 1px;
@@ -401,14 +363,23 @@
             vertical-align: middle;
             padding: 2px;
         }
+        
+        .s-inner { background: black; font-size: 1px; }
 
+        /* Hide mobile break on desktop */
+        .mobile-break {
+            display: none;
+        }
+
+        /* --- CANVAS STYLES --- */
         #canvas-wrapper {
             margin: 0 auto 20px auto;
             display: block;
             background: #2f3136;
             padding: 5px;
-            width: 610px;
-            max-width: 100%;
+            width: 610px; /* Snug fit wrapper */
+            max-width: 100%; /* Responsive for mobile */
+            box-sizing: border-box;
             position: relative;
             z-index: 10;
         }
@@ -418,76 +389,15 @@
             cursor: crosshair;
             display: block;
             border: 1px solid #202225;
-            max-width: 100%;
+            max-width: 100%; /* Responsive for mobile */
             height: auto;
         }
 
-        /* Hide legacy styling */
-        br.nodisp {
-            display: none;
-        }
-
-        /* ========== LIGHT THEME ========== */
-        .light-theme body,
-        .light-theme #wrapper { background: #ffffff !important; color: #2e3338 !important; }
-        .light-theme .content-padding,
-        .light-theme .scrollable-content { background: #fff; color: #060607; }
-        .light-theme .header-title,
-        .light-theme .header-menu,
-        .light-theme .header-menu-link { color: #060607; }
-        .light-theme .header-user-info { color: #4f5660; }
-        .light-theme .message { border-color: #e3e5e8 !important; }
-        .light-theme .message .content,
-        .light-theme .messagecontent { color: #2e3338 !important; }
-        .light-theme .message:hover { background: rgba(6, 6, 7, 0.02) !important; }
-        .light-theme .message-author { color: #060607; }
-        .light-theme .message-date { color: #5c5e66; }
-        .light-theme .message-form-container { background: #ffffff !important; border-top-color: #e3e5e8 !important; }
-        .light-theme .message-input { color: #060607; background: #ebedef; }
-        .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
-        .light-theme pre,
-        .light-theme code { background: #f2f3f5; border-color: #e3e5e8; color: #2e3338; }
-        .light-theme .embed-content,
-        .light-theme .forwarded-content-wrapper { background: #f2f3f5; border-color: #e3e5e8; }
-        .light-theme #emoji { background: #ffffff !important; border-color: #e3e5e8; }
-        .light-theme .reaction { background: #f2f3f5; }
-        .light-theme a { color: #0067e0; }
-        .light-theme input[type="text"],
-        .light-theme input[type="password"],
-        .light-theme input[type="email"],
-        .light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #060607; }
-
-        /* ========== AMOLED THEME ========== */
-        .amoled-theme body,
-        .amoled-theme #wrapper { background: #000000 !important; color: #ffffff !important; }
-        .amoled-theme .content-padding,
-        .amoled-theme .scrollable-content { background: #000; color: #fff; }
-        .amoled-theme .header-title,
-        .amoled-theme .header-menu,
-        .amoled-theme .header-menu-link { color: #fff; }
-        .amoled-theme .message { border-color: #333333 !important; background: #000000 !important; }
-        .amoled-theme .message .content,
-        .amoled-theme .messagecontent { color: #ffffff !important; }
-        .amoled-theme .message:hover { background: rgba(255, 255, 255, 0.05) !important; }
-        .amoled-theme .message-author { color: #fff; }
-        .amoled-theme .message-date { color: #a0a0a0; }
-        .amoled-theme .message-form-container { background: #000000 !important; border-top-color: #333333 !important; }
-        .amoled-theme .message-input { color: #fff; background: #0a0a0a; }
-        .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
-        .amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
-        .amoled-theme .menu-button { color: #ffffff !important; }
-        .amoled-theme a { color: #5865f2 !important; }
-        .amoled-theme pre,
-        .amoled-theme code { background: #0a0a0a; border-color: #222; color: #fff; }
-        .amoled-theme .reaction { background: #0a0a0a; border-color: #222; }
-
-        /* Small screens / Mobile */
+        /* Mobile responsive adjustments */
         @media (max-width: 640px) {
-            .content-padding { padding-left: 50px; padding-bottom: 160px; }
-            .homepage, .home, #home { padding: 12px; }
-            
             #toolbar-container {
                 width: calc(100% - 16px);
+                max-width: 100%;
                 margin: 8px 8px 5px 8px;
                 padding: 8px 5px;
                 box-sizing: border-box;
@@ -498,25 +408,38 @@
                 margin: 0 8px 20px 8px;
             }
 
-            canvas { width: 100%; }
+            canvas {
+                width: 100%;
+            }
 
-            .c-box { width: 20px; height: 20px; margin: 2px; }
+            .c-box {
+                width: 20px;
+                height: 20px;
+                margin: 2px;
+            }
 
+            .s-btn {
+                margin: 0 2px;
+            }
+
+            #btn-clear {
+                font-size: 12px !important;
+                height: 36px !important;
+                padding: 0 12px !important;
+            }
+
+            /* Show mobile break to put sizes on new line */
+            .mobile-break {
+                display: block;
+            }
+            
+            /* Fix message form on mobile */
             .message-form-container {
                 left: 0 !important;
                 right: 0 !important;
-                padding: 8px;
+                padding: 0 8px;
+                box-sizing: border-box;
             }
-
-            .send-button {
-                padding: 8px 10px;
-                min-height: 40px;
-                font-size: 0.9rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .menu-button { top: 8px; left: 8px; }
         }
     </style>
 </head>
