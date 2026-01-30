@@ -7,7 +7,7 @@ const { SnowTransfer } = require('snowtransfer')
 const bot = require('./bot.js')
 const connectionHandler = require('./connectionHandler.js')
 const sharp = require("sharp")
-const sanitizer = require("path-sanitizer").default
+const sanitizer = require("path-sanitizer")
 
 const options = {}
 
