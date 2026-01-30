@@ -45,16 +45,6 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
     await lock.acquire(discordID, async () => {
       const parsedurl = url.parse(req.url, true);
       if (parsedurl.query.message !== "") {
-        // Check if bot is connected
-        const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-        
-        if (!clientIsReady) {
-          res.writeHead(503, { "Content-Type": "text/plain" });
-          res.write("The bot isn't connected, try again in a moment");
-          res.end();
-          return;
-        }
-
         const channel = await bot.client.channels.fetch(parsedurl.query.channel);
         const member = await channel.guild.members.fetch(discordID);
 
@@ -90,8 +80,8 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         let author_id = reply_message.author.id;
         let author_mention = "<@" + author_id + ">";
 
-        processedmessage = "> Replying to " + reply_message_content + " from " + author_mention + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
-        
+        processedmessage = "> Replying to \"" + reply_message_content + "\" from " + author_mention + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
+
         await webhook.edit({ channel: channel });
         const message = await webhook.send({
           content: processedmessage,

@@ -164,5 +164,5 @@ Go to [localhost:4000](http://localhost:4000) and use it to register
 - [ ] Uploading files
 - [x] Sending emoji
 - [ ] Profile pictures
-- [x] Viewing reactions
+- [ ] Viewing reactions
 - [ ] Proper website embeds

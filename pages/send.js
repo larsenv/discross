@@ -54,16 +54,6 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       if (typeof query.message === 'string' && query.message !== "") {
         const channelId = (query.channel || query.channel_id || args?.[2]);
 
-        // Check if bot is connected
-        const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-        
-        if (!clientIsReady) {
-          res.writeHead(503, { "Content-Type": "text/plain" });
-          res.write("The bot isn't connected, try again in a moment");
-          res.end();
-          return;
-        }
-
         // Validate channel id format early
         if (!channelId || !isValidSnowflake(channelId)) {
           res.writeHead(404, { "Content-Type": "text/plain" });
@@ -120,23 +110,6 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
             }
           }
         } while (m);
-
-        // Handle reply if reply_message_id is present
-        if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
-          try {
-            let reply_message = await channel.messages.fetch(query.reply_message_id);
-            let reply_message_content = reply_message.content;
-            if (reply_message_content.length > 30) {
-              reply_message_content = reply_message_content.substring(0, 30) + "...";
-            }
-            let author_id = reply_message.author.id;
-            let author_mention = `<@${author_id}>`;
-
-            processedmessage = `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
-          } catch (err) {
-            console.error("Failed to reply:", err);
-          }
-        }
 
         try {
           await webhook.edit({ channel: channel });
