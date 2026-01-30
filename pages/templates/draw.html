@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <link rel="stylesheet" href="/css/base.css">
-    <link rel="stylesheet" href="/css/themes.css">
-    <link rel="stylesheet" href="/css/components.css">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#2b5797">
+    <meta name="theme-color" content="#ffffff">
     <title>Discross - #{$CHANNEL_NAME}</title>
     <style>
         @font-face {
@@ -14,18 +19,23 @@
                  url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
             font-weight: 400;
         }
-        
+
         @font-face {
             font-family: 'rodin';
             src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
                  url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
             font-weight: 700;
         }
-        
-        /* Global reset + consistent box sizing and font */
-        *, *::before, *::after {
+
+        /* Discord-inspired base styling */
+        * {
             box-sizing: border-box;
         }
+
+        * {
+            font-family: 'rodin', Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
         
         html,
         body,
@@ -33,841 +43,282 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            width: 100%;
-            font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            font-size: 16px;
-            line-height: 1.45;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
         }
-        
-        /* Typography */
-        h1, h2 { margin: 24px 0 12px 0; font-size: 1.75rem; font-weight: 600; }
-        p, ul { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
-        .messagecontent ul { padding-left: 20px; }
-        
-        /* Links */
-        a {
-            color: #00aff4;
-            text-decoration: none;
+
+        .light-theme #wrapper {
+            background: #FFFFFF !important;
+            color: #000000 !important;
         }
-        
-        a:hover {
-            text-decoration: underline;
+
+        .light-theme #wrapper * {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            -webkit-text-fill-color: #000000 !important;
         }
-        
-        /* Header */
-        .header-table { width: 100%; }
-        .header-logo img { display: block; }
-        .header-title {
-            font-size: 2.625rem;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-            color: #dddddd;
+
+        .light-theme #wrapper form table {
+            border-spacing: 0px;
         }
-        .header-menu {
-            width: 100%;
-            text-align: right;
-            font-size: 1.5rem;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-            color: #dddddd;
+
+        .light-theme #wrapper form table td:nth-child(2) {
+            border-radius: 50px 0px 0px 50px;
+            -webkit-border-radius: 50px 0px 0px 50px;
+            -moz-border-radius: 50px 0px 0px 50px;
+            border: 10px solid #000000;
+            border-right: none;
+            padding-left: 10px;
         }
-        .header-menu a,
-        .header-menu-link {
-            color: #dddddd;
-            text-decoration: none;
-            font-size: 1.125rem;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
+
+        .light-theme #wrapper form table td:nth-child(3) {
+            border-radius: 0px 50px 50px 0px;
+            -webkit-border-radius: 0px 50px 50px 0px;
+            -moz-border-radius: 0px 50px 50px 0px;
+            border: 10px solid #000000;
+            border-left: 5px solid #000000;
+            padding-left: 15px;
         }
-        .header-user-info {
-            color: #aaaaaa;
-            font-size: 0.75rem;
+
+        .light-theme #wrapper form table td:nth-child(2) * {
+            all: unset !important
         }
-        
-        /* Homepage */
-        .homepage, .home, #home {
-            padding: 24px;
-            max-width: 1200px;
-            margin: 0 auto;
+
+        .light-theme #wrapper form table td:nth-child(3) * {
+            all: unset !important;
         }
-        
-        /* Code */
-        pre {
-            background: #2f3136;
-            border: 1px solid #202225;
-            border-radius: 4px;
-            padding: 8px;
-            margin: 4px 0;
-            overflow: auto;
-            max-height: 400px;
-            font-family: Consolas, Monaco, monospace;
-            font-size: 14px;
+
+        .light-theme .download {
+            border-radius: 10px;
+            border: 5px solid #000000;
         }
-        code {
-            background: #2f3136;
-            border-radius: 3px;
-            padding: 2px 4px;
-            font-family: Consolas, Monaco, monospace;
-            font-size: 14px;
-            color: #dcddde;
-        }
-        pre code { background: none; border: none; padding: 0; }
-        
-        /* Layout */
-        .content-padding {
-            padding-left: 60px;
-            padding-bottom: 160px;
-        }
-        
-        .scrollable-content {
-            padding: 16px;
-        }
-        
-        /* Menu */
-        .menu-button {
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 1000;
-            background: #36393f;
-            border: 1px solid #40444b;
-            border-radius: 4px;
-            padding: 8px;
-            cursor: pointer;
-        }
-        .menu-icon { width: 24px; height: 24px; display: block; }
-        
-        /* Messages */
-        .message {
-            margin: 0;
-            border-bottom: 1px solid #2f3136;
-        }
-        .message:hover {
-            background: rgba(4, 4, 5, 0.07);
-        }
-        .message:last-child { border-bottom: none; }
-        .message-header { margin-bottom: 4px; }
-        .message-author {
-            font-weight: 600;
-            cursor: pointer;
-            margin-right: 8px;
-            color: #ffffff;
-            display: inline;
-        }
-        .message-date {
-            font-size: 12px;
-            color: #72767d;
-            display: inline;
-        }
-        .message-link { text-decoration: none; color: inherit; display: block; }
-        .messagecontent {
-            color: #dcddde;
-            font-size: 16px;
-            line-height: 20px;
-            word-wrap: break-word;
-        }
-        .messagecontent a { color: #00b0f4; }
-        
-        /* Message mentions */
-        .message.mentioned {
-            border-left: 4px solid #faa61a;
-            background-color: rgba(250, 166, 26, 0.1);
-            padding-left: 12px;
-        }
-        .mention {
-            color: #00aff4;
-            background: rgba(88, 101, 242, 0.3);
-            padding: 0 2px;
-            border-radius: 3px;
-        }
-        
-        /* Embeds */
-        .embed { margin-top: 8px; max-width: 520px; }
-        .embed-content {
-            background-color: #2f3136;
-            border: 1px solid #202225;
-            border-radius: 4px;
-            padding: 8px 12px;
-        }
-        
-        /* Reactions */
-        .reaction {
-            display: inline-block;
-            padding: 2px 6px;
-            background: #2f3136;
-            border-radius: 4px;
-            margin-right: 4px;
-            margin-bottom: 4px;
-        }
-        .reaction img { width: 16px; height: 16px; vertical-align: middle; }
-        .reaction-count { color: #dcddde; font-size: 12px; margin-left: 4px; }
-        
-        /* Forwarded */
-        .forwarded-content-wrapper {
-            padding: 8px;
-            background: rgba(47, 49, 54, 0.6);
-            border-radius: 4px;
-            margin-bottom: 8px;
-        }
-        
-        /* Message Input - FIXED AT BOTTOM */
-        .message-form-container {
-            position: fixed;
-            bottom: 0;
-            left: 60px;
-            right: 0;
-            width: auto;
-            max-width: 100%;
-            z-index: 100;
-            background: #36393f;
-            border-top: 1px solid #40444b;
-            padding: 12px;
-            overflow: hidden;
-        }
-        
-        /* Buttons Row */
-        .message-buttons-container {
-            padding: 8px;
-            margin: 0;
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-            box-sizing: border-box;
-        }
-        .message-button-cell {
-            display: table-cell;
-            width: 32px;
-            text-align: center;
-            vertical-align: middle;
-        }
-        
-        .icon-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            display: inline-block;
-        }
-        .icon-button:hover { background: rgba(255, 255, 255, 0.06); }
-        .emoji-icon { width: 24px; height: 24px; vertical-align: middle; }
-        
-        /* Input Row */
-        .message-input-wrapper {
-            width: 100%;
-            background: transparent;
-            padding: 0;
-        }
-        
-        .message-input-container {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: separate;
-            border-spacing: 10px 0;
-        }
-        
-        .message-input {
-            display: table-cell;
-            width: 100%;
-            height: 44px;
-            padding: 0 12px;
-            border: none;
-            background: #40444b;
-            color: #dcddde;
-            font-size: 16px;
-            vertical-align: middle;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-            outline: none;
-            border-radius: 8px;
-        }
-        
-        .send-button {
-            flex: 0 0 auto;
-            display: inline-flex;
-            vertical-align: middle;
-            padding: 10px 14px;
-            background: #5865f2;
-            color: #fff;
-            border: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-            border-radius: 8px;
-            align-items: center;
-            justify-content: center;
-            white-space: nowrap;
-            min-height: 44px;
-        }
-        .send-button:hover { background: #4752c4; }
-        
-        /* Emoji Picker */
-        #emoji {
-            background: #2f3136;
-            border: 1px solid #40444b;
-            border-radius: 8px;
-            padding: 16px;
-            margin: 8px 0;
-        }
-        #emoji table { width: 100%; }
-        #emoji button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 4px;
-        }
-        #emoji button:hover { background: rgba(255, 255, 255, 0.06); }
-        
-        /* Custom Form elements */
-        input[type="text"],
-        input[type="password"],
-        input[type="email"],
-        textarea {
-            background: #40444b;
-            border: 1px solid #40444b;
-            border-radius: 8px;
-            color: #dcddde;
-            padding: 10px 12px;
-            font-size: 16px;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-            width: 100%;
-            max-width: 400px;
-            margin: 8px 0;
-            outline: none;
-        }
-        
-        input[type="text"]:focus,
-        input[type="password"]:focus,
-        input[type="email"]:focus,
-        textarea:focus {
-            border-color: #5865f2;
-            background: #383a40;
-        }
-        
-        label {
-            display: block;
-            margin: 12px 0 4px 0;
-            font-weight: 600;
-            color: #dcddde;
-        }
-        
-        /* Server Pages */
-        .server-layout { display: table; width: 100%; }
-        .server-sidebar, .server-main { vertical-align: top; }
-        .server-icon { height: 48px; width: 48px; }
-        .server-select-title {
-            font-size: 1.875rem;
-            color: #5865f2;
-            font-weight: bold;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-        }
-        .server-select-text {
-            font-size: 1.5rem;
-            color: #dddddd;
-            font-family: 'rodin', Arial, Helvetica, sans-serif;
-        }
-        
-        /* Drawing / Canvas */
-        #toolbar-container {
-            background-color: #2f3136;
-            padding: 5px;
-            border-bottom: 1px solid #202225;
-            display: table;
-            margin: 0 auto 5px auto;
-            border-radius: 8px;
-            text-align: left;
-            position: relative;
-            z-index: 10;
-        }
-        
-        .c-box {
-            width: 24px;
-            height: 24px;
-            border: 2px solid #555;
-            display: inline-block;
-            margin: 1px;
-            cursor: pointer;
-            vertical-align: middle;
-        }
-        
-        .s-btn {
-            background: #b9bbbe;
-            border: 2px solid #000;
-            display: inline-block;
-            margin: 0 3px;
-            cursor: pointer;
-            vertical-align: middle;
-            padding: 2px;
-        }
-        
-        .s-inner { background: black; font-size: 1px; }
-        
-        #canvas-wrapper {
-            margin: 0 auto 20px auto;
-            display: block;
-            background: #2f3136;
-            padding: 5px;
-            width: 610px;
-            max-width: 100%;
-            position: relative;
-            z-index: 10;
-            box-sizing: border-box;
-        }
-        
-        canvas {
-            background: #ffffff;
-            cursor: crosshair;
-            display: block;
-            border: 1px solid #202225;
-            max-width: 100%;
-            height: auto;
-        }
-        
-        /* Hide legacy styling */
+
         br.nodisp {
-            display: none;
+            display: none
         }
-        
-        /* Legacy table fixes */
+
+        th {
+            vertical-align: top;
+            position: relative;
+            top: 4px;
+            text-align: left;
+            font-weight: 400 !important
+        }
+
+        th.join {
+            vertical-align: middle
+        }
+
+        hr {
+            border-top: none;
+            margin-bottom: 15px;
+            border-bottom: solid 1px #393c40;
+            border-left: solid 1px #393c40;
+            border-right: solid 1px #393c40
+        }
+
         table {
-            padding-bottom: 5px;
+            padding-bottom: 5px
         }
-        
-        /* ========== LIGHT THEME ========== */
-        .light-theme body,
-        .light-theme #wrapper { background: #ffffff !important; color: #2e3338 !important; }
-        .light-theme .content-padding,
-        .light-theme .scrollable-content { background: #fff; color: #060607; }
-        .light-theme .header-title,
-        .light-theme .header-menu,
-        .light-theme .header-menu-link { color: #060607; }
-        .light-theme .header-user-info { color: #4f5660; }
-        .light-theme .message { border-color: #e3e5e8 !important; }
-        .light-theme .message .content,
-        .light-theme .messagecontent { color: #2e3338 !important; }
-        .light-theme .message:hover { background: rgba(6, 6, 7, 0.02) !important; }
-        .light-theme .message-author { color: #060607; }
-        .light-theme .message-date { color: #5c5e66; }
-        .light-theme .message-form-container { background: #ffffff !important; border-top-color: #e3e5e8 !important; }
-        .light-theme .message-input { color: #060607; background: #ebedef; }
-        .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
-        .light-theme pre,
-        .light-theme code { background: #f2f3f5; border-color: #e3e5e8; color: #2e3338; }
-        .light-theme .embed-content,
-        .light-theme .forwarded-content-wrapper { background: #f2f3f5; border-color: #e3e5e8; }
-        .light-theme #emoji { background: #ffffff !important; border-color: #e3e5e8; }
-        .light-theme .reaction { background: #f2f3f5; }
-        .light-theme a { color: #0067e0; }
-        .light-theme input[type="text"],
-        .light-theme input[type="password"],
-        .light-theme input[type="email"],
-        .light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #060607; }
-        
-        /* ========== AMOLED THEME ========== */
-        .amoled-theme body,
-        .amoled-theme #wrapper { background: #000000 !important; color: #ffffff !important; }
-        .amoled-theme .content-padding,
-        .amoled-theme .scrollable-content { background: #000; color: #fff; }
-        .amoled-theme .header-title,
-        .amoled-theme .header-menu,
-        .amoled-theme .header-menu-link { color: #fff; }
-        .amoled-theme .message { border-color: #333333 !important; background: #000000 !important; }
-        .amoled-theme .message .content,
-        .amoled-theme .messagecontent { color: #ffffff !important; }
-        .amoled-theme .message:hover { background: rgba(255, 255, 255, 0.05) !important; }
-        .amoled-theme .message-author { color: #fff; }
-        .amoled-theme .message-date { color: #a0a0a0; }
-        .amoled-theme .message-form-container { background: #000000 !important; border-top-color: #333333 !important; }
-        .amoled-theme .message-input { color: #fff; background: #0a0a0a; }
-        .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
-        .amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
-        .amoled-theme .menu-button { background: #000000 !important; border-color: #333333 !important; color: #ffffff !important; }
-        .amoled-theme a { color: #5865f2 !important; }
-        .amoled-theme pre,
-        .amoled-theme code { background: #0a0a0a; border-color: #222; color: #fff; }
-        .amoled-theme .reaction { background: #0a0a0a; border-color: #222; }
-        
-        /* Modern browsers will still use flex if supported */
-        .modern-flex {
-            display: flex;
-            align-items: center;
+
+        form table {
+            height: 86px;
+            background: #303338;
             width: 100%;
-            box-sizing: border-box;
+            padding: 15px 0 0 8px;
+            border-top: solid 1px #393c40
         }
-        
-        /* Chat container - consistent spacing */
-        .chat, .chat-container, #chat {
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-width: 920px;
-            margin: 0 auto;
-        }
-        
-        /* Message list: readable box */
-        .message-list {
-            padding: 12px;
-            border-radius: 8px;
-            background: #2f3136;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            overflow-y: auto;
-            max-height: 60vh;
-        }
-        
-        /* Chat input area */
-        .chat-input, .composer, .message-composer {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            background: transparent;
-        }
-        
-        .chat-input input[type="text"],
-        .chat-input textarea,
-        .message-composer input[type="text"],
-        .message-composer textarea {
-            flex: 1 1 auto;
-            min-width: 0;
-            padding: 10px 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: #fff;
-            outline: none;
-        }
-        
-        .chat-input textarea, .message-composer textarea {
-            resize: vertical;
-            max-height: 30vh;
-        }
-        
-        .chat-footer { position: relative; }
-        .chat-footer .send-button {
-            position: static !important;
-        }
-        
-        /* Focus outlines */
-        button:focus, input:focus, textarea:focus {
-            box-shadow: 0 0 0 3px rgba(88,101,242,0.12);
-            border-color: #5865f2;
-        }
-        
-        /* Small screens / Mobile */
-        @media (max-width: 640px) {
-            .content-padding { padding-left: 50px; padding-bottom: 160px; }
-            .homepage, .home, #home { padding: 12px; }
-            .chat, .chat-container { padding: 12px; }
-            
-            #toolbar-container {
-                width: calc(100% - 16px);
-                margin: 8px 8px 5px 8px;
-                padding: 8px 5px;
-                box-sizing: border-box;
-            }
-        
-            #canvas-wrapper {
-                width: calc(100% - 16px);
-                margin: 0 8px 20px 8px;
-            }
-        
-            canvas { width: 100%; }
-        
-            .c-box { width: 20px; height: 20px; margin: 2px; }
-            .s-btn { margin: 0 2px; }
-        
-            .message-form-container {
-                left: 0 !important;
-                right: 0 !important;
-                padding: 8px;
-            }
-        
-            .send-button {
-                padding: 8px 10px;
-                min-height: 40px;
-                font-size: 0.9rem;
-            }
-        
-            #btn-clear {
-                font-size: 12px !important;
-                height: 36px !important;
-                padding: 0 12px !important;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .menu-button { top: 8px; left: 8px; }
+
+        a {
+            color: #647dcd;
         }
     </style>
+    <script src="/atrament.min.js"></script>
 </head>
 
-<body>
-    <div id="toolbar-container">
-        <div id="c1" class="c-box" style="background:#000000;" onclick="setColor('#000000', 'c1')"></div>
-        <div id="c2" class="c-box" style="background:#555555;" onclick="setColor('#555555', 'c2')"></div>
-        <div id="c3" class="c-box" style="background:#aaaaaa;" onclick="setColor('#aaaaaa', 'c3')"></div>
-        <div id="c4" class="c-box" style="background:#ffffff;" onclick="setColor('#ffffff', 'c4')"></div>
-        <div id="c5" class="c-box" style="background:#800000;" onclick="setColor('#800000', 'c5')"></div>
-        <div id="c6" class="c-box" style="background:#ff0000;" onclick="setColor('#ff0000', 'c6')"></div>
-        <div id="c7" class="c-box" style="background:#ff9900;" onclick="setColor('#ff9900', 'c7')"></div>
-        <div id="c8" class="c-box" style="background:#ffff00;" onclick="setColor('#ffff00', 'c8')"></div>
-        <br>
-        <div id="c9" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c9')"></div>
-        <div id="c10" class="c-box" style="background:#004d00;" onclick="setColor('#004d00', 'c10')"></div>
-        <div id="c11" class="c-box" style="background:#00ff00;" onclick="setColor('#00ff00', 'c11')"></div>
-        <div id="c12" class="c-box" style="background:#000080;" onclick="setColor('#000080', 'c12')"></div>
-        <div id="c13" class="c-box" style="background:#00ffff;" onclick="setColor('#00ffff', 'c13')"></div>
-        <div id="c14" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c14')"></div>
-        <div id="c15" class="c-box" style="background:#ff00ff;" onclick="setColor('#ff00ff', 'c15')"></div>
-        <div id="c16" class="c-box" style="background:#8b4513;" onclick="setColor('#8b4513', 'c16')"></div>
-        
-        <span class="toolbar-separator"></span>
-
-        <div id="s1" class="s-btn" onclick="setSize(2, 's1')"><div class="s-inner" style="width:2px; height:2px;"></div></div>
-        <div id="s2" class="s-btn" onclick="setSize(5, 's2')"><div class="s-inner" style="width:5px; height:5px;"></div></div>
-        <div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div>
-        <div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div>
-
-        <button type="button" id="btn-clear" class="clear-button" onclick="wipe()">Clear</button>
-    </div>
-
-    <div id="canvas-wrapper">
-        <canvas id="sketchpad" width="600" height="350"></canvas>
-    </div>
-
-    
+<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <a href="../server/{$SERVER_ID}" class="menu-button">
-            <img src="/resources/images/menu.gif" alt="Menu" class="menu-icon">
-        </a>
+        <table>
+            <tbody>
+                <tr>
+                    <td valign="top" style="vertical-align: top;">
+                        <div class="links">
+                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif" alt="Menu"
+                                    style="position: fixed; top: 32px;left: 12px;"></a>
+                            <br><img src="/resources/images/menuspacer.gif" alt=" " height="14px" width="32px" />
+                        </div>
+                        <br>
+                    </td>
+                    <td width="100%">
+                        <canvas id="sketchpad" width="0" height="0"></canvas>
+                        <div id="myList"></div> <!-- TODO: Remove -->
+                        <br>
+                        <div id="emoji" style="display: none;">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :sob:'">
+                                            <img src="/resources/twemoji/1f62d.gif" alt="sob"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
+                                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :skull:'">
+                                            <img src="/resources/twemoji/1f480.gif" alt="skull"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :pleading_face:'">
+                                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :heart:'">
+                                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :thumbsup:'">
+                                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :thumbsdown:'">
+                                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :pray:'">
+                                            <img src="/resources/twemoji/1f64f.gif" alt="pray"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :tada:'">
+                                            <img src="/resources/twemoji/1f389.gif" alt="tada"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style="background: none; border: none; vertical-align: middle; width: 48px;"
+                                            onclick="document.getElementById('message').value += ' :slight_smile:'">
+                                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
+                                                style="width: 30px; height: 30px;">
+                                        </button>
+                                    </td>
+                                </tr>
+                            </table>
 
-        <div class="content-padding">
-            <div class="scrollable-content">
-                <div id="emoji" style="display: none;">
-                    <div class="emoji-grid">
-                        <button onclick="document.getElementById('message').value += ' :sob:'">
-                            <img src="/resources/twemoji/1f62d.gif" alt="sob" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
-                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :skull:'">
-                            <img src="/resources/twemoji/1f480.gif" alt="skull" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pleading_face:'">
-                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :heart:'">
-                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsup:'">
-                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
-                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pray:'">
-                            <img src="/resources/twemoji/1f64f.gif" alt="pray" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :tada:'">
-                            <img src="/resources/twemoji/1f389.gif" alt="tada" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :slight_smile:'">
-                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile" class="emoji-icon">
-                        </button>
-                    </div>
-                </div>
-                <a id="end" name="end"></a>
-            </div>
-            <div class="message-form-container" style="position: fixed; bottom: 0; left: 60px; right: 0;">
-                <form action="../senddrawing" method="post" id="sendform">
-                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                    <input type="hidden" id="drawinginput" name="drawinginput" value="">
-                    <input type="hidden" id="lite" name="lite" value="False">
-                    <div style="background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
-                        <table style="width: 100%; margin: 0; padding: 0; border-collapse: collapse;">
-                            <tr>
-                                <td style="width: 100%; padding: 0;">
-                                    <input type="text" name="message" id="message" value=""
-                                        style="width: 100%; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box;"
-                                        required="" placeholder="Message #{$CHANNEL_NAME}">
-                                </td>
-                                <td style="padding: 0 8px 0 0;">
-                                    <button type="submit"
-                                        style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; display: block; width: 82px;" 
-                                        onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
-                                        onmouseout="this.style.background='#5865f2'">Send</button>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </form>
-            </div>
-        </div>
+                        </div>
+                        <a id="end" name="end"></a>
+                        <form action="../senddrawing" method="post" id="sendform">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td valign="middle" width="23px" style="vertical-align: middle; width: 23px;">
+                                            <a href="../server/{$SERVER_ID}"><img src="/resources/images/menu.gif"
+                                                    alt="Menu" style="position: fixed; top: 32px;left: 12px;"></a>
+                                        </td>
+                                        <font face="Arial, Helvetica, sans-serif" color="#dddddd">
+                                            NOTE: Drawing only works on newer browsers. If you do not see a canvas your client does not support drawing
+                                        </font>
+                                        <td>
+                                            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                                            <input type="hidden" id="drawinginput" name="drawinginput" value="">
+                                            <input type="hidden" id="lite" name="lite" value="False">
+                                            <div
+                                                style="box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;padding: 16px;background: #393c40;width: 100%;border-radius: 10px;">
+                                                <input type="text" name="message" id="message" value=""
+                                                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;box-shadow: 0 0 0 50px #393c40 inset;-webkit-text-fill-color: #dddddd;"
+                                                    required="" placeholder="Message #{$CHANNEL_NAME}">
+                                            </div>
+                                        </td>
+                                        <td style="width: 55px;">
+                                            <input type="button" id="fakesend"
+                                                style="width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                                value="Send">
+                                        </td>
+                                        <!-- <input type="submit"
+                                        id="send"
+                                            style="display:none; width: 70px;right: 17px;position: relative;border-radius: 10px;border: transparent;color: #dddddd;height: 50px;background: #393c40;"
+                                            value="Send"> -->
+                        </form>
+                </tr>
+            </tbody>
+        </table>
+
+        </td>
+        </tr>
+        </tbody>
+        </table>
+
+        <script src="/connection.js"></script>
     </div>
     <script>
-        var canvas = document.getElementById('sketchpad');
-        var ctx = canvas.getContext('2d');
-        
-        var isDrawing = false;
-        var lastX = 0;
-        var lastY = 0;
-        var currColor = '#000000';
-        var currSize = 5;
-
-        // Defaults
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.lineWidth = currSize;
-        ctx.strokeStyle = currColor;
-        // Fill canvas with white immediately (transparent canvas turns black on some Wii conversions)
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = currColor;
-
-        // --- COORDINATE SYSTEM ---
-        function getPos(e) {
-            if (e.offsetX) {
-                return { x: e.offsetX, y: e.offsetY };
-            } else if (e.layerX) {
-                return { x: e.layerX, y: e.layerY };
-            } else {
-                var rect = canvas.getBoundingClientRect();
-                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        document.addEventListener("DOMContentLoaded", function () {
+            var canvas = document.getElementById("sketchpad");
+            canvas.width = Math.min(window.innerWidth - 34 - 15, 1000);
+            canvas.height = Math.min(window.innerHeight - 107.2 - 15, 1000);
+            var fakesend = document.getElementById("fakesend");
+            var sendform1 = document.getElementById("sendform");
+            var drawinginput = document.getElementById("drawinginput");
+            var messagedom = document.getElementById("message");
+            var sketchpad = new atrament.Atrament(canvas, {
+                width: canvas.width,
+                height: canvas.height,
+                color: 'black',
+            });
+            function sendDrawing() {
+                drawinginput.value = canvas.toDataURL();
+                sendform1.submit();
             }
-        }
-
-        // --- DRAWING EVENTS ---
-        canvas.onmousedown = function(e) {
-            if(e.preventDefault) e.preventDefault(); // Stop Wii Drag
-            isDrawing = true;
-            var pos = getPos(e);
-            lastX = pos.x;
-            lastY = pos.y;
-            
-            ctx.beginPath();
-            ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
-            ctx.fillStyle = currColor;
-            ctx.fill();
-            ctx.beginPath();
-            
-            return false;
-        };
-
-        canvas.onmousemove = function(e) {
-            if (!isDrawing) return;
-            if(e.preventDefault) e.preventDefault(); 
-
-            var pos = getPos(e);
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            
-            lastX = pos.x;
-            lastY = pos.y;
-        };
-
-        canvas.onmouseup = function() { isDrawing = false; };
-        canvas.onmouseout = function() { isDrawing = false; };
-
-        // --- TOUCH SUPPORT FOR MOBILE ---
-        // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
-        function getTouchPos(e) {
-            if (!e.touches || e.touches.length === 0) return null;
-            var touch = e.touches[0];
-            var rect = canvas.getBoundingClientRect();
-            return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-        }
-
-        canvas.addEventListener('touchstart', function(e) {
-            if(e.preventDefault) e.preventDefault(); // Prevent scrolling
-            isDrawing = true;
-            var pos = getTouchPos(e);
-            if (!pos) return;
-            lastX = pos.x;
-            lastY = pos.y;
-            
-            ctx.beginPath();
-            ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
-            ctx.fillStyle = currColor;
-            ctx.fill();
-            ctx.beginPath();
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', function(e) {
-            if (!isDrawing) return;
-            if(e.preventDefault) e.preventDefault(); // Prevent scrolling
-            
-            var pos = getTouchPos(e);
-            if (!pos) return;
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            
-            lastX = pos.x;
-            lastY = pos.y;
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', function(e) {
-            if(e.preventDefault) e.preventDefault();
-            isDrawing = false;
-        }, { passive: false });
-
-        canvas.addEventListener('touchcancel', function(e) {
-            if(e.preventDefault) e.preventDefault();
-            isDrawing = false;
-        }, { passive: false });
-
-        // --- UI FUNCTIONS ---
-        function setColor(col, id) {
-            currColor = col;
-            ctx.strokeStyle = currColor;
-            
-            // Reset borders
-            for(var i=1; i<=16; i++) {
-                var el = document.getElementById('c'+i);
-                if(el) el.style.border = "2px solid #555";
-            }
-            document.getElementById(id).style.border = "2px solid white";
-        }
-
-        function setSize(s, id) {
-            currSize = s;
-            ctx.lineWidth = currSize;
-
-            for(var i=1; i<=4; i++) {
-                var el = document.getElementById('s'+i);
-                if(el) el.style.border = "2px solid #000";
-            }
-            document.getElementById(id).style.border = "2px solid blue";
-        }
-
-        function wipe() {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = currColor;
-        }
-
-        // --- SEND LOGIC ---
-        function prepareAndSend() {
-            var inputField = document.getElementById('drawinginput');
-            var form = document.getElementById('sendform');
-            var btn = document.getElementById('btn-send');
-            var data = canvas.toDataURL("image/png");
-            inputField.value = data;
-            form.submit();
-        }
-
-        // Initialize UI
-        setColor('#000000', 'c1');
-        setSize(5, 's2');
+            sendform1.addEventListener("keyup", event => {
+                if (event.key !== "Enter") return;
+                sendDrawing();
+                event.preventDefault();
+            });
+            messagedom.onkeypress = function (e) {
+                if (e.keyCode == 13) {
+                    e.preventDefault();
+                }
+            };
+            sketchpad.canvas.getContext("2d").fillStyle = "white";
+            sketchpad.canvas.getContext("2d").fillRect(0, 0, sketchpad.canvas.width, sketchpad.canvas.height);
+            fakesend.addEventListener("click", sendDrawing);
+        });
     </script>
+
 </body>
+
 </html>

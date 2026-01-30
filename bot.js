@@ -6,15 +6,7 @@ const connectionHandler = require('./connectionHandler.js')
 
 const cachelength = 100 // Length of message history
 const msghistory = {}
-const client = new Discord.Client({ 
-  partials: [Discord.Partials.Message, Discord.Partials.Channel], 
-  shards: "auto", 
-  intents: [
-    Discord.GatewayIntentBits.Guilds, 
-    Discord.GatewayIntentBits.GuildMessages, 
-    Discord.GatewayIntentBits.MessageContent
-  ]
-})
+const client = new Discord.Client({ partials: [Discord.Partials.Message], shards: "auto", intents: [Discord.GatewayIntentBits.Guilds/*, Discord.GatewayIntentBits.GuildMembers*/, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.MessageContent] })
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
@@ -68,7 +60,6 @@ exports.getHistoryCached = async function (chnl) {
     chnl = client.channels.get(chnl)
   }
   if (!msghistory[chnl.id]) {
-    // Fetch messages - Discord.js will try to populate member data automatically if available in cache
     const messagearray = await chnl.messages.fetch({ limit: cachelength })
     msghistory[chnl.id] = messagearray.sort((messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp)
   }
