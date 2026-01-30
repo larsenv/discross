@@ -2,14 +2,20 @@ var fs = require('fs');
 var HTMLMinifier = require('@bhavingajjar/html-minify');
 var minifier = new HTMLMinifier();
 var escape = require('escape-html');
+var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes
 const path = require('path');
 const sharp = require("sharp");
 const emojiRegex = require("./twemojiRegex").regex;
-const sanitizer = require("path-sanitizer").default;
+const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
+// const { console } = require('inspector'); // sorry idk why i added this
 const fetch = require("sync-fetch");
+// Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
+// Is that a bad idea?
+
+// Templates for viewing the messages in a channel
 const channel_template = fs.readFileSync('pages/templates/draw.html', 'utf-8');
 
 const message_template = fs.readFileSync('pages/templates/message/message.html', 'utf-8');
@@ -90,16 +96,6 @@ function getMemberColor(member) {
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
   try {
-    // Check if bot is connected
-    const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-    
-    if (!clientIsReady) {
-      res.writeHead(503, { "Content-Type": "text/plain" });
-      res.write("The bot isn't connected, try again in a moment");
-      res.end();
-      return;
-    }
-
     // 1. Setup Variables
     let response = "";
     let chnl;
