@@ -3,6 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/components.css">
     <title>Discross - #{$CHANNEL_NAME}</title>
     <style>
         @font-face {
@@ -179,17 +182,21 @@
 
         /* Old browser compatibility fixes */
         .message-form-container {
-            /* Fallback for old browsers that don't support sticky */
-            position: relative;
+            /* Use fixed positioning for compatibility with non-flexbox browsers */
+            position: fixed;
             bottom: 0;
+            left: 60px;
+            right: 0;
             /* Ensure it doesn't overflow */
-            width: 100%;
+            width: auto;
             max-width: 100%;
             overflow: hidden;
             /* Add background to ensure visibility */
             background: #36393f;
             /* Add border for separation */
             border-top: 1px solid #40444b;
+            /* Add z-index to ensure it's above content */
+            z-index: 100;
         }
 
         .message-buttons-container {
@@ -333,6 +340,9 @@
           display: table;
           margin: 0 auto 5px auto; 
           border-radius: 8px;
+          text-align: left;
+          position: relative;
+          z-index: 10;
         }
 
         .c-box {
@@ -356,13 +366,22 @@
         
         .s-inner { background: black; font-size: 1px; }
 
+        /* Hide mobile break on desktop */
+        .mobile-break {
+            display: none;
+        }
+
         /* --- CANVAS STYLES --- */
         #canvas-wrapper {
-            margin: 0 auto;
+            margin: 0 auto 20px auto;
             display: block;
             background: #2f3136;
             padding: 5px;
             width: 610px; /* Snug fit wrapper */
+            max-width: 100%; /* Responsive for mobile */
+            box-sizing: border-box;
+            position: relative;
+            z-index: 10;
         }
 
         canvas {
@@ -370,6 +389,57 @@
             cursor: crosshair;
             display: block;
             border: 1px solid #202225;
+            max-width: 100%; /* Responsive for mobile */
+            height: auto;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 640px) {
+            #toolbar-container {
+                width: calc(100% - 16px);
+                max-width: 100%;
+                margin: 8px 8px 5px 8px;
+                padding: 8px 5px;
+                box-sizing: border-box;
+            }
+
+            #canvas-wrapper {
+                width: calc(100% - 16px);
+                margin: 0 8px 20px 8px;
+            }
+
+            canvas {
+                width: 100%;
+            }
+
+            .c-box {
+                width: 20px;
+                height: 20px;
+                margin: 2px;
+            }
+
+            .s-btn {
+                margin: 0 2px;
+            }
+
+            #btn-clear {
+                font-size: 12px !important;
+                height: 36px !important;
+                padding: 0 12px !important;
+            }
+
+            /* Show mobile break to put sizes on new line */
+            .mobile-break {
+                display: block;
+            }
+            
+            /* Fix message form on mobile */
+            .message-form-container {
+                left: 0 !important;
+                right: 0 !important;
+                padding: 0 8px;
+                box-sizing: border-box;
+            }
         }
     </style>
 </head>
@@ -394,14 +464,14 @@
         <div id="c15" class="c-box" style="background:#ff00ff;" onclick="setColor('#ff00ff', 'c15')"></div>
         <div id="c16" class="c-box" style="background:#8b4513;" onclick="setColor('#8b4513', 'c16')"></div>
         
-        <span style="margin: 0 10px; border-left: 1px solid #555;"></span>
+        <span class="toolbar-separator"></span>
 
         <div id="s1" class="s-btn" onclick="setSize(2, 's1')"><div class="s-inner" style="width:2px; height:2px;"></div></div>
         <div id="s2" class="s-btn" onclick="setSize(5, 's2')"><div class="s-inner" style="width:5px; height:5px;"></div></div>
         <div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div>
         <div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div>
 
-        <button type="button" id="btn-clear" style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 32px; white-space: nowrap; margin-right: 8px;" onclick="wipe()">CLEAR</button>
+        <button type="button" id="btn-clear" class="clear-button" onclick="wipe()">Clear</button>
     </div>
 
     <div id="canvas-wrapper">
@@ -411,76 +481,69 @@
     
     <div id="wrapper">
         <a href="../server/{$SERVER_ID}" class="menu-button">
-            <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
+            <img src="/resources/images/menu.gif" alt="Menu" class="menu-icon">
         </a>
 
-        <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow-y: auto; padding: 16px;">
+        <div class="content-padding">
+            <div class="scrollable-content">
                 <div id="emoji" style="display: none;">
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+                    <div class="emoji-grid">
                         <button onclick="document.getElementById('message').value += ' :sob:'">
-                            <img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f62d.gif" alt="sob" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
-                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
-                                style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :skull:'">
-                            <img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f480.gif" alt="skull" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :pleading_face:'">
-                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
-                                style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :heart:'">
-                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :thumbsup:'">
-                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
-                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :pray:'">
-                            <img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f64f.gif" alt="pray" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :tada:'">
-                            <img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f389.gif" alt="tada" class="emoji-icon">
                         </button>
                         <button onclick="document.getElementById('message').value += ' :slight_smile:'">
-                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
-                                style="width: 24px; height: 24px;">
+                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile" class="emoji-icon">
                         </button>
                     </div>
                 </div>
                 <a id="end" name="end"></a>
             </div>
-            <div class="message-form-container" style="position: sticky; bottom: 0;">
-                <form action="../senddrawing" style="position: relative;">
+            <div class="message-form-container">
+                <form action="../senddrawing" method="post" id="sendform">
                     <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                    <input type="hidden" id="drawinginput" name="drawinginput" value="">
                     <input type="hidden" id="lite" name="lite" value="False">
+
+                    <div class="message-input-wrapper">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 0;">
+                                    <div name="message" id="message" value="" class="message-input" required=""></div>
+                                </td>
+                                <td style="padding: 0; width: 80px;">
+                                    <button type="submit" class="send-button" onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Send</button>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
                 </form>
-
-    <div class="message-form-container" style="position: sticky; bottom: 0;">
-        <form action="../senddrawing" method="post" id="sendform">
-            <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-            <input type="hidden" id="drawinginput" name="drawinginput" value="">
-            <input type="hidden" id="lite" name="lite" value="False">
-        </form>
-
-        <div style="background: #40444b; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
-            <div style="display: flex; align-items: center; gap: 8px; padding: 0; width: 100%;">
-                <div name="message" id="message" value=""
-                    style="flex: 1 1 auto; min-width: 0; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box;"
-                    required=""></div>
-                <button type="submit"
-                    style="flex: 0 0 auto; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 8px 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 32px; white-space: nowrap; margin-right: 8px;"
-                    onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
-                    onmouseout="this.style.background='#5865f2'">Send</button>
             </div>
         </div>
-        </td>
-    </form>
+    </div>
 
     <script type="text/javascript">
         var canvas = document.getElementById('sketchpad');
@@ -548,13 +611,62 @@
         canvas.onmouseup = function() { isDrawing = false; };
         canvas.onmouseout = function() { isDrawing = false; };
 
+        // --- TOUCH SUPPORT FOR MOBILE ---
+        // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
+        function getTouchPos(e) {
+            if (!e.touches || e.touches.length === 0) return null;
+            var touch = e.touches[0];
+            var rect = canvas.getBoundingClientRect();
+            return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+        }
+
+        canvas.addEventListener('touchstart', function(e) {
+            if(e.preventDefault) e.preventDefault(); // Prevent scrolling
+            isDrawing = true;
+            var pos = getTouchPos(e);
+            if (!pos) return;
+            lastX = pos.x;
+            lastY = pos.y;
+            
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
+            ctx.fillStyle = currColor;
+            ctx.fill();
+            ctx.beginPath();
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', function(e) {
+            if (!isDrawing) return;
+            if(e.preventDefault) e.preventDefault(); // Prevent scrolling
+            
+            var pos = getTouchPos(e);
+            if (!pos) return;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            
+            lastX = pos.x;
+            lastY = pos.y;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', function(e) {
+            if(e.preventDefault) e.preventDefault();
+            isDrawing = false;
+        }, { passive: false });
+
+        canvas.addEventListener('touchcancel', function(e) {
+            if(e.preventDefault) e.preventDefault();
+            isDrawing = false;
+        }, { passive: false });
+
         // --- UI FUNCTIONS ---
         function setColor(col, id) {
             currColor = col;
             ctx.strokeStyle = currColor;
             
             // Reset borders
-            for(var i=1; i<=9; i++) {
+            for(var i=1; i<=16; i++) {
                 var el = document.getElementById('c'+i);
                 if(el) el.style.border = "2px solid #555";
             }
@@ -583,18 +695,9 @@
             var inputField = document.getElementById('drawinginput');
             var form = document.getElementById('sendform');
             var btn = document.getElementById('btn-send');
-            
-            // Convert to Base64
-            // Note: Wii Opera 9.3 usually supports toDataURL, but it can be slow
-            setTimeout(function() {
-                try {
-                    var data = canvas.toDataURL("image/png");
-                    inputField.value = data;
-                    form.submit();
-                } catch(e) {
-                    alert("Error converting image");
-                }
-            }, 100);
+            var data = canvas.toDataURL("image/png");
+            inputField.value = data;
+            form.submit();
         }
 
         // Initialize UI
