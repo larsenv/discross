@@ -186,11 +186,10 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             // Add reply indicator (L-shaped line) if this is a reply
             let replyIndicator = '';
             if (lastReply) {
-              replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px;">' +
-                '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
-                '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
-                '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(lastReplyData.author) + '</span>' +
-                '</div>';
+              replyIndicator = '<div style="margin-bottom: 4px;">' +
+                                    '<div style="display: inline-block; width: 12px; height: 7px; border-left: 2px solid #4e5058; border-bottom: 2px solid #4e5058; margin-right: 5px; vertical-align: middle; margin-bottom: 4px;"></div>' +
+                                    '<span style="font-size: 12px; color: #b5bac1; vertical-align: middle;">Replying to ' + escape(lastReplyData.author) + '</span>' +
+                                '</div>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
 
