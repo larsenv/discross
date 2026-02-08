@@ -616,41 +616,22 @@
                 </div>
 
                 <div id="emoji" style="display: none;">
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
-                        <button onclick="document.getElementById('message').value += ' :sob:'">
-                            <img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
-                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :skull:'">
-                            <img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pleading_face:'">
-                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :heart:'">
-                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsup:'">
-                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
-                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pray:'">
-                            <img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :tada:'">
-                            <img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :slight_smile:'">
-                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                    </div>
+                    <table cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :sob:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :skull:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :pleading_face:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/1f97a.gif" alt="pleading_face" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :heart:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;"></button></td>
+                        </tr>
+                        <tr>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :thumbsup:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :thumbsdown:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :pray:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :tada:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :slight_smile:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'"><img src="/resources/twemoji/1f642.gif" alt="slight_smile" style="width: 24px; height: 24px;"></button></td>
+                        </tr>
+                    </table>
                 </div>
                 <a id="end" name="end"></a>
             </div>
