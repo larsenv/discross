@@ -377,12 +377,19 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
         
         // Process Stickers
-        if (item.stickers && item.stickers.size > 0 && imagesCookie == 1) {
-          item.stickers.forEach(sticker => {
-             // User requested GIF format explicitly.
-             const stickerURL = `/imageProxy/sticker/${sticker.id}.gif`;
-             messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
-          });
+        if (item.stickers && item.stickers.size > 0) {
+          if (imagesCookie == 1) {
+            item.stickers.forEach(sticker => {
+               // User requested GIF format explicitly for Wii compatibility
+               const stickerURL = `/imageProxy/sticker/${sticker.id}.gif`;
+               messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
+            });
+          } else {
+            // When images are disabled, show sticker name
+            item.stickers.forEach(sticker => {
+               messagetext += `<br>[Sticker: ${sticker.name || 'Unknown'}]`;
+            });
+          }
         }
 
         // Check if current user is mentioned in this message

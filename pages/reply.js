@@ -103,7 +103,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         bot.addToCache(message);
       }
 
-      res.writeHead(302, { "Location": `/channels/${parsedurl.query.channel}#end` });
+      res.writeHead(302, { "Location": `/channels/${parsedurl.query.channel}` });
       res.end();
     });
   } catch (err) {
