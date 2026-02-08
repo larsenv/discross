@@ -87,8 +87,26 @@
 
         // Spoiler reveal function for Wii compatibility
         function show(el) {
-            el.style.background = "none";
-            el.childNodes[0].childNodes[0].childNodes[0].childNodes[0].style.visibility = "visible";
+            try {
+                el.style.background = "none";
+                // Navigate the DOM structure: table -> tbody -> tr -> td -> font
+                var tbody = el.childNodes[0];
+                if (tbody && tbody.childNodes && tbody.childNodes[0]) {
+                    var tr = tbody.childNodes[0];
+                    if (tr && tr.childNodes && tr.childNodes[0]) {
+                        var td = tr.childNodes[0];
+                        if (td && td.childNodes && td.childNodes[0]) {
+                            var font = td.childNodes[0];
+                            if (font && font.style) {
+                                font.style.visibility = "visible";
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                // Fallback: just remove background if structure is unexpected
+                el.style.background = "none";
+            }
         }
     </script>
     <style>
