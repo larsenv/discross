@@ -84,6 +84,12 @@
                 emojiShowing = true;
             }
         }
+
+        // Spoiler reveal function for Wii compatibility
+        function show(el) {
+            el.style.background = "none";
+            el.childNodes[0].childNodes[0].childNodes[0].childNodes[0].style.visibility = "visible";
+        }
     </script>
     <style>
         @font-face {
@@ -127,6 +133,7 @@
 
         /* Typography */
         h1, h2 { margin: 24px 0 12px 0; font-size: 1.75rem; font-weight: 600; }
+        h3 { margin: 20px 0 10px 0; font-size: 1.5rem; font-weight: 600; }
         p, ul { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
         .messagecontent ul { padding-left: 20px; }
 
@@ -222,7 +229,6 @@
         /* Messages */
         .message {
             margin: 0;
-            border-bottom: 1px solid #2f3136;
         }
         .message:hover {
             background: rgba(4, 4, 5, 0.07);

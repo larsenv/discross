@@ -44,6 +44,7 @@
         
         /* Typography */
         h1, h2 { margin: 24px 0 12px 0; font-size: 1.75rem; font-weight: 600; }
+        h3 { margin: 20px 0 10px 0; font-size: 1.5rem; font-weight: 600; }
         p, ul { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
         .messagecontent ul { padding-left: 20px; }
         
@@ -868,6 +869,12 @@
         // Initialize UI
         setColor('#000000', 'c1');
         setSize(5, 's2');
+
+        // Spoiler reveal function for Wii compatibility
+        function show(el) {
+            el.style.background = "none";
+            el.childNodes[0].childNodes[0].childNodes[0].childNodes[0].style.visibility = "visible";
+        }
     </script>
 </body>
 </html>
