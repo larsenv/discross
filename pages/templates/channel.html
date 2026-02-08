@@ -76,11 +76,12 @@
         var emojiShowing = false;
 
         function showEmoji() {
+            var emojiDiv = document.getElementById("emoji");
             if (emojiShowing) {
-                document.getElementById("emoji").style.display = "none";
+                emojiDiv.style.display = "none";
                 emojiShowing = false;
             } else {
-                document.getElementById("emoji").style.display = "block";
+                emojiDiv.style.display = "";
                 emojiShowing = true;
             }
         }
@@ -422,7 +423,8 @@
             padding: 10px 24px;
             background: #5865f2;
             color: #fff;
-            border: none;
+            border: none !important;
+            outline: none !important;
             font-weight: 600;
             font-size: 14px;
             cursor: pointer;
@@ -430,6 +432,7 @@
             border-radius: 8px;
         }
         .send-button:hover { background: #4752c4; }
+        .send-button:focus { border: none !important; outline: none !important; }
 
         /* Emoji Picker */
         #emoji {
