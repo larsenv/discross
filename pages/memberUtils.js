@@ -97,8 +97,6 @@ async function ensureMemberData(message, guild, cache = null) {
   if (cache && cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
-
-  return null;
   
   // Try to fetch the member from the guild (non-webhook message)
   try {
@@ -110,6 +108,7 @@ async function ensureMemberData(message, guild, cache = null) {
     }
     return member;
   } catch (error) {
+    console.warn(`Failed to fetch member data for ${message.author.username}:`, error.message);
     return null;
   }
 }
