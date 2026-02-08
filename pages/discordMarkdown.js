@@ -54,7 +54,9 @@ function renderDiscordMarkdown(text) {
   // Step 0: Protect Code Blocks
   text = text.replace(/```(?:(\w+)(?:\r?\n|\r)|(?:\r?\n|\r))?([\s\S]*?)```/g, function(match, lang, content) {
     const index = codePlaceholders.length;
-    codePlaceholders.push({ type: 'block', content: content || '', lang: lang || '' });
+    // Trim leading and trailing newlines from code content
+    const trimmedContent = (content || '').replace(/^\s*\n|\n\s*$/g, '');
+    codePlaceholders.push({ type: 'block', content: trimmedContent, lang: lang || '' });
     return `§§CODEBLOCK${index}§§`;
   });
 

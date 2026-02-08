@@ -547,6 +547,14 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         const reactionsHtml = processReactions(item.reactions, imagesCookie, reactions_template, reaction_template);
         messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
 
+        // Skip messages that are effectively blank (issue #32)
+        // Check if message content is empty after stripping HTML tags and whitespace
+        const tempDiv = messagetext.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (tempDiv.length === 0 && (!item.attachments || item.attachments.size === 0) && (!item.embeds || item.embeds.length === 0) && (!item.stickers || item.stickers.size === 0)) {
+          // Skip this blank message
+          continue;
+        }
+
         lastauthor = item.author;
         // Ensure member data is populated - fetch if missing, using cache to avoid repeated fetches
         lastmember = await ensureMemberData(item, chnl.guild, memberCache);
