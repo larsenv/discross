@@ -425,6 +425,13 @@ br.nodisp { display: none; }
 .light-theme .reaction { background: #f2f3f5; }
 .light-theme #emoji button:hover { background: rgba(0, 0, 0, 0.08); }
 .light-theme a { color: #0067e0; }
+.light-theme .discross-button {
+  background: #5865f2 !important;
+  color: white !important;
+}
+.light-theme .discross-button:hover {
+  background: #4752c4 !important;
+}
 .light-theme input[type="text"],
 .light-theme input[type="password"],
 .light-theme input[type="email"],
@@ -471,6 +478,13 @@ br.nodisp { display: none; }
 .amoled-theme .server-sidebar,
 .amoled-theme .server-select-note,
 .amoled-theme .server-main { background: #000; border-color: #333; }
+.amoled-theme .discross-button {
+  background: #5865f2 !important;
+  color: white !important;
+}
+.amoled-theme .discross-button:hover {
+  background: #4752c4 !important;
+}
 .amoled-theme input[type="text"],
 .amoled-theme input[type="password"],
 .amoled-theme input[type="email"],
