@@ -1,6 +1,7 @@
 const escape = require('escape-html');
 const md = require('markdown-it')({ breaks: true, linkify: true });
 const { renderDiscordMarkdown } = require('./discordMarkdown');
+const { formatDateWithTimezone } = require('../timezoneUtils');
 const fs = require('fs');
 const HTMLMinifier = require('@bhavingajjar/html-minify');
 const minifier = new HTMLMinifier();
@@ -43,9 +44,10 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
  * @param {Array} embeds - Array of Discord embed objects
  * @param {number} imagesCookie - Cookie value indicating if images should be displayed (1 = yes, 0 = no)
  * @param {number} animationsCookie - Cookie value for animation setting (default 1)
+ * @param {string|null} clientTimezone - User's timezone for date formatting
  * @returns {string} HTML string representing all embeds
  */
-function processEmbeds(embeds, imagesCookie, animationsCookie = 1) {
+function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezone = null) {
   if (!embeds || embeds.length === 0) {
     return '';
   }
@@ -143,7 +145,14 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1) {
           footerHtml += '<span style="margin: 0 4px;">•</span>';
         }
         const date = new Date(embed.timestamp);
-        footerHtml += `<span>${date.toLocaleString('en-US')}</span>`;
+        // Format with "Today at HH:MM AM/PM" style using user's timezone
+        const formattedDate = formatDateWithTimezone(date, clientTimezone);
+        // Check if it's today (no "Yesterday" or date shown), add "Today at" prefix
+        if (!formattedDate.includes('Yesterday') && !formattedDate.match(/\d{2}\/\d{2}\/\d{2}/)) {
+          footerHtml += `<span>Today at ${formattedDate}</span>`;
+        } else {
+          footerHtml += `<span>${formattedDate}</span>`;
+        }
       }
       footerHtml += '</div>';
     }

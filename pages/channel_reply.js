@@ -372,7 +372,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         
         // Process embeds (for bot messages)
         if (item?.embeds && item.embeds.length > 0) {
-          messagetext += processEmbeds(item.embeds, imagesCookie, animationsCookie);
+          messagetext += processEmbeds(item.embeds, imagesCookie, animationsCookie, clientTimezone);
         }
         
         // Process polls
