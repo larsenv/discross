@@ -38,18 +38,18 @@ body {
   color: #dddddd;
 }
 
-/* Typography */
+/* Typography - scale down headings by 50% (#13) */
 h1, h2 {
   margin-top: 24px;
   margin-bottom: 12px;
-  font-size: 1.75rem;
+  font-size: 0.875rem;  /* Was 1.75rem, now 50% smaller */
   font-weight: 600;
 }
 
 h3 {
   margin-top: 20px;
   margin-bottom: 10px;
-  font-size: 1.5rem;
+  font-size: 0.75rem;  /* Was 1.5rem, now 50% smaller */
   font-weight: 600;
 }
 
