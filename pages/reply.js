@@ -56,6 +56,13 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         }
 
         const channel = await bot.client.channels.fetch(parsedurl.query.channel);
+        if (!channel) {
+          res.writeHead(404, { "Content-Type": "text/plain" });
+          res.write("Channel not found");
+          res.end();
+          return;
+        }
+        
         const member = await channel.guild.members.fetch(discordID);
 
         if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
