@@ -608,7 +608,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         
         if (!isSystemMessage && tempDiv.length === 0 && (!item.attachments || item.attachments.size === 0) && (!item.embeds || item.embeds.length === 0) && (!item.stickers || item.stickers.size === 0)) {
           // Skip this blank message (but not system messages)
-          continue;
+          return;
         }
         
         // Handle system messages (#31 - member joins, etc.)
