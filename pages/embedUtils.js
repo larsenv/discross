@@ -1,6 +1,7 @@
 const escape = require('escape-html');
 const md = require('markdown-it')({ breaks: true, linkify: true });
 const { renderDiscordMarkdown } = require('./discordMarkdown');
+const { formatDateWithTimezone } = require('../timezoneUtils');
 const fs = require('fs');
 const HTMLMinifier = require('@bhavingajjar/html-minify');
 const minifier = new HTMLMinifier();
@@ -12,12 +13,41 @@ function strReplace(string, needle, replacement) {
 }
 
 /**
+ * Process emoji in rendered HTML text
+ * @param {string} text - HTML text that may contain emoji codes
+ * @param {number} imagesCookie - Cookie value indicating if images should be displayed
+ * @param {number} animationsCookie - Cookie value for animation setting
+ * @returns {string} HTML with emoji replaced by images
+ */
+function processEmojiInHTML(text, imagesCookie, animationsCookie) {
+  if (imagesCookie != 1) {
+    return text;
+  }
+  
+  let result = text;
+  
+  // Process custom emoji (HTML escaped format from markdown)
+  const customEmojiMatches = [...result.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+  customEmojiMatches.forEach(match => {
+    const ext = match[2] ? "gif" : "png"; // 'a' means animated
+    const emojiId = match[4];
+    if (emojiId) {
+      result = result.replace(match[0], `<img src="/imageProxy/emoji/${emojiId}.${ext}" style="width: 1.25em; height: 1.25em; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+    }
+  });
+  
+  return result;
+}
+
+/**
  * Process Discord embeds into HTML
  * @param {Array} embeds - Array of Discord embed objects
  * @param {number} imagesCookie - Cookie value indicating if images should be displayed (1 = yes, 0 = no)
+ * @param {number} animationsCookie - Cookie value for animation setting (default 1)
+ * @param {string|null} clientTimezone - User's timezone for date formatting
  * @returns {string} HTML string representing all embeds
  */
-function processEmbeds(embeds, imagesCookie) {
+function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezone = null) {
   if (!embeds || embeds.length === 0) {
     return '';
   }
@@ -61,14 +91,16 @@ function processEmbeds(embeds, imagesCookie) {
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_TITLE}', titleHtml);
     
-    // Process embed description
+    // Process embed description with emoji support (#11)
     let descriptionHtml = '';
     if (embed.description) {
-      descriptionHtml = `<div style="font-size: 14px; color: #dcddde; margin-bottom: 8px; white-space: pre-wrap;">${renderDiscordMarkdown(embed.description)}</div>`;
+      const renderedMarkdown = renderDiscordMarkdown(embed.description);
+      const withEmoji = processEmojiInHTML(renderedMarkdown, imagesCookie, animationsCookie);
+      descriptionHtml = `<div style="font-size: 14px; color: #dcddde; margin-bottom: 8px; white-space: pre-wrap;">${withEmoji}</div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_DESCRIPTION}', descriptionHtml);
     
-    // Process embed fields
+    // Process embed fields with emoji support (#11)
     let fieldsHtml = '';
     if (embed.fields && embed.fields.length > 0) {
       // Discord allows up to 3 inline fields per row with proper spacing
@@ -77,18 +109,29 @@ function processEmbeds(embeds, imagesCookie) {
         const fieldStyle = field.inline ? 'grid-column: span 1;' : 'grid-column: 1 / -1;';
         fieldsHtml += `<div style="${fieldStyle}">`;
         fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">${escape(field.name)}</div>`;
-        fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">${renderDiscordMarkdown(field.value)}</div>`;
+        const renderedValue = renderDiscordMarkdown(field.value);
+        const valueWithEmoji = processEmojiInHTML(renderedValue, imagesCookie, animationsCookie);
+        fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">${valueWithEmoji}</div>`;
         fieldsHtml += '</div>';
       });
       fieldsHtml += '</div>';
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_FIELDS}', fieldsHtml);
     
-    // Process embed image (REMOVED)
-    embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', '');
+    // Process embed image (#29 - restore image rendering)
+    let imageHtml = '';
+    if (embed.image && imagesCookie === 1) {
+      imageHtml = `<div style="margin-top: 8px;"><img src="${escape(embed.image.url || embed.image.proxyURL)}" style="max-width: 100%; max-height: 300px; border-radius: 4px;" alt="Embed image"></div>`;
+    }
+    embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
     
-    // Process embed thumbnail (REMOVED)
-    embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', '');
+    // Process embed thumbnail (#29 - restore thumbnail rendering)
+    // Thumbnail should be positioned BEFORE title/description so it floats to top-right
+    let thumbnailHtml = '';
+    if (embed.thumbnail && imagesCookie === 1) {
+      thumbnailHtml = `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(embed.thumbnail.url || embed.thumbnail.proxyURL)}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`;
+    }
+    embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', thumbnailHtml);
     
     // Process embed footer
     let footerHtml = '';
@@ -102,7 +145,14 @@ function processEmbeds(embeds, imagesCookie) {
           footerHtml += '<span style="margin: 0 4px;">•</span>';
         }
         const date = new Date(embed.timestamp);
-        footerHtml += `<span>${date.toLocaleString('en-US')}</span>`;
+        // Format with "Today at HH:MM AM/PM" style using user's timezone
+        const formattedDate = formatDateWithTimezone(date, clientTimezone);
+        // Check if it's today (no "Yesterday" or date shown), add "Today at" prefix
+        if (!formattedDate.includes('Yesterday') && !formattedDate.match(/\d{2}\/\d{2}\/\d{2}/)) {
+          footerHtml += `<span>Today at ${formattedDate}</span>`;
+        } else {
+          footerHtml += `<span>${formattedDate}</span>`;
+        }
       }
       footerHtml += '</div>';
     }

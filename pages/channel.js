@@ -82,6 +82,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
+  
+  const animationsCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('animations='))?.split('=')[1];
+  const animationsCookie = animationsCookieValue !== undefined ? parseInt(animationsCookieValue) : 1;  // Default to 1 (on)
     
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
@@ -166,15 +169,15 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
             } else if (lastMentioned) {
               currentmessage = message_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
+              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid + "#end");
             } else {
               currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
+              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid + "#end");
             }
             
             // Use helper functions for proper nickname and color
             const displayName = getDisplayName(lastmember, lastauthor);
-            const authorColor = getMemberColor(lastmember);
+            const authorColor = "#ffffff"; // Always use white - no member fetching needed
             
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
@@ -183,14 +186,14 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             const pingIndicator = (lastReply && lastReplyData.mentionsPing) ? ' <span style="color: #72767d;">@</span>' : '';
             currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", pingIndicator);
             
-            // Add reply indicator (L-shaped line) if this is a reply
+            // Add reply indicator (L-shaped line) if this is a reply (#5)
             let replyIndicator = '';
             if (lastReply) {
-              replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px;">' +
-                '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
-                '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
-                '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(lastReplyData.author) + '</span>' +
-                '</div>';
+              replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
+                '<td style="width:2px;height:10px;background-color:#4e5058;border-radius:2px 0 0 2px;vertical-align:top"></td>' +
+                '<td style="width:12px;height:10px;vertical-align:bottom"><div style="height:2px;background-color:#4e5058;border-radius:0 0 0 2px"></div></td>' +
+                '<td style="padding-left:4px"><font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">Replying to ' + escape(lastReplyData.author) + '</font></td>' +
+                '</tr></table>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
 
@@ -222,7 +225,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         if (item.reference?.type === MessageReferenceType.Forward) {
           try {
             const forwardedMessage = await item.fetchReference();
-            const forwardedMember = await ensureMemberData(forwardedMessage, chnl.guild, memberCache);
+            // Use message.member if present, otherwise just use author
+            const forwardedMember = forwardedMessage.member;
             const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
             const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH 
               ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..." 
@@ -236,8 +240,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               date: forwardedDate
             };
           } catch (err) {
-            console.error("Could not fetch forwarded message:", err);
-            // Fallback: show indicator but don't fail
+            // Silently ignore forwarded message fetch errors (e.g., GuildChannelResolve)
+            // Message may be from another server or deleted
             isForwarded = false;
           }
         }
@@ -258,36 +262,22 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               // Message was likely deleted or is inaccessible. 
             }
 
-            // Step 2: If we have a user (either from fetch or fallback), try to get Member data
-            if (replyUser) {
-              try {
-                if (replyMessage) {
-                  // If we have the full message, use your existing utility
-                  replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
-                } else {
-                  // If we only have the User object (fallback), fetch member manually
-                  if (memberCache.has(replyUser.id)) {
-                    replyMember = memberCache.get(replyUser.id);
-                  } else {
-                    replyMember = await chnl.guild.members.fetch(replyUser.id);
-                    memberCache.set(replyUser.id, replyMember);
-                  }
-                }
-              } catch (err) {
-                // Member fetch failed (User likely left the server). 
-              }
-
-              // Step 3: Construct the display data
-              const replyAuthor = getDisplayName(replyMember, replyUser);
-              const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
-
-              isReply = true;
-              replyData = {
-                author: replyAuthor,
-                authorId: replyUser.id,
-                mentionsPing: mentionsRepliedUser
-              };
+            // Step 2: Use message.member if present, but don't fetch
+            if (replyMessage && replyMessage.member) {
+              replyMember = replyMessage.member;
             }
+            // If no member data, just use replyUser - no fetching needed
+
+            // Step 3: Construct the display data
+            const replyAuthor = getDisplayName(replyMember, replyUser);
+            const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+
+            isReply = true;
+            replyData = {
+              author: replyAuthor,
+              authorId: replyUser.id,
+              mentionsPing: mentionsRepliedUser
+            };
           } catch (err) {
             console.error("Could not process reply data:", err);
             isReply = false;
@@ -340,7 +330,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                         }
                         output = points.join("-");
                     }
-                    messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
+                    // Use .gif or .png based on animations setting
+                    const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
+                    messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
                  });
             }
 
@@ -352,7 +344,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                     // Convert to gif if animated (match[2] is 'a'), otherwise png. Or force gif for simplicity if proxy supports it.
                     // User requested animated to be lightweight and work, so we use the proxy logic.
                     const ext = match[2] ? "gif" : "png";
-                    messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
+                    messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
                  });
             }
         }
@@ -361,8 +353,18 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           let urls = new Array()
           item.attachments.forEach(attachment => {
             let url
+            // Check if it's an image
             if (attachment.name.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))$/) && imagesCookie == 1) {
               url = "/imageProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
+            // Check if it's a video (#40)
+            } else if (attachment.name.match?.(/(?:\.(mp4|webm|mov|avi|mkv))$/) && imagesCookie == 1) {
+              url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
+              // Add video download link
+              messagetext = messagetext.concat(file_download_template)
+              messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name)
+              messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size))
+              urls.push(url)
+              return; // Skip adding to urls for image processing
             } else {
               url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
               messagetext = messagetext.concat(file_download_template)
@@ -372,17 +374,25 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             urls.push(url)
           });
           urls.forEach(url => {
-            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
+            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:400px;max-height:500px;width:auto;height:auto;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
         
         // Process Stickers
-        if (item.stickers && item.stickers.size > 0 && imagesCookie == 1) {
-          item.stickers.forEach(sticker => {
-             // User requested GIF format explicitly.
-             const stickerURL = `/imageProxy/sticker/${sticker.id}.gif`;
-             messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
-          });
+        if (item.stickers && item.stickers.size > 0) {
+          if (imagesCookie == 1) {
+            item.stickers.forEach(sticker => {
+               // Use .gif or .png based on animations setting
+               const stickerExt = animationsCookie === 1 ? 'gif' : 'png';
+               const stickerURL = `/imageProxy/sticker/${sticker.id}.${stickerExt}`;
+               messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
+            });
+          } else {
+            // When images are disabled, show sticker name
+            item.stickers.forEach(sticker => {
+               messagetext += `<br>[Sticker: ${sticker.name || 'Unknown'}]`;
+            });
+          }
         }
 
         // Check if current user is mentioned in this message
@@ -395,6 +405,12 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                 // UPDATED: Handle Tenor embeds manually to fix empty embed issue
                 // Check if it's a Tenor embed and has a thumbnail (which contains the GIF)
                 const isTenor = (embed.provider?.name === 'Tenor' || embed.url?.includes('tenor.com')) && embed.thumbnail?.url;
+                
+                // Handle GIPHY embeds (#41)
+                const isGiphy = (embed.provider?.name === 'GIPHY' || embed.url?.includes('giphy.com')) && (embed.thumbnail?.url || embed.image?.url);
+                
+                // Handle YouTube embeds (#52)
+                const isYouTube = (embed.provider?.name === 'YouTube' || embed.url?.includes('youtube.com') || embed.url?.includes('youtu.be')) && embed.thumbnail?.url;
                 
                 if (isTenor && imagesCookie == 1) {
                     const gifUrl = embed.thumbnail.url;
@@ -417,13 +433,45 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                         messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`;
                     }
                     // Do NOT add to embedsToProcess (prevents double rendering/empty box)
+                } else if (isGiphy && imagesCookie == 1) {
+                    // Handle GIPHY similarly to Tenor
+                    const gifUrl = embed.image?.url || embed.thumbnail?.url;
+                    const urlToFind = embed.url;
+                    
+                    let replaced = false;
+                    if (urlToFind && gifUrl) {
+                        const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+                        const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
+                        
+                        if (anchorRegex.test(messagetext)) {
+                            messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`);
+                            replaced = true;
+                        }
+                    }
+                    
+                    if (!replaced && gifUrl) {
+                        messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`;
+                    }
+                } else if (isYouTube && imagesCookie == 1) {
+                    // Show YouTube thumbnail with play button overlay
+                    const thumbnailUrl = embed.thumbnail.url;
+                    const videoUrl = embed.url;
+                    
+                    if (thumbnailUrl) {
+                        messagetext += `<br><div style="position: relative; display: inline-block;">` +
+                            `<a href="${videoUrl}" target="_blank">` +
+                            `<img src="${thumbnailUrl}" style="max-width: 100%; border-radius: 4px;" alt="YouTube Video">` +
+                            `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; background: rgba(0,0,0,0.7); border-radius: 12px;">` +
+                            `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-30%, -50%); width: 0; height: 0; border-left: 20px solid #fff; border-top: 12px solid transparent; border-bottom: 12px solid transparent;"></div>` +
+                            `</div></a></div>`;
+                    }
                 } else {
                     embedsToProcess.push(embed);
                 }
             });
             
             if (embedsToProcess.length > 0) {
-                messagetext += processEmbeds(embedsToProcess, imagesCookie);
+                messagetext += processEmbeds(embedsToProcess, imagesCookie, animationsCookie, clientTimezone);
             }
         }
         
@@ -498,14 +546,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         do {
           m = regex.exec(messagetext);
           if (m) {
-            let channel;
-            try {
-              channel = await bot.client.channels.cache.get(m[1]);
-            } catch (err) {
-              console.log(err);
-            }
+            const channel = bot.client.channels.cache.get(m[1]);
             if (channel) {
-              messagetext = strReplace(messagetext, m[0], mention_template.replace("{$USERNAME}", escape("#" + channel.name)));
+              // #12: Make channel mentions clickable links (#6)
+              const channelLink = `/channels/${channel.id}`;
+              messagetext = strReplace(messagetext, m[0], `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(channel.name)}</font></a>`);
             }
           }
         } while (m);
@@ -537,12 +582,40 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         // Process and add reactions to the message
-        const reactionsHtml = processReactions(item.reactions, imagesCookie, reactions_template, reaction_template);
+        const reactionsHtml = processReactions(item.reactions, imagesCookie, reactions_template, reaction_template, animationsCookie);
         messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
 
+        // Skip messages that are effectively blank (issue #32)
+        // But NOT system messages like member joins (#31)
+        const isSystemMessage = item.type !== 0 && item.type !== 19; // 0 = Default, 19 = Reply
+        const tempDiv = messagetext.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        
+        if (!isSystemMessage && tempDiv.length === 0 && (!item.attachments || item.attachments.size === 0) && (!item.embeds || item.embeds.length === 0) && (!item.stickers || item.stickers.size === 0)) {
+          // Skip this blank message (but not system messages)
+          return;
+        }
+        
+        // Handle system messages (#31 - member joins, etc.)
+        if (isSystemMessage && tempDiv.length === 0) {
+          const systemMessages = {
+            1: 'added a new member',
+            2: 'left',
+            3: 'boosted the server',
+            7: 'welcomed a new member',
+            8: 'boosted the server to level 1',
+            9: 'boosted the server to level 2',
+            10: 'boosted the server to level 3',
+            11: 'followed this channel',
+            12: 'went live'
+          };
+          
+          const systemText = systemMessages[item.type] || 'performed an action';
+          messagetext = `<font style="font-size:14px;color:#72767d;font-style:italic;" face="rodin,sans-serif">${systemText}</font>`;
+        }
+
         lastauthor = item.author;
-        // Ensure member data is populated - fetch if missing, using cache to avoid repeated fetches
-        lastmember = await ensureMemberData(item, chnl.guild, memberCache);
+        // Use member data if present, but don't fetch - speeds up page load
+        lastmember = item.member || null;
         lastdate = item.createdAt;
         currentmessage += messagetext;
         messageid = item.id;

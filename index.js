@@ -39,6 +39,8 @@ var { toggleTheme } = require('./pages/themeToggle.js')
 var { imageProxy } = require('./pages/imageProxy.js')
 var { fileProxy } = require('./pages/fileProxy.js')
 var { toggleImages } = require('./pages/toggleImages.js')
+var { toggleAnimations } = require('./pages/toggleAnimations.js')
+var { uploadFile } = require('./pages/uploadFile.js')
 var chanelreplypage = require('./pages/channel_reply.js')
 var replypage = require('./pages/reply.js')
 var drawpage = require('./pages/draw.js')
@@ -97,16 +99,35 @@ async function senddrawingAsync(req, res, body) {
 
 server.on('request', async (req, res) => {
   if (req.method === 'POST') {
+    const parsedurl = url.parse(req.url, true).pathname;
+    
+    // Handle file upload BEFORE reading body (formidable needs raw stream)
+    if (parsedurl == "/uploadFile") {
+      (async () => {
+        const discordID = await auth.checkAuth(req, res, true);
+        if (discordID) {
+          await uploadFile(bot, req, res, [], discordID);
+        }
+      })().catch((err) => {
+        console.log(err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
+      });
+      return; // Don't read body for file uploads
+    }
+    
+    // For all other POST requests, read the body
     let body = '' // https://itnext.io/how-to-handle-the-post-request-body-in-node-js-without-using-a-framework-cd2038b93190
     req.on('data', chunk => {
       body += chunk.toString() // convert Buffer to string
     })
     req.on('end', () => {
-      const parsedurl = url.parse(req.url, true).pathname
       if (parsedurl == "/switchtheme") {
         toggleTheme(req, res)
       } else if (parsedurl == "/toggleImages") {
         toggleImages(req, res)
+      } else if (parsedurl == "/toggleAnimations") {
+        toggleAnimations(req, res)
       } else if (parsedurl == "/toggleCategory") {
         // Handle category toggle
         (async () => {

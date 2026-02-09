@@ -11,11 +11,11 @@ You can try out Discross there without having to invite the bot to your own serv
 
 ### All of these steps have to be performed on a modern device that can access Discord.com
 
-0. Use the [link](https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8) to add Discross to your server. Not necessary if you're already on a server with the bot.
-1. Type `^connect` on the server to get your verification code
-2. Go to [discross.net](https://discross.net/)
-3. Register on the website with that code
-4. Click the "update your server list" button to authorize Discross with your Discord account (only required on first login or when you've added/removed servers)
+1. Use the [link](https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8) to add Discross to your server. Not necessary if you're already on a server with the bot.
+2. Type `^connect` on the server to get your verification code
+3. Go to [discross.net](https://discross.net/)
+4. Register on the website with that code
+5. Click the "update your server list" button to authorize Discross with your Discord account (only required on first login or when you've added/removed servers)
 
 ### Now you can use Discross on all of your devices by logging into the account you have just made!
 

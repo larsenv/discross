@@ -21,12 +21,16 @@ const announcement_channel_template = minifier.htmlMinify(fs.readFileSync('pages
 const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
 const voice_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/voicechannel.html', 'utf-8'));
 const thread_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8'));
+const forum_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/forumchannel.html', 'utf-8'));
+const locked_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/lockedchannel.html', 'utf-8'));
+const rules_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/ruleschannel.html', 'utf-8'));
 
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
 const server_list_only_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8'));
 const sync_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8'));
 const no_images_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8'));
+const images_enabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/images_enabled.html', 'utf-8'));
 
 const cachedMembers = {}; // TODO: Find a better way
 
@@ -95,69 +99,71 @@ function processServerChannels(server, member, response) {
 
 
     let channelList = "";
-    channelsSorted.forEach(item => {
+    let currentCategoryId = null;
+    
+    channelsSorted.forEach((item, index) => {
       // Check if the member has permission to view the channel
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         if (item.type == ChannelType.GuildCategory) {
-          channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+          // Close previous category if exists
+          if (currentCategoryId !== null) {
+            channelList += '</div>'; // Close previous category-channels div
+          }
+          currentCategoryId = item.id;
+          channelList += category_channel_template
+            .replace("{$CHANNEL_NAME}", escape(item.name))
+            .replace("{$CATEGORY_ID}", item.id);
+        } else if (item.type == ChannelType.GuildForum) {
+          // Forum channels (#16)
+          channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.type == ChannelType.GuildAnnouncement || item.type == ChannelType.GuildNews) {
           // Use announcement template for announcement/news channels
-          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
+          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.type == ChannelType.GuildVoice) {
-          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+          // Voice channels - check if they're locked (#27)
+          const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
+          if (!canSendMessages) {
+            // Locked voice channel
+            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          } else {
+            channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+          }
         } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
-          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
-        } else {
-          // Determine the appropriate icon based on channel type and permissions
-          let channelIcon = "#"; // Default hashtag for text channels
+          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+        } else if (item.type == ChannelType.GuildStageVoice) {
+          // Stage channels
+          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.isTextBased()) {
+          // Text-based channels - check if locked or if it's a rules channel
           const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
           
-          // Check if this is a voice text channel
-          const isVoiceChannel = item.type == ChannelType.GuildVoice;
+          // Check if this is a rules channel by name
+          const isRulesChannel = item.name.toLowerCase().includes('rule');
           
-          // Check if channel is "locked" - has permission overwrites that restrict ViewChannel for @everyone
-          let isLocked = false;
-          if (item.permissionOverwrites && item.permissionOverwrites.cache.size > 0) {
-            const everyoneOverwrite = item.permissionOverwrites.cache.find(
-              overwrite => overwrite.id === item.guild.id // @everyone role has same ID as guild
-            );
-            if (everyoneOverwrite && everyoneOverwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
-              isLocked = true;
-            }
-          }
-          
-          // HTML/CSS padlock icon - universally supported
-          const padlockIcon = '<span style="display:inline-block;width:8px;height:10px;border:1px solid #999;border-radius:2px;position:relative;margin:0 2px;"><span style="position:absolute;top:-3px;left:1px;width:4px;height:4px;border:1px solid #999;border-bottom:none;border-radius:3px 3px 0 0;"></span></span>';
-          const smallPadlockIcon = '<span style="display:inline-block;width:6px;height:7px;border:1px solid #999;border-radius:1px;position:relative;margin:0 1px;vertical-align:super;font-size:70%;"><span style="position:absolute;top:-2px;left:1px;width:2px;height:3px;border:1px solid #999;border-bottom:none;border-radius:2px 2px 0 0;"></span></span>';
-          
-          if (!canSendMessages) {
-            // User cannot send messages - use padlock icon instead of hashtag/voice icon
-            channelIcon = padlockIcon;
+          if (isRulesChannel) {
+            channelList += rules_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          } else if (!canSendMessages) {
+            // Locked channel (#12)
+            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           } else {
-            // User can send messages
-            if (isVoiceChannel) {
-              // Voice channel with send permission - using Unicode speaker character
-              channelIcon = "&#128264;"; // Speaker with sound waves (more universal than emoji)
-              if (isLocked) {
-                // Show small padlock for locked voice channel
-                channelIcon += smallPadlockIcon;
-              }
-            } else {
-              // Text channel with send permission
-              if (isLocked) {
-                // Show hashtag with small padlock for locked text channel
-                channelIcon = '#' + smallPadlockIcon;
-              }
-            }
+            // Regular text channel
+            channelList += text_channel_template
+              .replace("{$CHANNEL_NAME}", escape(item.name))
+              .replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           }
-          
-          channelList += text_channel_template
-            .replace("{$CHANNEL_NAME}", escape(item.name))
-            .replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`)
-            .replace("{$CHANNEL_ICON}", channelIcon);
         }
       }
     });
+    
+    // Close the last category if exists
+    if (currentCategoryId !== null) {
+      channelList += '</div>';
+    }
+
+    // Add animation toggle button at the end of channel list
+    channelList += '<br><form action="/toggleAnimations" method="post" style="margin: 8px 0;">';
+    channelList += '<button type="submit" style="background:#5865f2;color:white;padding:8px 16px;border:none;border-radius:4px;cursor:pointer;font-family:rodin,sans-serif;font-size:14px;">Toggle Animations</button>';
+    channelList += '</form>';
 
     // Replace the channel list in the response
     response = response.replace("{$CHANNEL_LIST}", channelList);
@@ -199,7 +205,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
           // Construct server list HTML if the member is valid
           if (member && member.user) {
-            const serverHTML = createServerHTML(server, member);
+            const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+            const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;
+            const serverHTML = createServerHTML(server, member, imagesCookie);
             serverList += serverHTML;
           }
         } else {
@@ -333,16 +341,28 @@ function applyUserPreferences(response, req) {
   }
 
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-  response = imagesCookie == 1 ? response.replace("{$IMAGES_WARNING}", "") : response.replace("{$IMAGES_WARNING}", no_images_warning_template);
+  response = imagesCookie == 1 ? response.replace("{$IMAGES_WARNING}", images_enabled_template) : response.replace("{$IMAGES_WARNING}", no_images_warning_template);
 
   return response;
 }
 
-function createServerHTML(server, member) {
+function createServerHTML(server, member, imagesCookie) {
   // Generate server-specific HTML
   let serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
   serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
-  serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", server.name);
+  
+  // When images are disabled, strip emoji from server name
+  let serverName = server.name;
+  if (imagesCookie != 1) {
+    // Remove custom emoji <:name:id> and <a:name:id>
+    serverName = serverName.replace(/<a?:[^:]+:\d+>/g, '');
+    // Remove unicode emoji
+    const emojiRegex = require("./twemojiRegex").regex;
+    serverName = serverName.replace(emojiRegex, '');
+    serverName = serverName.trim();
+  }
+  
+  serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", escape(serverName));
   return serverHTML;
 }
 
