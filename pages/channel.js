@@ -186,14 +186,14 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             const pingIndicator = (lastReply && lastReplyData.mentionsPing) ? ' <span style="color: #72767d;">@</span>' : '';
             currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", pingIndicator);
             
-            // Add reply indicator (L-shaped line) if this is a reply
+            // Add reply indicator (L-shaped line) if this is a reply (#5)
             let replyIndicator = '';
             if (lastReply) {
-              replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px;">' +
-                '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
-                '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
-                '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(lastReplyData.author) + '</span>' +
-                '</div>';
+              replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
+                '<td style="width:2px;height:10px;background-color:#4e5058;border-radius:2px 0 0 2px;vertical-align:top"></td>' +
+                '<td style="width:12px;height:10px;vertical-align:bottom"><div style="height:2px;background-color:#4e5058;border-radius:0 0 0 2px"></div></td>' +
+                '<td style="padding-left:4px"><font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">Replying to ' + escape(lastReplyData.author) + '</font></td>' +
+                '</tr></table>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
 
@@ -559,14 +559,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         do {
           m = regex.exec(messagetext);
           if (m) {
-            let channel;
-            try {
-              channel = await bot.client.channels.cache.get(m[1]);
-            } catch (err) {
-              console.log(err);
-            }
+            const channel = bot.client.channels.cache.get(m[1]);
             if (channel) {
-              // #12: Make channel mentions clickable links
+              // #12: Make channel mentions clickable links (#6)
               const channelLink = `/channels/${channel.id}`;
               messagetext = strReplace(messagetext, m[0], `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(channel.name)}</font></a>`);
             }

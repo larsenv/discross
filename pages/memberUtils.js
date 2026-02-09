@@ -108,7 +108,9 @@ async function ensureMemberData(message, guild, cache = null) {
     }
     return member;
   } catch (error) {
-    console.warn(`Failed to fetch member data for ${message.author.username}:`, error.message);
+    // Silently return null - member not found (#11)
+    // Since we're not using role colors (getMemberColor always returns white),
+    // failed member fetches are not critical
     return null;
   }
 }
