@@ -784,18 +784,19 @@
         ctx.lineWidth = currSize;
         ctx.strokeStyle = currColor;
         
-        // Detect theme and set canvas background accordingly
-        var canvasBackground = "#ffffff"; // Default to white
-        if (document.body.classList.contains('amoled-theme')) {
-            canvasBackground = "#000000"; // Black for AMOLED
-        } else if (document.body.classList.contains('light-theme')) {
-            canvasBackground = "#ffffff"; // White for light
-        } else {
-            canvasBackground = "#303338"; // Dark grey for default dark theme
+        // Helper function to get canvas background color based on theme
+        function getCanvasBackgroundColor() {
+            if (document.body.classList.contains('amoled-theme')) {
+                return "#000000"; // Black for AMOLED
+            } else if (document.body.classList.contains('light-theme')) {
+                return "#ffffff"; // White for light
+            } else {
+                return "#303338"; // Dark grey for default dark theme
+            }
         }
         
         // Fill canvas with theme-appropriate background
-        ctx.fillStyle = canvasBackground;
+        ctx.fillStyle = getCanvasBackgroundColor();
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = currColor;
 
@@ -919,16 +920,7 @@
         }
 
         function wipe() {
-            // Detect theme and clear with appropriate background color
-            var clearColor = "#ffffff"; // Default to white
-            if (document.body.classList.contains('amoled-theme')) {
-                clearColor = "#000000"; // Black for AMOLED
-            } else if (document.body.classList.contains('light-theme')) {
-                clearColor = "#ffffff"; // White for light
-            } else {
-                clearColor = "#303338"; // Dark grey for default dark theme
-            }
-            ctx.fillStyle = clearColor;
+            ctx.fillStyle = getCanvasBackgroundColor();
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = currColor;
         }
