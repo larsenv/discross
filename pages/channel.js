@@ -484,7 +484,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             });
             
             if (embedsToProcess.length > 0) {
-                messagetext += processEmbeds(embedsToProcess, imagesCookie);
+                messagetext += processEmbeds(embedsToProcess, imagesCookie, animationsCookie);
             }
         }
         

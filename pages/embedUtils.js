@@ -12,12 +12,40 @@ function strReplace(string, needle, replacement) {
 }
 
 /**
+ * Process emoji in rendered HTML text
+ * @param {string} text - HTML text that may contain emoji codes
+ * @param {number} imagesCookie - Cookie value indicating if images should be displayed
+ * @param {number} animationsCookie - Cookie value for animation setting
+ * @returns {string} HTML with emoji replaced by images
+ */
+function processEmojiInHTML(text, imagesCookie, animationsCookie) {
+  if (imagesCookie != 1) {
+    return text;
+  }
+  
+  let result = text;
+  
+  // Process custom emoji (HTML escaped format from markdown)
+  const customEmojiMatches = [...result.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+  customEmojiMatches.forEach(match => {
+    const ext = match[2] ? "gif" : "png"; // 'a' means animated
+    const emojiId = match[4];
+    if (emojiId) {
+      result = result.replace(match[0], `<img src="/imageProxy/emoji/${emojiId}.${ext}" style="width: 1.25em; height: 1.25em; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+    }
+  });
+  
+  return result;
+}
+
+/**
  * Process Discord embeds into HTML
  * @param {Array} embeds - Array of Discord embed objects
  * @param {number} imagesCookie - Cookie value indicating if images should be displayed (1 = yes, 0 = no)
+ * @param {number} animationsCookie - Cookie value for animation setting (default 1)
  * @returns {string} HTML string representing all embeds
  */
-function processEmbeds(embeds, imagesCookie) {
+function processEmbeds(embeds, imagesCookie, animationsCookie = 1) {
   if (!embeds || embeds.length === 0) {
     return '';
   }
@@ -61,14 +89,16 @@ function processEmbeds(embeds, imagesCookie) {
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_TITLE}', titleHtml);
     
-    // Process embed description
+    // Process embed description with emoji support (#11)
     let descriptionHtml = '';
     if (embed.description) {
-      descriptionHtml = `<div style="font-size: 14px; color: #dcddde; margin-bottom: 8px; white-space: pre-wrap;">${renderDiscordMarkdown(embed.description)}</div>`;
+      const renderedMarkdown = renderDiscordMarkdown(embed.description);
+      const withEmoji = processEmojiInHTML(renderedMarkdown, imagesCookie, animationsCookie);
+      descriptionHtml = `<div style="font-size: 14px; color: #dcddde; margin-bottom: 8px; white-space: pre-wrap;">${withEmoji}</div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_DESCRIPTION}', descriptionHtml);
     
-    // Process embed fields
+    // Process embed fields with emoji support (#11)
     let fieldsHtml = '';
     if (embed.fields && embed.fields.length > 0) {
       // Discord allows up to 3 inline fields per row with proper spacing
@@ -77,7 +107,9 @@ function processEmbeds(embeds, imagesCookie) {
         const fieldStyle = field.inline ? 'grid-column: span 1;' : 'grid-column: 1 / -1;';
         fieldsHtml += `<div style="${fieldStyle}">`;
         fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">${escape(field.name)}</div>`;
-        fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">${renderDiscordMarkdown(field.value)}</div>`;
+        const renderedValue = renderDiscordMarkdown(field.value);
+        const valueWithEmoji = processEmojiInHTML(renderedValue, imagesCookie, animationsCookie);
+        fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">${valueWithEmoji}</div>`;
         fieldsHtml += '</div>';
       });
       fieldsHtml += '</div>';
