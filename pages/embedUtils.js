@@ -124,6 +124,7 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1) {
     embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
     
     // Process embed thumbnail (#29 - restore thumbnail rendering)
+    // Thumbnail should be positioned BEFORE title/description so it floats to top-right
     let thumbnailHtml = '';
     if (embed.thumbnail && imagesCookie === 1) {
       thumbnailHtml = `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(embed.thumbnail.url || embed.thumbnail.proxyURL)}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`;
