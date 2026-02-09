@@ -1,6 +1,4 @@
 var fs = require('fs');
-var HTMLMinifier = require('@bhavingajjar/html-minify');
-var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var he = require('he');
 const path = require('path');
@@ -17,32 +15,29 @@ const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
 
-// Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
-// Is that a bad idea?
-
 // Templates for viewing the messages in a channel (Reply Context)
-const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel_reply.html', 'utf-8'));
+const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8');
 
 // Note: Using _reply versions of message templates
-const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8'));
-const message_forwarded_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message_reply.html', 'utf-8'));
-const message_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_reply_mentioned.html', 'utf-8'));
-const message_forwarded_mentioned_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/forwarded_message_reply_mentioned.html', 'utf-8'));
+const message_template = fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8');
+const message_forwarded_template = fs.readFileSync('pages/templates/message/forwarded_message_reply.html', 'utf-8');
+const message_mentioned_template = fs.readFileSync('pages/templates/message/message_reply_mentioned.html', 'utf-8');
+const message_forwarded_mentioned_template = fs.readFileSync('pages/templates/message/forwarded_message_reply_mentioned.html', 'utf-8');
 
-const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
-const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
-const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
+const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
+const merged_message_content_template = fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8');
+const mention_template = fs.readFileSync('pages/templates/message/mention.html', 'utf-8');
 
-const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
-const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
+const input_template = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
+const input_disabled_template = fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8');
 
-const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'));
+const no_message_history_template = fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8');
 
-const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'));
+const file_download_template = fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8');
 
-const reactions_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'));
-const reaction_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'));
-const date_separator_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8'));
+const reactions_template = fs.readFileSync('pages/templates/message/reactions.html', 'utf-8');
+const reaction_template = fs.readFileSync('pages/templates/message/reaction.html', 'utf-8');
+const date_separator_template = fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8');
 
 // Constants
 const FORWARDED_CONTENT_MAX_LENGTH = 100;
@@ -285,7 +280,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
         // Detect "Jumbo" Emoji status (<= 29 emojis and no other text)
         let isJumbo = false;
-        if (imagesCookie == 1) {
+        if (imagesCookie === "1") {
             // Check raw content for "emoji only" status
             const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
             const customMatches = item.content.match(customEmojiRegex) || [];
@@ -303,7 +298,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         // Standard size 1.375em. Jumbo size 2.75em (200%).
         const emojiSize = isJumbo ? "2.75em" : "1.375em";
 
-        if (imagesCookie == 1) {
+        if (imagesCookie === "1") {
             // Process Unicode Emojis
             if (messagetext.match(emojiRegex)) {
                  const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
