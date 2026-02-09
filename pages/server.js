@@ -1,6 +1,4 @@
 var fs = require('fs');
-var HTMLMinifier = require('@bhavingajjar/html-minify');
-var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var auth = require('../authentication.js');
 const path = require('path')
@@ -13,16 +11,16 @@ const { ChannelType, PermissionFlagsBits } = require('discord.js');
 // Is that a bad idea?
 
 // Templates for viewing the channels in a server
-const server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server.html', 'utf-8'));
+const server_template = fs.readFileSync('pages/templates/server.html', 'utf-8');
 
-const text_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8'));
-const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
+const text_channel_template = fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8');
+const category_channel_template = fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8');
 
-const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
+const server_icon_template = fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8');
 
-const server_list_only_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8'));
-const sync_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8'));
-const no_images_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8'));
+const server_list_only_template = fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8');
+const sync_warning_template = fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8');
+const no_images_warning_template = fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8');
 
 const cachedMembers = {}; // TODO: Find a better way
 
