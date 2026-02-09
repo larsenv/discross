@@ -197,7 +197,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           let urls = new Array()
           item.attachments.forEach(attachment => {
             let url
-            if (attachment.name.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))$/) && imagesCookie == 1) {
+            if (attachment.name.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))$/) && imagesCookie === "1") {
               url = "/imageProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
             } else {
               url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
@@ -208,7 +208,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             urls.push(url)
           });
           urls.forEach(url => {
-            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
+            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie === "1" ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" width="30%"  alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
           });
         }
         if (item.mentions) {
@@ -302,7 +302,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         final = strReplace(template, "{$INPUT}", input_disabled_template);
       }
 
-      if (response.match?.(emojiRegex) && imagesCookie == 1) {
+      if (response.match?.(emojiRegex) && imagesCookie === "1") {
         const unicode_emoji_matches = [...response.match?.(emojiRegex)]
         unicode_emoji_matches.forEach(match => {
           const points = [];
@@ -327,7 +327,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+      if (custom_emoji_matches[0] && imagesCookie === "1") custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
         response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
       })
       let reply_message_id = args[3];
