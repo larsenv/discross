@@ -126,13 +126,14 @@ function processServerChannels(server, member, response) {
             // Locked voice channel
             channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           } else {
-            channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+            // Voice channel with text capability (#14)
+            channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           }
         } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
           channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.type == ChannelType.GuildStageVoice) {
           // Stage channels
-          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.isTextBased()) {
           // Text-based channels - check if locked or if it's a rules channel
           const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
