@@ -286,7 +286,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         
         // Detect "Jumbo" Emoji status (<= 29 emojis and no other text)
         let isJumbo = false;
-        if (imagesCookie === "1") {
+        if (imagesCookie === 1) {
             // Check raw content for "emoji only" status
             const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
             // Match custom emojis and unicode emojis
@@ -306,7 +306,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // Note: 'em' is supported in IE3+ (1996), so it is very safe for "older browsers".
         const emojiSize = isJumbo ? "2.75em" : "1.375em";
 
-        if (imagesCookie === "1") {
+        if (imagesCookie === 1) {
             // Process Unicode Emojis
             if (messagetext.match(emojiRegex)) {
                  const unicode_emoji_matches = [...messagetext.match(emojiRegex)];

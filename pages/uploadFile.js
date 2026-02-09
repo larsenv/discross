@@ -85,7 +85,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
           const message = await webhook.send({
             content: cleanMessage || undefined,
             username: member.displayName || member.user.tag,
-            avatarURL: await member.user.avatarURL(),
+            avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
             files: [{
               attachment: file.filepath,
               name: file.originalFilename || 'file'
