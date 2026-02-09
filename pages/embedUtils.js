@@ -145,14 +145,9 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezon
           footerHtml += '<span style="margin: 0 4px;">•</span>';
         }
         const date = new Date(embed.timestamp);
-        // Format with "Today at HH:MM AM/PM" style using user's timezone
+        // Format with timezone - returns just time for today, "Yesterday at time" for yesterday, or "date, time" for older
         const formattedDate = formatDateWithTimezone(date, clientTimezone);
-        // Check if it's today (no "Yesterday" or date shown), add "Today at" prefix
-        if (!formattedDate.includes('Yesterday') && !formattedDate.match(/\d{2}\/\d{2}\/\d{2}/)) {
-          footerHtml += `<span>Today at ${formattedDate}</span>`;
-        } else {
-          footerHtml += `<span>${formattedDate}</span>`;
-        }
+        footerHtml += `<span>${formattedDate}</span>`;
       }
       footerHtml += '</div>';
     }
