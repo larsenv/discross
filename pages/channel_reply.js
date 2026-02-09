@@ -71,6 +71,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
   
+  const animationsCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('animations='))?.split('=')[1];
+  const animationsCookie = animationsCookieValue !== undefined ? parseInt(animationsCookieValue) : 1;  // Default to 1 (on)
+  
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
   const clientTimezone = getTimezoneFromIP(clientIP);
@@ -380,7 +383,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         
         // Process embeds (for bot messages)
         if (item?.embeds && item.embeds.length > 0) {
-          messagetext += processEmbeds(item.embeds, imagesCookie);
+          messagetext += processEmbeds(item.embeds, imagesCookie, animationsCookie);
         }
         
         // Process polls
