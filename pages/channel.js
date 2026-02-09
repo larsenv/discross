@@ -269,16 +269,15 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             // If no member data, just use replyUser - no fetching needed
 
             // Step 3: Construct the display data
-              const replyAuthor = getDisplayName(replyMember, replyUser);
-              const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+            const replyAuthor = getDisplayName(replyMember, replyUser);
+            const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
 
-              isReply = true;
-              replyData = {
-                author: replyAuthor,
-                authorId: replyUser.id,
-                mentionsPing: mentionsRepliedUser
-              };
-            }
+            isReply = true;
+            replyData = {
+              author: replyAuthor,
+              authorId: replyUser.id,
+              mentionsPing: mentionsRepliedUser
+            };
           } catch (err) {
             console.error("Could not process reply data:", err);
             isReply = false;
