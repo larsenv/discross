@@ -63,7 +63,70 @@
         hr {
             border: solid 1px #494c50;
         }
+        
+        /* Category collapsibility (#17) */
+        .category-channels {
+            display: block;
+        }
+        .category-channels.collapsed {
+            display: none;
+        }
+        .category-arrow {
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+        .category-arrow.collapsed {
+            transform: rotate(-90deg);
+        }
     </style>
+    <script>
+        // Category collapse/expand functionality (#17)
+        function toggleCategory(element) {
+            var arrow = element.querySelector('.category-arrow');
+            var categoryDiv = element.nextElementSibling;
+            while (categoryDiv && categoryDiv.tagName === 'BR') {
+                categoryDiv = categoryDiv.nextElementSibling;
+            }
+            
+            if (categoryDiv && categoryDiv.classList.contains('category-channels')) {
+                var isCollapsed = categoryDiv.classList.toggle('collapsed');
+                arrow.classList.toggle('collapsed', isCollapsed);
+                
+                // Store state in localStorage
+                try {
+                    var categoryId = categoryDiv.id;
+                    if (categoryId) {
+                        localStorage.setItem(categoryId, isCollapsed ? 'collapsed' : 'expanded');
+                    }
+                } catch (e) {
+                    // localStorage might not be available
+                }
+            }
+        }
+        
+        // Restore category states on page load
+        window.onload = function() {
+            try {
+                var categories = document.querySelectorAll('.category-channels');
+                categories.forEach(function(cat) {
+                    var state = localStorage.getItem(cat.id);
+                    if (state === 'collapsed') {
+                        cat.classList.add('collapsed');
+                        var prevElement = cat.previousElementSibling;
+                        while (prevElement && prevElement.tagName === 'BR') {
+                            prevElement = prevElement.previousElementSibling;
+                        }
+                        if (prevElement) {
+                            var arrow = prevElement.querySelector('.category-arrow');
+                            if (arrow) arrow.classList.add('collapsed');
+                        }
+                    }
+                });
+            } catch (e) {
+                // localStorage might not be available
+            }
+        };
+    </script>
 </head>
 
 <body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
