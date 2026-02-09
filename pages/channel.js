@@ -345,7 +345,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                     }
                     // Use .gif or .png based on animations setting
                     const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
-                    messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
+                    messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
                  });
             }
 
@@ -357,7 +357,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                     // Convert to gif if animated (match[2] is 'a'), otherwise png. Or force gif for simplicity if proxy supports it.
                     // User requested animated to be lightweight and work, so we use the proxy logic.
                     const ext = match[2] ? "gif" : "png";
-                    messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
+                    messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
                  });
             }
         }
