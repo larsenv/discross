@@ -177,7 +177,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             
             // Use helper functions for proper nickname and color
             const displayName = getDisplayName(lastmember, lastauthor);
-            const authorColor = getMemberColor(lastmember);
+            const authorColor = "#ffffff"; // Always use white - no member fetching needed
             
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
@@ -225,7 +225,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         if (item.reference?.type === MessageReferenceType.Forward) {
           try {
             const forwardedMessage = await item.fetchReference();
-            const forwardedMember = await ensureMemberData(forwardedMessage, chnl.guild, memberCache);
+            // Use message.member if present, otherwise just use author
+            const forwardedMember = forwardedMessage.member;
             const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
             const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH 
               ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..." 
@@ -239,8 +240,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               date: forwardedDate
             };
           } catch (err) {
-            console.error("Could not fetch forwarded message:", err);
-            // Fallback: show indicator but don't fail
+            // Silently ignore forwarded message fetch errors (e.g., GuildChannelResolve)
+            // Message may be from another server or deleted
             isForwarded = false;
           }
         }
@@ -261,26 +262,13 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               // Message was likely deleted or is inaccessible. 
             }
 
-            // Step 2: If we have a user (either from fetch or fallback), try to get Member data
-            if (replyUser) {
-              try {
-                if (replyMessage) {
-                  // If we have the full message, use your existing utility
-                  replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
-                } else {
-                  // If we only have the User object (fallback), fetch member manually
-                  if (memberCache.has(replyUser.id)) {
-                    replyMember = memberCache.get(replyUser.id);
-                  } else {
-                    replyMember = await chnl.guild.members.fetch(replyUser.id);
-                    memberCache.set(replyUser.id, replyMember);
-                  }
-                }
-              } catch (err) {
-                // Member fetch failed (User likely left the server). 
-              }
+            // Step 2: Use message.member if present, but don't fetch
+            if (replyMessage && replyMessage.member) {
+              replyMember = replyMessage.member;
+            }
+            // If no member data, just use replyUser - no fetching needed
 
-              // Step 3: Construct the display data
+            // Step 3: Construct the display data
               const replyAuthor = getDisplayName(replyMember, replyUser);
               const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
 
@@ -627,8 +615,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         lastauthor = item.author;
-        // Ensure member data is populated - fetch if missing, using cache to avoid repeated fetches
-        lastmember = await ensureMemberData(item, chnl.guild, memberCache);
+        // Use member data if present, but don't fetch - speeds up page load
+        lastmember = item.member || null;
         lastdate = item.createdAt;
         currentmessage += messagetext;
         messageid = item.id;
