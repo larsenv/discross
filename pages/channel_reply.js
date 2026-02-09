@@ -325,7 +325,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             }
 
             // Process Custom Emojis
-            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
             if (custom_emoji_matches.length > 0) {
                  custom_emoji_matches.forEach(match => {
                     const ext = match[2] ? "gif" : "png";

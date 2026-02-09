@@ -517,6 +517,13 @@
         .light-theme input[type="password"],
         .light-theme input[type="email"],
         .light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #060607; }
+        .light-theme .menu-button { 
+            background: transparent !important; 
+            border: none !important;
+        }
+        .light-theme .menu-button img {
+            filter: brightness(0) saturate(100%) invert(9%) sepia(8%) saturate(1040%) hue-rotate(185deg) brightness(96%) contrast(90%);
+        }
         
         /* ========== AMOLED THEME ========== */
         .amoled-theme body,
@@ -536,7 +543,7 @@
         .amoled-theme .message-input { color: #fff; background: #0a0a0a; }
         .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
         .amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
-        .amoled-theme .menu-button { background: #000000 !important; border-color: #333333 !important; color: #ffffff !important; }
+        .amoled-theme .menu-button { background: transparent !important; border: none !important; color: #ffffff !important; }
         .amoled-theme a { color: #5865f2 !important; }
         .amoled-theme pre,
         .amoled-theme code { background: #0a0a0a; border-color: #222; color: #fff; }
@@ -776,8 +783,19 @@
         ctx.lineJoin = 'round';
         ctx.lineWidth = currSize;
         ctx.strokeStyle = currColor;
-        // Fill canvas with white immediately (transparent canvas turns black on some Wii conversions)
-        ctx.fillStyle = "#ffffff";
+        
+        // Detect theme and set canvas background accordingly
+        var canvasBackground = "#ffffff"; // Default to white
+        if (document.body.classList.contains('amoled-theme')) {
+            canvasBackground = "#000000"; // Black for AMOLED
+        } else if (document.body.classList.contains('light-theme')) {
+            canvasBackground = "#ffffff"; // White for light
+        } else {
+            canvasBackground = "#303338"; // Dark grey for default dark theme
+        }
+        
+        // Fill canvas with theme-appropriate background
+        ctx.fillStyle = canvasBackground;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = currColor;
 
@@ -901,7 +919,16 @@
         }
 
         function wipe() {
-            ctx.fillStyle = "#ffffff";
+            // Detect theme and clear with appropriate background color
+            var clearColor = "#ffffff"; // Default to white
+            if (document.body.classList.contains('amoled-theme')) {
+                clearColor = "#000000"; // Black for AMOLED
+            } else if (document.body.classList.contains('light-theme')) {
+                clearColor = "#ffffff"; // White for light
+            } else {
+                clearColor = "#303338"; // Dark grey for default dark theme
+            }
+            ctx.fillStyle = clearColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = currColor;
         }

@@ -336,7 +336,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
             // Process Custom Emojis
             // Regex detects HTML escaped format &lt;:name:id&gt; which usually comes from renderDiscordMarkdown if not processed
-            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
             if (custom_emoji_matches.length > 0) {
                  custom_emoji_matches.forEach(match => {
                     // Convert to gif if animated (match[2] is 'a'), otherwise png. Or force gif for simplicity if proxy supports it.

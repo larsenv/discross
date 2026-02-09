@@ -3,7 +3,7 @@ const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
 const { Buffer } = require('buffer');
-const formidable = require('formidable');
+const { formidable } = require('formidable');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
