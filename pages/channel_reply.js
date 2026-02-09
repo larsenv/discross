@@ -509,7 +509,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
       let template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
-      template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
+      template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random())
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
       
       // Apply theme class based on cookie value
