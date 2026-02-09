@@ -361,8 +361,18 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           let urls = new Array()
           item.attachments.forEach(attachment => {
             let url
+            // Check if it's an image
             if (attachment.name.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))$/) && imagesCookie == 1) {
               url = "/imageProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
+            // Check if it's a video (#40)
+            } else if (attachment.name.match?.(/(?:\.(mp4|webm|mov|avi|mkv))$/) && imagesCookie == 1) {
+              url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
+              // Add video download link
+              messagetext = messagetext.concat(file_download_template)
+              messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name)
+              messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size))
+              urls.push(url)
+              return; // Skip adding to urls for image processing
             } else {
               url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
               messagetext = messagetext.concat(file_download_template)
@@ -403,6 +413,12 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                 // Check if it's a Tenor embed and has a thumbnail (which contains the GIF)
                 const isTenor = (embed.provider?.name === 'Tenor' || embed.url?.includes('tenor.com')) && embed.thumbnail?.url;
                 
+                // Handle GIPHY embeds (#41)
+                const isGiphy = (embed.provider?.name === 'GIPHY' || embed.url?.includes('giphy.com')) && (embed.thumbnail?.url || embed.image?.url);
+                
+                // Handle YouTube embeds (#52)
+                const isYouTube = (embed.provider?.name === 'YouTube' || embed.url?.includes('youtube.com') || embed.url?.includes('youtu.be')) && embed.thumbnail?.url;
+                
                 if (isTenor && imagesCookie == 1) {
                     const gifUrl = embed.thumbnail.url;
                     const urlToFind = embed.url;
@@ -424,6 +440,38 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                         messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`;
                     }
                     // Do NOT add to embedsToProcess (prevents double rendering/empty box)
+                } else if (isGiphy && imagesCookie == 1) {
+                    // Handle GIPHY similarly to Tenor
+                    const gifUrl = embed.image?.url || embed.thumbnail?.url;
+                    const urlToFind = embed.url;
+                    
+                    let replaced = false;
+                    if (urlToFind && gifUrl) {
+                        const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+                        const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
+                        
+                        if (anchorRegex.test(messagetext)) {
+                            messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`);
+                            replaced = true;
+                        }
+                    }
+                    
+                    if (!replaced && gifUrl) {
+                        messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`;
+                    }
+                } else if (isYouTube && imagesCookie == 1) {
+                    // Show YouTube thumbnail with play button overlay
+                    const thumbnailUrl = embed.thumbnail.url;
+                    const videoUrl = embed.url;
+                    
+                    if (thumbnailUrl) {
+                        messagetext += `<br><div style="position: relative; display: inline-block;">` +
+                            `<a href="${videoUrl}" target="_blank">` +
+                            `<img src="${thumbnailUrl}" style="max-width: 100%; border-radius: 4px;" alt="YouTube Video">` +
+                            `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; background: rgba(0,0,0,0.7); border-radius: 12px;">` +
+                            `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-30%, -50%); width: 0; height: 0; border-left: 20px solid #fff; border-top: 12px solid transparent; border-bottom: 12px solid transparent;"></div>` +
+                            `</div></a></div>`;
+                    }
                 } else {
                     embedsToProcess.push(embed);
                 }
