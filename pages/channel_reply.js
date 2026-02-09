@@ -1,6 +1,4 @@
 var fs = require('fs');
-var HTMLMinifier = require('@bhavingajjar/html-minify');
-var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes
@@ -15,23 +13,23 @@ const fetch = require("sync-fetch");
 // Is that a bad idea?
 
 // Templates for viewing the messages in a channel
-// const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
-const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel_reply.html', 'utf-8'));
+// const channel_template = fs.readFileSync('pages/templates/channel.html', 'utf-8');
+const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8');
 
 
-const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8'));
-const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
-const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
-const first_message_content_large_emoji_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content_large_emoji.html', 'utf-8'));
-const merged_message_content_large_emoji_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content_large_emoji.html', 'utf-8'));
-const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
+const message_template = fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8');
+const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
+const merged_message_content_template = fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8');
+const first_message_content_large_emoji_template = fs.readFileSync('pages/templates/message/first_message_content_large_emoji.html', 'utf-8');
+const merged_message_content_large_emoji_template = fs.readFileSync('pages/templates/message/merged_message_content_large_emoji.html', 'utf-8');
+const mention_template = fs.readFileSync('pages/templates/message/mention.html', 'utf-8');
 
-const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
-const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
+const input_template = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
+const input_disabled_template = fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8');
 
-const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'));
+const no_message_history_template = fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8');
 
-const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'));
+const file_download_template = fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
