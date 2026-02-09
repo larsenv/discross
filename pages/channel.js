@@ -169,10 +169,10 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
             } else if (lastMentioned) {
               currentmessage = message_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid + "#end");
+              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
             } else {
               currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid + "#end");
+              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
             }
             
             // Use helper functions for proper nickname and color
@@ -639,7 +639,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
       let template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
-      template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + "#end")
+      template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random())
       const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
         
       // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled

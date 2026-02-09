@@ -341,7 +341,8 @@ function applyUserPreferences(response, req) {
   }
 
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-  response = imagesCookie == 1 ? response.replace("{$IMAGES_WARNING}", images_enabled_template) : response.replace("{$IMAGES_WARNING}", no_images_warning_template);
+  const imagesEnabled = imagesCookie === '1' || imagesCookie === undefined; // Default to enabled (1) if not set
+  response = imagesEnabled ? response.replace("{$IMAGES_WARNING}", images_enabled_template) : response.replace("{$IMAGES_WARNING}", no_images_warning_template);
 
   return response;
 }
