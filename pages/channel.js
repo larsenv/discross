@@ -82,6 +82,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
+  
+  const animationsCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('animations='))?.split('=')[1];
+  const animationsCookie = animationsCookieValue !== undefined ? parseInt(animationsCookieValue) : 1;  // Default to 1 (on)
     
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
@@ -340,7 +343,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                         }
                         output = points.join("-");
                     }
-                    messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.gif" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
+                    // Use .gif or .png based on animations setting
+                    const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
+                    messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji">`);
                  });
             }
 
@@ -390,8 +395,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         if (item.stickers && item.stickers.size > 0) {
           if (imagesCookie == 1) {
             item.stickers.forEach(sticker => {
-               // User requested GIF format explicitly for Wii compatibility
-               const stickerURL = `/imageProxy/sticker/${sticker.id}.gif`;
+               // Use .gif or .png based on animations setting
+               const stickerExt = animationsCookie === 1 ? 'gif' : 'png';
+               const stickerURL = `/imageProxy/sticker/${sticker.id}.${stickerExt}`;
                messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
             });
           } else {
@@ -592,7 +598,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         // Process and add reactions to the message
-        const reactionsHtml = processReactions(item.reactions, imagesCookie, reactions_template, reaction_template);
+        const reactionsHtml = processReactions(item.reactions, imagesCookie, reactions_template, reaction_template, animationsCookie);
         messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
 
         // Skip messages that are effectively blank (issue #32)

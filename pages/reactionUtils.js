@@ -5,7 +5,12 @@ function strReplace(string, needle, replacement) {
 }
 
 // Function to process and format reactions
-function processReactions(reactions, imagesCookie, reactions_template, reaction_template) {
+function processReactions(reactions, imagesCookie, reactions_template, reaction_template, animationsCookie) {
+  // Default animationsCookie to 1 if not provided
+  if (animationsCookie === undefined) {
+    animationsCookie = 1;
+  }
+  
   try {
     // In Discord.js v14, message.reactions is a ReactionManager with a cache property
     // that contains the Collection of MessageReaction objects. Handle both cases.
@@ -42,7 +47,8 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
         if (emoji.id) {
           // Custom emoji
           if (imagesCookie === 1) {
-            const extension = emoji.animated ? 'gif' : 'png';
+            // Use animations setting for animated emoji
+            const extension = (emoji.animated && animationsCookie === 1) ? 'gif' : 'png';
             emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
           } else {
             // Fallback to emoji name if images are disabled
@@ -71,7 +77,9 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
             }
             output = points.join("-");
             
-            emojiHtml = `<img src="/resources/twemoji/${output}.gif" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
+            // Use animations setting for twemoji
+            const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
+            emojiHtml = `<img src="/resources/twemoji/${output}.${emojiExt}" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
           } else {
             // Show the unicode emoji directly
             emojiHtml = emoji.name;

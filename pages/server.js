@@ -99,11 +99,20 @@ function processServerChannels(server, member, response) {
 
 
     let channelList = "";
-    channelsSorted.forEach(item => {
+    let currentCategoryId = null;
+    
+    channelsSorted.forEach((item, index) => {
       // Check if the member has permission to view the channel
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         if (item.type == ChannelType.GuildCategory) {
-          channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+          // Close previous category if exists
+          if (currentCategoryId !== null) {
+            channelList += '</div>'; // Close previous category-channels div
+          }
+          currentCategoryId = item.id;
+          channelList += category_channel_template
+            .replace("{$CHANNEL_NAME}", escape(item.name))
+            .replace("{$CATEGORY_ID}", item.id);
         } else if (item.type == ChannelType.GuildForum) {
           // Forum channels (#16)
           channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
@@ -144,6 +153,12 @@ function processServerChannels(server, member, response) {
         }
       }
     });
+    
+    // Close the last category if exists
+    if (currentCategoryId !== null) {
+      channelList += '</div>';
+    }
+
 
     // Replace the channel list in the response
     response = response.replace("{$CHANNEL_LIST}", channelList);

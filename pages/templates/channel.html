@@ -109,6 +109,68 @@
                 el.style.background = "none";
             }
         }
+        
+        // File upload handling (#21)
+        function handleFileSelect(input) {
+            if (input.files && input.files[0]) {
+                var file = input.files[0];
+                var maxSize = 8 * 1024 * 1024; // 8MB limit for webhooks
+                
+                if (file.size > maxSize) {
+                    alert('File is too large. Maximum size is 8MB.');
+                    input.value = '';
+                    return;
+                }
+                
+                // Show file name in message input
+                var messageInput = document.getElementById('message');
+                if (messageInput) {
+                    var fileName = '[Uploading: ' + file.name + ']';
+                    messageInput.value = messageInput.value ? messageInput.value + ' ' + fileName : fileName;
+                }
+                
+                // Upload the file
+                uploadFile(file);
+            }
+        }
+        
+        function uploadFile(file) {
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('channel', document.getElementById('channel').value);
+            formData.append('message', document.getElementById('message').value);
+            
+            // Show uploading status
+            var messageInput = document.getElementById('message');
+            var originalValue = messageInput.value;
+            messageInput.disabled = true;
+            
+            fetch('/uploadFile', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    // Clear input and refresh
+                    messageInput.value = '';
+                    window.location.reload();
+                } else {
+                    alert('Upload failed: ' + (data.error || 'Unknown error'));
+                    messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
+                }
+            })
+            .catch(function(error) {
+                alert('Upload failed: ' + error);
+                messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
+            })
+            .finally(function() {
+                messageInput.disabled = false;
+                document.getElementById('fileUpload').value = '';
+            });
+        }
     </script>
     <style>
         @font-face {
@@ -707,6 +769,14 @@
                             <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
                                 style="width: 24px; height: 24px;">
                         </button>
+                        <button type="button" onclick="document.getElementById('fileUpload').click()"
+                            style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.06)'" 
+                            onmouseout="this.style.background='none'">
+                            <img src="/resources/twemoji/1f4e4.gif" alt="Upload file"
+                                style="width: 24px; height: 24px;">
+                        </button>
+                        <input type="file" id="fileUpload" style="display:none;" onchange="handleFileSelect(this)">
                         <a href="/draw/{$CHANNEL_ID}"
                             style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
                             onmouseover="this.style.background='rgba(255,255,255,0.06)'" 
