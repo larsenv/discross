@@ -1,4 +1,6 @@
 var fs = require('fs');
+var HTMLMinifier = require('@bhavingajjar/html-minify');
+var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var auth = require('../authentication.js');
 const path = require('path')
@@ -7,17 +9,20 @@ const sanitizer = require("path-sanitizer")
 const emojiRegex = require("./twemojiRegex").regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 
+// Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
+// Is that a bad idea?
+
 // Templates for viewing the channels in a server
-const server_template = fs.readFileSync('pages/templates/server.html', 'utf-8');
+const server_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server.html', 'utf-8'));
 
-const text_channel_template = fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8');
-const category_channel_template = fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8');
+const text_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8'));
+const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
 
-const server_icon_template = fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8');
+const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
-const server_list_only_template = fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8');
-const sync_warning_template = fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8');
-const no_images_warning_template = fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8');
+const server_list_only_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8'));
+const sync_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8'));
+const no_images_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8'));
 
 const cachedMembers = {}; // TODO: Find a better way
 
@@ -170,7 +175,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     // Handle theme and images preferences
     response = applyUserPreferences(response, req);
 
-    if (response.match?.(emojiRegex) && imagesCookie === "1") {
+    if (response.match?.(emojiRegex) && imagesCookie == 1) {
       const unicode_emoji_matches = [...response.match?.(emojiRegex)]
       unicode_emoji_matches.forEach(match => {
         const points = [];
@@ -195,7 +200,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     }
 
     const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-    if (custom_emoji_matches[0] && imagesCookie === "1") custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+    if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
       response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
     })
     
