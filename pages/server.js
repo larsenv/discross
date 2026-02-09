@@ -160,6 +160,10 @@ function processServerChannels(server, member, response) {
       channelList += '</div>';
     }
 
+    // Add animation toggle button at the end of channel list
+    channelList += '<br><form action="/toggleAnimations" method="post" style="margin: 8px 0;">';
+    channelList += '<button type="submit" style="background:#5865f2;color:white;padding:8px 16px;border:none;border-radius:4px;cursor:pointer;font-family:rodin,sans-serif;font-size:14px;">Toggle Animations</button>';
+    channelList += '</form>';
 
     // Replace the channel list in the response
     response = response.replace("{$CHANNEL_LIST}", channelList);
