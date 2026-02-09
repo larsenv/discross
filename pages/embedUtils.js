@@ -27,7 +27,7 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
   let result = text;
   
   // Process custom emoji (HTML escaped format from markdown)
-  const customEmojiMatches = [...result.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+  const customEmojiMatches = [...result.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
   customEmojiMatches.forEach(match => {
     const ext = match[2] ? "gif" : "png"; // 'a' means animated
     const emojiId = match[4];
