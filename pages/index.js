@@ -1,12 +1,14 @@
 var fs = require('fs');
+var HTMLMinifier = require('@bhavingajjar/html-minify');
+var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 
 var auth = require('../authentication.js');
 
-const index_template = fs.readFileSync('pages/templates/index.html', 'utf-8');
+const index_template = minifier.htmlMinify(fs.readFileSync('pages/templates/index.html', 'utf-8'));
 
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
-const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
+const logged_in_template = minifier.htmlMinify(fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8'));
+const logged_out_template = minifier.htmlMinify(fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8'));
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
