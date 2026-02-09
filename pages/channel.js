@@ -169,10 +169,10 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
             } else if (lastMentioned) {
               currentmessage = message_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
+              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid + "#end");
             } else {
               currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
+              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid + "#end");
             }
             
             // Use helper functions for proper nickname and color
