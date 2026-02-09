@@ -1,6 +1,4 @@
 var fs = require('fs');
-var HTMLMinifier = require('@bhavingajjar/html-minify');
-var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var he = require('he');
 const path = require('path');
@@ -22,28 +20,28 @@ function readTemplate(filePath) {
   let content = fs.readFileSync(filePath, 'utf-8');
   // Remove #end if it appears right before a closing quote in an href
   content = content.replace(/#end(?=["'])/g, ""); 
-  return minifier.htmlMinify(content);
+  return content;
 }
 
 const message_template = readTemplate('pages/templates/message/message.html');
 const message_forwarded_template = readTemplate('pages/templates/message/forwarded_message.html');
 const message_mentioned_template = readTemplate('pages/templates/message/message_mentioned.html');
 const message_forwarded_mentioned_template = readTemplate('pages/templates/message/forwarded_message_mentioned.html');
-const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
-const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
-const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
-const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
+const channel_template = fs.readFileSync('pages/templates/channel.html', 'utf-8');
+const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
+const merged_message_content_template = fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8');
+const mention_template = fs.readFileSync('pages/templates/message/mention.html', 'utf-8');
 
-const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
-const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
+const input_template = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
+const input_disabled_template = fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8');
 
-const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'));
+const no_message_history_template = fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8');
 
-const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'));
+const file_download_template = fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8');
 
-const reactions_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'));
-const reaction_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'));
-const date_separator_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8'));
+const reactions_template = fs.readFileSync('pages/templates/message/reactions.html', 'utf-8');
+const reaction_template = fs.readFileSync('pages/templates/message/reaction.html', 'utf-8');
+const date_separator_template = fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8');
 // Constants
 const FORWARDED_CONTENT_MAX_LENGTH = 100;
 
@@ -288,7 +286,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         
         // Detect "Jumbo" Emoji status (<= 29 emojis and no other text)
         let isJumbo = false;
-        if (imagesCookie == 1) {
+        if (imagesCookie === "1") {
             // Check raw content for "emoji only" status
             const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
             // Match custom emojis and unicode emojis
@@ -308,7 +306,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // Note: 'em' is supported in IE3+ (1996), so it is very safe for "older browsers".
         const emojiSize = isJumbo ? "2.75em" : "1.375em";
 
-        if (imagesCookie == 1) {
+        if (imagesCookie === "1") {
             // Process Unicode Emojis
             if (messagetext.match(emojiRegex)) {
                  const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
