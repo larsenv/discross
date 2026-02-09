@@ -99,12 +99,29 @@ async function senddrawingAsync(req, res, body) {
 
 server.on('request', async (req, res) => {
   if (req.method === 'POST') {
+    const parsedurl = url.parse(req.url, true).pathname;
+    
+    // Handle file upload BEFORE reading body (formidable needs raw stream)
+    if (parsedurl == "/uploadFile") {
+      (async () => {
+        const discordID = await auth.checkAuth(req, res, true);
+        if (discordID) {
+          await uploadFile(bot, req, res, [], discordID);
+        }
+      })().catch((err) => {
+        console.log(err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
+      });
+      return; // Don't read body for file uploads
+    }
+    
+    // For all other POST requests, read the body
     let body = '' // https://itnext.io/how-to-handle-the-post-request-body-in-node-js-without-using-a-framework-cd2038b93190
     req.on('data', chunk => {
       body += chunk.toString() // convert Buffer to string
     })
     req.on('end', () => {
-      const parsedurl = url.parse(req.url, true).pathname
       if (parsedurl == "/switchtheme") {
         toggleTheme(req, res)
       } else if (parsedurl == "/toggleImages") {
@@ -144,17 +161,6 @@ server.on('request', async (req, res) => {
           res.end('Internal Server Error')
         }
         )
-      } else if (parsedurl == "/uploadFile") {
-        (async () => {
-          const discordID = await auth.checkAuth(req, res, true)
-          if (discordID) {
-            await uploadFile(bot, req, res, [], discordID)
-          }
-        })().catch((err) => {
-          console.log(err)
-          res.writeHead(500, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }))
-        })
       } else {
         auth.handleLoginRegister(req, res, body)
       }
