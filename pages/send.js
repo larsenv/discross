@@ -157,7 +157,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
       // redirect back to the channel (use the provided channel id if available)
       const redirectChannel = (parsedurl.query && parsedurl.query.channel) ? parsedurl.query.channel : (args?.[2] || "");
-      res.writeHead(302, { "Location": `/channels/${redirectChannel}#end` });
+      res.writeHead(302, { "Location": `/channels/${redirectChannel}` });
       res.end();
     });
   } catch (err) {
