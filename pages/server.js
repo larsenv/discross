@@ -30,6 +30,7 @@ const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/template
 const server_list_only_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8'));
 const sync_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8'));
 const no_images_warning_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8'));
+const images_enabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/images_enabled.html', 'utf-8'));
 
 const cachedMembers = {}; // TODO: Find a better way
 
@@ -318,7 +319,7 @@ function applyUserPreferences(response, req) {
   }
 
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-  response = imagesCookie == 1 ? response.replace("{$IMAGES_WARNING}", "") : response.replace("{$IMAGES_WARNING}", no_images_warning_template);
+  response = imagesCookie == 1 ? response.replace("{$IMAGES_WARNING}", images_enabled_template) : response.replace("{$IMAGES_WARNING}", no_images_warning_template);
 
   return response;
 }
