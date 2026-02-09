@@ -109,7 +109,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         bot.addToCache(message);
       }
       console.log("Redirecting to channel...");
-      res.writeHead(302, { "Location": `/channels/${parsedurl.channel}#end` });
+      res.writeHead(302, { "Location": `/channels/${parsedurl.channel}` });
       res.end();
     });
   } catch (err) {

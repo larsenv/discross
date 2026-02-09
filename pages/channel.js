@@ -596,11 +596,31 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
 
         // Skip messages that are effectively blank (issue #32)
-        // Check if message content is empty after stripping HTML tags and whitespace
+        // But NOT system messages like member joins (#31)
+        const isSystemMessage = item.type !== 0 && item.type !== 19; // 0 = Default, 19 = Reply
         const tempDiv = messagetext.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-        if (tempDiv.length === 0 && (!item.attachments || item.attachments.size === 0) && (!item.embeds || item.embeds.length === 0) && (!item.stickers || item.stickers.size === 0)) {
-          // Skip this blank message
+        
+        if (!isSystemMessage && tempDiv.length === 0 && (!item.attachments || item.attachments.size === 0) && (!item.embeds || item.embeds.length === 0) && (!item.stickers || item.stickers.size === 0)) {
+          // Skip this blank message (but not system messages)
           continue;
+        }
+        
+        // Handle system messages (#31 - member joins, etc.)
+        if (isSystemMessage && tempDiv.length === 0) {
+          const systemMessages = {
+            1: 'added a new member',
+            2: 'left',
+            3: 'boosted the server',
+            7: 'welcomed a new member',
+            8: 'boosted the server to level 1',
+            9: 'boosted the server to level 2',
+            10: 'boosted the server to level 3',
+            11: 'followed this channel',
+            12: 'went live'
+          };
+          
+          const systemText = systemMessages[item.type] || 'performed an action';
+          messagetext = `<font style="font-size:14px;color:#72767d;font-style:italic;" face="rodin,sans-serif">${systemText}</font>`;
         }
 
         lastauthor = item.author;
