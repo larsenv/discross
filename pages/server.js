@@ -201,7 +201,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
           // Construct server list HTML if the member is valid
           if (member && member.user) {
-            const serverHTML = createServerHTML(server, member);
+            const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+            const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;
+            const serverHTML = createServerHTML(server, member, imagesCookie);
             serverList += serverHTML;
           }
         } else {
@@ -340,11 +342,23 @@ function applyUserPreferences(response, req) {
   return response;
 }
 
-function createServerHTML(server, member) {
+function createServerHTML(server, member, imagesCookie) {
   // Generate server-specific HTML
   let serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
   serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
-  serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", server.name);
+  
+  // When images are disabled, strip emoji from server name
+  let serverName = server.name;
+  if (imagesCookie != 1) {
+    // Remove custom emoji <:name:id> and <a:name:id>
+    serverName = serverName.replace(/<a?:[^:]+:\d+>/g, '');
+    // Remove unicode emoji
+    const emojiRegex = require("./twemojiRegex").regex;
+    serverName = serverName.replace(emojiRegex, '');
+    serverName = serverName.trim();
+  }
+  
+  serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", escape(serverName));
   return serverHTML;
 }
 
