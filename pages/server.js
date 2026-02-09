@@ -150,6 +150,7 @@ function processServerChannels(server, member, response) {
             channelList += text_channel_template
               .replace("{$CHANNEL_NAME}", escape(item.name))
               .replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          }
         }
       }
     });
