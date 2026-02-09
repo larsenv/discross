@@ -110,7 +110,9 @@
             }
         }
         
-        // File upload handling (#21)
+        // File upload handling (#21) - integrated with send button
+        var selectedFile = null;
+        
         function handleFileSelect(input) {
             if (input.files && input.files[0]) {
                 var file = input.files[0];
@@ -119,19 +121,31 @@
                 if (file.size > maxSize) {
                     alert('File is too large. Maximum size is 8MB.');
                     input.value = '';
+                    selectedFile = null;
                     return;
                 }
+                
+                // Store the file for later upload
+                selectedFile = file;
                 
                 // Show file name in message input
                 var messageInput = document.getElementById('message');
                 if (messageInput) {
+                    var currentText = messageInput.value.trim();
                     var fileName = '[Uploading: ' + file.name + ']';
-                    messageInput.value = messageInput.value ? messageInput.value + ' ' + fileName : fileName;
+                    messageInput.value = currentText ? currentText + ' ' + fileName : fileName;
                 }
-                
-                // Upload the file
-                uploadFile(file);
             }
+        }
+        
+        function sendMessageOrFile() {
+            if (selectedFile) {
+                // Upload file with message
+                uploadFile(selectedFile);
+                return false; // Prevent normal form submission
+            }
+            // Otherwise allow normal form submission for text messages
+            return true;
         }
         
         function uploadFile(file) {
@@ -142,7 +156,7 @@
             
             // Show uploading status
             var messageInput = document.getElementById('message');
-            var originalValue = messageInput.value;
+            messageInput.disabled = true;
             messageInput.disabled = true;
             
             fetch('/uploadFile', {
@@ -777,7 +791,7 @@
                 <a id="end" name="end"></a>
             </div>
             <div class="message-form-container" style="position: sticky; bottom: 0;">
-                <form action="../send" style="position: relative;">
+                <form action="../send" method="POST" onsubmit="return sendMessageOrFile()" style="position: relative;">
                     <div>
                         <button type="button" onclick="showEmoji()"
                             style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
