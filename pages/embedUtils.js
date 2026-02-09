@@ -84,11 +84,19 @@ function processEmbeds(embeds, imagesCookie) {
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_FIELDS}', fieldsHtml);
     
-    // Process embed image (REMOVED)
-    embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', '');
+    // Process embed image (#29 - restore image rendering)
+    let imageHtml = '';
+    if (embed.image && imagesCookie === 1) {
+      imageHtml = `<div style="margin-top: 8px;"><img src="${escape(embed.image.url || embed.image.proxyURL)}" style="max-width: 100%; max-height: 300px; border-radius: 4px;" alt="Embed image"></div>`;
+    }
+    embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
     
-    // Process embed thumbnail (REMOVED)
-    embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', '');
+    // Process embed thumbnail (#29 - restore thumbnail rendering)
+    let thumbnailHtml = '';
+    if (embed.thumbnail && imagesCookie === 1) {
+      thumbnailHtml = `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(embed.thumbnail.url || embed.thumbnail.proxyURL)}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`;
+    }
+    embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', thumbnailHtml);
     
     // Process embed footer
     let footerHtml = '';
