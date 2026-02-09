@@ -1,6 +1,4 @@
 var fs = require('fs');
-var HTMLMinifier = require('@bhavingajjar/html-minify');
-var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes
@@ -11,27 +9,24 @@ const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 const fetch = require("sync-fetch");
 
-// Minify at runtime to save data on slow connections, but still allow editing the unminified file easily
-// Is that a bad idea?
-
 // Templates for viewing the messages in a channel
-// const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel.html', 'utf-8'));
-const channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel_reply.html', 'utf-8'));
+// const channel_template = fs.readFileSync('pages/templates/channel.html', 'utf-8');
+const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8');
 
 
-const message_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8'));
-const first_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'));
-const merged_message_content_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'));
-const first_message_content_large_emoji_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/first_message_content_large_emoji.html', 'utf-8'));
-const merged_message_content_large_emoji_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/merged_message_content_large_emoji.html', 'utf-8'));
-const mention_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/mention.html', 'utf-8'));
+const message_template = fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8');
+const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
+const merged_message_content_template = fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8');
+const first_message_content_large_emoji_template = fs.readFileSync('pages/templates/message/first_message_content_large_emoji.html', 'utf-8');
+const merged_message_content_large_emoji_template = fs.readFileSync('pages/templates/message/merged_message_content_large_emoji.html', 'utf-8');
+const mention_template = fs.readFileSync('pages/templates/message/mention.html', 'utf-8');
 
-const input_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input.html', 'utf-8'));
-const input_disabled_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'));
+const input_template = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
+const input_disabled_template = fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8');
 
-const no_message_history_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'));
+const no_message_history_template = fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8');
 
-const file_download_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'));
+const file_download_template = fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -304,7 +299,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         final = strReplace(template, "{$INPUT}", input_disabled_template);
       }
 
-      if (response.match?.(emojiRegex) && imagesCookie == 1) {
+      if (response.match?.(emojiRegex) && imagesCookie === "1") {
         const unicode_emoji_matches = [...response.match?.(emojiRegex)]
         unicode_emoji_matches.forEach(match => {
           const points = [];
@@ -329,7 +324,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-      if (custom_emoji_matches[0] && imagesCookie) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+      if (custom_emoji_matches[0] && imagesCookie === "1") custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
         response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 3%;"  alt="emoji">`)    // Make it smaller if inline
       })
       let reply_message_id = args[3];
