@@ -1,6 +1,4 @@
 var fs = require('fs');
-var HTMLMinifier = require('@bhavingajjar/html-minify');
-var minifier = new HTMLMinifier();
 var escape = require('escape-html');
 var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes

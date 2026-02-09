@@ -43,8 +43,12 @@
     .light-theme #wrapper * {
       background: #FFFFFF !important;
       color: #000000 !important;
-      
-      
+    }
+
+    /* Exception for purple buttons in light theme */
+    .light-theme input[type="submit"] {
+      background: #5865f2 !important;
+      color: #ffffff !important;
     }
 
     .light-theme #wrapper table div {
@@ -85,6 +89,12 @@
     .amoled-theme a {
       color: #5865f2 !important;
     }
+
+    /* Exception for purple buttons in AMOLED theme */
+    .amoled-theme input[type="submit"] {
+      background: #5865f2 !important;
+      color: #ffffff !important;
+    }
   </style>
   <title>Discross - Login</title>
 </head>
@@ -118,7 +128,6 @@
       </tr>
     </table>
     <hr style="margin: 0; position: relative; bottom: 4px;">
-    <br>
     <table>
       <tbody>
         <tr>
