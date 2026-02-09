@@ -566,7 +566,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               console.log(err);
             }
             if (channel) {
-              messagetext = strReplace(messagetext, m[0], mention_template.replace("{$USERNAME}", escape("#" + channel.name)));
+              // #12: Make channel mentions clickable links
+              const channelLink = `/channels/${channel.id}`;
+              messagetext = strReplace(messagetext, m[0], `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(channel.name)}</font></a>`);
             }
           }
         } while (m);

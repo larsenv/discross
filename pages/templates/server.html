@@ -83,14 +83,24 @@
         // Category collapse/expand functionality (#17)
         function toggleCategory(element) {
             var arrow = element.querySelector('.category-arrow');
-            var categoryDiv = element.nextElementSibling;
-            while (categoryDiv && categoryDiv.tagName === 'BR') {
-                categoryDiv = categoryDiv.nextElementSibling;
+            // Find the category-channels div - it should be a sibling after potentially a BR
+            var categoryDiv = null;
+            var sibling = element.nextElementSibling;
+            
+            // Skip over BR tags to find the category-channels div
+            while (sibling) {
+                if (sibling.classList && sibling.classList.contains('category-channels')) {
+                    categoryDiv = sibling;
+                    break;
+                }
+                sibling = sibling.nextElementSibling;
             }
             
-            if (categoryDiv && categoryDiv.classList.contains('category-channels')) {
+            if (categoryDiv) {
                 var isCollapsed = categoryDiv.classList.toggle('collapsed');
-                arrow.classList.toggle('collapsed', isCollapsed);
+                if (arrow) {
+                    arrow.classList.toggle('collapsed', isCollapsed);
+                }
                 
                 // Store state in localStorage
                 try {
@@ -112,13 +122,18 @@
                     var state = localStorage.getItem(cat.id);
                     if (state === 'collapsed') {
                         cat.classList.add('collapsed');
-                        var prevElement = cat.previousElementSibling;
-                        while (prevElement && prevElement.tagName === 'BR') {
-                            prevElement = prevElement.previousElementSibling;
-                        }
-                        if (prevElement) {
-                            var arrow = prevElement.querySelector('.category-arrow');
-                            if (arrow) arrow.classList.add('collapsed');
+                        
+                        // Find the previous category link to update arrow
+                        var prevSibling = cat.previousElementSibling;
+                        while (prevSibling) {
+                            if (prevSibling.tagName === 'A' && prevSibling.onclick) {
+                                var arrow = prevSibling.querySelector('.category-arrow');
+                                if (arrow) {
+                                    arrow.classList.add('collapsed');
+                                    break;
+                                }
+                            }
+                            prevSibling = prevSibling.previousElementSibling;
                         }
                     }
                 });
