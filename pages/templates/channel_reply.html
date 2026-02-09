@@ -84,6 +84,105 @@
                 emojiShowing = true;
             }
         }
+
+        // File upload functionality
+        var selectedFile = null;
+
+        function handleFileSelect(input) {
+            var file = input.files[0];
+            if (file) {
+                // Check file size (8MB limit for webhooks)
+                var maxSize = 8 * 1024 * 1024; // 8MB in bytes
+                if (file.size > maxSize) {
+                    alert('File is too large. Maximum size is 8MB.');
+                    input.value = '';
+                    selectedFile = null;
+                    return;
+                }
+                
+                selectedFile = file;
+                
+                // Show file name in message input
+                var messageInput = document.getElementById('message');
+                if (messageInput) {
+                    var currentText = messageInput.value.trim();
+                    var fileName = '[Uploading: ' + file.name + ']';
+                    messageInput.value = currentText ? currentText + ' ' + fileName : fileName;
+                }
+            }
+        }
+        
+        function sendMessageOrFile() {
+            if (selectedFile) {
+                // Upload file with message
+                uploadFile(selectedFile);
+                return false; // Prevent normal form submission
+            }
+            // Otherwise allow normal form submission for text messages
+            return true;
+        }
+        
+        function uploadFile(file) {
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('channel', document.getElementById('channel').value);
+            formData.append('message', document.getElementById('message').value);
+            
+            // Show uploading status
+            var messageInput = document.getElementById('message');
+            var originalValue = messageInput.value;
+            messageInput.disabled = true;
+            
+            fetch('/uploadFile', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    // Clear input and refresh
+                    messageInput.value = '';
+                    window.location.reload();
+                } else {
+                    alert('Upload failed: ' + (data.error || 'Unknown error'));
+                    messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
+                }
+            })
+            .catch(function(error) {
+                alert('Upload failed: ' + error);
+                messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
+            })
+            .finally(function() {
+                messageInput.disabled = false;
+                selectedFile = null;
+            });
+        }
+
+        // Spoiler reveal function for Wii compatibility
+        function show(el) {
+            try {
+                el.style.background = "none";
+                // Navigate the DOM structure: table -> tbody -> tr -> td -> font
+                var tbody = el.childNodes[0];
+                if (tbody && tbody.childNodes && tbody.childNodes[0]) {
+                    var tr = tbody.childNodes[0];
+                    if (tr && tr.childNodes && tr.childNodes[0]) {
+                        var td = tr.childNodes[0];
+                        if (td && td.childNodes && td.childNodes[0]) {
+                            var font = td.childNodes[0];
+                            if (font && font.style) {
+                                font.style.visibility = "visible";
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                // Fallback: just remove background if structure is unexpected
+                el.style.background = "none";
+            }
+        }
     </script>
     <style>
         @font-face {
@@ -126,9 +225,37 @@
         }
 
         /* Typography */
-        h1, h2 { margin: 24px 0 12px 0; font-size: 1.75rem; font-weight: 600; }
+        h1 { margin: 24px 0 12px 0; font-size: 51px; font-weight: 600; }
+        h2 { margin: 22px 0 11px 0; font-size: 42px; font-weight: 600; }
+        h3 { margin: 20px 0 10px 0; font-size: 33px; font-weight: 600; }
         p, ul { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
         .messagecontent ul { padding-left: 20px; }
+        
+        /* Blockquotes */
+        .blockquote-container { 
+            display: table; 
+            width: 100%; 
+            margin: 4px 0; 
+        }
+        .blockquote-bar { 
+            display: table-cell; 
+            width: 4px; 
+            background: #4e5058; 
+            border-radius: 2px;
+            vertical-align: top;
+        }
+        .discord-quote { 
+            display: table-cell; 
+            padding-left: 12px; 
+            color: #b5bac1; 
+            margin: 0;
+        }
+        
+        /* Subtext */
+        .subtext {
+            font-size: 12px;
+            color: #b5bac1;
+        }
 
         /* Links */
         a {
@@ -222,7 +349,6 @@
         /* Messages */
         .message {
             margin: 0;
-            border-bottom: 1px solid #2f3136;
         }
         .message:hover {
             background: rgba(4, 4, 5, 0.07);
@@ -552,7 +678,11 @@
         .amoled-theme .message-input { color: #fff; background: #0a0a0a; }
         .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
         .amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
-        .amoled-theme .menu-button { color: #ffffff !important; }
+        .amoled-theme .menu-button { 
+            background: none !important; 
+            border: none !important; 
+            color: #ffffff !important; 
+        }
         .amoled-theme a { color: #5865f2 !important; }
         .amoled-theme pre,
         .amoled-theme code { background: #0a0a0a; border-color: #222; color: #fff; }
@@ -659,7 +789,7 @@
                 </div>
             </div>
             <div class="message-form-container" style="position: sticky; bottom: 0;">
-                <form action="../send" style="position: relative;">
+                <form action="../send" onsubmit="return sendMessageOrFile()" style="position: relative;">
                     <div>
                         <button type="button" onclick="showEmoji()"
                             style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
@@ -668,6 +798,14 @@
                             <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
                                 style="width: 24px; height: 24px;">
                         </button>
+                        <button type="button" onclick="document.getElementById('fileUpload').click()"
+                            style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.06)'" 
+                            onmouseout="this.style.background='none'">
+                            <img src="/resources/twemoji/1f4e4.gif" alt="Upload file"
+                                style="width: 24px; height: 24px;">
+                        </button>
+                        <input type="file" id="fileUpload" style="display:none;" onchange="handleFileSelect(this)">
                         <a href="/draw/{$CHANNEL_ID}"
                             style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
                             onmouseover="this.style.background='rgba(255,255,255,0.06)'" 

@@ -97,8 +97,6 @@ async function ensureMemberData(message, guild, cache = null) {
   if (cache && cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
-
-  return null;
   
   // Try to fetch the member from the guild (non-webhook message)
   try {
@@ -110,6 +108,9 @@ async function ensureMemberData(message, guild, cache = null) {
     }
     return member;
   } catch (error) {
+    // Silently return null - member not found (#11)
+    // Since we're not using role colors (getMemberColor always returns white),
+    // failed member fetches are not critical
     return null;
   }
 }

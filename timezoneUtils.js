@@ -130,8 +130,8 @@ function formatDateWithTimezone(date, timezone) {
     const timeStr = date.toLocaleString('en-US', timeOptions);
     
     if (diffDays === 0) {
-      // Today
-      return `Today at ${timeStr}`;
+      // Today - just show time
+      return timeStr;
     } else if (diffDays === 1) {
       // Yesterday
       return `Yesterday at ${timeStr}`;

@@ -20,6 +20,11 @@ exports.imageProxy = async function imageProxy(res, URL) {
                                 .toFormat('gif', { colors: 16 })                 // Hopefully this will be enough to avoid crashes.
                                 .toBuffer()
                         })
+                        .catch(err => {
+                            // If conversion fails, just send original
+                            console.log('Could not convert large image, sending original');
+                            gifbuffer = buffer;
+                        });
                 } else {
                     await sharp(buffer)
                         .metadata()
@@ -32,6 +37,11 @@ exports.imageProxy = async function imageProxy(res, URL) {
                                     .toBuffer();
                             }
                         })
+                        .catch(err => {
+                            // If conversion fails, just send original
+                            console.log('Could not convert image format, sending original');
+                            gifbuffer = buffer;
+                        });
                 }
                 res.writeHead(200, {
                     'Content-Type': 'image/gif',
@@ -39,9 +49,13 @@ exports.imageProxy = async function imageProxy(res, URL) {
                 });
                 res.end(gifbuffer);
             } catch (error) {
-                console.error('Error converting image to GIF:', error.message);
-                res.writeHead(500, { 'Content-Type': 'text/plain' });
-                res.end('Error converting image to GIF. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error');
+                console.error('Error processing image:', error.message);
+                // Send original buffer instead of error
+                res.writeHead(200, {
+                    'Content-Type': 'image/gif',
+                    'Content-Length': buffer.length,
+                });
+                res.end(buffer);
             }
         }).on('error', (err) => {
             console.error('Error fetching image:', err);

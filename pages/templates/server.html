@@ -31,14 +31,24 @@
 
         .light-theme #wrapper {
             background: #FFFFFF !important;
-            color: #000000 !important;
+            color: #060607 !important;
         }
 
         .light-theme #wrapper * {
-            background: #FFFFFF !important;
-            color: #000000 !important;
-
-
+            color: #060607 !important;
+        }
+        
+        .light-theme a {
+            color: #5865f2 !important;
+        }
+        
+        .light-theme button {
+            background: #5865f2 !important;
+            color: #ffffff !important;
+        }
+        
+        .light-theme hr {
+            border-color: #e3e5e8 !important;
         }
 
         /* AMOLED theme overrides for server page */
@@ -59,11 +69,95 @@
         .amoled-theme a {
             color: #5865f2 !important;
         }
+        
+        .amoled-theme button {
+            background: #5865f2 !important;
+            color: #ffffff !important;
+        }
 
         hr {
             border: solid 1px #494c50;
         }
+        
+        /* Category collapsibility (#17) */
+        .category-channels {
+            display: block;
+        }
+        .category-channels.collapsed {
+            display: none;
+        }
+        .category-arrow {
+            display: inline-block;
+            transition: transform 0.2s;
+            font-size: 0.75em;
+        }
+        .category-arrow.collapsed {
+            transform: rotate(-90deg);
+        }
     </style>
+    <script>
+        // Category collapse/expand functionality (#17)
+        function toggleCategory(element) {
+            var arrow = element.querySelector('.category-arrow');
+            // Find the category-channels div - it should be a sibling after potentially a BR
+            var categoryDiv = null;
+            var sibling = element.nextElementSibling;
+            
+            // Skip over BR tags to find the category-channels div
+            while (sibling) {
+                if (sibling.classList && sibling.classList.contains('category-channels')) {
+                    categoryDiv = sibling;
+                    break;
+                }
+                sibling = sibling.nextElementSibling;
+            }
+            
+            if (categoryDiv) {
+                var isCollapsed = categoryDiv.classList.toggle('collapsed');
+                if (arrow) {
+                    arrow.classList.toggle('collapsed', isCollapsed);
+                }
+                
+                // Store state in localStorage
+                try {
+                    var categoryId = categoryDiv.id;
+                    if (categoryId) {
+                        localStorage.setItem(categoryId, isCollapsed ? 'collapsed' : 'expanded');
+                    }
+                } catch (e) {
+                    // localStorage might not be available
+                }
+            }
+        }
+        
+        // Restore category states on page load
+        window.onload = function() {
+            try {
+                var categories = document.querySelectorAll('.category-channels');
+                categories.forEach(function(cat) {
+                    var state = localStorage.getItem(cat.id);
+                    if (state === 'collapsed') {
+                        cat.classList.add('collapsed');
+                        
+                        // Find the previous category link to update arrow
+                        var prevSibling = cat.previousElementSibling;
+                        while (prevSibling) {
+                            if (prevSibling.tagName === 'A' && prevSibling.onclick) {
+                                var arrow = prevSibling.querySelector('.category-arrow');
+                                if (arrow) {
+                                    arrow.classList.add('collapsed');
+                                    break;
+                                }
+                            }
+                            prevSibling = prevSibling.previousElementSibling;
+                        }
+                    }
+                });
+            } catch (e) {
+                // localStorage might not be available
+            }
+        };
+    </script>
 </head>
 
 <body bgcolor="#303338" {$WHITE_THEME_ENABLED}>

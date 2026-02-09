@@ -94,7 +94,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         const base64Image = base64Data.split(';base64,').pop();
         const imageBuffer = Buffer.from(base64Image, 'base64');
 
-        const messageCont = "";
+        let messageCont = "";
 
         if (processedmessage) {
           messageCont = processedmessage;
@@ -109,7 +109,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         bot.addToCache(message);
       }
       console.log("Redirecting to channel...");
-      res.writeHead(302, { "Location": `/channels/${parsedurl.channel}#end` });
+      res.writeHead(302, { "Location": `/channels/${parsedurl.channel}` });
       res.end();
     });
   } catch (err) {

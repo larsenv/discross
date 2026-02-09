@@ -84,13 +84,29 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
         let reply_message = await channel.messages.fetch(parsedurl.query.reply_message_id);
         let reply_message_content = reply_message.content;
+        
+        // #38: Escape mentions in reply content to prevent ping issues
+        reply_message_content = reply_message_content.replace(/<@!?(\d+)>/g, '@user');
+        reply_message_content = reply_message_content.replace(/<@&(\d+)>/g, '@role');
+        reply_message_content = reply_message_content.replace(/<#(\d+)>/g, '#channel');
+        
         if (reply_message_content.length > 30) {
           reply_message_content = reply_message_content.substring(0, 30) + "...";
         }
+        
+        // #39: Get proper member name for reply
+        let author_name = reply_message.author.username;
+        try {
+          const author_member = await channel.guild.members.fetch(reply_message.author.id);
+          author_name = author_member.displayName || author_member.user.username;
+        } catch (err) {
+          // Use username if member fetch fails
+        }
+        
         let author_id = reply_message.author.id;
         let author_mention = "<@" + author_id + ">";
 
-        processedmessage = "> Replying to " + reply_message_content + " from " + author_mention + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
+        processedmessage = "> Replying to " + reply_message_content + " from " + author_name + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
         
         await webhook.edit({ channel: channel });
         const message = await webhook.send({
@@ -103,7 +119,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         bot.addToCache(message);
       }
 
-      res.writeHead(302, { "Location": `/channels/${parsedurl.query.channel}#end` });
+      res.writeHead(302, { "Location": `/channels/${parsedurl.query.channel}` });
       res.end();
     });
   } catch (err) {

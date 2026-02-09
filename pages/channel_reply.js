@@ -71,6 +71,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
   
+  const animationsCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('animations='))?.split('=')[1];
+  const animationsCookie = animationsCookieValue !== undefined ? parseInt(animationsCookieValue) : 1;  // Default to 1 (on)
+  
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
   const clientTimezone = getTimezoneFromIP(clientIP);
@@ -171,7 +174,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             
             // Use helper functions for proper nickname and color
             const displayName = getDisplayName(lastmember, lastauthor);
-            const authorColor = getMemberColor(lastmember);
+            const authorColor = "#ffffff"; // Always use white - no member fetching needed
             
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
@@ -180,10 +183,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             const pingIndicator = (lastReply && lastReplyData.mentionsPing) ? ' <span style="color: #72767d;">@</span>' : '';
             currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", pingIndicator);
             
-            // Add reply indicator (L-shaped line) if this is a reply
+            // Add reply indicator (L-shaped line) if this is a reply (#26 - make inline)
             let replyIndicator = '';
             if (lastReply) {
-              replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px; margin-left: 36px;">' +
+              replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px;">' +
                 '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
                 '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
                 '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(lastReplyData.author) + '</span>' +
@@ -219,7 +222,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         if (item.reference?.type === MessageReferenceType.Forward) {
           try {
             const forwardedMessage = await item.fetchReference();
-            const forwardedMember = await ensureMemberData(forwardedMessage, chnl.guild, memberCache);
+            const forwardedMember = forwardedMessage.member;
             const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
             const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH 
               ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..." 
@@ -229,7 +232,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             isForwarded = true;
             forwardData = {
               author: forwardedAuthor,
-              content: renderDiscordMarkdown(forwardedContent), 
+              content: renderDiscordMarkdown(forwardedContent),
               date: forwardedDate
             };
           } catch (err) {
@@ -256,34 +259,22 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
               // Message was likely deleted or is inaccessible. 
             }
 
-            // Step 2: If we have a user (either from fetch or fallback), try to get Member data
-            if (replyUser) {
-              try {
-                if (replyMessage) {
-                  replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
-                } else {
-                  if (memberCache.has(replyUser.id)) {
-                    replyMember = memberCache.get(replyUser.id);
-                  } else {
-                    replyMember = await chnl.guild.members.fetch(replyUser.id);
-                    memberCache.set(replyUser.id, replyMember);
-                  }
-                }
-              } catch (err) {
-                // Member fetch failed
-              }
-
-              // Step 3: Construct the display data
-              const replyAuthor = getDisplayName(replyMember, replyUser);
-              const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
-
-              isReply = true;
-              replyData = {
-                author: replyAuthor,
-                authorId: replyUser.id,
-                mentionsPing: mentionsRepliedUser
-              };
+            // Step 2: Use message.member if present, but don't fetch
+            if (replyMessage && replyMessage.member) {
+              replyMember = replyMessage.member;
             }
+            // If no member data, just use replyUser - no fetching needed
+
+            // Step 3: Construct the display data
+            const replyAuthor = getDisplayName(replyMember, replyUser);
+            const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+
+            isReply = true;
+            replyData = {
+              author: replyAuthor,
+              authorId: replyUser.id,
+              mentionsPing: mentionsRepliedUser
+            };
           } catch (err) {
             console.error("Could not process reply data:", err);
             isReply = false;
@@ -380,7 +371,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         
         // Process embeds (for bot messages)
         if (item?.embeds && item.embeds.length > 0) {
-          messagetext += processEmbeds(item.embeds, imagesCookie);
+          messagetext += processEmbeds(item.embeds, imagesCookie, animationsCookie, clientTimezone);
         }
         
         // Process polls
@@ -495,8 +486,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
 
         lastauthor = item.author;
-        // Ensure member data is populated
-        lastmember = await ensureMemberData(item, chnl.guild, memberCache);
+        // Use member data if present, but don't fetch - speeds up page load
+        lastmember = item.member || null;
         lastdate = item.createdAt;
         currentmessage += messagetext;
         messageid = item.id;

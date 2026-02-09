@@ -13,6 +13,33 @@ function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
+// Simple syntax highlighting for Wii compatibility
+function highlightCode(code, lang) {
+  if (!lang) return escapeHtml(code);
+  
+  let highlighted = escapeHtml(code);
+  
+  // Basic keyword and syntax highlighting for common languages
+  if (lang === 'javascript' || lang === 'js') {
+    highlighted = highlighted
+      .replace(/\b(function|const|let|var|if|else|for|while|return|class|new|this|async|await|import|export|from)\b/g, '<b style="color:#c678dd">$1</b>')
+      .replace(/\b(true|false|null|undefined)\b/g, '<b style="color:#d19a66">$1</b>')
+      .replace(/('.*?'|".*?")/g, '<span style="color:#98c379">$1</span>');
+  } else if (lang === 'python' || lang === 'py') {
+    highlighted = highlighted
+      .replace(/\b(def|class|if|elif|else|for|while|return|import|from|try|except|with|as|in|and|or|not)\b/g, '<b style="color:#c678dd">$1</b>')
+      .replace(/\b(True|False|None)\b/g, '<b style="color:#d19a66">$1</b>')
+      .replace(/('.*?'|".*?")/g, '<span style="color:#98c379">$1</span>');
+  } else if (lang === 'html') {
+    highlighted = highlighted
+      .replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9]*)/g, '<b style="color:#e06c75">$1</b>')
+      .replace(/([a-zA-Z-]+)=/g, '<span style="color:#d19a66">$1</span>=')
+      .replace(/=(".*?"|'.*?')/g, '=<span style="color:#98c379">$1</span>');
+  }
+  
+  return highlighted;
+}
+
 function renderDiscordMarkdown(text) {
   if (!text) return '';
 
@@ -27,7 +54,9 @@ function renderDiscordMarkdown(text) {
   // Step 0: Protect Code Blocks
   text = text.replace(/```(?:(\w+)(?:\r?\n|\r)|(?:\r?\n|\r))?([\s\S]*?)```/g, function(match, lang, content) {
     const index = codePlaceholders.length;
-    codePlaceholders.push({ type: 'block', content: content || '', lang: lang || '' });
+    // Trim leading and trailing newlines from code content
+    const trimmedContent = (content || '').replace(/^\s*\n|\n\s*$/g, '');
+    codePlaceholders.push({ type: 'block', content: trimmedContent, lang: lang || '' });
     return `§§CODEBLOCK${index}§§`;
   });
 
@@ -171,13 +200,16 @@ function renderDiscordMarkdown(text) {
 
   // Helper to resolve nested formatting
   function resolveNested(str) {
-      // Restore Spoilers
-      // FIXED: Added event.preventDefault() and stopPropagation() on both click and mousedown
-      // to ensure no parent events (like Quote/Reply) are triggered.
+      // Restore Spoilers - Wii-compatible table-based implementation
       str = str.replace(/§§SPOILER(\d+)§§/g, function(m, i) {
           const content = spoilerPlaceholders[parseInt(i)];
           const rendered = md.renderInline(content); 
-          return `<span class="spoiler" onclick="event.preventDefault(); event.stopPropagation(); this.classList.add('revealed'); return false;" onmousedown="event.preventDefault(); event.stopPropagation();">${rendered}</span>`;
+          // Use table-based spoiler for Wii Internet Channel compatibility
+          // The show() function in the template files reveals the spoiler by removing background and showing text
+          return '<table cellpadding="0" cellspacing="0" style="display:inline-table;background:black;vertical-align:bottom" onclick="show(this);event.stopPropagation();return false">' +
+                 '<tbody><tr><td>' +
+                 '<font face="sans-serif" style="visibility:hidden">' + rendered + '</font>' +
+                 '</td></tr></tbody></table>';
       });
 
       // Restore Underlines
@@ -265,8 +297,10 @@ function renderDiscordMarkdown(text) {
   
   result = result.replace(/§§CODEBLOCK(\d+)§§/g, (m, i) => {
       const item = codePlaceholders[parseInt(i)];
-      const lang = item.lang ? ` class="language-${item.lang}"` : '';
-      return `<pre><code${lang}>${escapeHtml(item.content)}</code></pre>`;
+      const lang = item.lang || '';
+      const highlightedCode = highlightCode(item.content, lang);
+      const langClass = lang ? ` class="language-${lang}"` : '';
+      return `<pre><code${langClass}>${highlightedCode}</code></pre>`;
   });
 
   return result;
