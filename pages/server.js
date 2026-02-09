@@ -21,6 +21,9 @@ const announcement_channel_template = minifier.htmlMinify(fs.readFileSync('pages
 const category_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8'));
 const voice_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/voicechannel.html', 'utf-8'));
 const thread_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8'));
+const forum_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/forumchannel.html', 'utf-8'));
+const locked_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/lockedchannel.html', 'utf-8'));
+const rules_channel_template = minifier.htmlMinify(fs.readFileSync('pages/templates/channellist/ruleschannel.html', 'utf-8'));
 
 const server_icon_template = minifier.htmlMinify(fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8'));
 
@@ -100,61 +103,43 @@ function processServerChannels(server, member, response) {
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         if (item.type == ChannelType.GuildCategory) {
           channelList += category_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.type == ChannelType.GuildForum) {
+          // Forum channels (#16)
+          channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.type == ChannelType.GuildAnnouncement || item.type == ChannelType.GuildNews) {
           // Use announcement template for announcement/news channels
-          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
+          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.type == ChannelType.GuildVoice) {
-          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+          // Voice channels - check if they're locked (#27)
+          const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
+          if (!canSendMessages) {
+            // Locked voice channel
+            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          } else {
+            channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+          }
         } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
-          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`);
-        } else {
-          // Determine the appropriate icon based on channel type and permissions
-          let channelIcon = "#"; // Default hashtag for text channels
+          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+        } else if (item.type == ChannelType.GuildStageVoice) {
+          // Stage channels
+          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name));
+        } else if (item.isTextBased()) {
+          // Text-based channels - check if locked or if it's a rules channel
           const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
           
-          // Check if this is a voice text channel
-          const isVoiceChannel = item.type == ChannelType.GuildVoice;
+          // Check if this is a rules channel by name
+          const isRulesChannel = item.name.toLowerCase().includes('rule');
           
-          // Check if channel is "locked" - has permission overwrites that restrict ViewChannel for @everyone
-          let isLocked = false;
-          if (item.permissionOverwrites && item.permissionOverwrites.cache.size > 0) {
-            const everyoneOverwrite = item.permissionOverwrites.cache.find(
-              overwrite => overwrite.id === item.guild.id // @everyone role has same ID as guild
-            );
-            if (everyoneOverwrite && everyoneOverwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
-              isLocked = true;
-            }
-          }
-          
-          // HTML/CSS padlock icon - universally supported
-          const padlockIcon = '<span style="display:inline-block;width:8px;height:10px;border:1px solid #999;border-radius:2px;position:relative;margin:0 2px;"><span style="position:absolute;top:-3px;left:1px;width:4px;height:4px;border:1px solid #999;border-bottom:none;border-radius:3px 3px 0 0;"></span></span>';
-          const smallPadlockIcon = '<span style="display:inline-block;width:6px;height:7px;border:1px solid #999;border-radius:1px;position:relative;margin:0 1px;vertical-align:super;font-size:70%;"><span style="position:absolute;top:-2px;left:1px;width:2px;height:3px;border:1px solid #999;border-bottom:none;border-radius:2px 2px 0 0;"></span></span>';
-          
-          if (!canSendMessages) {
-            // User cannot send messages - use padlock icon instead of hashtag/voice icon
-            channelIcon = padlockIcon;
+          if (isRulesChannel) {
+            channelList += rules_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          } else if (!canSendMessages) {
+            // Locked channel (#12)
+            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           } else {
-            // User can send messages
-            if (isVoiceChannel) {
-              // Voice channel with send permission - using Unicode speaker character
-              channelIcon = "&#128264;"; // Speaker with sound waves (more universal than emoji)
-              if (isLocked) {
-                // Show small padlock for locked voice channel
-                channelIcon += smallPadlockIcon;
-              }
-            } else {
-              // Text channel with send permission
-              if (isLocked) {
-                // Show hashtag with small padlock for locked text channel
-                channelIcon = '#' + smallPadlockIcon;
-              }
-            }
-          }
-          
-          channelList += text_channel_template
-            .replace("{$CHANNEL_NAME}", escape(item.name))
-            .replace("{$CHANNEL_LINK}", `../channels/${item.id}#end`)
-            .replace("{$CHANNEL_ICON}", channelIcon);
+            // Regular text channel
+            channelList += text_channel_template
+              .replace("{$CHANNEL_NAME}", escape(item.name))
+              .replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         }
       }
     });
