@@ -107,19 +107,31 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
         let processedmessage = query.message;
         const regex = /@([^#]{2,32}#\d{4})/g;
+        
+        // Collect all mentions first to preserve order and avoid position shifting
+        const mentions = [];
         let m;
-        do {
-          m = regex.exec(processedmessage);
-          if (m) {
-            let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === m[1]);
-            if (!mentioneduser) {
-              mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
-            }
-            if (mentioneduser) {
-              processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
-            }
+        while ((m = regex.exec(processedmessage)) !== null) {
+          mentions.push({
+            fullMatch: m[0],
+            tag: m[1],
+            index: m.index
+          });
+        }
+        
+        // Process mentions in reverse order to avoid position shifting issues
+        for (let i = mentions.length - 1; i >= 0; i--) {
+          const mention = mentions[i];
+          let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === mention.tag);
+          if (!mentioneduser) {
+            mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === mention.tag);
           }
-        } while (m);
+          if (mentioneduser) {
+            processedmessage = processedmessage.substring(0, mention.index) + 
+                              `<@${mentioneduser.id}>` + 
+                              processedmessage.substring(mention.index + mention.fullMatch.length);
+          }
+        }
 
         // Handle reply if reply_message_id is present
         if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
