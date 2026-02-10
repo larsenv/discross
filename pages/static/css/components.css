@@ -28,8 +28,9 @@ body {
 #wrapper { width: 100%; }
 
 /* Typography */
-h1, h2 { margin: 24px 0 12px 0; font-size: 0.88em; font-weight: 600; }
-h3 { margin: 20px 0 10px 0; font-size: 0.75em; font-weight: 600; }
+h1 { margin: 24px 0 12px 0; font-size: 1.6em; font-weight: 600; }
+h2 { margin: 22px 0 11px 0; font-size: 1.3em; font-weight: 600; }
+h3 { margin: 20px 0 10px 0; font-size: 1em; font-weight: 600; }
 p, ul { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
 
 /* FIX: Scope UL padding to message content only so reactions aren't indented */
