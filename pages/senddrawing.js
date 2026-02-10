@@ -91,7 +91,8 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         const base64Data = parsedurl.drawinginput;
 
         // Validate base64 data format with strict regex
-        if (!/^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(base64Data)) {
+        if (!base64Data || !/^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(base64Data)) {
+          console.error('Invalid drawing data received:', base64Data ? base64Data.substring(0, 100) : 'null/undefined');
           res.writeHead(400, { "Content-Type": "text/plain" });
           res.write("Invalid image data format");
           res.end();
@@ -100,6 +101,16 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
         // Remove the data URL prefix
         const base64Image = base64Data.split(';base64,').pop();
+        
+        // Validate base64 string is not empty
+        if (!base64Image || base64Image.length < 10) {
+          console.error('Base64 image data is empty or too short');
+          res.writeHead(400, { "Content-Type": "text/plain" });
+          res.write("Empty image data");
+          res.end();
+          return;
+        }
+        
         const imageBuffer = Buffer.from(base64Image, 'base64');
 
         let messageCont = "";

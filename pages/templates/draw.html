@@ -629,17 +629,16 @@
             .homepage, .home, #home { padding: 12px; }
             .chat, .chat-container { padding: 12px; }
             
-            /* Account for hamburger menu (24px icon + 16px left margin + 18px spacing = 58px) */
             #toolbar-container {
-                width: calc(100% - 66px);
-                margin: 8px 8px 5px 58px;
+                width: calc(100% - 16px);
+                margin: 8px 8px 5px 8px;
                 padding: 8px 5px;
                 box-sizing: border-box;
             }
         
             #canvas-wrapper {
-                width: calc(100% - 66px);
-                margin: 0 8px 20px 58px;
+                width: calc(100% - 16px);
+                margin: 0 8px 20px 8px;
             }
         
             canvas { width: 100%; }
@@ -803,18 +802,17 @@
             }
         }
         
-        // Initialize canvas background - call immediately or after DOM loads
+        // Initialize canvas background - call immediately since script is at end of body
         function initCanvasBackground() {
-            ctx.fillStyle = getCanvasBackgroundColor();
+            var bgColor = getCanvasBackgroundColor();
+            console.log('Initializing canvas with background:', bgColor, 'Theme classes:', document.body.className);
+            ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = currColor;
         }
         
-        if (document.readyState === 'loading') {
-            window.addEventListener('DOMContentLoaded', initCanvasBackground);
-        } else {
-            initCanvasBackground();
-        }
+        // Call immediately since this script is at the end of the body
+        initCanvasBackground();
 
         // --- COORDINATE SYSTEM ---
         function getPos(e) {
@@ -946,6 +944,13 @@
             var inputField = document.getElementById('drawinginput');
             var form = document.getElementById('sendform');
             var data = canvas.toDataURL("image/png");
+            console.log('Canvas data URL length:', data.length, 'starts with:', data.substring(0, 50));
+            
+            if (!data || data.length < 100) {
+                alert('Canvas appears to be empty. Please draw something first.');
+                return;
+            }
+            
             inputField.value = data;
             form.submit();
         }
