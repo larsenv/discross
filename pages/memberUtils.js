@@ -61,7 +61,7 @@ function getMemberColor(member, theme) {
     }
   };
   
-  // Check if member exists and has displayHexColor
+  // Check if member exists
   if (!member) {
     return getDefaultColor();
   }
