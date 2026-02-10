@@ -26,9 +26,29 @@
       background: #5865f2 !important;
       color: white !important;
     }
+    
+    .warning-box {
+      background: #5865f2;
+      border: 2px solid #4752c4;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 16px 0;
+      text-align: center;
+    }
+    
+    /* AMOLED theme warning box */
+    .amoled-theme .warning-box {
+      background: #5865f2 !important;
+      border-color: #4752c4 !important;
+    }
+    
+    /* White button in warning box */
+    .warning-box .discross-button {
+      background: #ffffff !important;
+      color: #5865f2 !important;
+    }
 </style>
-<div
-  style="background: #5865f2; border: 2px solid #4752c4; border-radius: 8px; padding: 20px; margin: 16px 0; text-align: center;">
+<div class="warning-box">
   <font face="'rodin', Arial, Helvetica, sans-serif" color="#ffffff">
     <font size="5"><b>⚠ Server List Needs Update</b></font>
     <br /><br />
@@ -38,6 +58,7 @@
       onclick="window.location.href='https://discord.com/oauth2/authorize?client_id=968999890640338955&response_type=token&redirect_uri=https%3A%2F%2Fdiscross.net%2Fdiscord.html&scope=identify+guilds&prompt=none'">
       Update Server List
     </button>
+    <br />
     <font size="2" style="color: rgba(255, 255, 255, 0.8);">
       This will sync your current Discord servers with Discross (this requires a modern browser)
     </font>
