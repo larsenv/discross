@@ -81,11 +81,13 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezon
     // Process embed title
     let titleHtml = '';
     if (embed.title) {
+      const renderedTitle = renderDiscordMarkdown(embed.title);
+      const titleWithEmoji = processEmojiInHTML(renderedTitle, imagesCookie, animationsCookie);
       titleHtml = `<div style="font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">`;
       if (embed.url) {
-        titleHtml += `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${escape(embed.title)}</a>`;
+        titleHtml += `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${titleWithEmoji}</a>`;
       } else {
-        titleHtml += escape(embed.title);
+        titleHtml += titleWithEmoji;
       }
       titleHtml += '</div>';
     }
@@ -108,7 +110,9 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezon
       embed.fields.forEach(field => {
         const fieldStyle = field.inline ? 'grid-column: span 1;' : 'grid-column: 1 / -1;';
         fieldsHtml += `<div style="${fieldStyle}">`;
-        fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">${escape(field.name)}</div>`;
+        const renderedName = renderDiscordMarkdown(field.name);
+        const nameWithEmoji = processEmojiInHTML(renderedName, imagesCookie, animationsCookie);
+        fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">${nameWithEmoji}</div>`;
         const renderedValue = renderDiscordMarkdown(field.value);
         const valueWithEmoji = processEmojiInHTML(renderedValue, imagesCookie, animationsCookie);
         fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">${valueWithEmoji}</div>`;
