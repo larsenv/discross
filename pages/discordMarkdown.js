@@ -206,9 +206,11 @@ function renderDiscordMarkdown(text) {
           const rendered = md.renderInline(content); 
           // Use table-based spoiler for Wii Internet Channel compatibility
           // The show() function in the template files reveals the spoiler by removing background and showing text
-          return '<table cellpadding="0" cellspacing="0" style="display:inline-table;background:black;vertical-align:bottom" onclick="show(this);event.stopPropagation();return false">' +
-                 '<tbody><tr><td>' +
-                 '<font face="sans-serif" style="visibility:hidden">' + rendered + '</font>' +
+          // Fix: Remove bottom gap by setting line-height and vertical-align to middle
+          // Fix: Use color #808080 for amoled theme visibility instead of pure black
+          return '<table cellpadding="0" cellspacing="0" style="display:inline-table;background:#808080;vertical-align:middle;line-height:1" onclick="show(this);event.stopPropagation();return false">' +
+                 '<tbody><tr><td style="line-height:1">' +
+                 '<font face="sans-serif" style="visibility:hidden;line-height:1">' + rendered + '</font>' +
                  '</td></tr></tbody></table>';
       });
 
