@@ -43,19 +43,31 @@ function getDisplayName(member, author) {
 }
 
 /**
- * Get the member's highest role color or default to white
+ * Get the member's highest role color or default to theme-appropriate color
  * 
  * @param {Object} member - Discord GuildMember object (may be null)
+ * @param {string|number} theme - Theme value: 0=dark, 1=light, 2=amoled, or undefined for dark
  * @returns {string} Hex color string (e.g., "#ffffff")
  */
-function getMemberColor(member) {
+function getMemberColor(member, theme) {
+  // Determine default color based on theme
+  const getDefaultColor = () => {
+    if (theme == 1) {
+      return "#060607"; // Light theme: dark text
+    } else if (theme == 2) {
+      return "#ffffff"; // AMOLED theme: white text
+    } else {
+      return "#dddddd"; // Dark theme (default): light gray text
+    }
+  };
+  
   if (!member || !member.roles || !member.roles.highest) {
-    return "#ffffff"; // Default white color
+    return getDefaultColor();
   }
   
   const roleColor = member.roles.highest.color;
   if (roleColor === 0) {
-    return "#ffffff"; // Default role has color 0, use white
+    return getDefaultColor(); // Default role has color 0, use theme default
   }
   
   // Convert Discord color integer to hex
