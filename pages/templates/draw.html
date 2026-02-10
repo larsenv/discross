@@ -766,7 +766,7 @@
                                 <td style="padding: 0 8px 0 0;">
                                     <button type="button"
                                         style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; display: block; width: 82px;" 
-                                        onclick="prepareAndSend(event)" onmouseover="this.style.background='#4752c4'"
+                                        onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
                                         onmouseout="this.style.background='#5865f2'">Send</button>
                                 </td>
                             </tr>
@@ -803,12 +803,18 @@
             }
         }
         
-        // Initialize canvas background after page loads to ensure theme is applied
-        window.addEventListener('DOMContentLoaded', function() {
+        // Initialize canvas background - call immediately or after DOM loads
+        function initCanvasBackground() {
             ctx.fillStyle = getCanvasBackgroundColor();
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = currColor;
-        });
+        }
+        
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', initCanvasBackground);
+        } else {
+            initCanvasBackground();
+        }
 
         // --- COORDINATE SYSTEM ---
         function getPos(e) {
@@ -936,8 +942,7 @@
         }
 
         // --- SEND LOGIC ---
-        function prepareAndSend(event) {
-            if (event) event.preventDefault(); // Prevent default form submission
+        function prepareAndSend() {
             var inputField = document.getElementById('drawinginput');
             var form = document.getElementById('sendform');
             var data = canvas.toDataURL("image/png");

@@ -90,10 +90,10 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         await webhook.edit({ channel: channel });
         const base64Data = parsedurl.drawinginput;
 
-        // Validate base64 data format
-        if (!base64Data.includes('data:image') || !base64Data.includes('base64,')) {
+        // Validate base64 data format with strict regex
+        if (!/^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(base64Data)) {
           res.writeHead(400, { "Content-Type": "text/plain" });
-          res.write("Invalid image data");
+          res.write("Invalid image data format");
           res.end();
           return;
         }
