@@ -3,7 +3,7 @@ const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
 const { Buffer } = require('buffer');
-const formidable = require('formidable');
+const { formidable } = require('formidable');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -85,7 +85,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
           const message = await webhook.send({
             content: cleanMessage || undefined,
             username: member.displayName || member.user.tag,
-            avatarURL: await member.user.avatarURL(),
+            avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
             files: [{
               attachment: file.filepath,
               name: file.originalFilename || 'file'

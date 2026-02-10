@@ -280,7 +280,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
         // Detect "Jumbo" Emoji status (<= 29 emojis and no other text)
         let isJumbo = false;
-        if (imagesCookie === "1") {
+        if (imagesCookie === 1) {
             // Check raw content for "emoji only" status
             const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
             const customMatches = item.content.match(customEmojiRegex) || [];
@@ -298,7 +298,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         // Standard size 1.375em. Jumbo size 2.75em (200%).
         const emojiSize = isJumbo ? "2.75em" : "1.375em";
 
-        if (imagesCookie === "1") {
+        if (imagesCookie === 1) {
             // Process Unicode Emojis
             if (messagetext.match(emojiRegex)) {
                  const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
@@ -325,7 +325,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             }
 
             // Process Custom Emojis
-            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
             if (custom_emoji_matches.length > 0) {
                  custom_emoji_matches.forEach(match => {
                     const ext = match[2] ? "gif" : "png";
