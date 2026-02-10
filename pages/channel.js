@@ -138,7 +138,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       // Collect unique author IDs from messages to fetch members in batch
       const authorIds = new Set();
       messages.forEach(msg => {
-        if (msg.author && !msg.webhookId && !msg.author.bot) {
+        if (msg.author && msg.author.id && !msg.webhookId && !msg.author.bot) {
           authorIds.add(msg.author.id);
         }
       });
