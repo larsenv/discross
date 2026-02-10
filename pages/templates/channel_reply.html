@@ -740,6 +740,32 @@
             }
         }
 
+        /* 3DS and very small screens (320-400px width) */
+        @media (max-width: 400px) {
+            .send-button-input {
+                padding: 6px 12px !important;
+                font-size: 13px !important;
+                height: 36px !important;
+                line-height: 36px !important;
+            }
+            
+            /* Reduce left padding for menu button on small screens */
+            body > div#wrapper > div {
+                padding-left: 48px !important;
+            }
+            
+            /* Ensure the message form doesn't cover too much screen */
+            .message-form-container {
+                padding: 6px !important;
+            }
+            
+            /* Ensure scrolling works on 3DS */
+            body, html {
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
         @media (max-width: 768px) {
             .menu-button { top: 8px; left: 8px; }
         }
