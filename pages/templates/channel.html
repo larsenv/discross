@@ -795,8 +795,36 @@
             }
         }
 
-        /* Extra small screens like 3DS (320px wide) */
+        /* Extra small screens like 3DS (320px wide) - use simpler layout */
         @media (max-width: 400px) {
+            /* Remove flexbox for 3DS compatibility */
+            body, html {
+                height: 100%;
+                overflow: hidden;
+            }
+            
+            #wrapper > div:first-of-type {
+                height: 100%;
+                display: block !important; /* Override flex */
+                overflow-y: scroll !important;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 140px !important; /* Space for fixed input bar */
+            }
+            
+            #wrapper > div:first-of-type > div:first-child {
+                display: block !important; /* Override flex: 1 */
+                height: auto !important;
+                overflow-y: visible !important;
+            }
+            
+            .message-form-container {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                padding: 6px !important;
+            }
+            
             .send-button {
                 padding: 6px 8px !important;
                 min-height: 36px !important;
