@@ -793,22 +793,32 @@
         
         // Helper function to get canvas background color based on theme
         function getCanvasBackgroundColor() {
-            if (document.body.classList.contains('amoled-theme')) {
-                return "#000000"; // Black for AMOLED
-            } else if (document.body.classList.contains('light-theme')) {
-                return "#ffffff"; // White for light
+            var bodyClasses = document.body.className;
+            var bgColor;
+            
+            if (bodyClasses.indexOf('amoled-theme') !== -1) {
+                bgColor = "#000000"; // Black for AMOLED
+            } else if (bodyClasses.indexOf('light-theme') !== -1) {
+                bgColor = "#ffffff"; // White for light
             } else {
-                return "#303338"; // Dark grey for default dark theme
+                bgColor = "#303338"; // Dark grey for default dark theme
             }
+            
+            console.log('Canvas background detection:', {
+                bodyClasses: bodyClasses,
+                detectedColor: bgColor
+            });
+            
+            return bgColor;
         }
         
         // Initialize canvas background - call immediately since script is at end of body
         function initCanvasBackground() {
             var bgColor = getCanvasBackgroundColor();
-            console.log('Initializing canvas with background:', bgColor, 'Theme classes:', document.body.className);
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = currColor;
+            console.log('Canvas initialized with background color:', bgColor);
         }
         
         // Call immediately since this script is at the end of the body
