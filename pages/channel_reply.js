@@ -128,6 +128,26 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
       console.log("Processed valid channel reply request");
       const messages = await bot.getHistoryCached(chnl);
+      
+      // Collect unique author IDs from messages to fetch members in batch
+      const authorIds = new Set();
+      messages.forEach(msg => {
+        if (msg.author && !msg.webhookId && !msg.author.bot) {
+          authorIds.add(msg.author.id);
+        }
+      });
+      
+      // Fetch members in batch if not already in cache (one API call)
+      if (authorIds.size > 0) {
+        try {
+          console.log(`[channel_reply.js] Fetching ${authorIds.size} members for role colors...`);
+          await chnl.guild.members.fetch({ user: Array.from(authorIds), force: false });
+          console.log(`[channel_reply.js] Members fetched successfully`);
+        } catch (err) {
+          console.log(`[channel_reply.js] Error fetching members in batch:`, err.message);
+        }
+      }
+      
       let lastauthor = undefined;
       let lastmember = undefined;
       let lastdate = new Date('1995-12-17T03:24:00');
