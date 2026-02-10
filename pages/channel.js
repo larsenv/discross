@@ -618,11 +618,14 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // Try to get member data from message or guild cache
         // Don't do an async fetch to avoid performance impact
         lastmember = item.member;
+        console.log('[channel.js] Message author:', item.author.username, 'has item.member:', !!item.member);
         if (!lastmember && item.author && !item.webhookId) {
           // Try to get from guild member cache (no API call)
           try {
             lastmember = chnl.guild.members.cache.get(item.author.id) || null;
+            console.log('[channel.js] Fetched from guild cache:', !!lastmember);
           } catch (err) {
+            console.log('[channel.js] Error fetching from guild cache:', err.message);
             lastmember = null;
           }
         }

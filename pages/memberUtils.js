@@ -63,15 +63,26 @@ function getMemberColor(member, theme) {
   
   // Check if member exists
   if (!member) {
+    console.log('[getMemberColor] No member provided, using theme default');
     return getDefaultColor();
   }
+  
+  console.log('[getMemberColor] Member found:', {
+    id: member.id,
+    displayName: member.displayName,
+    displayHexColor: member.displayHexColor,
+    hasRoles: !!member.roles,
+    rolesCache: member.roles ? member.roles.cache.size : 0
+  });
   
   // Discord.js v14 provides displayHexColor directly on GuildMember
   // It returns the hex color of the highest role, or #000000 if none
   if (member.displayHexColor !== '#000000') {
+    console.log('[getMemberColor] Using role color:', member.displayHexColor);
     return member.displayHexColor;
   }
   
+  console.log('[getMemberColor] No role color (default #000000), using theme default');
   // Fallback to theme default if no role color or color is default
   return getDefaultColor();
 }
