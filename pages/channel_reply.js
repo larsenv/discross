@@ -174,20 +174,20 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
             
-            // Add ping indicator (@) if this is a reply with ping
-            const pingIndicator = (lastReply && lastReplyData.mentionsPing) ? ' <span style="color: #72767d;">@</span>' : '';
-            currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", pingIndicator);
-            
             // Add reply indicator (L-shaped line) if this is a reply (#26 - make inline)
             let replyIndicator = '';
             if (lastReply) {
+              // Add @ symbol at the beginning if this is a reply with ping
+              const atSymbol = lastReplyData.mentionsPing ? '<span style="color: #72767d;">@</span> ' : '';
               replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px;">' +
                 '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
                 '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
+                atSymbol +
                 '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(lastReplyData.author) + '</span>' +
                 '</div>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
+            currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", '');
 
             // Remove avatar URL processing since we removed avatars
             currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatDateWithTimezone(lastdate, clientTimezone));

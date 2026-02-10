@@ -14,7 +14,7 @@ body.light-theme,
 .light-theme #wrapper,
 .light-theme .content-padding, 
 .light-theme .scrollable-content {
-  background: #ffffff !important;
+  background: #f9f9f9 !important;
   color: #060607 !important;
 }
 
@@ -41,7 +41,7 @@ body.light-theme,
 }
 
 .light-theme .message:hover {
-  background: #f8f9f9 !important;
+  background: #f2f3f5 !important;
 }
 
 .light-theme .message-author {
@@ -53,12 +53,12 @@ body.light-theme,
 }
 
 .light-theme .messagecontent {
-  color: #2e3338 !important;
+  color: #060607 !important;
 }
 
 /* Message Input Area */
 .light-theme .message-form-container {
-  background: #ffffff !important;
+  background: #f9f9f9 !important;
   border-top-color: #e3e5e8 !important;
 }
 
@@ -104,7 +104,7 @@ body.light-theme,
 
 /* Emojis & Reactions */
 .light-theme #emoji {
-    background: #ffffff !important;
+    background: #f9f9f9 !important;
     border-color: #e3e5e8 !important;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }

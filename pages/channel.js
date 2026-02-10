@@ -180,20 +180,19 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
             
-            // Add ping indicator (@) if this is a reply with ping
-            const pingIndicator = (lastReply && lastReplyData.mentionsPing) ? ' <span style="color: #72767d;">@</span>' : '';
-            currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", pingIndicator);
-            
             // Add reply indicator (L-shaped line) if this is a reply (#5)
             let replyIndicator = '';
             if (lastReply) {
+              // Add @ symbol at the beginning if this is a reply with ping
+              const atSymbol = lastReplyData.mentionsPing ? '<span style="color: #72767d;">@</span> ' : '';
               replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
                 '<td style="width:2px;height:10px;background-color:#4e5058;border-radius:2px 0 0 2px;vertical-align:top"></td>' +
                 '<td style="width:12px;height:10px;vertical-align:bottom"><div style="height:2px;background-color:#4e5058;border-radius:0 0 0 2px"></div></td>' +
-                '<td style="padding-left:4px"><font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">Replying to ' + escape(lastReplyData.author) + '</font></td>' +
+                '<td style="padding-left:4px"><font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">' + atSymbol + 'Replying to ' + escape(lastReplyData.author) + '</font></td>' +
                 '</tr></table>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
+            currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", '');
 
             // Remove avatar URL processing since we removed avatars
             currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatDateWithTimezone(lastdate, clientTimezone));
