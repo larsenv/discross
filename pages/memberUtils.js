@@ -52,9 +52,9 @@ function getDisplayName(member, author) {
 function getMemberColor(member, theme) {
   // Determine default color based on theme
   const getDefaultColor = () => {
-    if (theme == 1) {
+    if (theme === 1 || theme === '1') {
       return "#060607"; // Light theme: dark text
-    } else if (theme == 2) {
+    } else if (theme === 2 || theme === '2') {
       return "#ffffff"; // AMOLED theme: white text
     } else {
       return "#dddddd"; // Dark theme (default): light gray text
