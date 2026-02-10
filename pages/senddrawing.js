@@ -50,7 +50,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       } else {
         parsedurl = urlQuery;
       }
-      if (parsedurl.drawinginput) {
+      if (parsedurl.drawinginput && parsedurl.drawinginput.trim() !== "") {
         // Check if bot is connected
         const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
         
@@ -89,6 +89,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         } while (m);
         await webhook.edit({ channel: channel });
         const base64Data = parsedurl.drawinginput;
+
+        // Validate base64 data format
+        if (!base64Data.includes('data:image') || !base64Data.includes('base64,')) {
+          res.writeHead(400, { "Content-Type": "text/plain" });
+          res.write("Invalid image data");
+          res.end();
+          return;
+        }
 
         // Remove the data URL prefix
         const base64Image = base64Data.split(';base64,').pop();
