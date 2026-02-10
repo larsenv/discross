@@ -469,6 +469,7 @@
             box-sizing: border-box;
         }
         
+        /* Default canvas background (dark theme) - overridden by theme classes below */
         canvas {
             background: #303338;
             cursor: crosshair;
@@ -628,6 +629,7 @@
             .homepage, .home, #home { padding: 12px; }
             .chat, .chat-container { padding: 12px; }
             
+            /* Account for hamburger menu (24px icon + 16px left margin + 18px spacing = 58px) */
             #toolbar-container {
                 width: calc(100% - 66px);
                 margin: 8px 8px 5px 58px;
