@@ -26,6 +26,18 @@
       background: #5865f2 !important;
       color: white !important;
     }
+
+    .server-select-text {
+      color: #dddddd;
+    }
+
+    .light-theme .server-select-text {
+      color: #060607 !important;
+    }
+
+    .amoled-theme .server-select-text {
+      color: #ffffff !important;
+    }
     
     .warning-box {
       background: #5865f2;
@@ -34,12 +46,6 @@
       padding: 20px;
       margin: 16px 0;
       text-align: center;
-    }
-    
-    /* AMOLED theme warning box */
-    .amoled-theme .warning-box {
-      background: #5865f2 !important;
-      border-color: #4752c4 !important;
     }
     
     /* White button in warning box */
@@ -65,11 +71,12 @@
     <br /><br />
   </font>
 </div>
-<button class="discross-button" href="/">Home</a>
+<a class="discross-button" href="/">Home</a>
 <br>
-<button class="discross-button" href="https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=536870912">Add Discross to your server</a>
+<a class="discross-button" href="https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=536870912">Add Discross to your server</a>
 <br>
 {$IMAGES_WARNING}
+<br>
 <form action="/toggleAnimations" method="post">
   <button class="discross-button" type="submit">
     Toggle Animations
