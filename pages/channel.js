@@ -56,9 +56,7 @@ function isContentEmpty(html) {
   if (!html || html.trim() === '') return true;
   
   // Check if there are any images, videos, or other media elements
-  if (/<img\s/i.test(html)) return false;
-  if (/<video\s/i.test(html)) return false;
-  if (/<audio\s/i.test(html)) return false;
+  if (/<(img|video|audio)\s/i.test(html)) return false;
   
   // Remove HTML tags and entities, then check if any text remains
   let text = html
