@@ -169,7 +169,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             
             // Use helper functions for proper nickname and color
             const displayName = getDisplayName(lastmember, lastauthor);
-            const authorColor = "#ffffff"; // Always use white - no member fetching needed
+            const authorColor = getMemberColor(lastmember);
             
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
