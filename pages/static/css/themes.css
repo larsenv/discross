@@ -44,8 +44,9 @@ body.light-theme,
   background: #f8f9f9 !important;
 }
 
+/* Removed !important to allow inline role colors to work */
 .light-theme .message-author {
-  color: #060607 !important;
+  color: #060607;
 }
 
 .light-theme .message-date {
