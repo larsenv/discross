@@ -615,8 +615,17 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         lastauthor = item.author;
-        // Use member data if present, but don't fetch - speeds up page load
-        lastmember = item.member || null;
+        // Try to get member data from message or guild cache
+        // Don't do an async fetch to avoid performance impact
+        lastmember = item.member;
+        if (!lastmember && item.author && !item.webhookId) {
+          // Try to get from guild member cache (no API call)
+          try {
+            lastmember = chnl.guild.members.cache.get(item.author.id) || null;
+          } catch (err) {
+            lastmember = null;
+          }
+        }
         lastdate = item.createdAt;
         currentmessage += messagetext;
         messageid = item.id;
