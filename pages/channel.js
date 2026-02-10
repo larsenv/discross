@@ -47,6 +47,20 @@ const FORWARDED_CONTENT_MAX_LENGTH = 100;
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
+}
+
+// Helper function to check if rendered HTML content is effectively empty
+function isContentEmpty(html) {
+  if (!html || html.trim() === '') return true;
+  
+  // Remove HTML tags and entities, then check if anything remains
+  let text = html
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/&[^;]+;/g, '') // Remove HTML entities
+    .replace(/\s+/g, '')     // Remove whitespace
+    .trim();
+  
+  return text.length === 0;
 };
 
 function formatFileSize(bytes) {
@@ -153,6 +167,12 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         if (lastauthor) { // Only consider the last message if this is not the first
           // If the last message is not going to be merged with this one, put it into the response
           if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
+
+            // Skip this message if the content is empty after rendering
+            if (isContentEmpty(currentmessage)) {
+              currentmessage = "";
+              return;
+            }
 
             // Choose template based on whether this is a forwarded message and if user is mentioned
             if (isForwarded && lastMentioned) {
