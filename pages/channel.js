@@ -50,6 +50,8 @@ function strReplace(string, needle, replacement) {
 }
 
 // Helper function to check if rendered HTML content is effectively empty
+// NOTE: This is NOT for sanitization - it only checks if content has visible text
+// The actual HTML content is already sanitized using escape-html before rendering
 function isContentEmpty(html) {
   if (!html || html.trim() === '') return true;
   
