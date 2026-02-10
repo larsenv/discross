@@ -148,7 +148,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
         const message = await webhook.send({
           content: processedmessage,
           username: member.displayName || member.user.tag,
-          avatarURL: await member.user.avatarURL(),
+          avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
           disableEveryone: true,
         });
 

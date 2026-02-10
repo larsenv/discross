@@ -286,7 +286,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         
         // Detect "Jumbo" Emoji status (<= 29 emojis and no other text)
         let isJumbo = false;
-        if (imagesCookie === "1") {
+        if (imagesCookie === 1) {
             // Check raw content for "emoji only" status
             const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
             // Match custom emojis and unicode emojis
@@ -306,7 +306,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // Note: 'em' is supported in IE3+ (1996), so it is very safe for "older browsers".
         const emojiSize = isJumbo ? "2.75em" : "1.375em";
 
-        if (imagesCookie === "1") {
+        if (imagesCookie === 1) {
             // Process Unicode Emojis
             if (messagetext.match(emojiRegex)) {
                  const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
@@ -336,7 +336,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
             // Process Custom Emojis
             // Regex detects HTML escaped format &lt;:name:id&gt; which usually comes from renderDiscordMarkdown if not processed
-            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];
+            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
             if (custom_emoji_matches.length > 0) {
                  custom_emoji_matches.forEach(match => {
                     // Convert to gif if animated (match[2] is 'a'), otherwise png. Or force gif for simplicity if proxy supports it.

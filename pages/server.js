@@ -263,12 +263,13 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       response = response.replace("{$DISCORD_NAME}", "");
     }
 
-    const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+    const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+    const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;
 
     // Handle theme and images preferences
     response = applyUserPreferences(response, req);
 
-    if (response.match?.(emojiRegex) && imagesCookie === "1") {
+    if (response.match?.(emojiRegex) && imagesCookie === 1) {
       const unicode_emoji_matches = [...response.match?.(emojiRegex)]
       unicode_emoji_matches.forEach(match => {
         const points = [];
@@ -292,8 +293,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       });
     }
 
-    const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;?/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-    if (custom_emoji_matches[0] && imagesCookie === "1") custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+    const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
+    if (custom_emoji_matches[0] && imagesCookie === 1) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
       response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
     })
     
@@ -348,16 +349,14 @@ function createServerHTML(server, member, imagesCookie) {
   let serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
   serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
   
-  // When images are disabled, strip emoji from server name
+  // Always strip emoji from server name to prevent twemoji rendering inside the name text
   let serverName = server.name;
-  if (imagesCookie != 1) {
-    // Remove custom emoji <:name:id> and <a:name:id>
-    serverName = serverName.replace(/<a?:[^:]+:\d+>/g, '');
-    // Remove unicode emoji
-    const emojiRegex = require("./twemojiRegex").regex;
-    serverName = serverName.replace(emojiRegex, '');
-    serverName = serverName.trim();
-  }
+  // Remove custom emoji <:name:id> and <a:name:id>
+  serverName = serverName.replace(/<a?:[^:]+:\d+>/g, '');
+  // Remove unicode emoji
+  const emojiRegex = require("./twemojiRegex").regex;
+  serverName = serverName.replace(emojiRegex, '');
+  serverName = serverName.trim();
   
   serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", escape(serverName));
   return serverHTML;
