@@ -764,9 +764,9 @@
                                         placeholder="Message #{$CHANNEL_NAME}">
                                 </td>
                                 <td style="padding: 0 8px 0 0;">
-                                    <button type="submit"
+                                    <button type="button"
                                         style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; display: block; width: 82px;" 
-                                        onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'"
+                                        onclick="prepareAndSend(event)" onmouseover="this.style.background='#4752c4'"
                                         onmouseout="this.style.background='#5865f2'">Send</button>
                                 </td>
                             </tr>
@@ -803,10 +803,12 @@
             }
         }
         
-        // Fill canvas with theme-appropriate background
-        ctx.fillStyle = getCanvasBackgroundColor();
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = currColor;
+        // Initialize canvas background after page loads to ensure theme is applied
+        window.addEventListener('DOMContentLoaded', function() {
+            ctx.fillStyle = getCanvasBackgroundColor();
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = currColor;
+        });
 
         // --- COORDINATE SYSTEM ---
         function getPos(e) {
@@ -934,10 +936,10 @@
         }
 
         // --- SEND LOGIC ---
-        function prepareAndSend() {
+        function prepareAndSend(event) {
+            if (event) event.preventDefault(); // Prevent default form submission
             var inputField = document.getElementById('drawinginput');
             var form = document.getElementById('sendform');
-            var btn = document.getElementById('btn-send');
             var data = canvas.toDataURL("image/png");
             inputField.value = data;
             form.submit();
