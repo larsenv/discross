@@ -83,6 +83,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   
   const animationsCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('animations='))?.split('=')[1];
   const animationsCookie = animationsCookieValue !== undefined ? parseInt(animationsCookieValue) : 1;  // Default to 1 (on)
+  
+  // Get theme cookie early to use for role colors
+  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
     
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
@@ -175,7 +178,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             
             // Use helper functions for proper nickname and color
             const displayName = getDisplayName(lastmember, lastauthor);
-            const authorColor = getMemberColor(lastmember);
+            const authorColor = getMemberColor(lastmember, whiteThemeCookie);
             
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
@@ -638,7 +641,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       let template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random())
-      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
         
       // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
       if (whiteThemeCookie == 1) {
