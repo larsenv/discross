@@ -49,21 +49,17 @@ function getDisplayName(member, author) {
  * @returns {string} Hex color string (e.g., "#ffffff")
  */
 function getMemberColor(member) {
-  return "#ffffff";
   if (!member || !member.roles || !member.roles.highest) {
-    console.debug('getMemberColor: No member or roles, returning white');
     return "#ffffff"; // Default white color
   }
   
   const roleColor = member.roles.highest.color;
   if (roleColor === 0) {
-    console.debug('getMemberColor: Role color is 0 (default), returning white');
     return "#ffffff"; // Default role has color 0, use white
   }
   
   // Convert Discord color integer to hex
   const hexColor = `#${roleColor.toString(16).padStart(6, '0')}`;
-  console.debug(`getMemberColor: Converting color ${roleColor} to ${hexColor}`);
   return hexColor;
 }
 
@@ -108,9 +104,8 @@ async function ensureMemberData(message, guild, cache = null) {
     }
     return member;
   } catch (error) {
-    // Silently return null - member not found (#11)
-    // Since we're not using role colors (getMemberColor always returns white),
-    // failed member fetches are not critical
+    // Silently return null - member not found
+    // When member fetch fails, getMemberColor will use default white color
     return null;
   }
 }
