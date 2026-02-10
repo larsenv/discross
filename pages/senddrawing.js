@@ -50,7 +50,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       } else {
         parsedurl = urlQuery;
       }
-      if (parsedurl.message !== "") {
+      if (parsedurl.drawinginput) {
         // Check if bot is connected
         const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
         
