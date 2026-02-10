@@ -68,7 +68,7 @@ function getMemberColor(member, theme) {
   
   // Discord.js v14 provides displayHexColor directly on GuildMember
   // It returns the hex color of the highest role, or #000000 if none
-  if (member.displayHexColor && member.displayHexColor !== '#000000') {
+  if (member.displayHexColor !== '#000000') {
     return member.displayHexColor;
   }
   
