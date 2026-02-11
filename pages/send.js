@@ -113,12 +113,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
           if (m) {
             let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === m[1]);
             if (!mentioneduser) {
-              try {
-                mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
-              } catch (err) {
-                console.error("Failed to fetch members for mention:", err);
-                // Continue without resolving the mention
-              }
+              mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
             }
             if (mentioneduser) {
               processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
