@@ -47,6 +47,10 @@ var drawpage = require('./pages/draw.js')
 var senddrawing = require('./pages/senddrawing.js')
 var { handleServerIcon } = require('./pages/serverIconHandler.js')
 
+// Constants for imageProxy path lengths
+const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
+const STICKER_PROXY_PREFIX_LENGTH = '/imageProxy/sticker/'.length; // 20
+
 
 bot.startBot();
 
@@ -277,12 +281,12 @@ server.on('request', async (req, res) => {
       // Handle different types of image proxy requests
       if (args[2] === 'external') {
         // External URLs are base64-encoded in args[3]
-        const encodedUrl = parsedurl.path.slice(21); // Remove '/imageProxy/external/'
+        const encodedUrl = parsedurl.path.slice(EXTERNAL_PROXY_PREFIX_LENGTH);
         const fullImageUrl = Buffer.from(encodedUrl, 'base64').toString();
         await imageProxy(res, fullImageUrl);
       } else if (args[2] === 'sticker') {
         // Sticker URLs: /imageProxy/sticker/{stickerId}.{format}
-        const stickerPath = parsedurl.path.slice(20); // Remove '/imageProxy/sticker/'
+        const stickerPath = parsedurl.path.slice(STICKER_PROXY_PREFIX_LENGTH);
         const fullImageUrl = `https://cdn.discordapp.com/stickers/${stickerPath}`;
         await imageProxy(res, fullImageUrl);
       } else {
