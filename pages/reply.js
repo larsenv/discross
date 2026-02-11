@@ -63,16 +63,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
           return;
         }
         
-        let member;
-        try {
-          member = await channel.guild.members.fetch(discordID);
-        } catch (err) {
-          console.error("Failed to fetch member:", err);
-          res.writeHead(500, { "Content-Type": "text/plain" });
-          res.write("Failed to verify user permissions. Please ensure you have access to this channel or try again later.");
-          res.end();
-          return;
-        }
+        const member = await channel.guild.members.fetch(discordID);
 
         if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
           res.write("You don't have permission to do that!");
@@ -90,12 +81,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
           if (m) {
             let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === m[1]);
             if (!mentioneduser) {
-              try {
-                mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
-              } catch (err) {
-                console.error("Failed to fetch members for mention:", err);
-                // Continue without resolving the mention
-              }
+              mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
             }
             if (mentioneduser) {
               processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
