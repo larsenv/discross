@@ -1,5 +1,6 @@
 const fs = require('fs');
 const url = require('url');
+const https = require('https');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
@@ -9,6 +10,55 @@ const { formidable } = require('formidable');
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 };
+
+// Upload file to transfer.whalebone.io and return the URL
+async function uploadToTransfer(filePath, filename) {
+  return new Promise((resolve, reject) => {
+    const fileStream = fs.createReadStream(filePath);
+    const fileStats = fs.statSync(filePath);
+    
+    const options = {
+      hostname: 'transfer.whalebone.io',
+      port: 443,
+      path: `/${encodeURIComponent(filename)}`,
+      method: 'PUT',
+      headers: {
+        'Content-Length': fileStats.size
+      },
+      // Set a high timeout for large files (15 minutes)
+      timeout: 900000
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      res.on('end', () => {
+        if (res.statusCode === 200 || res.statusCode === 201) {
+          // The response should contain the URL to download the file
+          const transferUrl = data.trim();
+          resolve(transferUrl);
+        } else {
+          reject(new Error(`Upload failed with status ${res.statusCode}: ${data}`));
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      reject(err);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Upload timeout - file may be too large'));
+    });
+
+    fileStream.pipe(req);
+  });
+}
 
 async function getOrCreateWebhook(channel, guildID) {
   try {
@@ -44,7 +94,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
         return;
       }
 
-      const form = formidable({ maxFileSize: 8 * 1024 * 1024 });
+      const form = formidable({ maxFileSize: 249 * 1024 * 1024 }); // 249 MB limit
 
       // Wrap form.parse in a Promise so the Lock actually waits for the upload to finish
       await new Promise((resolve, reject) => {
@@ -57,17 +107,6 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             return;
           }
 
-          const channel = await bot.client.channels.fetch(channelId);
-          let member;
-          try {
-            member = await channel.guild.members.fetch(discordID);
-          } catch (err) {
-            console.error("Failed to fetch member:", err);
-            res.writeHead(500, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: "Failed to verify user permissions. Please ensure you have access to this channel." }));
-            return;
-          }
-          
           try {
             const channelId = Array.isArray(fields.channel) ? fields.channel[0] : fields.channel;
             const messageText = Array.isArray(fields.message) ? fields.message[0] : fields.message;
@@ -103,15 +142,27 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
 
             let cleanMessage = messageText ? messageText.replace(/\[Uploading:.*?\]/g, '').trim() : '';
 
-            // VITAL FIX: Use fs.createReadStream
+            // Upload file to transfer.whalebone.io
+            let transferUrl;
+            try {
+              transferUrl = await uploadToTransfer(filePath, file.originalFilename || file.name || 'uploaded_file');
+            } catch (uploadError) {
+              console.error("Error uploading to transfer.whalebone.io:", uploadError);
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ success: false, error: "Failed to upload file: " + uploadError.message }));
+              resolve();
+              return;
+            }
+
+            // Send message with the transfer.whalebone.io URL
+            const finalMessage = cleanMessage 
+              ? `${cleanMessage}\n\n📎 File: ${file.originalFilename || file.name || 'uploaded_file'}\n${transferUrl}`
+              : `📎 File: ${file.originalFilename || file.name || 'uploaded_file'}\n${transferUrl}`;
+
             const message = await webhook.send({
-              content: cleanMessage || undefined,
+              content: finalMessage,
               username: member.displayName || member.user.tag,
-              avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-              files: [{
-                attachment: fs.createReadStream(filePath), 
-                name: file.originalFilename || file.name || 'uploaded_file'
-              }]
+              avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL
             });
 
             bot.addToCache(message);
