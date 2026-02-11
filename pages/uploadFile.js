@@ -92,13 +92,15 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
 
             let cleanMessage = messageText ? messageText.replace(/\[Uploading:.*?\]/g, '').trim() : '';
 
-            // VITAL FIX: Use fs.createReadStream
+            // Read file into buffer to prevent AbortError from async stream cleanup
+            const fileBuffer = fs.readFileSync(filePath);
+            
             const message = await webhook.send({
               content: cleanMessage || undefined,
               username: member.displayName || member.user.tag,
               avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
               files: [{
-                attachment: fs.createReadStream(filePath), 
+                attachment: fileBuffer, 
                 name: file.originalFilename || file.name || 'uploaded_file'
               }]
             });
