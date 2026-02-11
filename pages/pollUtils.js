@@ -1,10 +1,8 @@
 const fs = require('fs');
-const HTMLMinifier = require('@bhavingajjar/html-minify');
-const minifier = new HTMLMinifier();
 const escape = require('escape-html');
 
-const poll_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/poll.html', 'utf-8'));
-const poll_answer_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/poll_answer.html', 'utf-8'));
+const poll_template = fs.readFileSync('pages/templates/message/poll.html', 'utf-8');
+const poll_answer_template = fs.readFileSync('pages/templates/message/poll_answer.html', 'utf-8');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
