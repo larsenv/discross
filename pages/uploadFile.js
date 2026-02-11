@@ -1,3 +1,4 @@
+const fs = require('fs');
 const url = require('url');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
@@ -35,34 +36,24 @@ const lock = new AsyncLock();
 exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
   try {
     await lock.acquire(discordID, async () => {
-      // Check if bot is connected
       const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-      
+
       if (!clientIsReady) {
         res.writeHead(503, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: "Bot isn't connected" }));
         return;
       }
 
-      // Parse multipart form data
-      const form = formidable({ maxFileSize: 8 * 1024 * 1024 }); // 8MB limit
-      
-      form.parse(req, async (err, fields, files) => {
-        if (err) {
-          console.error("Error parsing form:", err);
-          res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: false, error: "Failed to parse upload" }));
-          return;
-        }
+      const form = formidable({ maxFileSize: 8 * 1024 * 1024 });
 
-        try {
-          const channelId = Array.isArray(fields.channel) ? fields.channel[0] : fields.channel;
-          const messageText = Array.isArray(fields.message) ? fields.message[0] : fields.message;
-          const file = Array.isArray(files.file) ? files.file[0] : files.file;
-
-          if (!file) {
+      // Wrap form.parse in a Promise so the Lock actually waits for the upload to finish
+      await new Promise((resolve, reject) => {
+        form.parse(req, async (err, fields, files) => {
+          if (err) {
+            console.error("Error parsing form:", err);
             res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: "No file provided" }));
+            res.end(JSON.stringify({ success: false, error: "Failed to parse upload" }));
+            resolve(); // Resolve lock
             return;
           }
 
@@ -76,44 +67,76 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             res.end(JSON.stringify({ success: false, error: "Failed to verify user permissions. Please ensure you have access to this channel." }));
             return;
           }
-
-          if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
-            res.writeHead(403, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: "No permission to send messages" }));
-            return;
-          }
-
-          const webhook = await getOrCreateWebhook(channel, channel.guild.id);
-          await webhook.edit({ channel: channel });
-
-          // Clean message text (remove uploading placeholder)
-          let cleanMessage = messageText ? messageText.replace(/\[Uploading:.*?\]/g, '').trim() : '';
-
-          // Send via webhook
-          const message = await webhook.send({
-            content: cleanMessage || undefined,
-            username: member.displayName || member.user.tag,
-            avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-            files: [{
-              attachment: file.filepath,
-              name: file.originalFilename || 'file'
-            }]
-          });
           
-          bot.addToCache(message);
+          try {
+            const channelId = Array.isArray(fields.channel) ? fields.channel[0] : fields.channel;
+            const messageText = Array.isArray(fields.message) ? fields.message[0] : fields.message;
+            
+            // Get the file object safely
+            const fileObj = files.file || Object.values(files)[0]; // Fallback if input name isn't 'file'
+            const file = Array.isArray(fileObj) ? fileObj[0] : fileObj;
 
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: true, messageId: message.id }));
-        } catch (error) {
-          console.error("Error uploading file:", error);
-          res.writeHead(500, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: false, error: error.message }));
-        }
+            if (!file) {
+              res.writeHead(400, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ success: false, error: "No file provided" }));
+              resolve();
+              return;
+            }
+
+            // SUPPORT BOTH VERSIONS OF FORMIDABLE (v1 uses .path, v2/v3 uses .filepath)
+            const filePath = file.filepath || file.path;
+
+            const channel = await bot.client.channels.fetch(channelId);
+            const member = await channel.guild.members.fetch(discordID);
+
+            if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
+              res.writeHead(403, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ success: false, error: "No permission to send messages" }));
+              resolve();
+              return;
+            }
+
+            const webhook = await getOrCreateWebhook(channel, channel.guild.id);
+            if (webhook.channelId !== channel.id) {
+                 await webhook.edit({ channel: channel.id });
+            }
+
+            let cleanMessage = messageText ? messageText.replace(/\[Uploading:.*?\]/g, '').trim() : '';
+
+            // VITAL FIX: Use fs.createReadStream
+            const message = await webhook.send({
+              content: cleanMessage || undefined,
+              username: member.displayName || member.user.tag,
+              avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
+              files: [{
+                attachment: fs.createReadStream(filePath), 
+                name: file.originalFilename || file.name || 'uploaded_file'
+              }]
+            });
+
+            bot.addToCache(message);
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: true, messageId: message.id }));
+            resolve();
+
+          } catch (error) {
+            console.error("Error uploading file:", error);
+            // Only send headers if not already sent
+            if (!res.headersSent) {
+                res.writeHead(500, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ success: false, error: error.message }));
+            }
+            resolve();
+          }
+        });
       });
     });
   } catch (err) {
     console.error("Error in uploadFile:", err);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: false, error: err.message }));
+    if (!res.headersSent) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+    }
   }
 };
