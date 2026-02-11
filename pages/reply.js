@@ -69,7 +69,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         } catch (err) {
           console.error("Failed to fetch member:", err);
           res.writeHead(500, { "Content-Type": "text/plain" });
-          res.write("Unable to fetch user information. Please try again later.");
+          res.write("Failed to verify user permissions. Please ensure you have access to this channel or try again later.");
           res.end();
           return;
         }

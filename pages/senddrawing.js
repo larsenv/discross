@@ -68,7 +68,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         } catch (err) {
           console.error("Failed to fetch member:", err);
           res.writeHead(500, { "Content-Type": "text/html" });
-          res.write("Unable to fetch user information. Please try again later.");
+          res.write("Failed to verify user permissions. Please ensure you have access to this channel or try again later.");
           res.end();
           return;
         }

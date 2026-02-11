@@ -73,7 +73,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
           } catch (err) {
             console.error("Failed to fetch member:", err);
             res.writeHead(500, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: "Unable to fetch user information" }));
+            res.end(JSON.stringify({ success: false, error: "Failed to verify user permissions. Please ensure you have access to this channel." }));
             return;
           }
 
