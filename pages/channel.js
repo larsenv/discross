@@ -503,7 +503,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
         
         // Process user mentions
-        if (item.mentions) {
+        if (item.mentions && item.mentions.members) {
           item.mentions.members.forEach(function (user) {
             if (user) {
               messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
