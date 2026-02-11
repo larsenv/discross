@@ -159,6 +159,12 @@ pre code { background: none; border: none; padding: 0; }
   border-radius: 3px;
 }
 
+/* Light theme mention styles */
+.light-theme .mention {
+  color: #0c4a6e;
+  background: rgba(88, 101, 242, 0.15);
+}
+
 /* Embeds */
 .embed { 
   margin-top: 8px; 
