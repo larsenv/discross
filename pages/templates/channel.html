@@ -722,8 +722,8 @@
         .light-theme input[type="email"],
         .light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #060607; }
         .light-theme .menu-button { 
-            background: #ffffff !important; 
-            border: 1px solid #e3e5e8 !important;
+            background: none !important;
+            border: none !important;
         }
         .light-theme .menu-button img {
             filter: brightness(0) saturate(100%) invert(9%) sepia(8%) saturate(1040%) hue-rotate(185deg) brightness(96%) contrast(90%);
@@ -747,10 +747,9 @@
         .amoled-theme .message-input { color: #fff; background: #0a0a0a; }
         .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
         .amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
-        .amoled-theme .menu-button { 
-            background: none !important; 
-            border: none !important; 
-            color: #ffffff !important; 
+        .amoled-theme #wrapper .menu-button { 
+            background: none !important;  /* Changed from #000000 */
+            border: none !important;      /* Added to ensure no border appears */
         }
         .amoled-theme a { color: #5865f2 !important; }
         .amoled-theme pre,
