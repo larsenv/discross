@@ -176,13 +176,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
               return;
             }
 
-            // Send message with the transfer.whalebone.io URL
-            const finalMessage = cleanMessage 
-              ? `${cleanMessage}\n\n📎 File: ${file.originalFilename || file.name || 'uploaded_file'}\n${transferUrl}`
-              : `📎 File: ${file.originalFilename || file.name || 'uploaded_file'}\n${transferUrl}`;
-
+            // Send message with just the transfer.whalebone.io URL as a link
             const message = await webhook.send({
-              content: finalMessage,
+              content: transferUrl,
               username: member.displayName || member.user.tag,
               avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL
             });
