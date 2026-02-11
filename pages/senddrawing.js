@@ -119,11 +119,26 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
           messageCont = processedmessage;
         }
 
+        // 1. Sanitize Avatar: FORCE a string.
+        // displayAvatarURL() handles default/custom avatars automatically.
+        // We pass { forceStatic: true } to avoid potential GIF issues.
+        const safeAvatarURL = member.user.displayAvatarURL({ extension: 'png', forceStatic: true });
+
+        // 2. Sanitize Username: Ensure it is a string.
+        const safeUsername = String(member.displayName || member.user.globalName || member.user.username || "Unknown User");
+
+        // 3. Sanitize Content: Ensure it is a string (even if empty).
+        const safeContent = messageCont ? String(messageCont) : "";
+
+        // 4. Send with sanitized inputs
         const message = await webhook.send({
-          content: messageCont,
-          username: member.displayName || member.user.tag,
-          avatarURL: member.user.displayAvatarURL({ extension: 'png', forceStatic: true }), 
-          files: [{ attachment: imageBuffer, name: "image.png" }]
+          content: safeContent,
+          username: safeUsername,
+          avatarURL: safeAvatarURL,
+          files: [{ 
+            attachment: imageBuffer, 
+            name: "image.png" 
+          }]
         });
         bot.addToCache(message);
       }
