@@ -15,48 +15,67 @@ function strReplace(string, needle, replacement) {
 async function uploadToTransfer(filePath, filename) {
   return new Promise((resolve, reject) => {
     const fileStream = fs.createReadStream(filePath);
-    const fileStats = fs.statSync(filePath);
     
-    const options = {
-      hostname: 'transfer.whalebone.io',
-      port: 443,
-      path: `/${encodeURIComponent(filename)}`,
-      method: 'PUT',
-      headers: {
-        'Content-Length': fileStats.size
-      },
-      // Set a high timeout for large files (15 minutes)
-      timeout: 900000
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
+    // Handle file stream errors
+    fileStream.on('error', (err) => {
+      reject(new Error(`Failed to read file: ${err.message}`));
+    });
+    
+    // Get file size asynchronously
+    fs.stat(filePath, (statErr, stats) => {
+      if (statErr) {
+        reject(new Error(`Failed to get file stats: ${statErr.message}`));
+        return;
+      }
       
-      res.on('data', (chunk) => {
-        data += chunk;
+      const options = {
+        hostname: 'transfer.whalebone.io',
+        port: 443,
+        path: `/${encodeURIComponent(filename)}`,
+        method: 'PUT',
+        headers: {
+          'Content-Length': stats.size
+        },
+        // Set a high timeout for large files (15 minutes = 15 * 60 * 1000 ms)
+        timeout: 15 * 60 * 1000
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          if (res.statusCode === 200 || res.statusCode === 201) {
+            // The response should contain the URL to download the file
+            const transferUrl = data.trim();
+            
+            // Validate that the response looks like a URL
+            if (!transferUrl || (!transferUrl.startsWith('http://') && !transferUrl.startsWith('https://'))) {
+              reject(new Error(`Invalid URL received from transfer service: ${transferUrl}`));
+              return;
+            }
+            
+            resolve(transferUrl);
+          } else {
+            reject(new Error(`Upload failed with status ${res.statusCode}: ${data}`));
+          }
+        });
       });
-      
-      res.on('end', () => {
-        if (res.statusCode === 200 || res.statusCode === 201) {
-          // The response should contain the URL to download the file
-          const transferUrl = data.trim();
-          resolve(transferUrl);
-        } else {
-          reject(new Error(`Upload failed with status ${res.statusCode}: ${data}`));
-        }
+
+      req.on('error', (err) => {
+        reject(err);
       });
-    });
 
-    req.on('error', (err) => {
-      reject(err);
-    });
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Upload timeout - file may be too large'));
+      });
 
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error('Upload timeout - file may be too large'));
+      fileStream.pipe(req);
     });
-
-    fileStream.pipe(req);
   });
 }
 

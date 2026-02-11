@@ -107,9 +107,9 @@ server.on('request', async (req, res) => {
     
     // Handle file upload BEFORE reading body (formidable needs raw stream)
     if (parsedurl == "/uploadFile") {
-      // Set high timeout for file uploads (15 minutes)
-      req.setTimeout(900000);
-      res.setTimeout(900000);
+      // Set high timeout for file uploads (15 minutes = 15 * 60 * 1000 ms)
+      req.setTimeout(15 * 60 * 1000);
+      res.setTimeout(15 * 60 * 1000);
       
       (async () => {
         const discordID = await auth.checkAuth(req, res, true);
