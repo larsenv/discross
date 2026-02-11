@@ -116,35 +116,22 @@
         function handleFileSelect(input) {
             if (input.files && input.files[0]) {
                 var file = input.files[0];
-                var maxSize = 8 * 1024 * 1024; // 8MB limit for webhooks
+                var maxSize = 249 * 1024 * 1024; // 249MB limit for transfer.whalebone.io
                 
                 if (file.size > maxSize) {
-                    alert('File is too large. Maximum size is 8MB.');
+                    alert('File is too large. Maximum size is 249MB.');
                     input.value = '';
                     selectedFile = null;
                     return;
                 }
                 
-                // Store the file for later upload
-                selectedFile = file;
-                
-                // Show file name in message input
-                var messageInput = document.getElementById('message');
-                if (messageInput) {
-                    var currentText = messageInput.value.trim();
-                    var fileName = '[Uploading: ' + file.name + ']';
-                    messageInput.value = currentText ? currentText + ' ' + fileName : fileName;
-                }
+                // Upload file immediately without pressing send button
+                uploadFile(file);
             }
         }
         
         function sendMessageOrFile() {
-            if (selectedFile) {
-                // Upload file with message
-                uploadFile(selectedFile);
-                return false; // Prevent normal form submission
-            }
-            // Otherwise allow normal form submission for text messages
+            // Files are uploaded immediately on selection, so just allow normal form submission for text messages
             return true;
         }
         
@@ -152,12 +139,15 @@
             var formData = new FormData();
             formData.append('file', file);
             formData.append('channel', document.getElementById('channel').value);
-            formData.append('message', document.getElementById('message').value);
+            formData.append('message', ''); // No message content, just the file URL
             
-            // Show uploading status
+            // Show uploading indicator
             var messageInput = document.getElementById('message');
-            messageInput.disabled = true;
-            messageInput.disabled = true;
+            var originalValue = messageInput ? messageInput.value : '';
+            if (messageInput) {
+                messageInput.disabled = true;
+                messageInput.value = 'Uploading ' + file.name + '...';
+            }
             
             fetch('/uploadFile', {
                 method: 'POST',
@@ -168,21 +158,26 @@
             })
             .then(function(data) {
                 if (data.success) {
-                    // Clear input and refresh
-                    messageInput.value = '';
+                    // Refresh page when upload is done
                     window.location.reload();
                 } else {
                     alert('Upload failed: ' + (data.error || 'Unknown error'));
-                    messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
+                    if (messageInput) {
+                        messageInput.value = originalValue;
+                        messageInput.disabled = false;
+                    }
                 }
             })
             .catch(function(error) {
                 alert('Upload failed: ' + error);
-                messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
+                if (messageInput) {
+                    messageInput.value = originalValue;
+                    messageInput.disabled = false;
+                }
             })
             .finally(function() {
-                messageInput.disabled = false;
                 document.getElementById('fileUpload').value = '';
+                selectedFile = null;
             });
         }
         
