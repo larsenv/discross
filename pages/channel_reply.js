@@ -177,13 +177,12 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             // Add reply indicator (L-shaped line) if this is a reply (#26 - make inline)
             let replyIndicator = '';
             if (lastReply) {
-              // Add @ symbol at the beginning if this is a reply with ping
-              const atSymbol = lastReplyData.mentionsPing ? '<span style="color: #72767d;">@</span> ' : '';
+              const atSymbol = lastReplyData.mentionsPing ? '@' : '';
+              const contentPreview = lastReplyData.content ? `<br><span style="font-size: 12px; color: #72767d;">${escape(lastReplyData.content)}</span>` : '';
               replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px;">' +
                 '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
                 '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
-                atSymbol +
-                '<span style="font-size: 12px; color: #b5bac1;">Replying to ' + escape(lastReplyData.author) + '</span>' +
+                '<span style="font-size: 12px; color: #b5bac1;">Replying to @' + escape(lastReplyData.author) + contentPreview + '</span>' +
                 '</div>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -263,12 +262,22 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             // Step 3: Construct the display data
             const replyAuthor = getDisplayName(replyMember, replyUser);
             const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+            
+            // Get message content preview (max 50 chars with ellipsis)
+            let replyContent = '';
+            if (replyMessage && replyMessage.content) {
+              const maxLength = 50;
+              replyContent = replyMessage.content.length > maxLength 
+                ? replyMessage.content.substring(0, maxLength) + '...'
+                : replyMessage.content;
+            }
 
             isReply = true;
             replyData = {
               author: replyAuthor,
               authorId: replyUser.id,
-              mentionsPing: mentionsRepliedUser
+              mentionsPing: mentionsRepliedUser,
+              content: replyContent
             };
           } catch (err) {
             console.error("Could not process reply data:", err);

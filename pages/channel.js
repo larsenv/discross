@@ -183,12 +183,12 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             // Add reply indicator (L-shaped line) if this is a reply (#5)
             let replyIndicator = '';
             if (lastReply) {
-              // Add @ symbol at the beginning if this is a reply with ping
-              const atSymbol = lastReplyData.mentionsPing ? '<span style="color: #72767d;">@</span> ' : '';
+              const atSymbol = lastReplyData.mentionsPing ? '@' : '';
+              const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:#72767d" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
               replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
                 '<td style="width:2px;height:10px;background-color:#4e5058;border-radius:2px 0 0 2px;vertical-align:top"></td>' +
                 '<td style="width:12px;height:10px;vertical-align:bottom"><div style="height:2px;background-color:#4e5058;border-radius:0 0 0 2px"></div></td>' +
-                '<td style="padding-left:4px"><font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">' + atSymbol + 'Replying to ' + escape(lastReplyData.author) + '</font></td>' +
+                '<td style="padding-left:4px"><font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">Replying to @' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
                 '</tr></table>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -268,12 +268,22 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             // Step 3: Construct the display data
             const replyAuthor = getDisplayName(replyMember, replyUser);
             const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+            
+            // Get message content preview (max 50 chars with ellipsis)
+            let replyContent = '';
+            if (replyMessage && replyMessage.content) {
+              const maxLength = 50;
+              replyContent = replyMessage.content.length > maxLength 
+                ? replyMessage.content.substring(0, maxLength) + '...'
+                : replyMessage.content;
+            }
 
             isReply = true;
             replyData = {
               author: replyAuthor,
               authorId: replyUser.id,
-              mentionsPing: mentionsRepliedUser
+              mentionsPing: mentionsRepliedUser,
+              content: replyContent
             };
           } catch (err) {
             console.error("Could not process reply data:", err);
