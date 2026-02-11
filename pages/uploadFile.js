@@ -56,17 +56,6 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             resolve(); // Resolve lock
             return;
           }
-
-          const channel = await bot.client.channels.fetch(channelId);
-          let member;
-          try {
-            member = await channel.guild.members.fetch(discordID);
-          } catch (err) {
-            console.error("Failed to fetch member:", err);
-            res.writeHead(500, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: "Failed to verify user permissions. Please ensure you have access to this channel." }));
-            return;
-          }
           
           try {
             const channelId = Array.isArray(fields.channel) ? fields.channel[0] : fields.channel;
