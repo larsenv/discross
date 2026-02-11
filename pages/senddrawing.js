@@ -122,7 +122,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         const message = await webhook.send({
           content: messageCont,
           username: member.displayName || member.user.tag,
-          avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
+          avatarURL: member.user.displayAvatarURL({ extension: 'png', forceStatic: true }), 
           files: [{ attachment: imageBuffer, name: "image.png" }]
         });
         bot.addToCache(message);
