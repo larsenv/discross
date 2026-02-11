@@ -1,8 +1,12 @@
 const https = require('https');
+const http = require('http');
 const sharp = require('sharp');
 
 exports.imageProxy = async function imageProxy(res, URL) {
-    https.get(URL, (proxyRes) => {
+    // Choose the appropriate protocol handler
+    const protocol = URL.startsWith('https:') ? https : http;
+    
+    protocol.get(URL, (proxyRes) => {
         const chunks = [];
         proxyRes.on('data', (chunk) => {
             chunks.push(chunk);

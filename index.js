@@ -282,7 +282,7 @@ server.on('request', async (req, res) => {
         await imageProxy(res, fullImageUrl);
       } else if (args[2] === 'sticker') {
         // Sticker URLs: /imageProxy/sticker/{stickerId}.{format}
-        const stickerPath = parsedurl.path.slice(18); // Remove '/imageProxy/sticker/'
+        const stickerPath = parsedurl.path.slice(20); // Remove '/imageProxy/sticker/'
         const fullImageUrl = `https://cdn.discordapp.com/stickers/${stickerPath}`;
         await imageProxy(res, fullImageUrl);
       } else {
