@@ -513,7 +513,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       } else if (whiteThemeCookie == 2) {
         template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
       } else {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "");
+        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "bgcolor=\"303338\"");
       }
 
       let final;

@@ -3,10 +3,8 @@ const md = require('markdown-it')({ breaks: true, linkify: true });
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { formatDateWithTimezone } = require('../timezoneUtils');
 const fs = require('fs');
-const HTMLMinifier = require('@bhavingajjar/html-minify');
-const minifier = new HTMLMinifier();
 
-const embed_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/embed.html', 'utf-8'));
+const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");

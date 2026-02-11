@@ -1,10 +1,11 @@
 var fs = require('fs');
 var escape = require('escape-html');
+var md = require('markdown-it')({ breaks: true, linkify: true });
 var he = require('he'); // Encodes HTML attributes
 const path = require('path');
 const sharp = require("sharp");
 const emojiRegex = require("./twemojiRegex").regex;
-const sanitizer = require("path-sanitizer").default;
+const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
 const fetch = require("sync-fetch");
@@ -88,16 +89,6 @@ function getMemberColor(member) {
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
   try {
-    // Check if bot is connected
-    const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-    
-    if (!clientIsReady) {
-      res.writeHead(503, { "Content-Type": "text/plain" });
-      res.write("The bot isn't connected, try again in a moment");
-      res.end();
-      return;
-    }
-
     // 1. Setup Variables
     let response = "";
     let chnl;

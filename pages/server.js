@@ -334,7 +334,7 @@ function applyUserPreferences(response, req) {
   } else if (whiteThemeCookie == 2) {
     response = response.replace("{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
   } else {
-    response = response.replace("{$WHITE_THEME_ENABLED}", "");
+    response = response.replace("{$WHITE_THEME_ENABLED}", "bgcolor=\"303338\"");
   }
 
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
