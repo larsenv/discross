@@ -121,8 +121,8 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezon
     if (embed.image && imagesCookie === 1) {
       const imageUrl = embed.image.url || embed.image.proxyURL;
       // Route through imageProxy to convert to GIF format
-      const encodedUrl = Buffer.from(imageUrl).toString('base64');
-      const proxyUrl = `/imageProxy/external/${encodedUrl}`;
+      const encodedImageUrl = Buffer.from(imageUrl).toString('base64');
+      const proxyUrl = `/imageProxy/external/${encodedImageUrl}`;
       imageHtml = `<div style="margin-top: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 100%; max-height: 300px; border-radius: 4px;" alt="Embed image"></div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
@@ -133,8 +133,8 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezon
     if (embed.thumbnail && imagesCookie === 1) {
       const thumbnailUrl = embed.thumbnail.url || embed.thumbnail.proxyURL;
       // Route through imageProxy to convert to GIF format
-      const encodedUrl = Buffer.from(thumbnailUrl).toString('base64');
-      const proxyUrl = `/imageProxy/external/${encodedUrl}`;
+      const encodedThumbnailUrl = Buffer.from(thumbnailUrl).toString('base64');
+      const proxyUrl = `/imageProxy/external/${encodedThumbnailUrl}`;
       thumbnailHtml = `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', thumbnailHtml);
