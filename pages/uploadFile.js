@@ -14,6 +14,9 @@ function strReplace(string, needle, replacement) {
 // Upload file to transfer.whalebone.io and return the URL
 async function uploadToTransfer(filePath, filename) {
   return new Promise((resolve, reject) => {
+    // Sanitize filename - remove path traversal and keep only safe characters
+    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    
     const fileStream = fs.createReadStream(filePath);
     
     // Handle file stream errors
@@ -31,7 +34,7 @@ async function uploadToTransfer(filePath, filename) {
       const options = {
         hostname: 'transfer.whalebone.io',
         port: 443,
-        path: `/${encodeURIComponent(filename)}`,
+        path: `/${encodeURIComponent(sanitizedFilename)}`,
         method: 'PUT',
         headers: {
           'Content-Length': stats.size
@@ -52,9 +55,9 @@ async function uploadToTransfer(filePath, filename) {
             // The response should contain the URL to download the file
             const transferUrl = data.trim();
             
-            // Validate that the response looks like a URL
-            if (!transferUrl || (!transferUrl.startsWith('http://') && !transferUrl.startsWith('https://'))) {
-              reject(new Error(`Invalid URL received from transfer service: ${transferUrl}`));
+            // Validate that the response is a valid HTTPS URL for security
+            if (!transferUrl || !transferUrl.startsWith('https://')) {
+              reject(new Error(`Invalid or insecure URL received from transfer service: ${transferUrl}`));
               return;
             }
             
