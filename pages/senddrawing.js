@@ -131,11 +131,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         return;
       }
 
-      console.log('DEBUG: Creating attachment with buffer length:', imageBuffer.length);
-      console.log('DEBUG: imageBuffer instanceof Buffer:', imageBuffer instanceof Buffer);
-      
-      // Discord.js requires Buffer, string (filepath), or stream
-      // Make sure we're passing a proper Buffer
+      // Discord.js requires Buffer for attachments
       const webhookOptions = {
         username: member.displayName || member.user.tag,
         avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
@@ -150,12 +146,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         webhookOptions.content = processedmessage;
       }
       
-      console.log('DEBUG: Webhook options prepared, has content:', !!webhookOptions.content);
-      console.log('DEBUG: About to call webhook.send()...');
-      
       const message = await webhook.send(webhookOptions);
-      
-      console.log('DEBUG: Webhook send successful!');
       bot.addToCache(message);
       
       console.log("Redirecting to channel...");
