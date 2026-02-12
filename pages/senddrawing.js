@@ -131,10 +131,8 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         return;
       }
 
-      const messageCont = processedmessage || "";
-
       const message = await webhook.send({
-        content: messageCont,
+        content: processedmessage,
         username: member.displayName || member.user.tag,
         avatarURL: await member.user.avatarURL(),
         files: [{ attachment: imageBuffer, name: "image.png" }]
