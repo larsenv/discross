@@ -315,28 +315,26 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             }
             // If no member data, just use replyUser - no fetching needed
 
-            // Step 3: Construct the display data only if we have a valid replyUser
-            if (replyUser) {
-              const replyAuthor = getDisplayName(replyMember, replyUser);
-              const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
-              
-              // Get message content preview (max 50 chars with ellipsis)
-              let replyContent = '';
-              if (replyMessage && replyMessage.content) {
-                const maxLength = 50;
-                replyContent = replyMessage.content.length > maxLength 
-                  ? replyMessage.content.substring(0, maxLength) + '...'
-                  : replyMessage.content;
-              }
-
-              isReply = true;
-              replyData = {
-                author: replyAuthor,
-                authorId: replyUser.id,
-                mentionsPing: mentionsRepliedUser,
-                content: replyContent
-              };
+            // Step 3: Construct the display data
+            const replyAuthor = getDisplayName(replyMember, replyUser);
+            const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+            
+            // Get message content preview (max 50 chars with ellipsis)
+            let replyContent = '';
+            if (replyMessage && replyMessage.content) {
+              const maxLength = 50;
+              replyContent = replyMessage.content.length > maxLength 
+                ? replyMessage.content.substring(0, maxLength) + '...'
+                : replyMessage.content;
             }
+
+            isReply = true;
+            replyData = {
+              author: replyAuthor,
+              authorId: replyUser.id,
+              mentionsPing: mentionsRepliedUser,
+              content: replyContent
+            };
           } catch (err) {
             console.error("Could not process reply data:", err);
             isReply = false;
@@ -702,12 +700,15 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
       let final;
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
-        final = strReplace(template, "{$INPUT}", input_disabled_template);
+        const input_template1 = strReplace(input_disabled_template, "{$COLOR}", boxColor);
+        final = strReplace(template, "{$INPUT}", input_template1);
         final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
       } else if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
-        final = strReplace(template, "{$INPUT}", input_template);
+        const input_template1 = strReplace(input_template, "{$COLOR}", boxColor);
+        final = strReplace(template, "{$INPUT}", input_template1);
       } else {
-        final = strReplace(template, "{$INPUT}", input_disabled_template);
+        const input_template1 = strReplace(input_disabled_template, "{$COLOR}", boxColor);
+        final = strReplace(template, "{$INPUT}", input_template1);
       }
 
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
