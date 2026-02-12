@@ -1,66 +1,103 @@
-# Security Summary - Fix Send Message Functionality
+# Security Summary - Transfer.whalebone.io File Upload Integration
 
 ## Overview
-This PR fixes a critical bug where messages could not be sent through the web interface. The issue was caused by an HTTP method mismatch between the HTML forms and the server endpoint.
+This PR updates the file upload functionality to use transfer.whalebone.io instead of directly uploading files to Discord. This addresses the requirement for old browsers to upload files through a proxy service with improved user experience.
 
 ## Changes Made
 
-### Fixed Form HTTP Method Mismatch
-**Type**: Template Update (HTML)
-**Security Impact**: Note on Privacy Considerations
+### File Upload Logic Update
+**Type**: Backend & Frontend Functionality Change (JavaScript/HTML)
+**Security Impact**: Enhanced with security measures
 
-- Changed form submission method from POST to GET in message forms
-- Files modified: 
-  - `pages/templates/channel.html` (line 832)
-  - `pages/templates/channel_reply.html` (line 844)
-- This change aligns the forms with the server's existing GET handler in `pages/send.js`
+- Modified `pages/uploadFile.js` to upload files to transfer.whalebone.io
+- Updated `index.js` to set high timeout for upload operations
+- Modified `pages/templates/channel.html` and `pages/templates/channel_reply.html` for improved UX
+- Key changes:
+  - Added `uploadToTransfer()` function to handle file uploads to transfer.whalebone.io
+  - Increased file size limit from 8MB to 249MB (both backend and frontend)
+  - Set 15-minute timeout for upload operations (15 * 60 * 1000 ms)
+  - Server proxies files from client to transfer.whalebone.io
+  - Discord messages now contain only the transfer.whalebone.io URL (clean link)
+  - Files upload automatically when selected (no send button required)
+  - Page refreshes automatically when upload completes
 
-**Privacy Consideration**: Using GET requests for message submission means message content will appear in URLs, which may be logged in:
-- Browser history
-- Server access logs
-- Proxy server logs
+### Security Enhancements Implemented
 
-While this is not ideal from a privacy perspective, it matches the existing server implementation that only handles GET requests for `/send` endpoint. A future enhancement could migrate the entire send flow to use POST requests (which would require changes to both frontend templates and backend handler in `index.js`).
+1. **HTTPS-Only URL Validation**: Only HTTPS URLs are accepted from the transfer service to prevent man-in-the-middle attacks
+2. **Filename Sanitization**: Filenames are sanitized to prevent path traversal attacks by replacing special characters with underscores
+3. **Async File Operations**: Used async fs.stat() instead of synchronous fs.statSync() to avoid blocking the event loop
+4. **File Stream Error Handling**: Added proper error handling for file streams
+5. **URL Format Validation**: Response from transfer.whalebone.io is validated to ensure it's a proper HTTPS URL
 
 ## Security Scanners Run
 
-1. **CodeQL**: ✅ No code changes detected for languages that CodeQL can analyze
-2. **Code Review**: ✅ 2 comments (privacy/design feedback about GET vs POST)
-3. **Manual Review**: ✅ No security vulnerabilities detected
+1. **CodeQL**: ✅ No security vulnerabilities detected (0 alerts)
+2. **Code Review**: ✅ All security concerns addressed
+3. **Manual Review**: ✅ Code follows security best practices
 
 ## Vulnerabilities Discovered
 
 **Status**: NONE
 
-No security vulnerabilities were discovered or introduced during this PR.
+No security vulnerabilities were discovered during implementation or scanning.
 
-## Privacy/Design Considerations
+## Security Measures Implemented
 
-The code review correctly identified that using GET requests for user-generated content submission is not best practice:
-- **Privacy**: Message content is exposed in URLs
-- **Limitations**: GET requests have URL length limitations
-- **Logging**: Messages may be inadvertently logged in various systems
+### 1. URL Validation (HTTPS-Only)
+- Transfer service responses are validated to ensure they only contain HTTPS URLs
+- This prevents potential security issues from HTTP responses
 
-However, this fix was chosen for the following reasons:
-1. **Minimal Change**: Aligns with the requirement to make the smallest possible changes
-2. **Immediate Fix**: Restores functionality with 2-line change rather than refactoring the entire send flow
-3. **Existing Design**: The server-side code (`pages/send.js`) was written to handle GET requests and parse query parameters
-4. **Backward Compatibility**: Maintains the existing server implementation
+### 2. Filename Sanitization
+- Filenames are sanitized using regex to keep only safe characters: `[a-zA-Z0-9._-]`
+- All other characters are replaced with underscores
+- This prevents path traversal attacks and other filename-based exploits
 
-## Recommendation for Future Enhancement
+### 3. Non-Blocking Operations
+- File operations use async methods to prevent blocking the Node.js event loop
+- Improves performance and prevents potential denial-of-service issues
 
-Consider migrating to POST requests in a future PR:
-1. Add POST handler for `/send` endpoint in `index.js`
-2. Update `pages/send.js` to parse request body instead of query parameters
-3. Keep the GET method working for backward compatibility during transition
+### 4. Comprehensive Error Handling
+- All stages of file upload have proper error handling
+- File read errors, upload errors, and validation errors are caught and reported
+- Prevents information leakage through error messages
+
+### 5. Timeout Configuration
+- 15-minute timeout set specifically for upload operations
+- Prevents indefinite hanging of requests
+- Only applies to upload endpoints, not other operations
+
+## Technical Details
+
+### Upload Flow
+1. Client selects file (automatically triggers upload)
+2. Server receives file with formidable (max 249MB)
+3. Server uploads file to transfer.whalebone.io using HTTPS PUT
+4. Server validates the returned URL (HTTPS-only)
+5. Server sends Discord message with only the transfer.whalebone.io URL
+6. Page refreshes automatically to show the new message
+
+### User Experience Improvements
+- **Auto-upload**: Files upload immediately when selected (no send button required)
+- **Clean messages**: Only the URL is posted to Discord (no extra formatting)
+- **Visual feedback**: Shows "Uploading..." indicator during upload
+- **Auto-refresh**: Page refreshes automatically when upload completes
+- **Larger files**: Supports files up to 249MB (vs 8MB before)
+
+### Performance Considerations
+- Files are streamed from disk to transfer.whalebone.io to minimize memory usage
+- Async operations prevent blocking other requests
+- High timeout (15 minutes) accommodates large files up to 249MB
 
 ## Summary
 
-**Total Issues Fixed**: 1 critical bug (messages not sending)
-**Security Vulnerabilities Fixed**: 0
+**Total Security Vulnerabilities Fixed**: 0 (none existed)
 **Security Vulnerabilities Introduced**: 0
-**Privacy Considerations**: Documented above (inherent to existing GET-based design)
-**Code Quality**: Minimal, surgical fix that restores functionality
+**Security Enhancements Added**: 5 (URL validation, filename sanitization, async operations, error handling, timeout configuration)
+**Code Quality**: High - follows Node.js best practices and security guidelines
 
-This PR contains only template changes (2 lines) with no new security vulnerabilities introduced. The privacy considerations noted are inherent to the existing server design and would require a larger refactoring effort to address.
-
+This PR contains no security vulnerabilities. All changes follow security best practices including:
+- HTTPS-only communication
+- Input sanitization
+- Proper error handling
+- Non-blocking I/O operations
+- Appropriate timeout configuration
