@@ -63,6 +63,30 @@ function removeExistingEndAnchors(html) {
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
+  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+
+  let authorText;
+  let replyText;
+  let template;
+
+  authorText = "#72767d";
+  replyText = "#b5bac1";
+    
+  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
+  if (whiteThemeCookie == 1) {
+    authorText = "#000000";
+    replyText = "#000000";
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+  } else if (whiteThemeCookie == 2) {
+    authorText = "#72767d";
+    replyText = "#b5bac1";
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+  } else {
+    authorText = "#72767d";
+    replyText = "#b5bac1";
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
+  }
+
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
   
@@ -107,7 +131,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
-        let template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
+        template = strReplace(template, "{$SERVER_ID}", chnl.guild.id)
         template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
 
         let final;
@@ -177,11 +201,11 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             // Add reply indicator (L-shaped line) if this is a reply (#26 - make inline)
             let replyIndicator = '';
             if (lastReply) {
-              const contentPreview = lastReplyData.content ? `<br><span style="font-size: 12px; color: #72767d;">${escape(lastReplyData.content)}</span>` : '';
+              const contentPreview = lastReplyData.content ? `<br><span style="font-size: 12px; color: `+authorText+`;">${escape(lastReplyData.content)}</span>` : '';
               replyIndicator = '<div style="display: flex; align-items: center; margin-bottom: 4px;">' +
                 '<div style="width: 2px; height: 10px; background-color: #4e5058; border-radius: 2px 0 0 2px; margin-right: 4px;"></div>' +
                 '<div style="width: 12px; height: 2px; background-color: #4e5058; border-radius: 0 0 0 2px; margin-right: 4px;"></div>' +
-                '<span style="font-size: 12px; color: #b5bac1;">Replying to @' + escape(lastReplyData.author) + contentPreview + '</span>' +
+                '<span style="font-size: 12px; color: '+replyText+'">Replying to @' + escape(lastReplyData.author) + contentPreview + '</span>' +
                 '</div>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -510,19 +534,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       islastmessage = true;
       await handlemessage();
 
-      let template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
+      template = strReplace(template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random())
-      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-      
-      // Apply theme class based on cookie value
-      if (whiteThemeCookie == 1) {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-      } else if (whiteThemeCookie == 2) {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
-      } else {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "");
-      }
 
       let final;
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
