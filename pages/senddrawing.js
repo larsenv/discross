@@ -141,12 +141,21 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       console.log('DEBUG: AttachmentBuilder type:', typeof attachment);
       console.log('DEBUG: Preparing to send webhook...');
 
-      const message = await webhook.send({
-        content: processedmessage,
+      // Prepare webhook send options
+      const webhookOptions = {
         username: member.displayName || member.user.tag,
         avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
         files: [attachment]
-      });
+      };
+      
+      // Only add content if there's a message
+      if (processedmessage && processedmessage.length > 0) {
+        webhookOptions.content = processedmessage;
+      }
+      
+      console.log('DEBUG: Webhook options prepared, has content:', !!webhookOptions.content);
+
+      const message = await webhook.send(webhookOptions);
       
       console.log('DEBUG: Webhook send successful!');
       bot.addToCache(message);
