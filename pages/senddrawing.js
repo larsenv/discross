@@ -50,7 +50,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       } else {
         parsedurl = urlQuery;
       }
-      if (parsedurl.message !== "") {
+      if (parsedurl.drawinginput) {
         const channel = await bot.client.channels.fetch(parsedurl.channel);
         let member;
         try {
