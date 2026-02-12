@@ -133,19 +133,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
       console.log('DEBUG: Creating attachment with buffer length:', imageBuffer.length);
       console.log('DEBUG: imageBuffer instanceof Buffer:', imageBuffer instanceof Buffer);
-      console.log('DEBUG: typeof imageBuffer:', typeof imageBuffer);
-      console.log('DEBUG: imageBuffer.constructor.name:', imageBuffer.constructor.name);
       
-      // Try creating a new Uint8Array from the buffer as an alternative approach
-      const uint8Array = new Uint8Array(imageBuffer);
-      console.log('DEBUG: uint8Array length:', uint8Array.length);
-      
-      // Try sending the Uint8Array instead of Buffer
+      // Discord.js requires Buffer, string (filepath), or stream
+      // Make sure we're passing a proper Buffer
       const webhookOptions = {
         username: member.displayName || member.user.tag,
         avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
         files: [{
-          attachment: uint8Array,
+          attachment: imageBuffer,
           name: "drawing.png"
         }]
       };
