@@ -11,7 +11,7 @@ function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 };
 
-// Upload file to transfer.whalebone.io and return the URL
+// Upload file to transfer.notkiska.pw and return the URL
 async function uploadToTransfer(filePath, filename) {
   return new Promise((resolve, reject) => {
     // Sanitize filename - remove path traversal and keep only safe characters
@@ -32,7 +32,7 @@ async function uploadToTransfer(filePath, filename) {
       }
       
       const options = {
-        hostname: 'transfer.whalebone.io',
+        hostname: 'transfer.notkiska.pw',
         port: 443,
         path: `/${encodeURIComponent(sanitizedFilename)}`,
         method: 'PUT',
@@ -116,7 +116,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
         return;
       }
 
-      const form = formidable({ maxFileSize: 249 * 1024 * 1024 }); // 249 MB limit
+      const form = formidable({ maxFileSize: 498 * 1024 * 1024 });
 
       // Wrap form.parse in a Promise so the Lock actually waits for the upload to finish
       await new Promise((resolve, reject) => {
@@ -164,19 +164,19 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
 
             let cleanMessage = messageText ? messageText.replace(/\[Uploading:.*?\]/g, '').trim() : '';
 
-            // Upload file to transfer.whalebone.io
+            // Upload file to transfer.notkiska.pw
             let transferUrl;
             try {
               transferUrl = await uploadToTransfer(filePath, file.originalFilename || file.name || 'uploaded_file');
             } catch (uploadError) {
-              console.error("Error uploading to transfer.whalebone.io:", uploadError);
+              console.error("Error uploading to transfer.notkiska.pw:", uploadError);
               res.writeHead(500, { "Content-Type": "application/json" });
               res.end(JSON.stringify({ success: false, error: "Failed to upload file: " + uploadError.message }));
               resolve();
               return;
             }
 
-            // Send message with just the transfer.whalebone.io URL as a link
+            // Send message with just the transfer.notkiska.pw URL as a link
             const message = await webhook.send({
               content: transferUrl,
               username: member.displayName || member.user.tag,
