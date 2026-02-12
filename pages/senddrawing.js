@@ -133,14 +133,19 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
       console.log('DEBUG: Creating attachment with buffer length:', imageBuffer.length);
       console.log('DEBUG: imageBuffer instanceof Buffer:', imageBuffer instanceof Buffer);
+      console.log('DEBUG: typeof imageBuffer:', typeof imageBuffer);
+      console.log('DEBUG: imageBuffer.constructor.name:', imageBuffer.constructor.name);
       
-      // Try sending the buffer directly in the files array without AttachmentBuilder
-      // This might work better with the undici version being used
+      // Try creating a new Uint8Array from the buffer as an alternative approach
+      const uint8Array = new Uint8Array(imageBuffer);
+      console.log('DEBUG: uint8Array length:', uint8Array.length);
+      
+      // Try sending the Uint8Array instead of Buffer
       const webhookOptions = {
         username: member.displayName || member.user.tag,
         avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
         files: [{
-          attachment: imageBuffer,
+          attachment: uint8Array,
           name: "drawing.png"
         }]
       };
@@ -151,6 +156,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       }
       
       console.log('DEBUG: Webhook options prepared, has content:', !!webhookOptions.content);
+      console.log('DEBUG: About to call webhook.send()...');
       
       const message = await webhook.send(webhookOptions);
       
