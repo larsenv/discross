@@ -158,6 +158,10 @@
             })
             .then(function(data) {
                 if (data.success) {
+                    // Clear message box before refreshing
+                    if (messageInput) {
+                        messageInput.value = '';
+                    }
                     // Refresh page when upload is done
                     window.location.reload();
                 } else {
