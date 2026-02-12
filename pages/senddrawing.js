@@ -133,12 +133,16 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       }
 
       console.log('DEBUG: Creating AttachmentBuilder with buffer length:', imageBuffer.length);
+      console.log('DEBUG: imageBuffer instanceof Buffer:', imageBuffer instanceof Buffer);
+      console.log('DEBUG: imageBuffer.buffer exists:', !!imageBuffer.buffer);
       
       // Create AttachmentBuilder for Discord.js v14
-      const attachment = new AttachmentBuilder(imageBuffer, { name: "image.png" });
+      // Use Buffer.from to ensure we have a proper Buffer instance
+      const properBuffer = Buffer.from(imageBuffer);
+      const attachment = new AttachmentBuilder(properBuffer, { name: "drawing.png" });
       
       console.log('DEBUG: AttachmentBuilder created:', !!attachment);
-      console.log('DEBUG: AttachmentBuilder type:', typeof attachment);
+      console.log('DEBUG: attachment.attachment type:', typeof attachment.attachment);
       console.log('DEBUG: Preparing to send webhook...');
 
       // Prepare webhook send options
