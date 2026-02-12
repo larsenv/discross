@@ -47,12 +47,12 @@
 
         /* Light theme overrides */
         .light-theme body {
-            background: #f9f9f9 !important;
+            background: #ffffff !important;
             color: #2e3338 !important;
         }
 
         .light-theme #wrapper {
-            background: #f9f9f9 !important;
+            background: #ffffff !important;
             color: #2e3338 !important;
         }
 
@@ -444,7 +444,7 @@
     </style>
 </head>
 
-<body {$WHITE_THEME_ENABLED}>
+<body>
     <div id="toolbar-container">
         <div id="c1" class="c-box" style="background:#000000;" onclick="setColor('#000000', 'c1')"></div>
         <div id="c2" class="c-box" style="background:#555555;" onclick="setColor('#555555', 'c2')"></div>
@@ -528,19 +528,14 @@
                     <input type="hidden" id="drawinginput" name="drawinginput" value="">
                     <input type="hidden" id="lite" name="lite" value="False">
 
-                    <div class="message-input-bar-wrapper" style="background: #{$COLOR}; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
-                        <table style="width: 100%; margin: 0; padding: 0; border-collapse: collapse;">
+                    <div class="message-input-wrapper">
+                        <table style="width: 100%; border-collapse: collapse;">
                             <tr>
-                                <td style="width: 100%; padding: 0;">
-                                    <input type="text" name="message" id="message" value="" class="message-input-field"
-                                        style="width: 100%; background: transparent; border: none; outline: none; height: 25px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; box-sizing: border-box;"
-                                         placeholder="Message #{$CHANNEL_NAME}">
+                                <td style="padding: 0;">
+                                    <div name="message" id="message" value="" class="message-input" required=""></div>
                                 </td>
-                                <td style="padding: 0 8px 0 0;">
-                                    <button onclick="prepareAndSend()" type="submit" class="send-button-input"
-                                        style="flex: 0 0 auto; border: none; border-radius: 4px; color: white; padding: 0px 24px; cursor: pointer; font-family: rodin, Whitney, Helvetica Neue, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; height: 48px; line-height: 48px; text-align: center; white-space: nowrap; margin-right: 8px; background: rgb(88, 101, 242);"
-                                        onmouseover="this.style.background='#4752c4'"
-                                        onmouseout="this.style.background='#5865f2'">Send</button>
+                                <td style="padding: 0; width: 80px;">
+                                    <button type="submit" class="send-button" onclick="prepareAndSend()" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Send</button>
                                 </td>
                             </tr>
                         </table>
