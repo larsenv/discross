@@ -132,8 +132,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         return;
       }
 
+      console.log('DEBUG: Creating AttachmentBuilder with buffer length:', imageBuffer.length);
+      
       // Create AttachmentBuilder for Discord.js v14
       const attachment = new AttachmentBuilder(imageBuffer, { name: "image.png" });
+      
+      console.log('DEBUG: AttachmentBuilder created:', !!attachment);
+      console.log('DEBUG: AttachmentBuilder type:', typeof attachment);
+      console.log('DEBUG: Preparing to send webhook...');
 
       const message = await webhook.send({
         content: processedmessage,
@@ -141,6 +147,8 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
         files: [attachment]
       });
+      
+      console.log('DEBUG: Webhook send successful!');
       bot.addToCache(message);
       
       console.log("Redirecting to channel...");
