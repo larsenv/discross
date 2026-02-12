@@ -100,9 +100,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       await webhook.edit({ channel: channel });
       const base64Data = parsedurl.drawinginput;
 
-      console.log('DEBUG: base64Data exists:', !!base64Data);
-      console.log('DEBUG: base64Data length:', base64Data ? base64Data.length : 0);
-
       // Validate that we have drawing data
       if (!base64Data || base64Data.trim() === '') {
         console.error('Error processing image: Input Buffer is empty');
@@ -115,8 +112,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       // Remove the data URL prefix
       const base64Image = base64Data.split(';base64,').pop();
       
-      console.log('DEBUG: base64Image extracted, length:', base64Image ? base64Image.length : 0);
-      
       // Validate the base64 string is not empty
       if (!base64Image || base64Image.trim() === '') {
         console.error('Error processing image: Base64 data is empty after split');
@@ -128,10 +123,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
       const imageBuffer = Buffer.from(base64Image, 'base64');
       
-      console.log('DEBUG: imageBuffer created, length:', imageBuffer.length);
-      console.log('DEBUG: imageBuffer is null?', imageBuffer === null);
-      console.log('DEBUG: imageBuffer byteLength:', imageBuffer.byteLength);
-      
       // Validate the buffer is not empty
       if (!imageBuffer || imageBuffer.length === 0) {
         console.error('Error processing image: Generated buffer is empty');
@@ -140,8 +131,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         res.end();
         return;
       }
-
-      console.log('DEBUG: About to send webhook with buffer length:', imageBuffer.length);
 
       // Create AttachmentBuilder for Discord.js v14
       const attachment = new AttachmentBuilder(imageBuffer, { name: "image.png" });

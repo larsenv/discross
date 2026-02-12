@@ -94,9 +94,8 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
 
 async function senddrawingAsync(req, res, body) {
   const discordID = await auth.checkAuth(req, res)
-  console.log("DEBUG senddrawingAsync: body length =", body.length);
   
-  // Debug logging to help identify issues
+  // Validate body is not empty
   if (!body || body.trim() === '') {
     console.error('Error: senddrawingAsync received empty body');
     res.writeHead(400, { 'Content-Type': 'text/plain' });
@@ -106,18 +105,11 @@ async function senddrawingAsync(req, res, body) {
   
   // Use querystring module to handle large base64 data
   const urlQuery = querystring.parse(body);
-  console.log("DEBUG senddrawingAsync: parsed keys =", Object.keys(urlQuery));
-  console.log("DEBUG senddrawingAsync: drawinginput exists =", !!urlQuery.drawinginput);
-  if (urlQuery.drawinginput) {
-    console.log("DEBUG senddrawingAsync: drawinginput length =", urlQuery.drawinginput.length);
-    console.log("DEBUG senddrawingAsync: drawinginput starts with =", urlQuery.drawinginput.substring(0, 50));
-  }
   
   if (!urlQuery || !urlQuery.drawinginput) {
     console.error('Error: senddrawingAsync - drawinginput not found in parsed URL query');
     console.error('Body length:', body.length);
     console.error('Query keys:', Object.keys(urlQuery || {}));
-    console.error('Body preview:', body.substring(0, 200));
     res.writeHead(400, { 'Content-Type': 'text/plain' });
     res.end('Invalid drawing data');
     return;
