@@ -71,26 +71,28 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
         const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-        let processedmessage = parsedurl.message;
+        let processedmessage = parsedurl.message || "";
         const regex = /@([^#]{2,32}#\d{4})/g;
         let m;
-        do {
-          m = regex.exec(processedmessage);
-          if (m) {
-            let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === m[1]);
-            if (!mentioneduser) {
-              try {
-                mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
-              } catch (err) {
-                console.error("Failed to fetch members for mention:", err);
-                // Continue without resolving the mention
+        if (processedmessage) {
+          do {
+            m = regex.exec(processedmessage);
+            if (m) {
+              let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === m[1]);
+              if (!mentioneduser) {
+                try {
+                  mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
+                } catch (err) {
+                  console.error("Failed to fetch members for mention:", err);
+                  // Continue without resolving the mention
+                }
+              }
+              if (mentioneduser) {
+                processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
               }
             }
-            if (mentioneduser) {
-              processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
-            }
-          }
-        } while (m);
+          } while (m);
+        }
         await webhook.edit({ channel: channel });
         const base64Data = parsedurl.drawinginput;
 
