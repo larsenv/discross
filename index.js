@@ -2,6 +2,7 @@ require('dotenv').config()
 const path = require('path')
 const fs = require('fs')
 const url = require('url')
+const querystring = require('querystring')
 const mime = require('mime-types').lookup
 const { SnowTransfer } = require('snowtransfer')
 const bot = require('./bot.js')
@@ -103,8 +104,7 @@ async function senddrawingAsync(req, res, body) {
     return;
   }
   
-  // Use querystring module with increased maxKeys limit to handle large base64 data
-  const querystring = require('querystring');
+  // Use querystring module to handle large base64 data
   const urlQuery = querystring.parse(body);
   // console.log(urlQuery)
   
