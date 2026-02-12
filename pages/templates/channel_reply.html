@@ -507,6 +507,20 @@
         .icon-button:hover { background: rgba(255, 255, 255, 0.06); }
         .emoji-icon { width: 24px; height: 24px; vertical-align: middle; }
 
+        /* Message action buttons (emoji, upload, etc.) */
+        .message-action-btn {
+            display: inline-block;
+            vertical-align: middle;
+            padding: 8px;
+            border-radius: 4px;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+        .message-action-btn:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
         /* Input Row */
         .message-input-wrapper {
             width: 100%;
@@ -683,9 +697,9 @@
 
         /* ========== LIGHT THEME ========== */
         .light-theme body,
-        .light-theme #wrapper { background: #ffffff !important; color: #2e3338 !important; }
+        .light-theme #wrapper { background: #f9f9f9 !important; color: #2e3338 !important; }
         .light-theme .content-padding,
-        .light-theme .scrollable-content { background: #fff; color: #060607; }
+        .light-theme .scrollable-content { background: #f9f9f9; color: #060607; }
         .light-theme .header-title,
         .light-theme .header-menu,
         .light-theme .header-menu-link { color: #060607; }
@@ -693,13 +707,12 @@
         .light-theme .message { border-color: #e3e5e8 !important; }
         .light-theme .message .content,
         .light-theme .messagecontent { color: #060607 !important; }
-        .light-theme .message:hover { background: rgba(6, 6, 7, 0.02) !important; }
+        .light-theme .message:hover { background: #f2f3f5 !important; }
         .light-theme .message-author { color: #060607; }
         .light-theme .message-author-font { color: #060607 !important; }
         .light-theme .messagecontent-font { color: #060607 !important; }
         .light-theme .message-date { color: #5c5e66; }
-        .light-theme .message-date-font { color: #5c5e66 !important; }
-        .light-theme .message-form-container { background: #ffffff !important; border-top-color: #e3e5e8 !important; }
+        .light-theme .message-form-container { background: #f9f9f9 !important; border-top-color: #e3e5e8 !important; }
         .light-theme .message-input { color: #060607; background: #ebedef; }
         .light-theme button,
         .light-theme input[type="submit"],
@@ -709,11 +722,13 @@
             border-color: #4752c4 !important;
         }
         .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
+        .light-theme .message-action-btn { background: #f9f9f9 !important; }
+        .light-theme .message-action-btn:hover { background: rgba(0, 0, 0, 0.08); }
         .light-theme pre,
         .light-theme code { background: #f2f3f5; border-color: #e3e5e8; color: #2e3338; }
         .light-theme .embed-content,
         .light-theme .forwarded-content-wrapper { background: #f2f3f5; border-color: #e3e5e8; }
-        .light-theme #emoji { background: #ffffff !important; border-color: #e3e5e8; }
+        .light-theme #emoji { background: #f9f9f9 !important; border-color: #e3e5e8; }
         .light-theme .reaction { background: #f2f3f5; }
         .light-theme a { color: #0067e0; }
         .light-theme input[type="text"],
@@ -745,6 +760,7 @@
         .amoled-theme .message-form-container { background: #000000 !important; border-top-color: #333333 !important; }
         .amoled-theme .message-input { color: #fff; background: #0a0a0a; }
         .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
+        .amoled-theme .message-action-btn:hover { background: rgba(255, 255, 255, 0.08) !important; }
         .amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
         .amoled-theme #wrapper .menu-button { 
             background: none !important; 

@@ -45,7 +45,27 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
  * @param {string|null} clientTimezone - User's timezone for date formatting
  * @returns {string} HTML string representing all embeds
  */
-function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezone = null) {
+function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTimezone = null) {
+  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+
+  let embedHead;
+  let embedText;
+  
+  embedHead = "#ffffff";
+  embedText = "#dcddde";
+    
+  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
+  if (whiteThemeCookie == 1) {
+    embedHead = "#000000";
+    embedText = "#000000";
+  } else if (whiteThemeCookie == 2) {
+    embedHead = "#ffffff";
+    embedText = "#dcddde";
+  } else {
+    embedHead = "#ffffff";
+    embedText = "#dcddde";
+  }
+
   if (!embeds || embeds.length === 0) {
     return '';
   }
@@ -63,7 +83,7 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezon
     let authorHtml = '';
     if (embed.author) {
       // Create the author text span
-      let content = `<span style="font-size: 14px; font-weight: 600; color: #ffffff;">${escape(embed.author.name)}</span>`;
+      let content = `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(embed.author.name)}</span>`;
       
       // If URL exists, wrap the content in an anchor tag
       if (embed.author.url) {
@@ -94,7 +114,7 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezon
     if (embed.description) {
       const renderedMarkdown = renderDiscordMarkdown(embed.description);
       const withEmoji = processEmojiInHTML(renderedMarkdown, imagesCookie, animationsCookie);
-      descriptionHtml = `<div style="font-size: 14px; color: #dcddde; margin-bottom: 8px; white-space: pre-wrap;">${withEmoji}</div>`;
+      descriptionHtml = `<div style="font-size: 14px; color: #${embedText}; margin-bottom: 8px; white-space: pre-wrap;">${withEmoji}</div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_DESCRIPTION}', descriptionHtml);
     
@@ -106,10 +126,10 @@ function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezon
       embed.fields.forEach(field => {
         const fieldStyle = field.inline ? 'grid-column: span 1;' : 'grid-column: 1 / -1;';
         fieldsHtml += `<div style="${fieldStyle}">`;
-        fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">${escape(field.name)}</div>`;
+        fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(field.name)}</div>`;
         const renderedValue = renderDiscordMarkdown(field.value);
         const valueWithEmoji = processEmojiInHTML(renderedValue, imagesCookie, animationsCookie);
-        fieldsHtml += `<div style="font-size: 14px; color: #dcddde; white-space: pre-wrap;">${valueWithEmoji}</div>`;
+        fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${valueWithEmoji}</div>`;
         fieldsHtml += '</div>';
       });
       fieldsHtml += '</div>';
