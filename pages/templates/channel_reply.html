@@ -76,88 +76,14 @@
         var emojiShowing = false;
 
         function showEmoji() {
+            var emojiDiv = document.getElementById("emoji");
             if (emojiShowing) {
-                document.getElementById("emoji").style.display = "none";
+                emojiDiv.style.display = "none";
                 emojiShowing = false;
             } else {
-                document.getElementById("emoji").style.display = "block";
+                emojiDiv.style.display = "";
                 emojiShowing = true;
             }
-        }
-
-        // File upload functionality
-        var selectedFile = null;
-
-        function handleFileSelect(input) {
-            var file = input.files[0];
-            if (file) {
-                // Check file size (8MB limit for webhooks)
-                var maxSize = 8 * 1024 * 1024; // 8MB in bytes
-                if (file.size > maxSize) {
-                    alert('File is too large. Maximum size is 8MB.');
-                    input.value = '';
-                    selectedFile = null;
-                    return;
-                }
-                
-                selectedFile = file;
-                
-                // Show file name in message input
-                var messageInput = document.getElementById('message');
-                if (messageInput) {
-                    var currentText = messageInput.value.trim();
-                    var fileName = '[Uploading: ' + file.name + ']';
-                    messageInput.value = currentText ? currentText + ' ' + fileName : fileName;
-                }
-            }
-        }
-        
-        function sendMessageOrFile() {
-            if (selectedFile) {
-                // Upload file with message
-                uploadFile(selectedFile);
-                return false; // Prevent normal form submission
-            }
-            // Otherwise allow normal form submission for text messages
-            return true;
-        }
-        
-        function uploadFile(file) {
-            var formData = new FormData();
-            formData.append('file', file);
-            formData.append('channel', document.getElementById('channel').value);
-            formData.append('message', document.getElementById('message').value);
-            
-            // Show uploading status
-            var messageInput = document.getElementById('message');
-            var originalValue = messageInput.value;
-            messageInput.disabled = true;
-            
-            fetch('/uploadFile', {
-                method: 'POST',
-                body: formData
-            })
-            .then(function(response) {
-                return response.json();
-            })
-            .then(function(data) {
-                if (data.success) {
-                    // Clear input and refresh
-                    messageInput.value = '';
-                    window.location.reload();
-                } else {
-                    alert('Upload failed: ' + (data.error || 'Unknown error'));
-                    messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
-                }
-            })
-            .catch(function(error) {
-                alert('Upload failed: ' + error);
-                messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
-            })
-            .finally(function() {
-                messageInput.disabled = false;
-                selectedFile = null;
-            });
         }
 
         // Spoiler reveal function for Wii compatibility
@@ -182,6 +108,100 @@
                 // Fallback: just remove background if structure is unexpected
                 el.style.background = "none";
             }
+        }
+        
+        // File upload handling (#21) - integrated with send button
+        var selectedFile = null;
+        
+        function handleFileSelect(input) {
+            if (input.files && input.files[0]) {
+                var file = input.files[0];
+                var maxSize = 249 * 1024 * 1024; // 249MB limit for transfer.whalebone.io
+                
+                if (file.size > maxSize) {
+                    alert('File is too large. Maximum size is 249MB.');
+                    input.value = '';
+                    selectedFile = null;
+                    return;
+                }
+                
+                // Upload file immediately without pressing send button
+                uploadFile(file);
+            }
+        }
+        
+        function sendMessageOrFile() {
+            // Files are uploaded immediately on selection, so just allow normal form submission for text messages
+            return true;
+        }
+        
+        function uploadFile(file) {
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('channel', document.getElementById('channel').value);
+            formData.append('message', ''); // No message content, just the file URL
+            
+            // Show uploading indicator
+            var messageInput = document.getElementById('message');
+            var originalValue = messageInput ? messageInput.value : '';
+            if (messageInput) {
+                messageInput.disabled = true;
+                messageInput.value = 'Uploading ' + file.name + '...';
+            }
+            
+            fetch('/uploadFile', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    // Clear message box before refreshing
+                    if (messageInput) {
+                        messageInput.value = '';
+                    }
+                    // Refresh page when upload is done
+                    window.location.reload();
+                } else {
+                    alert('Upload failed: ' + (data.error || 'Unknown error'));
+                    if (messageInput) {
+                        messageInput.value = originalValue;
+                        messageInput.disabled = false;
+                    }
+                }
+            })
+            .catch(function(error) {
+                alert('Upload failed: ' + error);
+                if (messageInput) {
+                    messageInput.value = originalValue;
+                    messageInput.disabled = false;
+                }
+            })
+            .finally(function() {
+                document.getElementById('fileUpload').value = '';
+                selectedFile = null;
+            });
+        }
+        
+        // Theme-aware hover color helper
+        function getHoverColor() {
+            if (document.body.classList.contains('light-theme')) {
+                return 'rgba(0, 0, 0, 0.08)';
+            } else if (document.body.classList.contains('amoled-theme')) {
+                return 'rgba(255, 255, 255, 0.08)';
+            } else {
+                return 'rgba(255, 255, 255, 0.06)';
+            }
+        }
+        
+        function setHoverBg(el) {
+            el.style.background = getHoverColor();
+        }
+        
+        function clearBg(el) {
+            el.style.background = 'none';
         }
     </script>
     <style>
@@ -210,13 +230,11 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            width: 100%;
             font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             font-size: 16px;
             line-height: 1.45;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
         }
 
         body {
@@ -339,11 +357,13 @@
             top: 16px;
             left: 16px;
             z-index: 1000;
-            background: transparent;
+            background: none !important;
             border: none;
-            padding: 8px;
+            padding: 0;
             cursor: pointer;
+            display: block;
         }
+        .menu-button img { width: 24px; height: 24px; display: block; }
         .menu-icon { width: 24px; height: 24px; display: block; }
 
         /* Exception for purple send buttons in AMOLED theme */
@@ -371,22 +391,21 @@
         .message:hover {
             background: rgba(4, 4, 5, 0.07);
         }
-        .message:last-child { border-bottom: none; }
         .message-header { margin-bottom: 4px; }
-        .message-author {
+        .message-author, .message-author-font {
             font-weight: 600;
             cursor: pointer;
             margin-right: 8px;
             color: #ffffff;
             display: inline;
         }
-        .message-date {
+        .message-date, .message-date-font {
             font-size: 12px;
             color: #72767d;
             display: inline;
         }
         .message-link { text-decoration: none; color: inherit; display: block; }
-        .messagecontent {
+        .messagecontent, .messagecontent-font {
             color: #dcddde;
             font-size: 16px;
             line-height: 20px;
@@ -408,12 +427,24 @@
         }
 
         /* Embeds */
-        .embed { margin-top: 8px; max-width: 520px; }
+        .embed { 
+            margin-top: 8px; 
+            max-width: 520px; 
+            display: flex;
+        }
+        .embed-color-bar {
+            width: 4px;
+            background-color: #202225;
+            border-radius: 4px 0 0 4px;
+            flex-shrink: 0;
+        }
         .embed-content {
             background-color: #2f3136;
             border: 1px solid #202225;
-            border-radius: 4px;
+            border-left: none;
+            border-radius: 0 4px 4px 0;
             padding: 8px 12px;
+            flex-grow: 1;
         }
 
         /* Reactions */
@@ -528,7 +559,8 @@
             padding: 10px 24px;
             background: #5865f2;
             color: #fff;
-            border: none;
+            border: none !important;
+            outline: none !important;
             font-weight: 600;
             font-size: 14px;
             cursor: pointer;
@@ -536,6 +568,7 @@
             border-radius: 8px;
         }
         .send-button:hover { background: #4752c4; }
+        .send-button:focus { border: none !important; outline: none !important; }
 
         /* Emoji Picker */
         #emoji {
@@ -676,9 +709,18 @@
         .light-theme .messagecontent { color: #060607 !important; }
         .light-theme .message:hover { background: #f2f3f5 !important; }
         .light-theme .message-author { color: #060607; }
+        .light-theme .message-author-font { color: #060607 !important; }
+        .light-theme .messagecontent-font { color: #060607 !important; }
         .light-theme .message-date { color: #5c5e66; }
         .light-theme .message-form-container { background: #f9f9f9 !important; border-top-color: #e3e5e8 !important; }
         .light-theme .message-input { color: #060607; background: #ebedef; }
+        .light-theme button,
+        .light-theme input[type="submit"],
+        .light-theme input[type="button"] { 
+            background: #5865f2 !important; 
+            color: #ffffff !important;
+            border-color: #4752c4 !important;
+        }
         .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
         .light-theme .message-action-btn { background: #f9f9f9 !important; }
         .light-theme .message-action-btn:hover { background: rgba(0, 0, 0, 0.08); }
@@ -693,6 +735,13 @@
         .light-theme input[type="password"],
         .light-theme input[type="email"],
         .light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #060607; }
+        .light-theme .menu-button { 
+            background: none !important;
+            border: none !important;
+        }
+        .light-theme .menu-button img {
+            filter: brightness(0) saturate(100%) invert(9%) sepia(8%) saturate(1040%) hue-rotate(185deg) brightness(96%) contrast(90%);
+        }
 
         /* ========== AMOLED THEME ========== */
         .amoled-theme body,
@@ -713,10 +762,9 @@
         .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
         .amoled-theme .message-action-btn:hover { background: rgba(255, 255, 255, 0.08) !important; }
         .amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
-        .amoled-theme .menu-button { 
+        .amoled-theme #wrapper .menu-button { 
             background: none !important; 
-            border: none !important; 
-            color: #ffffff !important; 
+            border: none !important;      
         }
         .amoled-theme a { color: #5865f2 !important; }
         .amoled-theme pre,
@@ -776,44 +824,26 @@
                 </div>
 
                 <div id="emoji" style="display: none;">
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
-                        <button onclick="document.getElementById('message').value += ' :sob:'">
-                            <img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
-                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :skull:'">
-                            <img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pleading_face:'">
-                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :heart:'">
-                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsup:'">
-                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
-                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pray:'">
-                            <img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :tada:'">
-                            <img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :slight_smile:'">
-                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                    </div>
+                    <table cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :sob:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :skull:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :pleading_face:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f97a.gif" alt="pleading_face" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :heart:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;"></button></td>
+                        </tr>
+                        <tr>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :thumbsup:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :thumbsdown:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :pray:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :tada:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;"></button></td>
+                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :slight_smile:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f642.gif" alt="slight_smile" style="width: 24px; height: 24px;"></button></td>
+                        </tr>
+                    </table>
                 </div>
                 <a id="end" name="end"></a>
             </div>
+            
             <div id="replying_to">
                 <div style="color: #b9bbbe; font-size: 14px; margin-bottom: 4px;">
                     <strong>Replying to {$REPLY_MESSAGE_AUTHOR}</strong>
@@ -823,22 +853,35 @@
                     {$REPLY_MESSAGE_CONTENT}
                 </div>
             </div>
+
             <div class="message-form-container" style="position: sticky; bottom: 0;">
-                <form action="../send" onsubmit="return sendMessageOrFile()" style="position: relative;">
+                <form action="../send" method="GET" onsubmit="return sendMessageOrFile()" style="position: relative;">
                     <div>
-                        <button type="button" onclick="showEmoji()" class="message-action-btn">
+                        <button type="button" onclick="showEmoji()"
+                            style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
+                            onmouseover="setHoverBg(this)" 
+                            onmouseout="clearBg(this)">
                             <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
                                 style="width: 24px; height: 24px;">
                         </button>
-                        <button type="button" onclick="document.getElementById('fileUpload').click()" class="message-action-btn">
+                        <button type="button" onclick="document.getElementById('fileUpload').click()"
+                            style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
+                            onmouseover="setHoverBg(this)" 
+                            onmouseout="clearBg(this)">
                             <img src="/resources/twemoji/1f4e4.gif" alt="Upload file"
                                 style="width: 24px; height: 24px;">
                         </button>
                         <input type="file" id="fileUpload" style="display:none;" onchange="handleFileSelect(this)">
-                        <a href="/draw/{$CHANNEL_ID}" class="message-action-btn">
+                        <a href="/draw/{$CHANNEL_ID}"
+                            style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
+                            onmouseover="setHoverBg(this)" 
+                            onmouseout="clearBg(this)">
                             <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
                         </a>
-                        <a href="{$REFRESH_URL}" class="message-action-btn">
+                        <a href="{$REFRESH_URL}"
+                            style="display: inline-block; vertical-align: middle; padding: 8px; border-radius: 4px; border: none; background: none; cursor: pointer;"
+                            onmouseover="setHoverBg(this)" 
+                            onmouseout="clearBg(this)" >
                             <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
                         </a>
                     </div>

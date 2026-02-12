@@ -51,18 +51,17 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         parsedurl = urlQuery;
       }
       if (parsedurl.message !== "") {
-        // Check if bot is connected
-        const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-        
-        if (!clientIsReady) {
-          res.writeHead(503, { "Content-Type": "text/plain" });
-          res.write("The bot isn't connected, try again in a moment");
+        const channel = await bot.client.channels.fetch(parsedurl.channel);
+        let member;
+        try {
+          member = await channel.guild.members.fetch(discordID);
+        } catch (err) {
+          console.error("Failed to fetch member:", err);
+          res.writeHead(500, { "Content-Type": "text/html" });
+          res.write("Failed to verify user permissions. Please ensure you have access to this channel or try again later.");
           res.end();
           return;
         }
-
-        const channel = await bot.client.channels.fetch(parsedurl.channel);
-        const member = await channel.guild.members.fetch(discordID);
 
         if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
           res.write("You don't have permission to do that!");
@@ -80,7 +79,12 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
           if (m) {
             let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === m[1]);
             if (!mentioneduser) {
-              mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
+              try {
+                mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
+              } catch (err) {
+                console.error("Failed to fetch members for mention:", err);
+                // Continue without resolving the mention
+              }
             }
             if (mentioneduser) {
               processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
@@ -94,7 +98,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         const base64Image = base64Data.split(';base64,').pop();
         const imageBuffer = Buffer.from(base64Image, 'base64');
 
-        let messageCont = "";
+        messageCont = "";
 
         if (processedmessage) {
           messageCont = processedmessage;
@@ -103,13 +107,13 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         const message = await webhook.send({
           content: messageCont,
           username: member.displayName || member.user.tag,
-          avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
+          avatarURL: await member.user.avatarURL(),
           files: [{ attachment: imageBuffer, name: "image.png" }]
         });
         bot.addToCache(message);
       }
       console.log("Redirecting to channel...");
-      res.writeHead(302, { "Location": `/channels/${parsedurl.channel}` });
+      res.writeHead(302, { "Location": `/channels/${parsedurl.channel}#end` });
       res.end();
     });
   } catch (err) {

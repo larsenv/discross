@@ -1,4 +1,6 @@
+const fs = require('fs');
 const url = require('url');
+const https = require('https');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
@@ -8,6 +10,77 @@ const { formidable } = require('formidable');
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 };
+
+// Upload file to transfer.notkiska.pw and return the URL
+async function uploadToTransfer(filePath, filename) {
+  return new Promise((resolve, reject) => {
+    // Sanitize filename - remove path traversal and keep only safe characters
+    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    
+    const fileStream = fs.createReadStream(filePath);
+    
+    // Handle file stream errors
+    fileStream.on('error', (err) => {
+      reject(new Error(`Failed to read file: ${err.message}`));
+    });
+    
+    // Get file size asynchronously
+    fs.stat(filePath, (statErr, stats) => {
+      if (statErr) {
+        reject(new Error(`Failed to get file stats: ${statErr.message}`));
+        return;
+      }
+      
+      const options = {
+        hostname: 'transfer.notkiska.pw',
+        port: 443,
+        path: `/${encodeURIComponent(sanitizedFilename)}`,
+        method: 'PUT',
+        headers: {
+          'Content-Length': stats.size
+        },
+        // Set a high timeout for large files (15 minutes = 15 * 60 * 1000 ms)
+        timeout: 15 * 60 * 1000
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          if (res.statusCode === 200 || res.statusCode === 201) {
+            // The response should contain the URL to download the file
+            const transferUrl = data.trim();
+            
+            // Validate that the response is a valid HTTPS URL for security
+            if (!transferUrl || !transferUrl.startsWith('https://')) {
+              reject(new Error(`Invalid or insecure URL received from transfer service: ${transferUrl}`));
+              return;
+            }
+            
+            resolve(transferUrl);
+          } else {
+            reject(new Error(`Upload failed with status ${res.statusCode}: ${data}`));
+          }
+        });
+      });
+
+      req.on('error', (err) => {
+        reject(err);
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Upload timeout - file may be too large'));
+      });
+
+      fileStream.pipe(req);
+    });
+  });
+}
 
 async function getOrCreateWebhook(channel, guildID) {
   try {
@@ -35,77 +108,104 @@ const lock = new AsyncLock();
 exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
   try {
     await lock.acquire(discordID, async () => {
-      // Check if bot is connected
       const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-      
+
       if (!clientIsReady) {
         res.writeHead(503, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: "Bot isn't connected" }));
         return;
       }
 
-      // Parse multipart form data
-      const form = formidable({ maxFileSize: 8 * 1024 * 1024 }); // 8MB limit
-      
-      form.parse(req, async (err, fields, files) => {
-        if (err) {
-          console.error("Error parsing form:", err);
-          res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: false, error: "Failed to parse upload" }));
-          return;
-        }
+      const form = formidable({ maxFileSize: 498 * 1024 * 1024 });
 
-        try {
-          const channelId = Array.isArray(fields.channel) ? fields.channel[0] : fields.channel;
-          const messageText = Array.isArray(fields.message) ? fields.message[0] : fields.message;
-          const file = Array.isArray(files.file) ? files.file[0] : files.file;
-
-          if (!file) {
+      // Wrap form.parse in a Promise so the Lock actually waits for the upload to finish
+      await new Promise((resolve, reject) => {
+        form.parse(req, async (err, fields, files) => {
+          if (err) {
+            console.error("Error parsing form:", err);
             res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: "No file provided" }));
+            res.end(JSON.stringify({ success: false, error: "Failed to parse upload" }));
+            resolve(); // Resolve lock
             return;
           }
 
-          const channel = await bot.client.channels.fetch(channelId);
-          const member = await channel.guild.members.fetch(discordID);
+          try {
+            const channelId = Array.isArray(fields.channel) ? fields.channel[0] : fields.channel;
+            const messageText = Array.isArray(fields.message) ? fields.message[0] : fields.message;
+            
+            // Get the file object safely
+            const fileObj = files.file || Object.values(files)[0]; // Fallback if input name isn't 'file'
+            const file = Array.isArray(fileObj) ? fileObj[0] : fileObj;
 
-          if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
-            res.writeHead(403, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: "No permission to send messages" }));
-            return;
+            if (!file) {
+              res.writeHead(400, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ success: false, error: "No file provided" }));
+              resolve();
+              return;
+            }
+
+            // SUPPORT BOTH VERSIONS OF FORMIDABLE (v1 uses .path, v2/v3 uses .filepath)
+            const filePath = file.filepath || file.path;
+
+            const channel = await bot.client.channels.fetch(channelId);
+            const member = await channel.guild.members.fetch(discordID);
+
+            if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
+              res.writeHead(403, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ success: false, error: "No permission to send messages" }));
+              resolve();
+              return;
+            }
+
+            const webhook = await getOrCreateWebhook(channel, channel.guild.id);
+            if (webhook.channelId !== channel.id) {
+                 await webhook.edit({ channel: channel.id });
+            }
+
+            let cleanMessage = messageText ? messageText.replace(/\[Uploading:.*?\]/g, '').trim() : '';
+
+            // Upload file to transfer.notkiska.pw
+            let transferUrl;
+            try {
+              transferUrl = await uploadToTransfer(filePath, file.originalFilename || file.name || 'uploaded_file');
+            } catch (uploadError) {
+              console.error("Error uploading to transfer.notkiska.pw:", uploadError);
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ success: false, error: "Failed to upload file: " + uploadError.message }));
+              resolve();
+              return;
+            }
+
+            // Send message with just the transfer.notkiska.pw URL as a link
+            const message = await webhook.send({
+              content: transferUrl,
+              username: member.displayName || member.user.tag,
+              avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL
+            });
+
+            bot.addToCache(message);
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: true, messageId: message.id }));
+            resolve();
+
+          } catch (error) {
+            console.error("Error uploading file:", error);
+            // Only send headers if not already sent
+            if (!res.headersSent) {
+                res.writeHead(500, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ success: false, error: error.message }));
+            }
+            resolve();
           }
-
-          const webhook = await getOrCreateWebhook(channel, channel.guild.id);
-          await webhook.edit({ channel: channel });
-
-          // Clean message text (remove uploading placeholder)
-          let cleanMessage = messageText ? messageText.replace(/\[Uploading:.*?\]/g, '').trim() : '';
-
-          // Send via webhook
-          const message = await webhook.send({
-            content: cleanMessage || undefined,
-            username: member.displayName || member.user.tag,
-            avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-            files: [{
-              attachment: file.filepath,
-              name: file.originalFilename || 'file'
-            }]
-          });
-          
-          bot.addToCache(message);
-
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: true, messageId: message.id }));
-        } catch (error) {
-          console.error("Error uploading file:", error);
-          res.writeHead(500, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: false, error: error.message }));
-        }
+        });
       });
     });
   } catch (err) {
     console.error("Error in uploadFile:", err);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: false, error: err.message }));
+    if (!res.headersSent) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+    }
   }
 };

@@ -39,7 +39,7 @@ exports.processLogin = async function (bot, req, res, args) {
     } else if (whiteThemeCookie == 2) {
       response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
     } else {
-      response = strReplace(response, "{$WHITE_THEME_ENABLED}", "");
+      response = strReplace(response, "{$WHITE_THEME_ENABLED}", "bgcolor=\"303338\"");
     }
     res.write(response);
   }
