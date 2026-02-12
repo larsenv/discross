@@ -29,7 +29,7 @@
             font-family: 'rodin', Arial, Helvetica, sans-serif;
         }
 
-        .light-theme #wrapper {
+        .light-theme {
             background: #FFFFFF !important;
             color: #060607 !important;
         }
@@ -38,11 +38,21 @@
             color: #060607 !important;
         }
         
+        /* Preserve explicit white colors in warning boxes and styled elements */
+        .light-theme #wrapper font[color="#ffffff"] {
+            color: #ffffff !important;
+        }
+        
+        .light-theme #wrapper font[color="#ffffff"] * {
+            color: #ffffff !important;
+        }
+        
         .light-theme a {
             color: #5865f2 !important;
         }
         
-        .light-theme button {
+        .light-theme button,
+        .light-theme #wrapper button {
             background: #5865f2 !important;
             color: #ffffff !important;
         }
@@ -52,7 +62,7 @@
         }
 
         /* AMOLED theme overrides for server page */
-        .amoled-theme #wrapper {
+        .amoled-theme {
             background: #000000 !important;
             color: #ffffff !important;
         }
@@ -88,7 +98,6 @@
         }
         .category-arrow {
             display: inline-block;
-            transition: transform 0.2s;
             font-size: 0.75em;
         }
         .category-arrow.collapsed {
@@ -160,12 +169,12 @@
     </script>
 </head>
 
-<body bgcolor="#303338" {$WHITE_THEME_ENABLED}>
+<body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
         <table>
             <tbody>
                 <tr>
-                    <td valign="top" style="vertical-align: top;">
+                    <td valign="top" style="vertical-align: top; text-align: center;">
                         <a href="/server/"><img src="/resources/logo.gif" alt="Home"></a><br>
                         <hr noshade>
                         {$SERVER_LIST}

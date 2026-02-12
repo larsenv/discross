@@ -47,6 +47,10 @@ var drawpage = require('./pages/draw.js')
 var senddrawing = require('./pages/senddrawing.js')
 var { handleServerIcon } = require('./pages/serverIconHandler.js')
 
+// Constants for imageProxy path lengths
+const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
+const STICKER_PROXY_PREFIX_LENGTH = '/imageProxy/sticker/'.length; // 20
+
 
 bot.startBot();
 
@@ -103,6 +107,10 @@ server.on('request', async (req, res) => {
     
     // Handle file upload BEFORE reading body (formidable needs raw stream)
     if (parsedurl == "/uploadFile") {
+      // Set high timeout for file uploads (15 minutes = 15 * 60 * 1000 ms)
+      req.setTimeout(15 * 60 * 1000);
+      res.setTimeout(15 * 60 * 1000);
+      
       (async () => {
         const discordID = await auth.checkAuth(req, res, true);
         if (discordID) {
@@ -274,8 +282,22 @@ server.on('request', async (req, res) => {
         }
       }
     } else if (args[1] === 'imageProxy') {
-      const fullImageUrl = `https://cdn.discordapp.com/${args[2] == "emoji" ? "emojis" : "attachments"}/${args[2] == "emoji" ? parsedurl.path.slice(18) : parsedurl.path.slice(12)}`
-      await imageProxy(res, fullImageUrl);
+      // Handle different types of image proxy requests
+      if (args[2] === 'external') {
+        // External URLs are base64-encoded in args[3]
+        const encodedUrl = parsedurl.path.slice(EXTERNAL_PROXY_PREFIX_LENGTH);
+        const fullImageUrl = Buffer.from(encodedUrl, 'base64').toString();
+        await imageProxy(res, fullImageUrl);
+      } else if (args[2] === 'sticker') {
+        // Sticker URLs: /imageProxy/sticker/{stickerId}.{format}
+        const stickerPath = parsedurl.path.slice(STICKER_PROXY_PREFIX_LENGTH);
+        const fullImageUrl = `https://cdn.discordapp.com/stickers/${stickerPath}`;
+        await imageProxy(res, fullImageUrl);
+      } else {
+        // Emoji and attachment URLs
+        const fullImageUrl = `https://cdn.discordapp.com/${args[2] == "emoji" ? "emojis" : "attachments"}/${args[2] == "emoji" ? parsedurl.path.slice(18) : parsedurl.path.slice(12)}`
+        await imageProxy(res, fullImageUrl);
+      }
     } else if (args[1] === 'fileProxy') {
       const filePath = parsedurl.path.slice(11)
       const fullFileUrl = `https://cdn.discordapp.com/attachments/${filePath}`

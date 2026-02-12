@@ -116,35 +116,22 @@
         function handleFileSelect(input) {
             if (input.files && input.files[0]) {
                 var file = input.files[0];
-                var maxSize = 8 * 1024 * 1024; // 8MB limit for webhooks
+                var maxSize = 249 * 1024 * 1024; // 249MB limit for transfer.whalebone.io
                 
                 if (file.size > maxSize) {
-                    alert('File is too large. Maximum size is 8MB.');
+                    alert('File is too large. Maximum size is 249MB.');
                     input.value = '';
                     selectedFile = null;
                     return;
                 }
                 
-                // Store the file for later upload
-                selectedFile = file;
-                
-                // Show file name in message input
-                var messageInput = document.getElementById('message');
-                if (messageInput) {
-                    var currentText = messageInput.value.trim();
-                    var fileName = '[Uploading: ' + file.name + ']';
-                    messageInput.value = currentText ? currentText + ' ' + fileName : fileName;
-                }
+                // Upload file immediately without pressing send button
+                uploadFile(file);
             }
         }
         
         function sendMessageOrFile() {
-            if (selectedFile) {
-                // Upload file with message
-                uploadFile(selectedFile);
-                return false; // Prevent normal form submission
-            }
-            // Otherwise allow normal form submission for text messages
+            // Files are uploaded immediately on selection, so just allow normal form submission for text messages
             return true;
         }
         
@@ -152,12 +139,15 @@
             var formData = new FormData();
             formData.append('file', file);
             formData.append('channel', document.getElementById('channel').value);
-            formData.append('message', document.getElementById('message').value);
+            formData.append('message', ''); // No message content, just the file URL
             
-            // Show uploading status
+            // Show uploading indicator
             var messageInput = document.getElementById('message');
-            messageInput.disabled = true;
-            messageInput.disabled = true;
+            var originalValue = messageInput ? messageInput.value : '';
+            if (messageInput) {
+                messageInput.disabled = true;
+                messageInput.value = 'Uploading ' + file.name + '...';
+            }
             
             fetch('/uploadFile', {
                 method: 'POST',
@@ -168,21 +158,30 @@
             })
             .then(function(data) {
                 if (data.success) {
-                    // Clear input and refresh
-                    messageInput.value = '';
+                    // Clear message box before refreshing
+                    if (messageInput) {
+                        messageInput.value = '';
+                    }
+                    // Refresh page when upload is done
                     window.location.reload();
                 } else {
                     alert('Upload failed: ' + (data.error || 'Unknown error'));
-                    messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
+                    if (messageInput) {
+                        messageInput.value = originalValue;
+                        messageInput.disabled = false;
+                    }
                 }
             })
             .catch(function(error) {
                 alert('Upload failed: ' + error);
-                messageInput.value = originalValue.replace('[Uploading: ' + file.name + ']', '');
+                if (messageInput) {
+                    messageInput.value = originalValue;
+                    messageInput.disabled = false;
+                }
             })
             .finally(function() {
-                messageInput.disabled = false;
                 document.getElementById('fileUpload').value = '';
+                selectedFile = null;
             });
         }
         
@@ -231,13 +230,11 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            width: 100%;
             font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             font-size: 16px;
             line-height: 1.45;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
         }
 
         body {
@@ -740,8 +737,8 @@
         .light-theme input[type="email"],
         .light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #060607; }
         .light-theme .menu-button { 
-            background: #ffffff !important; 
-            border: 1px solid #e3e5e8 !important;
+            background: none !important;
+            border: none !important;
         }
         .light-theme .menu-button img {
             filter: brightness(0) saturate(100%) invert(9%) sepia(8%) saturate(1040%) hue-rotate(185deg) brightness(96%) contrast(90%);
@@ -766,10 +763,9 @@
         .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
         .amoled-theme .message-action-btn:hover { background: rgba(255, 255, 255, 0.08) !important; }
         .amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
-        .amoled-theme .menu-button { 
-            background: none !important; 
-            border: none !important; 
-            color: #ffffff !important; 
+        .amoled-theme #wrapper .menu-button { 
+            background: none !important;  /* Changed from #000000 */
+            border: none !important;      /* Added to ensure no border appears */
         }
         .amoled-theme a { color: #5865f2 !important; }
         .amoled-theme pre,
@@ -823,7 +819,7 @@
         </a>
 
         <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 80px;">
+            <div style="flex: 1; overflow-y: auto; padding: 16px;">
                 <div id="msgcontainer">
                     {$MESSAGES}
                 </div>
@@ -849,7 +845,7 @@
                 <a id="end" name="end"></a>
             </div>
             <div class="message-form-container" style="position: sticky; bottom: 0;">
-                <form action="../send" method="POST" onsubmit="return sendMessageOrFile()" style="position: relative;">
+                <form action="../send" method="GET" onsubmit="return sendMessageOrFile()" style="position: relative;">
                     <div>
                         <button type="button" onclick="showEmoji()" class="message-action-btn">
                             <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"

@@ -122,8 +122,23 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     }
 
     if (chnl) {
-      const botMember = await chnl.guild.members.fetch(bot.client.user.id);
-      const member = await chnl.guild.members.fetch(discordID);
+      let botMember, member;
+      try {
+        botMember = await chnl.guild.members.fetch(bot.client.user.id);
+      } catch (err) {
+        res.write("The bot is not in this server!");
+        res.end();
+        return;
+      }
+      
+      try {
+        member = await chnl.guild.members.fetch(discordID);
+      } catch (err) {
+        res.write("You are not in this server! Please join the server to view this channel.");
+        res.end();
+        return;
+      }
+      
       const user = member.user;
       let username = user.tag;
       if (member.displayName != user.username) {
@@ -535,7 +550,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
         
         // Process user mentions
-        if (item.mentions) {
+        if (item.mentions && item.mentions.members) {
           item.mentions.members.forEach(function (user) {
             if (user) {
               messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));

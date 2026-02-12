@@ -3,10 +3,8 @@ const md = require('markdown-it')({ breaks: true, linkify: true });
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { formatDateWithTimezone } = require('../timezoneUtils');
 const fs = require('fs');
-const HTMLMinifier = require('@bhavingajjar/html-minify');
-const minifier = new HTMLMinifier();
 
-const embed_template = minifier.htmlMinify(fs.readFileSync('pages/templates/message/embed.html', 'utf-8'));
+const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -141,7 +139,11 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     // Process embed image (#29 - restore image rendering)
     let imageHtml = '';
     if (embed.image && imagesCookie === 1) {
-      imageHtml = `<div style="margin-top: 8px;"><img src="${escape(embed.image.url || embed.image.proxyURL)}" style="max-width: 100%; max-height: 300px; border-radius: 4px;" alt="Embed image"></div>`;
+      const imageUrl = embed.image.url || embed.image.proxyURL;
+      // Route through imageProxy to convert to GIF format
+      const encodedImageUrl = Buffer.from(imageUrl).toString('base64');
+      const proxyUrl = `/imageProxy/external/${encodedImageUrl}`;
+      imageHtml = `<div style="margin-top: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 100%; max-height: 300px; border-radius: 4px;" alt="Embed image"></div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
     
@@ -149,7 +151,11 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     // Thumbnail should be positioned BEFORE title/description so it floats to top-right
     let thumbnailHtml = '';
     if (embed.thumbnail && imagesCookie === 1) {
-      thumbnailHtml = `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(embed.thumbnail.url || embed.thumbnail.proxyURL)}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`;
+      const thumbnailUrl = embed.thumbnail.url || embed.thumbnail.proxyURL;
+      // Route through imageProxy to convert to GIF format
+      const encodedThumbnailUrl = Buffer.from(thumbnailUrl).toString('base64');
+      const proxyUrl = `/imageProxy/external/${encodedThumbnailUrl}`;
+      thumbnailHtml = `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', thumbnailHtml);
     
