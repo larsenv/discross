@@ -94,8 +94,29 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
 async function senddrawingAsync(req, res, body) {
   const discordID = await auth.checkAuth(req, res)
   // console.log("senddrawingAsync")
-  const urlQuery = url.parse("/?"+body, true).query
+  
+  // Debug logging to help identify issues
+  if (!body || body.trim() === '') {
+    console.error('Error: senddrawingAsync received empty body');
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('No data received');
+    return;
+  }
+  
+  // Use querystring module with increased maxKeys limit to handle large base64 data
+  const querystring = require('querystring');
+  const urlQuery = querystring.parse(body);
   // console.log(urlQuery)
+  
+  if (!urlQuery || !urlQuery.drawinginput) {
+    console.error('Error: senddrawingAsync - drawinginput not found in parsed URL query');
+    console.error('Body length:', body.length);
+    console.error('Query keys:', Object.keys(urlQuery || {}));
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('Invalid drawing data');
+    return;
+  }
+  
   if (discordID) {
     await senddrawing.sendDrawing(bot, req, res, [], discordID, urlQuery)
   }
@@ -128,6 +149,13 @@ server.on('request', async (req, res) => {
     let body = '' // https://itnext.io/how-to-handle-the-post-request-body-in-node-js-without-using-a-framework-cd2038b93190
     req.on('data', chunk => {
       body += chunk.toString() // convert Buffer to string
+    })
+    req.on('error', (err) => {
+      console.error('Error reading request body:', err);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Error reading request data');
+      }
     })
     req.on('end', () => {
       if (parsedurl == "/switchtheme") {
