@@ -315,26 +315,28 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             }
             // If no member data, just use replyUser - no fetching needed
 
-            // Step 3: Construct the display data
-            const replyAuthor = getDisplayName(replyMember, replyUser);
-            const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
-            
-            // Get message content preview (max 50 chars with ellipsis)
-            let replyContent = '';
-            if (replyMessage && replyMessage.content) {
-              const maxLength = 50;
-              replyContent = replyMessage.content.length > maxLength 
-                ? replyMessage.content.substring(0, maxLength) + '...'
-                : replyMessage.content;
-            }
+            // Step 3: Construct the display data only if we have a valid replyUser
+            if (replyUser) {
+              const replyAuthor = getDisplayName(replyMember, replyUser);
+              const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+              
+              // Get message content preview (max 50 chars with ellipsis)
+              let replyContent = '';
+              if (replyMessage && replyMessage.content) {
+                const maxLength = 50;
+                replyContent = replyMessage.content.length > maxLength 
+                  ? replyMessage.content.substring(0, maxLength) + '...'
+                  : replyMessage.content;
+              }
 
-            isReply = true;
-            replyData = {
-              author: replyAuthor,
-              authorId: replyUser.id,
-              mentionsPing: mentionsRepliedUser,
-              content: replyContent
-            };
+              isReply = true;
+              replyData = {
+                author: replyAuthor,
+                authorId: replyUser.id,
+                mentionsPing: mentionsRepliedUser,
+                content: replyContent
+              };
+            }
           } catch (err) {
             console.error("Could not process reply data:", err);
             isReply = false;
