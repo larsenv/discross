@@ -69,6 +69,30 @@ function removeExistingEndAnchors(html) {
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
+  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+
+  let authorText;
+  let replyText;
+  let template;
+  
+  authorText = "#72767d";
+  replyText = "#b5bac1";
+    
+  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
+  if (whiteThemeCookie == 1) {
+    authorText = "#000000";
+    replyText = "#000000";
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+  } else if (whiteThemeCookie == 2) {
+    authorText = "#72767d";
+    replyText = "#b5bac1";
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+  } else {
+    authorText = "#72767d";
+    replyText = "#b5bac1";
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
+  }
+
   const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
   
   if (!clientIsReady) {
@@ -113,7 +137,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       }
 
       if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
-        let template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
+        template = strReplace(template, "{$SERVER_ID}", chnl.guild.id)
         template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
 
         let final;
@@ -183,11 +207,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             // Add reply indicator (L-shaped line) if this is a reply (#5)
             let replyIndicator = '';
             if (lastReply) {
-              const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:#72767d" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
+              const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:`+authorText+`" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
               replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
                 '<td style="width:2px;height:10px;background-color:#4e5058;border-radius:2px 0 0 2px;vertical-align:top"></td>' +
                 '<td style="width:12px;height:10px;vertical-align:bottom"><div style="height:2px;background-color:#4e5058;border-radius:0 0 0 2px"></div></td>' +
-                '<td style="padding-left:4px"><font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">Replying to @' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
+                '<td style="padding-left:4px"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">Replying to @' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
                 '</tr></table>';
             }
             currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -477,7 +501,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             });
             
             if (embedsToProcess.length > 0) {
-                messagetext += processEmbeds(embedsToProcess, imagesCookie, animationsCookie, clientTimezone);
+                messagetext += processEmbeds(req, embedsToProcess, imagesCookie, animationsCookie, clientTimezone);
             }
         }
         
@@ -616,7 +640,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
           };
           
           const systemText = systemMessages[item.type] || 'performed an action';
-          messagetext = `<font style="font-size:14px;color:#72767d;font-style:italic;" face="rodin,sans-serif">${systemText}</font>`;
+          messagetext = `<font style="font-size:14px;color:`+authorText+`;font-style:italic;" face="rodin,sans-serif">${systemText}</font>`;
         }
 
         lastauthor = item.author;
@@ -643,19 +667,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       islastmessage = true;
       await handlemessage();
 
-      let template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id)
+      template = strReplace(template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
       template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random())
-      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-        
-      // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
-      if (whiteThemeCookie == 1) {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-      } else if (whiteThemeCookie == 2) {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
-      } else {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "");
-      }
 
       let final;
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
