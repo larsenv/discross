@@ -88,6 +88,27 @@ function getMemberColor(member) {
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
+  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+
+  let boxColor;
+
+  boxColor = "#40444b";
+    
+  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
+  if (whiteThemeCookie == 1) {
+    boxColor = "#ffffff";
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+    template = strReplace(template, "{$COLOR}", boxColor);
+  } else if (whiteThemeCookie == 2) {
+    boxColor = "#40444b";
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+    template = strReplace(template, "{$COLOR}", boxColor);
+  } else {
+    boxColor = "#40444b";
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
+    template = strReplace(template, "{$COLOR}", boxColor);
+  }
+
   try {
     // 1. Setup Variables
     let response = "";
@@ -95,7 +116,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
     let botMember;
     let member;
     let user;
-    let template;
     let final;
 
     // 2. Fetch Channel & Member Data
@@ -119,19 +139,9 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
 
       // 4. Load & Prepare the Drawing Template
       // We load the "channel_template" which is your 'draw.html'
-      template = strReplace(channel_template, "{$SERVER_ID}", chnl.guild.id);
+      template = strReplace(template, "{$SERVER_ID}", chnl.guild.id);
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
       template = strReplace(template, "{$CHANNEL_NAME}", chnl.name);
-      
-      // 5. Theme Logic (Cookie Check)
-      const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-      if (whiteThemeCookie == 1) {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-      } else if (whiteThemeCookie == 2) {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
-      } else {
-        template = strReplace(template, "{$WHITE_THEME_ENABLED}", "");
-      }
 
       // 6. Security: Check Send Permissions (Optional but good for UX)
       // Even though we aren't displaying messages, we can check if they are allowed to send drawings.

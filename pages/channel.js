@@ -71,23 +71,28 @@ function removeExistingEndAnchors(html) {
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
 
+  let boxColor;
   let authorText;
   let replyText;
   let template;
   
+  boxColor = "#ffffff";
   authorText = "#72767d";
   replyText = "#b5bac1";
     
   // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
   if (whiteThemeCookie == 1) {
+    boxColor = "#ffffff";
     authorText = "#000000";
     replyText = "#000000";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
   } else if (whiteThemeCookie == 2) {
+    boxColor = "#40444b";
     authorText = "#72767d";
     replyText = "#b5bac1";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
   } else {
+    boxColor = "#40444b";
     authorText = "#72767d";
     replyText = "#b5bac1";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
@@ -156,11 +161,18 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
 
         let final;
-        if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
+        if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
+          final = strReplace(template, "{$INPUT}", input_disabled_template);
+          final = strReplace(final, "{$COLOR}", boxColor);
+          final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
+        } else if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
           final = strReplace(template, "{$INPUT}", input_template);
+          final = strReplace(final, "{$COLOR}", boxColor);
         } else {
           final = strReplace(template, "{$INPUT}", input_disabled_template);
+          final = strReplace(final, "{$COLOR}", boxColor);
         }
+
         final = strReplace(final, "{$MESSAGES}", no_message_history_template);
 
         res.write(final); //write a response to the client
