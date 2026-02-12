@@ -3,6 +3,7 @@ const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
 const { Buffer } = require('buffer');
+const { AttachmentBuilder } = require('discord.js');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -142,11 +143,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
       console.log('DEBUG: About to send webhook with buffer length:', imageBuffer.length);
 
+      // Create AttachmentBuilder for Discord.js v14
+      const attachment = new AttachmentBuilder(imageBuffer, { name: "image.png" });
+
       const message = await webhook.send({
         content: processedmessage,
         username: member.displayName || member.user.tag,
         avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-        files: [{ attachment: imageBuffer, name: "image.png" }]
+        files: [attachment]
       });
       bot.addToCache(message);
       
