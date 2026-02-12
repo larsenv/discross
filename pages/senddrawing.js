@@ -94,9 +94,37 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         await webhook.edit({ channel: channel });
         const base64Data = parsedurl.drawinginput;
 
+        // Validate that we have drawing data
+        if (!base64Data || base64Data.trim() === '') {
+          console.error('Error processing image: Input Buffer is empty');
+          res.writeHead(400, { "Content-Type": "text/html" });
+          res.write("No drawing data provided. Please draw something before sending.");
+          res.end();
+          return;
+        }
+
         // Remove the data URL prefix
         const base64Image = base64Data.split(';base64,').pop();
+        
+        // Validate the base64 string is not empty
+        if (!base64Image || base64Image.trim() === '') {
+          console.error('Error processing image: Base64 data is empty after split');
+          res.writeHead(400, { "Content-Type": "text/html" });
+          res.write("Invalid drawing data format. Please try again.");
+          res.end();
+          return;
+        }
+
         const imageBuffer = Buffer.from(base64Image, 'base64');
+        
+        // Validate the buffer is not empty
+        if (!imageBuffer || imageBuffer.length === 0) {
+          console.error('Error processing image: Generated buffer is empty');
+          res.writeHead(400, { "Content-Type": "text/html" });
+          res.write("Failed to process drawing data. Please try again.");
+          res.end();
+          return;
+        }
 
         messageCont = "";
 
