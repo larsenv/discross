@@ -159,6 +159,12 @@ pre code { background: none; border: none; padding: 0; }
   border-radius: 3px;
 }
 
+/* Light theme mention styles */
+.light-theme .mention {
+  color: #0c4a6e;
+  background: rgba(88, 101, 242, 0.15);
+}
+
 /* Embeds */
 .embed { 
   margin-top: 8px; 
@@ -341,6 +347,16 @@ textarea {
   outline: none;
 }
 
+/* Message input bar wrapper */
+.message-input-bar-wrapper {
+  background: #40444b;
+}
+
+/* Message input field */
+.message-input-field {
+  color: #dcddde;
+}
+
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="email"]:focus,
@@ -409,21 +425,21 @@ br.nodisp { display: none; }
 
 /* ========== LIGHT THEME ========== */
 .light-theme body,
-.light-theme #wrapper { background: #fff; color: #060607; }
+.light-theme #wrapper { background: #f9f9f9; color: #060607; }
 .light-theme .content-padding,
-.light-theme .scrollable-content { background: #fff; color: #060607; }
+.light-theme .scrollable-content { background: #f9f9f9; color: #060607; }
 .light-theme .menu-button { background: transparent; border-color: transparent; }
 .light-theme .header-title,
 .light-theme .header-menu,
 .light-theme .header-menu-link { color: #060607; }
 .light-theme .header-user-info { color: #4f5660; }
 .light-theme .message { border-color: #e3e5e8; background: transparent; }
-.light-theme .message:hover { background: rgba(6, 6, 7, 0.02); }
+.light-theme .message:hover { background: #f2f3f5; }
 .light-theme .message-author { color: #060607; }
 .light-theme .message-date { color: #5c5e66; }
-.light-theme .messagecontent { color: #2e3338; }
+.light-theme .messagecontent { color: #060607; }
 .light-theme .messagecontent a { color: #0067e0; }
-.light-theme .message-form-container { background: #fff; border-top-color: #e3e5e8; }
+.light-theme .message-form-container { background: #f9f9f9; border-top-color: #e3e5e8; }
 .light-theme .message-input-wrapper { background: transparent; }
 .light-theme .message-input { color: #060607; background: #ebedef; }
 .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
@@ -431,7 +447,7 @@ br.nodisp { display: none; }
 .light-theme code { background: #f2f3f5; border-color: #e3e5e8; color: #2e3338; }
 .light-theme .embed-content,
 .light-theme .forwarded-content-wrapper { background: #f2f3f5; border-color: #e3e5e8; }
-.light-theme #emoji { background: #fff; border-color: #e3e5e8; }
+.light-theme #emoji { background: #f9f9f9; border-color: #e3e5e8; }
 .light-theme .reaction { background: #f2f3f5; }
 .light-theme #emoji button:hover { background: rgba(0, 0, 0, 0.08); }
 .light-theme a { color: #0067e0; }
@@ -456,6 +472,15 @@ br.nodisp { display: none; }
 .light-theme textarea:focus {
   border-color: #5865f2;
   background: #e3e5e8;
+}
+
+/* Light theme: message input bar */
+.light-theme .message-input-bar-wrapper {
+  background: #ebedef;
+}
+
+.light-theme .message-input-field {
+  color: #060607;
 }
 
 /* ========== AMOLED THEME ========== */

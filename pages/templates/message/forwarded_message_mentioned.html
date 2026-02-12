@@ -1,12 +1,12 @@
 <table cellpadding="0" cellspacing="0" width="100%" style="margin:0;padding:8px 16px;border-left:4px solid #faa61a;background:rgba(250,166,26,0.1)">
 <tr><td>
+{$REPLY_INDICATOR}
 <table cellpadding="0" cellspacing="0" style="margin-bottom:4px">
 <tr>
-<td><font onclick="document.getElementById('message').value += {$TAG}" style="font-weight:600;color:{$AUTHOR_COLOR};cursor:pointer;margin-right:8px" face="rodin,sans-serif">{$MESSAGE_AUTHOR}{$PING_INDICATOR}</font></td>
+<td><font onclick="document.getElementById('message').value += {$TAG}" style="font-weight:600;color:{$AUTHOR_COLOR};cursor:pointer;margin-right:8px" face="rodin,sans-serif">{$MESSAGE_AUTHOR}</font></td>
 <td><font style="font-size:12px;color:#72767d" face="rodin,sans-serif">{$MESSAGE_DATE}</font></td>
 </tr>
 </table>
-{$REPLY_INDICATOR}
 <font style="font-size:12px;color:#b9bbbe;display:block;margin-bottom:4px" face="rodin,sans-serif">→ Forwarded from {$FORWARDED_AUTHOR}</font>
 <table cellpadding="0" cellspacing="0" width="100%" style="padding:8px;background:rgba(47,49,54,0.6);margin-bottom:8px">
 <tr><td>
@@ -14,6 +14,6 @@
 <font style="color:#dcddde;font-size:14px" face="rodin,sans-serif">{$FORWARDED_CONTENT}</font>
 </td></tr>
 </table>
-<font style="color:#dcddde;font-size:16px;line-height:20px;word-wrap:break-word" face="rodin,sans-serif">{$MESSAGE_CONTENT}</font>
+<font style="font-size:16px;line-height:20px;word-wrap:break-word" face="rodin,sans-serif" class="messagecontent">{$MESSAGE_CONTENT}</font>
 </td></tr>
 </table>

@@ -1,12 +1,12 @@
 <table cellpadding="0" cellspacing="0" width="100%" style="margin:0;padding:8px 0;border-left:4px solid #faa61a;background:rgba(250,166,26,0.1);padding-left:12px">
 <tr><td>
+{$REPLY_INDICATOR}
 <table cellpadding="0" cellspacing="0" style="margin-bottom:4px">
 <tr>
-<td><font onclick="document.getElementById('message').value += {$TAG}" style="font-weight:600;cursor:pointer;margin-right:8px" face="rodin,sans-serif" class="message-author-font" color="{$AUTHOR_COLOR}">{$MESSAGE_AUTHOR}{$PING_INDICATOR}</font></td>
+<td><font onclick="document.getElementById('message').value += {$TAG}" style="font-weight:600;cursor:pointer;margin-right:8px" face="rodin,sans-serif" class="message-author-font" color="{$AUTHOR_COLOR}">{$MESSAGE_AUTHOR}</font></td>
 <td><font style="font-size:12px" face="rodin,sans-serif" class="message-date-font">{$MESSAGE_DATE}</font></td>
 </tr>
 </table>
-{$REPLY_INDICATOR}
 <a href="{$MESSAGE_REPLY_LINK}" style="text-decoration:none;color:inherit">
 <font style="font-size:16px;line-height:20px;word-wrap:break-word" face="rodin,sans-serif" class="messagecontent-font">{$MESSAGE_CONTENT}</font>
 </a>
