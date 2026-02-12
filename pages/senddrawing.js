@@ -3,7 +3,6 @@ const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
 const { Buffer } = require('buffer');
-const { AttachmentBuilder } = discord;
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -132,24 +131,18 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         return;
       }
 
-      console.log('DEBUG: Creating AttachmentBuilder with buffer length:', imageBuffer.length);
+      console.log('DEBUG: Creating attachment with buffer length:', imageBuffer.length);
       console.log('DEBUG: imageBuffer instanceof Buffer:', imageBuffer instanceof Buffer);
-      console.log('DEBUG: imageBuffer.buffer exists:', !!imageBuffer.buffer);
       
-      // Create AttachmentBuilder for Discord.js v14
-      // Use Buffer.from to ensure we have a proper Buffer instance
-      const properBuffer = Buffer.from(imageBuffer);
-      const attachment = new AttachmentBuilder(properBuffer, { name: "drawing.png" });
-      
-      console.log('DEBUG: AttachmentBuilder created:', !!attachment);
-      console.log('DEBUG: attachment.attachment type:', typeof attachment.attachment);
-      console.log('DEBUG: Preparing to send webhook...');
-
-      // Prepare webhook send options
+      // Try sending the buffer directly in the files array without AttachmentBuilder
+      // This might work better with the undici version being used
       const webhookOptions = {
         username: member.displayName || member.user.tag,
         avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-        files: [attachment]
+        files: [{
+          attachment: imageBuffer,
+          name: "drawing.png"
+        }]
       };
       
       // Only add content if there's a message
@@ -158,7 +151,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       }
       
       console.log('DEBUG: Webhook options prepared, has content:', !!webhookOptions.content);
-
+      
       const message = await webhook.send(webhookOptions);
       
       console.log('DEBUG: Webhook send successful!');
