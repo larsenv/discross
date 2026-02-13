@@ -128,21 +128,14 @@
                 // Check if browser supports fetch API (for older browsers like 3DS)
                 if (typeof fetch === 'undefined' || typeof FormData === 'undefined') {
                     // Use traditional form submission for older browsers
-                    // Copy the selected file to the hidden form
-                    var hiddenFileInput = document.getElementById('fileUploadTraditional');
-                    if (hiddenFileInput && input.files) {
-                        // For browsers that don't support programmatic file setting,
-                        // we need to use the same file input
-                        // Since we can't copy files directly, we'll swap the inputs
-                        var uploadForm = document.getElementById('uploadFileForm');
-                        var mainFileInput = document.getElementById('fileUpload');
-                        
-                        // Move the file input to the upload form temporarily
-                        uploadForm.appendChild(mainFileInput);
-                        mainFileInput.setAttribute('name', 'file');
-                        
-                        uploadFileTraditional();
-                    }
+                    var uploadForm = document.getElementById('uploadFileForm');
+                    var mainFileInput = document.getElementById('fileUpload');
+                    
+                    // Move the file input to the upload form temporarily
+                    uploadForm.appendChild(mainFileInput);
+                    mainFileInput.setAttribute('name', 'file');
+                    
+                    uploadFileTraditional();
                 } else {
                     // Upload file immediately using fetch for modern browsers
                     uploadFile(file);
@@ -903,7 +896,7 @@
                 </form>
                 
                 <!-- Hidden form for traditional file upload (for older browsers like 3DS) -->
-                <form id="uploadFileForm" action="/uploadFile" method="POST" enctype="multipart/form-data" style="display:none;">
+                <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data" style="display:none;">
                     <input type="file" name="file" id="fileUploadTraditional">
                     <input type="hidden" name="channel" id="channelUpload" value="{$CHANNEL_ID}">
                     <input type="hidden" name="message" value="">
