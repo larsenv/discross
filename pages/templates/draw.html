@@ -572,14 +572,24 @@
 
         // --- COORDINATE SYSTEM ---
         function getPos(e) {
-            if (e.offsetX) {
-                return { x: e.offsetX, y: e.offsetY };
-            } else if (e.layerX) {
-                return { x: e.layerX, y: e.layerY };
+            var rect = canvas.getBoundingClientRect();
+            var scaleX = canvas.width / rect.width;
+            var scaleY = canvas.height / rect.height;
+            
+            var x, y;
+            if (e.offsetX !== undefined) {
+                x = e.offsetX;
+                y = e.offsetY;
+            } else if (e.layerX !== undefined) {
+                x = e.layerX;
+                y = e.layerY;
             } else {
-                var rect = canvas.getBoundingClientRect();
-                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
             }
+            
+            // Scale coordinates to match canvas internal resolution
+            return { x: x * scaleX, y: y * scaleY };
         }
 
         // --- DRAWING EVENTS ---
@@ -622,7 +632,14 @@
             if (!e.touches || e.touches.length === 0) return null;
             var touch = e.touches[0];
             var rect = canvas.getBoundingClientRect();
-            return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+            var scaleX = canvas.width / rect.width;
+            var scaleY = canvas.height / rect.height;
+            
+            // Scale coordinates to match canvas internal resolution
+            return { 
+                x: (touch.clientX - rect.left) * scaleX, 
+                y: (touch.clientY - rect.top) * scaleY 
+            };
         }
 
         canvas.addEventListener('touchstart', function(e) {
