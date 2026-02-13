@@ -599,6 +599,13 @@ async function processChannelView(bot, req, res, args, discordID, config) {
         const result = await config.postProcessFinal(final, response, {
           chnl, member, botMember, args, getDisplayName, strReplace, fetch
         });
+        if (result === null) {
+          // Error occurred in post-processing
+          res.writeHead(404, { "Content-Type": "text/html" });
+          res.write("Invalid message to reply to!");
+          res.end();
+          return;
+        }
         if (result) {
           final = result.final;
           response = result.response;
