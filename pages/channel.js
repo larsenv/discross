@@ -199,11 +199,22 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       lastReplyData = {};
         
       const memberCache = new Map();
+      
+      // Helper function to check if two messages are from the same user
+      // This handles both regular messages and webhook messages by comparing member IDs when available
+      const isSameUser = (member1, author1, member2, author2) => {
+        // If both messages have member data, compare the actual user IDs
+        if (member1 && member2) {
+          return member1.user.id === member2.user.id;
+        }
+        // Otherwise fall back to comparing author IDs and usernames
+        return author1.id === author2.id && author1.username === author2.username;
+      };
 
       const handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
         if (lastauthor) { // Only consider the last message if this is not the first
           // If the last message is not going to be merged with this one, put it into the response
-          if (islastmessage || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
+          if (islastmessage || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000) {
 
             // Choose template based on whether this is a forwarded message and if user is mentioned
             if (isForwarded && lastMentioned) {
@@ -254,6 +265,15 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         if (!item) { // When processing the last message outside of the forEach item is undefined
           return;
+        }
+        
+        // Fetch member data early for proper message merging (webhook and regular messages)
+        let currentMember = null;
+        if (item.member) {
+          currentMember = item.member;
+        } else if (item.webhookId) {
+          // For webhook messages, fetch member data to enable proper merging with regular messages
+          currentMember = await ensureMemberData(item, chnl.guild, memberCache);
         }
         
         // Check if we need to insert a date separator (when crossing day boundary)
@@ -632,7 +652,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         // If the last message is not going to be merged with this one, use the template for the first message, otherwise use the template for merged messages
-        if (!lastauthor || lastauthor.id != item.author.id || lastauthor.username != item.author.username || item.createdAt - lastdate > 420000) {
+        if (!lastauthor || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000) {
           messagetext = first_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
         } else {
           messagetext = merged_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
@@ -671,15 +691,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         lastauthor = item.author;
-        // Use member data if present, but fetch for webhook messages to get role colors
-        if (item.member) {
-          lastmember = item.member;
-        } else if (item.webhookId) {
-          // For webhook messages, fetch member data to get proper role colors
-          lastmember = await ensureMemberData(item, chnl.guild, memberCache);
-        } else {
-          lastmember = null;
-        }
+        // Use the member data we already fetched early in the function
+        lastmember = currentMember;
         lastdate = item.createdAt;
         currentmessage += messagetext;
         messageid = item.id;
