@@ -118,7 +118,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
       if (!clientIsReady) {
         if (isTraditionalSubmission) {
           res.writeHead(503, { "Content-Type": "text/html" });
-          res.end("<script>alert('Bot isn\\'t connected'); history.back();</script>");
+          res.end("<script>alert('Bot is not connected'); history.back();</script>");
         } else {
           res.writeHead(503, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ success: false, error: "Bot isn't connected" }));
