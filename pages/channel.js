@@ -77,7 +77,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   let template;
   
   boxColor = "#ffffff";
-  authorText = "#72767d";
+  authorText = "#ffffff";
   replyText = "#b5bac1";
     
   // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
@@ -88,12 +88,12 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
   } else if (whiteThemeCookie == 2) {
     boxColor = "#40444b";
-    authorText = "#72767d";
+    authorText = "#ffffff";
     replyText = "#b5bac1";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
   } else {
     boxColor = "#40444b";
-    authorText = "#72767d";
+    authorText = "#ffffff";
     replyText = "#b5bac1";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
   }
@@ -469,6 +469,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                 // Handle YouTube embeds (#52)
                 const isYouTube = (embed.provider?.name === 'YouTube' || embed.url?.includes('youtube.com') || embed.url?.includes('youtu.be')) && embed.thumbnail?.url;
                 
+                // Handle plain image link embeds (just a URL to an image with no other embed data)
+                const isPlainImageEmbed = embed.type === 'image' && embed.url && !embed.title && !embed.description && !embed.author && !embed.fields?.length;
+                
                 if (isTenor && imagesCookie == 1) {
                     const gifUrl = embed.thumbnail.url;
                     const urlToFind = embed.url;
@@ -522,6 +525,30 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                             `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-30%, -50%); width: 0; height: 0; border-left: 20px solid #fff; border-top: 12px solid transparent; border-bottom: 12px solid transparent;"></div>` +
                             `</div></a></div>`;
                     }
+                } else if (isPlainImageEmbed && imagesCookie == 1) {
+                    // Handle plain image embeds (e.g., someone posts https://example.com/image.png)
+                    const imageUrl = embed.thumbnail?.url || embed.url;
+                    const urlToFind = embed.url;
+                    
+                    if (imageUrl) {
+                        let replaced = false;
+                        // Try to find and replace the anchor tag created by markdown
+                        if (urlToFind) {
+                            const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+                            const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
+                            
+                            if (anchorRegex.test(messagetext)) {
+                                messagetext = messagetext.replace(anchorRegex, `<a href="${escape(imageUrl)}" target="_blank"><img src="${escape(imageUrl)}" style="max-width: 400px; max-height: 500px; border-radius: 4px;" alt="Image"></a>`);
+                                replaced = true;
+                            }
+                        }
+                        
+                        // If replacement failed, append the image
+                        if (!replaced) {
+                            messagetext += `<br><a href="${escape(imageUrl)}" target="_blank"><img src="${escape(imageUrl)}" style="max-width: 400px; max-height: 500px; border-radius: 4px;" alt="Image"></a>`;
+                        }
+                    }
+                    // Do NOT add to embedsToProcess
                 } else {
                     embedsToProcess.push(embed);
                 }
