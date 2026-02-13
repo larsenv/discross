@@ -75,6 +75,11 @@ function getMemberColor(member, fallbackColor = "#ffffff") {
  * For webhook messages (which don't have member data), attempts to find the
  * real guild member by matching the webhook's display name.
  * 
+ * LIMITATIONS for webhook messages:
+ * - Requires fetching all guild members on first webhook lookup (cached afterwards)
+ * - If multiple users have the same display name, returns the first match
+ * - May cause rate limiting in very large guilds (10k+ members)
+ * 
  * @param {Object} message - Discord Message object
  * @param {Object} guild - Discord Guild object
  * @param {Map} cache - Optional cache to store fetched members and avoid repeated API calls
