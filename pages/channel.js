@@ -226,7 +226,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             
             // Use helper functions for proper nickname and color
             const displayName = getDisplayName(lastmember, lastauthor);
-            const authorColor = getMemberColor(lastmember);
+            const authorColor = getMemberColor(lastmember, authorText);
             
             currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
             currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
