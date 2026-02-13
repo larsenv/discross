@@ -75,9 +75,15 @@ function getMemberColor(member, fallbackColor = "#ffffff") {
  * For webhook messages (which don't have member data), attempts to find the
  * real guild member by matching the webhook's display name.
  * 
+ * LIMITATIONS for webhook messages:
+ * - Requires fetching all guild members on every webhook message (guild member list is cached by Discord.js)
+ * - Webhook lookups are NOT cached to ensure fresh nickname/role lookups on every pass
+ * - If multiple users have the same display name, returns the first match
+ * - May cause rate limiting in very large guilds (10k+ members)
+ * 
  * @param {Object} message - Discord Message object
  * @param {Object} guild - Discord Guild object
- * @param {Map} cache - Optional cache to store fetched members and avoid repeated API calls
+ * @param {Map} cache - Optional cache to store fetched members and avoid repeated API calls (only for non-webhook messages)
  * @returns {Promise<Object|null>} GuildMember object or null if fetch fails
  */
 async function ensureMemberData(message, guild, cache = null) {
@@ -92,8 +98,40 @@ async function ensureMemberData(message, guild, cache = null) {
     return null;
   }
   
-  // Check cache first if provided (use webhook:username for webhook messages)
-  const cacheKey = message.webhookId ? `webhook:${message.author.username}` : message.author.id;
+  // For webhook messages, try to find member by matching display name
+  // Note: We do NOT cache webhook lookups to ensure fresh nickname/role lookups on every pass
+  if (message.webhookId) {
+    try {
+      const webhookUsername = message.author.username;
+      console.debug(`Searching for webhook sender: ${webhookUsername}`);
+      
+      // Search through guild members to find matching display name
+      // Note: This fetches all members, which is cached by Discord.js after first fetch
+      const members = await guild.members.fetch();
+      const webhookUsernameLower = webhookUsername.toLowerCase();
+      
+      const matchingMember = members.find(member => {
+        // Case-insensitive comparison for reliable matching
+        return member.displayName.toLowerCase() === webhookUsernameLower || 
+               member.user.globalName?.toLowerCase() === webhookUsernameLower ||
+               member.user.username.toLowerCase() === webhookUsernameLower;
+      });
+      
+      if (matchingMember) {
+        console.debug(`Found matching member for webhook: ${matchingMember.user.username}`);
+        return matchingMember;
+      }
+      
+      console.debug(`No matching member found for webhook username: ${webhookUsername}`);
+      return null;
+    } catch (error) {
+      console.error('Error searching for webhook sender:', error);
+      return null;
+    }
+  }
+  
+  // Check cache first if provided (for non-webhook messages)
+  const cacheKey = message.author.id;
   if (cache && cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
