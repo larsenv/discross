@@ -105,11 +105,15 @@ async function ensureMemberData(message, guild, cache = null) {
       console.debug(`Searching for webhook sender: ${webhookUsername}`);
       
       // Search through guild members to find matching display name
+      // Note: This fetches all members, which is cached by Discord.js after first fetch
       const members = await guild.members.fetch();
+      const webhookUsernameLower = webhookUsername.toLowerCase();
+      
       const matchingMember = members.find(member => {
-        return member.displayName === webhookUsername || 
-               member.user.globalName === webhookUsername ||
-               member.user.username === webhookUsername;
+        // Case-insensitive comparison for reliable matching
+        return member.displayName.toLowerCase() === webhookUsernameLower || 
+               member.user.globalName?.toLowerCase() === webhookUsernameLower ||
+               member.user.username.toLowerCase() === webhookUsernameLower;
       });
       
       if (matchingMember) {
