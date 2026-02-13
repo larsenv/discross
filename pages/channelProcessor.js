@@ -618,7 +618,7 @@ async function processChannelView(bot, req, res, args, discordID, config) {
       
       // Allow post-processing of response HTML
       if (config.postProcessResponse) {
-        response = await config.postProcessResponse(response);
+        response = await config.postProcessResponse(response, { fetch });
       }
       
       // Remove any existing end anchors from messages HTML before appending exactly one
