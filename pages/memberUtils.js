@@ -98,6 +98,36 @@ async function ensureMemberData(message, guild, cache = null) {
     return cache.get(cacheKey);
   }
   
+  // For webhook messages, try to find member by matching display name
+  if (message.webhookId) {
+    try {
+      const webhookUsername = message.author.username;
+      console.debug(`Searching for webhook sender: ${webhookUsername}`);
+      
+      // Search through guild members to find matching display name
+      const members = await guild.members.fetch();
+      const matchingMember = members.find(member => {
+        return member.displayName === webhookUsername || 
+               member.user.globalName === webhookUsername ||
+               member.user.username === webhookUsername;
+      });
+      
+      if (matchingMember) {
+        console.debug(`Found matching member for webhook: ${matchingMember.user.username}`);
+        if (cache) {
+          cache.set(cacheKey, matchingMember);
+        }
+        return matchingMember;
+      }
+      
+      console.debug(`No matching member found for webhook username: ${webhookUsername}`);
+      return null;
+    } catch (error) {
+      console.error('Error searching for webhook sender:', error);
+      return null;
+    }
+  }
+  
   // Try to fetch the member from the guild (non-webhook message)
   try {
     console.debug(`Fetching member data for user ${message.author.id} (${message.author.username})`);
