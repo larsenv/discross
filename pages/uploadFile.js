@@ -6,7 +6,6 @@ const bot = require('../bot.js');
 const discord = require('discord.js');
 const { Buffer } = require('buffer');
 const { formidable } = require('formidable');
-const escapeHtml = require('escape-html');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -112,7 +111,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
       const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
 
       // Detect if this is a traditional form submission (for older browsers like 3DS)
-      // Check for explicit query parameter first, then fallback to Accept header
+      // Check for explicit query parameter
       const parsedUrl = url.parse(req.url, true);
       const isTraditionalSubmission = parsedUrl.query.traditional === 'true';
 
@@ -198,8 +197,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
               console.error("Error uploading to transfer.notkiska.pw:", uploadError);
               if (isTraditionalSubmission) {
                 res.writeHead(500, { "Content-Type": "text/html" });
-                const escapedMessage = escapeHtml(uploadError.message);
-                res.end("<script>alert('Failed to upload file: " + escapedMessage.replace(/'/g, "\\'") + "'); history.back();</script>");
+                const safeMessage = JSON.stringify('Failed to upload file: ' + uploadError.message);
+                res.end("<script>alert(" + safeMessage + "); history.back();</script>");
               } else {
                 res.writeHead(500, { "Content-Type": "application/json" });
                 res.end(JSON.stringify({ success: false, error: "Failed to upload file: " + uploadError.message }));
@@ -234,8 +233,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             if (!res.headersSent) {
                 if (isTraditionalSubmission) {
                   res.writeHead(500, { "Content-Type": "text/html" });
-                  const escapedMessage = escapeHtml(error.message);
-                  res.end("<script>alert('Error: " + escapedMessage.replace(/'/g, "\\'") + "'); history.back();</script>");
+                  const safeMessage = JSON.stringify('Error: ' + error.message);
+                  res.end("<script>alert(" + safeMessage + "); history.back();</script>");
                 } else {
                   res.writeHead(500, { "Content-Type": "application/json" });
                   res.end(JSON.stringify({ success: false, error: error.message }));
