@@ -671,8 +671,15 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         lastauthor = item.author;
-        // Use member data if present, but don't fetch - speeds up page load
-        lastmember = item.member || null;
+        // Use member data if present, but fetch for webhook messages to get role colors
+        if (item.member) {
+          lastmember = item.member;
+        } else if (item.webhookId) {
+          // For webhook messages, fetch member data to get proper role colors
+          lastmember = await ensureMemberData(item, chnl.guild, memberCache);
+        } else {
+          lastmember = null;
+        }
         lastdate = item.createdAt;
         currentmessage += messagetext;
         messageid = item.id;
