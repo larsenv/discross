@@ -6,6 +6,7 @@ const bot = require('../bot.js');
 const discord = require('discord.js');
 const { Buffer } = require('buffer');
 const { formidable } = require('formidable');
+const escapeHtml = require('escape-html');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -111,8 +112,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
       const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
 
       // Detect if this is a traditional form submission (for older browsers like 3DS)
-      const acceptHeader = req.headers['accept'] || '';
-      const isTraditionalSubmission = !acceptHeader.includes('application/json');
+      // Check for explicit query parameter first, then fallback to Accept header
+      const parsedUrl = url.parse(req.url, true);
+      const isTraditionalSubmission = parsedUrl.query.traditional === 'true';
 
       if (!clientIsReady) {
         if (isTraditionalSubmission) {
@@ -196,7 +198,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
               console.error("Error uploading to transfer.notkiska.pw:", uploadError);
               if (isTraditionalSubmission) {
                 res.writeHead(500, { "Content-Type": "text/html" });
-                res.end("<script>alert('Failed to upload file: " + uploadError.message.replace(/'/g, "\\'") + "'); history.back();</script>");
+                const escapedMessage = escapeHtml(uploadError.message);
+                res.end("<script>alert('Failed to upload file: " + escapedMessage.replace(/'/g, "\\'") + "'); history.back();</script>");
               } else {
                 res.writeHead(500, { "Content-Type": "application/json" });
                 res.end(JSON.stringify({ success: false, error: "Failed to upload file: " + uploadError.message }));
@@ -231,7 +234,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             if (!res.headersSent) {
                 if (isTraditionalSubmission) {
                   res.writeHead(500, { "Content-Type": "text/html" });
-                  res.end("<script>alert('Error: " + error.message.replace(/'/g, "\\'") + "'); history.back();</script>");
+                  const escapedMessage = escapeHtml(error.message);
+                  res.end("<script>alert('Error: " + escapedMessage.replace(/'/g, "\\'") + "'); history.back();</script>");
                 } else {
                   res.writeHead(500, { "Content-Type": "application/json" });
                   res.end(JSON.stringify({ success: false, error: error.message }));
@@ -245,8 +249,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
   } catch (err) {
     console.error("Error in uploadFile:", err);
     if (!res.headersSent) {
-        const acceptHeader = req.headers['accept'] || '';
-        const isTraditionalSubmission = !acceptHeader.includes('application/json');
+        // Re-parse URL to check for traditional submission flag
+        const parsedUrl = url.parse(req.url, true);
+        const isTraditionalSubmission = parsedUrl.query.traditional === 'true';
         if (isTraditionalSubmission) {
           res.writeHead(500, { "Content-Type": "text/html" });
           res.end("<script>alert('Internal Server Error'); history.back();</script>");
