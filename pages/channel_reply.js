@@ -40,11 +40,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         return null;
       }
     },
-    postProcessResponse: async (response) => {
+    postProcessResponse: async (response, { fetch }) => {
       // Process Tenor links
       const tensorLinksRegex = /<a href="https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)">https:\/\/tenor\.com\/view\/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)<\/a>/g;
       let tmpTensorLinks = [...response.toString().matchAll(tensorLinksRegex)];
-      const fetch = require("sync-fetch");
       let resp_,gifLink,description;
       tmpTensorLinks.forEach(link => {
         resp_ = fetch("https://g.tenor.com/v1/gifs?ids=" + link[0].toString().split("-").at(-1).replace(/<\/a>/, "") + "&key=LIVDSRZULELA");
@@ -52,7 +51,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           resp_ = resp_.json();
           gifLink = resp_["results"][0]["media"][0]["tinygif"]["url"];
           description = resp_["results"][0]["content_description"];
-        } catch { 
+        } catch (err) { 
+          console.error("Error processing Tenor link:", err);
           return;
         }
         response = response.replace(link[0], "<img src=\"" + gifLink + "\" alt=\"" + description + "\">");
