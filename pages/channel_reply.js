@@ -36,8 +36,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         
         return { final, response };
       } catch (err) {
-        // Throw error to be caught by outer handler
-        throw new Error("Invalid message to reply to!");
+        // Return null to signal error, which will be handled by channelProcessor
+        return null;
       }
     },
     postProcessResponse: async (response) => {
