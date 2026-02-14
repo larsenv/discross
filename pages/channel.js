@@ -215,6 +215,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         if (lastauthor) { // Only consider the last message if this is not the first
           // If the last message is not going to be merged with this one, put it into the response
           // Note: We can't use currentMember here yet as it hasn't been fetched, so rely on author comparison
+          // This is a conservative check - the actual merge decision for the current message happens later at line 656
           if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000))) {
 
             // Choose template based on whether this is a forwarded message and if user is mentioned
