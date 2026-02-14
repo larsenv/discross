@@ -204,17 +204,12 @@ pre code { background: none; border: none; padding: 0; }
   margin-bottom: 8px;
 }
 
-/* Message Input - FIXED AT BOTTOM with proper styling */
+/* Message Input - AT BOTTOM (no fixed positioning for legacy browser support) */
 .message-form-container {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  z-index: 50;
   background: #36393f;
   border-top: 1px solid #40444b;
-  padding: 12px; /* FIX: Added more padding */
+  padding: 12px;
+  width: 100%;
 }
 
 /* Buttons Row */
