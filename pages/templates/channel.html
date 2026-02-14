@@ -494,17 +494,12 @@
             margin-bottom: 8px;
         }
 
-        /* Message Input - FIXED AT BOTTOM */
+        /* Message Input - AT BOTTOM (no sticky/fixed for legacy browser support) */
         .message-form-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            z-index: 100;
             background: #36393f;
             border-top: 1px solid #40444b;
             padding: 12px;
+            width: 100%;
         }
 
         /* Buttons Row */
@@ -597,13 +592,13 @@
         .send-button:hover { background: #4752c4; }
         .send-button:focus { border: none !important; outline: none !important; }
 
-        /* Emoji Picker */
+        /* Emoji Picker - positioned above message form */
         #emoji {
             background: #2f3136;
             border: 1px solid #40444b;
             border-radius: 8px;
             padding: 16px;
-            margin: 8px 0;
+            margin: 8px 12px;
         }
         #emoji table { width: 100%; }
         #emoji button {
@@ -821,8 +816,6 @@
             .c-box { width: 20px; height: 20px; margin: 2px; }
 
             .message-form-container {
-                left: 0 !important;
-                right: 0 !important;
                 padding: 8px;
             }
 
@@ -845,62 +838,63 @@
             <img src="/resources/images/menu.gif" alt="Menu" style="width: 24px; height: 24px;">
         </a>
 
-        <div style="padding-left: 60px; height: 100vh; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow-y: auto; padding: 16px;">
+        <div style="padding-left: 60px; padding-bottom: 200px;">
+            <div style="padding: 16px;">
                 <div id="msgcontainer">
                     {$MESSAGES}
                 </div>
-
-                <div id="emoji" style="display: none;">
-                    <table cellpadding="0" cellspacing="0" width="100%">
-                        <tr>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :sob:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;"></button></td>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" style="width: 24px; height: 24px;"></button></td>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :skull:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;"></button></td>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :pleading_face:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f97a.gif" alt="pleading_face" style="width: 24px; height: 24px;"></button></td>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :heart:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;"></button></td>
-                        </tr>
-                        <tr>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :thumbsup:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;"></button></td>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :thumbsdown:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;"></button></td>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :pray:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;"></button></td>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :tada:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;"></button></td>
-                            <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :slight_smile:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f642.gif" alt="slight_smile" style="width: 24px; height: 24px;"></button></td>
-                        </tr>
-                    </table>
-                </div>
                 <a id="end" name="end"></a>
             </div>
-            <div class="message-form-container" style="position: sticky; bottom: 0;">
-                <form action="../send" method="GET" onsubmit="return sendMessageOrFile()" style="position: relative;">
-                    <div>
-                        <button type="button" onclick="showEmoji()" class="message-action-btn">
-                            <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                        <button type="button" onclick="document.getElementById('fileUpload').click()" class="message-action-btn">
-                            <img src="/resources/twemoji/1f4e4.gif" alt="Upload file"
-                                style="width: 24px; height: 24px;">
-                        </button>
-                        <input type="file" id="fileUpload" style="display:none;" onchange="handleFileSelect(this)">
-                        <a href="/draw/{$CHANNEL_ID}" class="message-action-btn">
-                            <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
-                        </a>
-                        <a href="{$REFRESH_URL}" class="message-action-btn">
-                            <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
-                        </a>
-                    </div>
-                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                    <input type="hidden" id="lite" name="lite" value="False">
-                    {$INPUT}
-                </form>
-                
-                <!-- Hidden form for traditional file upload (for older browsers like 3DS) -->
-                <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data" style="display:none;">
-                    <input type="hidden" name="channel" id="channelUpload" value="{$CHANNEL_ID}">
-                    <input type="hidden" name="message" value="">
-                </form>
+        </div>
+        
+        <div class="message-form-container">
+            <div id="emoji" style="display: none;">
+                <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :sob:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f62d.gif" alt="sob" style="width: 24px; height: 24px;"></button></td>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" style="width: 24px; height: 24px;"></button></td>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :skull:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f480.gif" alt="skull" style="width: 24px; height: 24px;"></button></td>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :pleading_face:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f97a.gif" alt="pleading_face" style="width: 24px; height: 24px;"></button></td>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :heart:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/2764-fe0f.gif" alt="heart" style="width: 24px; height: 24px;"></button></td>
+                    </tr>
+                    <tr>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :thumbsup:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f44d.gif" alt="thumbsup" style="width: 24px; height: 24px;"></button></td>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :thumbsdown:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" style="width: 24px; height: 24px;"></button></td>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :pray:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f64f.gif" alt="pray" style="width: 24px; height: 24px;"></button></td>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :tada:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f389.gif" alt="tada" style="width: 24px; height: 24px;"></button></td>
+                        <td width="20%" align="center" style="padding:4px"><button type="button" onclick="document.getElementById('message').value += ' :slight_smile:'" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:4px" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f642.gif" alt="slight_smile" style="width: 24px; height: 24px;"></button></td>
+                    </tr>
+                </table>
             </div>
+            
+            <form action="../send" method="GET" onsubmit="return sendMessageOrFile()" style="position: relative;">
+                <div>
+                    <button type="button" onclick="showEmoji()" class="message-action-btn">
+                        <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
+                            style="width: 24px; height: 24px;">
+                    </button>
+                    <button type="button" onclick="document.getElementById('fileUpload').click()" class="message-action-btn">
+                        <img src="/resources/twemoji/1f4e4.gif" alt="Upload file"
+                            style="width: 24px; height: 24px;">
+                    </button>
+                    <input type="file" id="fileUpload" style="display:none;" onchange="handleFileSelect(this)">
+                    <a href="/draw/{$CHANNEL_ID}" class="message-action-btn">
+                        <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
+                    </a>
+                    <a href="{$REFRESH_URL}" class="message-action-btn">
+                        <img src="/resources/images/refresh.gif" alt="Refresh" style="width: 24px; height: 24px;">
+                    </a>
+                </div>
+                <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                <input type="hidden" id="lite" name="lite" value="False">
+                {$INPUT}
+            </form>
+            
+            <!-- Hidden form for traditional file upload (for older browsers like 3DS) -->
+            <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data" style="display:none;">
+                <input type="hidden" name="channel" id="channelUpload" value="{$CHANNEL_ID}">
+                <input type="hidden" name="message" value="">
+            </form>
         </div>
     </div>
 </body>
