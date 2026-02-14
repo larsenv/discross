@@ -212,6 +212,16 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       };
 
       const handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
+        // Fetch member data early for proper message merging (webhook and regular messages)
+        // This must be done before checking if messages should be merged
+        let currentMember = null;
+        if (item && item.member) {
+          currentMember = item.member;
+        } else if (item && item.webhookId) {
+          // For webhook messages, fetch member data to enable proper merging with regular messages
+          currentMember = await ensureMemberData(item, chnl.guild, memberCache);
+        }
+        
         if (lastauthor) { // Only consider the last message if this is not the first
           // If the last message is not going to be merged with this one, put it into the response
           if (islastmessage || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000) {
@@ -265,15 +275,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         if (!item) { // When processing the last message outside of the forEach item is undefined
           return;
-        }
-        
-        // Fetch member data early for proper message merging (webhook and regular messages)
-        let currentMember = null;
-        if (item.member) {
-          currentMember = item.member;
-        } else if (item.webhookId) {
-          // For webhook messages, fetch member data to enable proper merging with regular messages
-          currentMember = await ensureMemberData(item, chnl.guild, memberCache);
         }
         
         // Check if we need to insert a date separator (when crossing day boundary)
