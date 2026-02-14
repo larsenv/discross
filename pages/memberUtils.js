@@ -103,7 +103,6 @@ async function ensureMemberData(message, guild, cache = null) {
   if (message.webhookId) {
     try {
       const webhookUsername = message.author.username;
-      console.debug(`Searching for webhook sender: ${webhookUsername}`);
       
       // Search through guild members to find matching display name
       // Note: This fetches all members, which is cached by Discord.js after first fetch
