@@ -43,22 +43,22 @@ function getDisplayName(member, author) {
 }
 
 /**
- * Get the member's highest role color or use fallback color
+ * Get the member's highest role color or default to white
  * 
  * @param {Object} member - Discord GuildMember object (may be null)
- * @param {string} fallbackColor - Color to use when no role color is available (default: "#ffffff")
  * @returns {string} Hex color string (e.g., "#ffffff")
  */
-function getMemberColor(member, fallbackColor = "#ffffff") {
+function getMemberColor(member) {
+  return "#ffffff";
   if (!member || !member.roles || !member.roles.highest) {
-    console.debug(`getMemberColor: No member or roles, returning fallback ${fallbackColor}`);
-    return fallbackColor;
+    console.debug('getMemberColor: No member or roles, returning white');
+    return "#ffffff"; // Default white color
   }
   
   const roleColor = member.roles.highest.color;
   if (roleColor === 0) {
-    console.debug(`getMemberColor: Role color is 0 (default), returning fallback ${fallbackColor}`);
-    return fallbackColor;
+    console.debug('getMemberColor: Role color is 0 (default), returning white');
+    return "#ffffff"; // Default role has color 0, use white
   }
   
   // Convert Discord color integer to hex
@@ -75,15 +75,9 @@ function getMemberColor(member, fallbackColor = "#ffffff") {
  * For webhook messages (which don't have member data), attempts to find the
  * real guild member by matching the webhook's display name.
  * 
- * LIMITATIONS for webhook messages:
- * - Requires fetching all guild members on every webhook message (guild member list is cached by Discord.js)
- * - Webhook lookups are NOT cached to ensure fresh nickname/role lookups on every pass
- * - If multiple users have the same display name, returns the first match
- * - May cause rate limiting in very large guilds (10k+ members)
- * 
  * @param {Object} message - Discord Message object
  * @param {Object} guild - Discord Guild object
- * @param {Map} cache - Optional cache to store fetched members and avoid repeated API calls (only for non-webhook messages)
+ * @param {Map} cache - Optional cache to store fetched members and avoid repeated API calls
  * @returns {Promise<Object|null>} GuildMember object or null if fetch fails
  */
 async function ensureMemberData(message, guild, cache = null) {
@@ -98,8 +92,8 @@ async function ensureMemberData(message, guild, cache = null) {
     return null;
   }
   
-  // Check cache first if provided (for non-webhook messages)
-  const cacheKey = message.author.id;
+  // Check cache first if provided (use webhook:username for webhook messages)
+  const cacheKey = message.webhookId ? `webhook:${message.author.username}` : message.author.id;
   if (cache && cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
@@ -115,7 +109,8 @@ async function ensureMemberData(message, guild, cache = null) {
     return member;
   } catch (error) {
     // Silently return null - member not found (#11)
-    // Failed member fetches will result in white/fallback colors
+    // Since we're not using role colors (getMemberColor always returns white),
+    // failed member fetches are not critical
     return null;
   }
 }
