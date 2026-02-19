@@ -250,6 +250,10 @@ server.on('request', async (req, res) => {
           return;
         }
       }
+    } else if (args[1] === "jobs"){
+      res.writeHead(302, { "Location": "http://careers.mcdonalds.com/" });
+      res.end();
+      return;
     } else if (args[1] === 'draw'){
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
