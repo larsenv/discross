@@ -90,6 +90,7 @@
             } else {
                 emojiDiv.style.display = "";
                 emojiShowing = true;
+                try { emojiDiv.scrollIntoView(); } catch(e) { /* scrollIntoView not supported */ }
             }
         }
 
