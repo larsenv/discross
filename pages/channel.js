@@ -338,7 +338,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         urls.push(url);
       });
       urls.forEach(url => {
-        url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:400px;max-height:500px;width:auto;height:auto;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url);
+        url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:auto;height:auto;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url);
       });
     }
 
@@ -347,7 +347,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         item.stickers.forEach(sticker => {
           const stickerExt = animationsCookie === 1 ? 'gif' : 'png';
           const stickerURL = `/imageProxy/sticker/${sticker.id}.${stickerExt}`;
-          messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
+          messagetext += `<br><img src="${stickerURL}" style="width: 100px; height: 100px;" alt="sticker">`;
         });
       } else {
         item.stickers.forEach(sticker => {
@@ -399,12 +399,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           const thumbnailUrl = embed.thumbnail.url;
           const videoUrl = embed.url;
           if (thumbnailUrl) {
-            messagetext += `<br><div style="position: relative; display: inline-block;">` +
-              `<a href="${videoUrl}" target="_blank">` +
-              `<img src="${thumbnailUrl}" style="max-width: 100%; border-radius: 4px;" alt="YouTube Video">` +
-              `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; background: rgba(0,0,0,0.7); border-radius: 12px;">` +
-              `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-30%, -50%); width: 0; height: 0; border-left: 20px solid #fff; border-top: 12px solid transparent; border-bottom: 12px solid transparent;"></div>` +
-              `</div></a></div>`;
+            messagetext += `<br><a href="${videoUrl}" target="_blank"><img src="${thumbnailUrl}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
           }
         } else {
           embedsToProcess.push(embed);
