@@ -90,33 +90,25 @@
 
 <body style="margin: 0;" {$WHITE_THEME_ENABLED}>
   <div id="wrapper">
-    <table>
+    <table style="width: 100%;">
       <tr>
         <td><img src="/resources/logo.gif" alt="Logo"></td>
-
         <td>
           <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
         </td>
         <td width="100%" align="right">
-          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a style="color: #dddddd;" href="./login.html">
-                <font color="#dddddd">Login</font>
-            </a>&#160;
-            <a style="color: #dddddd;" href="./register.html">
-                <font color="#dddddd">Register</font>
-            </a>&#160;&#160;
-          </font>
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; {$MENU_OPTIONS}</font>
         </td>
         <td valign="right">
           <form action="/switchtheme" method="post">
             <button type="submit" style="background: none; border: none;">
-                <img src="/resources/images/themeswitch.gif" alt="Switch theme">
+              <img src="/resources/images/themeswitch.gif" alt="Switch theme">
             </button>
           </form>
         </td>
       </tr>
     </table>
-    <hr style="margin: 0; position: relative; bottom: 4px;">
+    <hr style="margin: 0;">
     <br>
     <table>
       <tbody>
