@@ -121,18 +121,36 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     // Process embed fields with emoji support (#11)
     let fieldsHtml = '';
     if (embed.fields && embed.fields.length > 0) {
-      // Discord allows up to 3 inline fields per row with proper spacing
-      fieldsHtml = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">';
-      embed.fields.forEach(field => {
-        const fieldStyle = field.inline ? 'grid-column: span 1;' : 'grid-column: 1 / -1;';
-        fieldsHtml += `<div style="${fieldStyle}">`;
-        fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(field.name)}</div>`;
-        const renderedValue = renderDiscordMarkdown(field.value);
-        const valueWithEmoji = processEmojiInHTML(renderedValue, imagesCookie, animationsCookie);
-        fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${valueWithEmoji}</div>`;
-        fieldsHtml += '</div>';
+      // Use table layout for Wii Internet Channel (Opera) compatibility instead of CSS grid
+      fieldsHtml = '<table width="100%" cellpadding="2" cellspacing="0" style="margin-bottom: 8px;">';
+      let rowOpen = false;
+      let inlineCount = 0;
+      embed.fields.forEach((field, i) => {
+        if (!field.inline) {
+          if (rowOpen) { fieldsHtml += '</tr>'; rowOpen = false; inlineCount = 0; }
+          fieldsHtml += '<tr><td colspan="3" style="padding-bottom: 4px;">';
+          fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(field.name)}</div>`;
+          const renderedValue = renderDiscordMarkdown(field.value);
+          fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
+          fieldsHtml += '</td></tr>';
+        } else {
+          if (!rowOpen) { fieldsHtml += '<tr>'; rowOpen = true; inlineCount = 0; }
+          fieldsHtml += '<td valign="top" style="padding-bottom: 4px; padding-right: 4px;">';
+          fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(field.name)}</div>`;
+          const renderedValue = renderDiscordMarkdown(field.value);
+          fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
+          fieldsHtml += '</td>';
+          inlineCount++;
+          const nextField = embed.fields[i + 1];
+          if (inlineCount >= 3 || !nextField || !nextField.inline) {
+            fieldsHtml += '</tr>';
+            rowOpen = false;
+            inlineCount = 0;
+          }
+        }
       });
-      fieldsHtml += '</div>';
+      if (rowOpen) { fieldsHtml += '</tr>'; }
+      fieldsHtml += '</table>';
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_FIELDS}', fieldsHtml);
     
@@ -143,7 +161,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
       // Route through imageProxy to convert to GIF format
       const encodedImageUrl = Buffer.from(imageUrl).toString('base64');
       const proxyUrl = `/imageProxy/external/${encodedImageUrl}`;
-      imageHtml = `<div style="margin-top: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 100%; max-height: 300px; border-radius: 4px;" alt="Embed image"></div>`;
+      imageHtml = `<div style="margin-top: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 256px; max-height: 200px; border-radius: 4px;" alt="Embed image"></div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
     
