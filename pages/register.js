@@ -6,6 +6,7 @@ var auth = require('../authentication.js');
 
 const register_template = fs.readFileSync('pages/templates/register.html', 'utf-8');
 const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
+const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -19,6 +20,7 @@ exports.processRegister = async function (bot, req, res, args) {
   } else {
     parsedurl = url.parse(req.url, true);
     response = register_template;
+    response = strReplace(response, "{$MENU_OPTIONS}", logged_out_template);
     if (parsedurl.query.errortext) {
       response = strReplace(response, "{$ERROR}", strReplace(error_template, "{$ERROR_MESSAGE}", strReplace(escape(parsedurl.query.errortext), "\n", "<br>")));
     } else {

@@ -6,6 +6,7 @@ var auth = require('../authentication.js');
 
 const login_template = fs.readFileSync('pages/templates/login.html', 'utf-8');
 const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
+const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -20,6 +21,7 @@ exports.processLogin = async function (bot, req, res, args) {
   } else {
     parsedurl = url.parse(req.url, true);
     response = login_template;
+    response = strReplace(response, "{$MENU_OPTIONS}", logged_out_template);
     if (parsedurl.query.redirect) {
       response = strReplace(response, "{$REDIRECT_URL}", strReplace(parsedurl.query.redirect, '"', "%22"));
     } else {
