@@ -255,7 +255,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         isReply = true;
         replyData = {
           author: replyAuthor,
-          authorId: replyUser.id,
+          authorId: replyUser?.id,
           mentionsPing: mentionsRepliedUser,
           content: replyContent
         };
