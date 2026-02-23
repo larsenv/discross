@@ -63,10 +63,497 @@ function removeExistingEndAnchors(html) {
   return html.replace(/<a[^>]*(?:id=['"]end['"]|name=['"]end['"])[^>]*>[\s\S]*?<\/a>/gi, '');
 }
 
+// Check if a URL's hostname matches a given domain (or is a subdomain of it)
+function urlMatchesDomain(url, domain) {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === domain || parsed.hostname.endsWith('.' + domain);
+  } catch {
+    return false;
+  }
+}
+
 // Member utility functions (getDisplayName, getMemberColor, ensureMemberData) 
 // are now imported from memberUtils.js to avoid duplication
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
+
+/**
+ * Build the HTML for all messages in a channel.
+ * This shared function is used by both processChannel and processChannelReply.
+ *
+ * @param {Object} params
+ * @returns {Promise<string>} Complete messages HTML including end anchor
+ */
+exports.buildMessagesHtml = async function buildMessagesHtml(params) {
+  const {
+    bot, chnl, member, discordID, req,
+    imagesCookie, animationsCookie,
+    authorText, replyText, clientTimezone,
+    channelId, // for {$MESSAGE_REPLY_LINK}; pass null to skip
+    templates: {
+      message: tmpl_message,
+      message_forwarded: tmpl_message_forwarded,
+      message_mentioned: tmpl_message_mentioned,
+      message_forwarded_mentioned: tmpl_message_forwarded_mentioned,
+      first_message_content: tmpl_first_message_content,
+      merged_message_content: tmpl_merged_message_content,
+      mention: tmpl_mention,
+      file_download: tmpl_file_download,
+      reactions: tmpl_reactions,
+      reaction: tmpl_reaction,
+      date_separator: tmpl_date_separator,
+    }
+  } = params;
+
+  let response = "";
+  const messages = await bot.getHistoryCached(chnl);
+  let lastauthor = undefined;
+  let lastmember = undefined;
+  let lastdate = new Date('1995-12-17T03:24:00');
+  let lastmessagedate = null;
+  let currentmessage = "";
+  let islastmessage = false;
+  let messageid = 0;
+  let isForwarded = false;
+  let forwardData = {};
+  let isMentioned = false;
+  let isReply = false;
+  let replyData = {};
+  let lastMentioned = false;
+  let lastReply = false;
+  let lastReplyData = {};
+
+  const memberCache = new Map();
+
+  const isSameUser = (member1, author1, member2, author2) => {
+    if (member1 && member2) {
+      return member1.user.id === member2.user.id;
+    }
+    return author1.id === author2.id && author1.username === author2.username;
+  };
+
+  const handlemessage = async function (item) {
+    if (lastauthor) {
+      if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000))) {
+
+        if (isForwarded && lastMentioned) {
+          currentmessage = tmpl_message_forwarded_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
+          currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
+          currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
+          currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+        } else if (isForwarded) {
+          currentmessage = tmpl_message_forwarded.replace("{$MESSAGE_CONTENT}", currentmessage);
+          currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
+          currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
+          currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+        } else if (lastMentioned) {
+          currentmessage = tmpl_message_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
+          if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
+        } else {
+          currentmessage = tmpl_message.replace("{$MESSAGE_CONTENT}", currentmessage);
+          if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
+        }
+
+        const displayName = getDisplayName(lastmember, lastauthor);
+        const authorColor = getMemberColor(lastmember, authorText);
+
+        currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
+        currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
+
+        let replyIndicator = '';
+        if (lastReply) {
+          const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:`+authorText+`" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
+          replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
+            '<td style="width:2px;height:10px;background-color:#4e5058;border-radius:2px 0 0 2px;vertical-align:top"></td>' +
+            '<td style="width:12px;height:10px;vertical-align:bottom"><div style="height:2px;background-color:#4e5058;border-radius:0 0 0 2px"></div></td>' +
+            '<td style="padding-left:4px"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">Replying to @' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
+            '</tr></table>';
+        }
+        currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
+        currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", '');
+
+        currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatDateWithTimezone(lastdate, clientTimezone));
+        currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
+        response += currentmessage;
+        currentmessage = "";
+      }
+    }
+
+    if (!item) {
+      return;
+    }
+
+    let currentMember = null;
+    if (item.member) {
+      currentMember = item.member;
+    } else if (item.webhookId) {
+      currentMember = await ensureMemberData(item, chnl.guild, memberCache);
+    }
+
+    if (clientTimezone && areDifferentDays(item.createdAt, lastmessagedate, clientTimezone)) {
+      const separatorText = formatDateSeparator(item.createdAt, clientTimezone);
+      const separator = tmpl_date_separator.replace("{$DATE_SEPARATOR}", separatorText);
+      response += separator;
+    }
+
+    lastmessagedate = item.createdAt;
+
+    isForwarded = false;
+    forwardData = {};
+    if (item.reference?.type === MessageReferenceType.Forward) {
+      try {
+        const forwardedMessage = await item.fetchReference();
+        const forwardedMember = forwardedMessage.member;
+        const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
+        const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH
+          ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..."
+          : forwardedMessage.content;
+        const forwardedDate = formatDateWithTimezone(forwardedMessage.createdAt, clientTimezone);
+
+        isForwarded = true;
+        forwardData = {
+          author: forwardedAuthor,
+          content: renderDiscordMarkdown(forwardedContent),
+          date: forwardedDate
+        };
+      } catch (err) {
+        isForwarded = false;
+      }
+    }
+
+    isReply = false;
+    replyData = {};
+    if (item.reference && !isForwarded) {
+      try {
+        let replyUser = item.mentions?.repliedUser;
+        let replyMember = undefined;
+        let replyMessage = undefined;
+
+        try {
+          replyMessage = await item.fetchReference();
+          replyUser = replyMessage.author;
+        } catch (err) {
+          // Message was likely deleted or is inaccessible.
+        }
+
+        if (replyMessage && replyMessage.member) {
+          replyMember = replyMessage.member;
+        }
+
+        const replyAuthor = getDisplayName(replyMember, replyUser);
+        const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+
+        let replyContent = '';
+        if (replyMessage && replyMessage.content) {
+          const maxLength = 50;
+          replyContent = replyMessage.content.length > maxLength
+            ? replyMessage.content.substring(0, maxLength) + '...'
+            : replyMessage.content;
+        }
+
+        isReply = true;
+        replyData = {
+          author: replyAuthor,
+          authorId: replyUser.id,
+          mentionsPing: mentionsRepliedUser,
+          content: replyContent
+        };
+      } catch (err) {
+        console.error("Could not process reply data:", err);
+        isReply = false;
+      }
+    }
+
+    let messagetext = renderDiscordMarkdown(item.content);
+
+    let isJumbo = false;
+    if (imagesCookie === 1) {
+      const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
+      const customMatches = item.content.match(customEmojiRegex) || [];
+      const unicodeMatches = item.content.match(emojiRegex) || [];
+      const totalEmojis = customMatches.length + unicodeMatches.length;
+      const strippedContent = item.content.replace(customEmojiRegex, '').replace(emojiRegex, '').trim();
+      if (strippedContent.length === 0 && totalEmojis > 0 && totalEmojis <= 29) {
+        isJumbo = true;
+      }
+    }
+
+    const emojiSize = isJumbo ? "2.75em" : "1.375em";
+
+    if (imagesCookie === 1) {
+      if (messagetext.match(emojiRegex)) {
+        const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
+        unicode_emoji_matches.forEach(match => {
+          const points = [];
+          let char = 0;
+          let previous = 0;
+          let i = 0;
+          let output;
+          while (i < match.length) {
+            char = match.charCodeAt(i++);
+            if (previous) {
+              points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
+              previous = 0;
+            } else if (char > 0xd800 && char <= 0xdbff) {
+              previous = char;
+            } else {
+              points.push(char.toString(16));
+            }
+            output = points.join("-");
+          }
+          const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
+          messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+        });
+      }
+
+      const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
+      if (custom_emoji_matches.length > 0) {
+        custom_emoji_matches.forEach(match => {
+          const ext = match[2] ? "gif" : "png";
+          messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+        });
+      }
+    }
+
+    if (item?.attachments) {
+      let urls = new Array();
+      item.attachments.forEach(attachment => {
+        let url;
+        if (attachment.name.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))$/) && imagesCookie == 1) {
+          url = "/imageProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'));
+        } else if (attachment.name.match?.(/(?:\.(mp4|webm|mov|avi|mkv))$/) && imagesCookie == 1) {
+          url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'));
+          messagetext = messagetext.concat(tmpl_file_download);
+          messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name);
+          messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size));
+          urls.push(url);
+          return;
+        } else {
+          url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'));
+          messagetext = messagetext.concat(tmpl_file_download);
+          messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name);
+          messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size));
+        }
+        urls.push(url);
+      });
+      urls.forEach(url => {
+        url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:400px;max-height:500px;width:auto;height:auto;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url);
+      });
+    }
+
+    if (item.stickers && item.stickers.size > 0) {
+      if (imagesCookie == 1) {
+        item.stickers.forEach(sticker => {
+          const stickerExt = animationsCookie === 1 ? 'gif' : 'png';
+          const stickerURL = `/imageProxy/sticker/${sticker.id}.${stickerExt}`;
+          messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
+        });
+      } else {
+        item.stickers.forEach(sticker => {
+          messagetext += `<br>[Sticker: ${sticker.name || 'Unknown'}]`;
+        });
+      }
+    }
+
+    isMentioned = false;
+
+    if (item?.embeds && item.embeds.length > 0) {
+      const embedsToProcess = [];
+      item.embeds.forEach(embed => {
+        const isTenor = (embed.provider?.name === 'Tenor' || urlMatchesDomain(embed.url, 'tenor.com')) && embed.thumbnail?.url;
+        const isGiphy = (embed.provider?.name === 'GIPHY' || urlMatchesDomain(embed.url, 'giphy.com')) && (embed.thumbnail?.url || embed.image?.url);
+        const isYouTube = (embed.provider?.name === 'YouTube' || urlMatchesDomain(embed.url, 'youtube.com') || urlMatchesDomain(embed.url, 'youtu.be')) && embed.thumbnail?.url;
+
+        if (isTenor && imagesCookie == 1) {
+          const gifUrl = embed.thumbnail.url;
+          const urlToFind = embed.url;
+          let replaced = false;
+          if (urlToFind) {
+            const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
+            if (anchorRegex.test(messagetext)) {
+              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`);
+              replaced = true;
+            }
+          }
+          if (!replaced) {
+            messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`;
+          }
+        } else if (isGiphy && imagesCookie == 1) {
+          const gifUrl = embed.image?.url || embed.thumbnail?.url;
+          const urlToFind = embed.url;
+          let replaced = false;
+          if (urlToFind && gifUrl) {
+            const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
+            if (anchorRegex.test(messagetext)) {
+              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`);
+              replaced = true;
+            }
+          }
+          if (!replaced && gifUrl) {
+            messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`;
+          }
+        } else if (isYouTube && imagesCookie == 1) {
+          const thumbnailUrl = embed.thumbnail.url;
+          const videoUrl = embed.url;
+          if (thumbnailUrl) {
+            messagetext += `<br><div style="position: relative; display: inline-block;">` +
+              `<a href="${videoUrl}" target="_blank">` +
+              `<img src="${thumbnailUrl}" style="max-width: 100%; border-radius: 4px;" alt="YouTube Video">` +
+              `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; background: rgba(0,0,0,0.7); border-radius: 12px;">` +
+              `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-30%, -50%); width: 0; height: 0; border-left: 20px solid #fff; border-top: 12px solid transparent; border-bottom: 12px solid transparent;"></div>` +
+              `</div></a></div>`;
+          }
+        } else {
+          embedsToProcess.push(embed);
+        }
+      });
+
+      if (embedsToProcess.length > 0) {
+        messagetext += processEmbeds(req, embedsToProcess, imagesCookie, animationsCookie, clientTimezone);
+      }
+    }
+
+    if (item?.poll) {
+      messagetext += processPoll(item.poll, imagesCookie);
+    }
+
+    if (item.mentions && item.mentions.members) {
+      isMentioned = item.mentions.members.has(discordID);
+    }
+
+    if (!isMentioned && isReply && replyData.mentionsPing && replyData.authorId === discordID) {
+      isMentioned = true;
+    }
+
+    if (!isMentioned && item.mentions && item.mentions.everyone) {
+      isMentioned = true;
+    }
+
+    if (!isMentioned && item.mentions && item.mentions.roles) {
+      item.mentions.roles.forEach(function (role) {
+        if (member.roles.cache.has(role.id)) {
+          isMentioned = true;
+        }
+      });
+    }
+
+    if (item.mentions && item.mentions.members) {
+      item.mentions.members.forEach(function (user) {
+        if (user) {
+          messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + user.displayName)));
+          messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + user.displayName)));
+        }
+      });
+
+      if (item.mentions.roles) {
+        item.mentions.roles.forEach(function (role) {
+          if (role) {
+            messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + role.name)));
+          }
+        });
+      }
+    }
+
+    messagetext = messagetext.replace(/&lt;@!?(\d{17,19})&gt;/g, function(match, userId) {
+      try {
+        const cachedMember = chnl.guild.members.cache.get(userId);
+        if (cachedMember) {
+          return tmpl_mention.replace("{$USERNAME}", escape("@" + cachedMember.displayName));
+        }
+      } catch (err) {
+        // Ignore errors
+      }
+      return tmpl_mention.replace("{$USERNAME}", "@unknown-user");
+    });
+
+    var regex = /&lt;#([0-9]{18})&gt;/g;
+    var m;
+    do {
+      m = regex.exec(messagetext);
+      if (m) {
+        const channel = bot.client.channels.cache.get(m[1]);
+        if (channel) {
+          const channelLink = `/channels/${channel.id}`;
+          messagetext = strReplace(messagetext, m[0], `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(channel.name)}</font></a>`);
+        }
+      }
+    } while (m);
+
+    if (item.mentions && item.mentions.everyone) {
+      if (messagetext.includes("@everyone")) {
+        messagetext = strReplace(messagetext, "@everyone", tmpl_mention.replace("{$USERNAME}", "@everyone"));
+      }
+      if (messagetext.includes("@here")) {
+        messagetext = strReplace(messagetext, "@here", tmpl_mention.replace("{$USERNAME}", "@here"));
+      }
+    }
+
+    if (item.mentions && item.mentions.roles) {
+      item.mentions.roles.forEach(function (role) {
+        if (role) {
+          messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + role.name)));
+        }
+      });
+    }
+
+    if (!lastauthor || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000) {
+      messagetext = tmpl_first_message_content.replace("{$MESSAGE_TEXT}", messagetext);
+    } else {
+      messagetext = tmpl_merged_message_content.replace("{$MESSAGE_TEXT}", messagetext);
+    }
+
+    const reactionsHtml = processReactions(item.reactions, imagesCookie, tmpl_reactions, tmpl_reaction, animationsCookie);
+    messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
+
+    const isSystemMessage = item.type !== 0 && item.type !== 19;
+    const tempDiv = messagetext.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+    if (!isSystemMessage && tempDiv.length === 0 && (!item.attachments || item.attachments.size === 0) && (!item.embeds || item.embeds.length === 0) && (!item.stickers || item.stickers.size === 0)) {
+      return;
+    }
+
+    if (isSystemMessage && tempDiv.length === 0) {
+      const systemMessages = {
+        1: 'added a new member',
+        2: 'left',
+        3: 'boosted the server',
+        7: 'welcomed a new member',
+        8: 'boosted the server to level 1',
+        9: 'boosted the server to level 2',
+        10: 'boosted the server to level 3',
+        11: 'followed this channel',
+        12: 'went live'
+      };
+
+      const systemText = systemMessages[item.type] || 'performed an action';
+      messagetext = `<font style="font-size:14px;color:`+authorText+`;font-style:italic;" face="rodin,sans-serif">${systemText}</font>`;
+    }
+
+    lastauthor = item.author;
+    lastmember = currentMember;
+    lastdate = item.createdAt;
+    currentmessage += messagetext;
+    messageid = item.id;
+
+    lastMentioned = isMentioned;
+    lastReply = isReply;
+    lastReplyData = replyData;
+  };
+
+  for (const item of messages) {
+    await handlemessage(item);
+  }
+
+  islastmessage = true;
+  await handlemessage();
+
+  response = removeExistingEndAnchors(response);
+  response += '<a id="end" name="end"></a>';
+  return response;
+};
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
@@ -118,9 +605,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   const clientTimezone = getTimezoneFromIP(clientIP);
     
   try {
-    let response, chnl;
+    let chnl;
     try {
-      response = "";
       chnl = await bot.client.channels.fetch(args[2]);
     } catch (err) {
       chnl = undefined;
@@ -181,540 +667,25 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       }
 
       console.log("Processed valid channel request");
-      const messages = await bot.getHistoryCached(chnl);
-      let lastauthor = undefined;
-      let lastmember = undefined;
-      let lastdate = new Date('1995-12-17T03:24:00');
-      let lastmessagedate = null; // Track the last message date for day separator detection
-      let currentmessage = "";
-      let islastmessage = false;
-      let messageid = 0;
-      isForwarded = false;
-      forwardData = {};
-      isMentioned = false;
-      isReply = false;
-      replyData = {};
-      lastMentioned = false;
-      lastReply = false;
-      lastReplyData = {};
-        
-      const memberCache = new Map();
-      
-      // Helper function to check if two messages are from the same user
-      // This handles both regular messages and webhook messages by comparing member IDs when available
-      const isSameUser = (member1, author1, member2, author2) => {
-        // If both messages have member data, compare the actual user IDs
-        if (member1 && member2) {
-          return member1.user.id === member2.user.id;
+      const response = await exports.buildMessagesHtml({
+        bot, chnl, member, discordID, req,
+        imagesCookie, animationsCookie,
+        authorText, replyText, clientTimezone,
+        channelId: args[2],
+        templates: {
+          message: message_template,
+          message_forwarded: message_forwarded_template,
+          message_mentioned: message_mentioned_template,
+          message_forwarded_mentioned: message_forwarded_mentioned_template,
+          first_message_content: first_message_content_template,
+          merged_message_content: merged_message_content_template,
+          mention: mention_template,
+          file_download: file_download_template,
+          reactions: reactions_template,
+          reaction: reaction_template,
+          date_separator: date_separator_template,
         }
-        // Otherwise fall back to comparing author IDs and usernames
-        return author1.id === author2.id && author1.username === author2.username;
-      };
-
-      const handlemessage = async function (item) { // Save the function to use later in the for loop and to process the last message
-        if (lastauthor) { // Only consider the last message if this is not the first
-          // If the last message is not going to be merged with this one, put it into the response
-          // Note: We can't use currentMember here yet as it hasn't been fetched, so rely on author comparison
-          // This is a conservative check - the actual merge decision for the current message happens later at line 656
-          if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000))) {
-
-            // Choose template based on whether this is a forwarded message and if user is mentioned
-            if (isForwarded && lastMentioned) {
-              currentmessage = message_forwarded_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
-              currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
-              currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
-            } else if (isForwarded) {
-              currentmessage = message_forwarded_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
-              currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
-              currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
-            } else if (lastMentioned) {
-              currentmessage = message_mentioned_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
-            } else {
-              currentmessage = message_template.replace("{$MESSAGE_CONTENT}", currentmessage);
-              currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + args[2] + "/" + messageid);
-            }
-            
-            // Use helper functions for proper nickname and color
-            const displayName = getDisplayName(lastmember, lastauthor);
-            const authorColor = getMemberColor(lastmember, authorText);
-            
-            currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
-            currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
-            
-            // Add reply indicator (L-shaped line) if this is a reply (#5)
-            let replyIndicator = '';
-            if (lastReply) {
-              const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:`+authorText+`" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
-              replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-                '<td style="width:2px;height:10px;background-color:#4e5058;border-radius:2px 0 0 2px;vertical-align:top"></td>' +
-                '<td style="width:12px;height:10px;vertical-align:bottom"><div style="height:2px;background-color:#4e5058;border-radius:0 0 0 2px"></div></td>' +
-                '<td style="padding-left:4px"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">Replying to @' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
-                '</tr></table>';
-            }
-            currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
-            currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", '');
-
-            // Remove avatar URL processing since we removed avatars
-            currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatDateWithTimezone(lastdate, clientTimezone));
-            currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
-            response += currentmessage;
-            currentmessage = "";
-          }
-        }
-
-        if (!item) { // When processing the last message outside of the forEach item is undefined
-          return;
-        }
-        
-        // Fetch member data early for proper message merging (webhook and regular messages)
-        let currentMember = null;
-        if (item.member) {
-          currentMember = item.member;
-        } else if (item.webhookId) {
-          // For webhook messages, fetch member data to enable proper merging with regular messages
-          currentMember = await ensureMemberData(item, chnl.guild, memberCache);
-        }
-        
-        // Check if we need to insert a date separator (when crossing day boundary)
-        if (clientTimezone && areDifferentDays(item.createdAt, lastmessagedate, clientTimezone)) {
-          // Day has changed (or first message), insert date separator
-          const separatorText = formatDateSeparator(item.createdAt, clientTimezone);
-          const separator = date_separator_template.replace("{$DATE_SEPARATOR}", separatorText);
-          response += separator;
-        }
-        
-        lastmessagedate = item.createdAt;
-
-        // Check if this message is a forward and fetch forward data
-        isForwarded = false;
-        forwardData = {};
-        if (item.reference?.type === MessageReferenceType.Forward) {
-          try {
-            const forwardedMessage = await item.fetchReference();
-            // Use message.member if present, otherwise just use author
-            const forwardedMember = forwardedMessage.member;
-            const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
-            const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH 
-              ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..." 
-              : forwardedMessage.content;
-            const forwardedDate = formatDateWithTimezone(forwardedMessage.createdAt, clientTimezone);
-            
-            isForwarded = true;
-            forwardData = {
-              author: forwardedAuthor,
-              content: renderDiscordMarkdown(forwardedContent), // UPDATED: Use custom renderer
-              date: forwardedDate
-            };
-          } catch (err) {
-            // Silently ignore forwarded message fetch errors (e.g., GuildChannelResolve)
-            // Message may be from another server or deleted
-            isForwarded = false;
-          }
-        }
-        
-        isReply = false;
-        replyData = {};
-        if (item.reference && !isForwarded) {
-          try {
-            let replyUser = item.mentions?.repliedUser; // Try getting from cache first
-            let replyMember = undefined;
-            let replyMessage = undefined;
-
-            // Step 1: Try to fetch the full referenced message
-            try {
-              replyMessage = await item.fetchReference();
-              replyUser = replyMessage.author; // Update user from the fresh fetch
-            } catch (err) {
-              // Message was likely deleted or is inaccessible. 
-            }
-
-            // Step 2: Use message.member if present, but don't fetch
-            if (replyMessage && replyMessage.member) {
-              replyMember = replyMessage.member;
-            }
-            // If no member data, just use replyUser - no fetching needed
-
-            // Step 3: Construct the display data
-            const replyAuthor = getDisplayName(replyMember, replyUser);
-            const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
-            
-            // Get message content preview (max 50 chars with ellipsis)
-            let replyContent = '';
-            if (replyMessage && replyMessage.content) {
-              const maxLength = 50;
-              replyContent = replyMessage.content.length > maxLength 
-                ? replyMessage.content.substring(0, maxLength) + '...'
-                : replyMessage.content;
-            }
-
-            isReply = true;
-            replyData = {
-              author: replyAuthor,
-              authorId: replyUser.id,
-              mentionsPing: mentionsRepliedUser,
-              content: replyContent
-            };
-          } catch (err) {
-            console.error("Could not process reply data:", err);
-            isReply = false;
-          }
-        }
-
-        messagetext = renderDiscordMarkdown(item.content); // UPDATED: Use custom renderer
-        
-        // Detect "Jumbo" Emoji status (<= 29 emojis and no other text)
-        let isJumbo = false;
-        if (imagesCookie === 1) {
-            // Check raw content for "emoji only" status
-            const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
-            // Match custom emojis and unicode emojis
-            const customMatches = item.content.match(customEmojiRegex) || [];
-            const unicodeMatches = item.content.match(emojiRegex) || [];
-            const totalEmojis = customMatches.length + unicodeMatches.length;
-            
-            // Remove all emojis and whitespace to see if anything else remains
-            const strippedContent = item.content.replace(customEmojiRegex, '').replace(emojiRegex, '').trim();
-            
-            if (strippedContent.length === 0 && totalEmojis > 0 && totalEmojis <= 29) {
-                isJumbo = true;
-            }
-        }
-
-        // Standard size 1.375em. Jumbo size 2.75em (200%).
-        // Note: 'em' is supported in IE3+ (1996), so it is very safe for "older browsers".
-        const emojiSize = isJumbo ? "2.75em" : "1.375em";
-
-        if (imagesCookie === 1) {
-            // Process Unicode Emojis
-            if (messagetext.match(emojiRegex)) {
-                 const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
-                 unicode_emoji_matches.forEach(match => {
-                    const points = [];
-                    let char = 0;
-                    let previous = 0;
-                    let i = 0;
-                    let output;
-                    while (i < match.length) {
-                        char = match.charCodeAt(i++);
-                        if (previous) {
-                            points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
-                            previous = 0;
-                        } else if (char > 0xd800 && char <= 0xdbff) {
-                            previous = char;
-                        } else {
-                            points.push(char.toString(16));
-                        }
-                        output = points.join("-");
-                    }
-                    // Use .gif or .png based on animations setting
-                    const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
-                    messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
-                 });
-            }
-
-            // Process Custom Emojis
-            // Regex detects HTML escaped format &lt;:name:id&gt; which usually comes from renderDiscordMarkdown if not processed
-            const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
-            if (custom_emoji_matches.length > 0) {
-                 custom_emoji_matches.forEach(match => {
-                    // Convert to gif if animated (match[2] is 'a'), otherwise png. Or force gif for simplicity if proxy supports it.
-                    // User requested animated to be lightweight and work, so we use the proxy logic.
-                    const ext = match[2] ? "gif" : "png";
-                    messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
-                 });
-            }
-        }
-
-        if (item?.attachments) {
-          let urls = new Array()
-          item.attachments.forEach(attachment => {
-            let url
-            // Check if it's an image
-            if (attachment.name.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))$/) && imagesCookie == 1) {
-              url = "/imageProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
-            // Check if it's a video (#40)
-            } else if (attachment.name.match?.(/(?:\.(mp4|webm|mov|avi|mkv))$/) && imagesCookie == 1) {
-              url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
-              // Add video download link
-              messagetext = messagetext.concat(file_download_template)
-              messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name)
-              messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size))
-              urls.push(url)
-              return; // Skip adding to urls for image processing
-            } else {
-              url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'))
-              messagetext = messagetext.concat(file_download_template)
-              messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name)
-              messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size))
-            }
-            urls.push(url)
-          });
-          urls.forEach(url => {
-            url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:400px;max-height:500px;width:auto;height:auto;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url)
-          });
-        }
-        
-        // Process Stickers
-        if (item.stickers && item.stickers.size > 0) {
-          if (imagesCookie == 1) {
-            item.stickers.forEach(sticker => {
-               // Use .gif or .png based on animations setting
-               const stickerExt = animationsCookie === 1 ? 'gif' : 'png';
-               const stickerURL = `/imageProxy/sticker/${sticker.id}.${stickerExt}`;
-               messagetext += `<br><img src="${stickerURL}" style="width: 150px; height: 150px;" alt="sticker">`;
-            });
-          } else {
-            // When images are disabled, show sticker name
-            item.stickers.forEach(sticker => {
-               messagetext += `<br>[Sticker: ${sticker.name || 'Unknown'}]`;
-            });
-          }
-        }
-
-        // Check if current user is mentioned in this message
-        isMentioned = false;
-                
-        // Process embeds (for bot messages and links)
-        if (item?.embeds && item.embeds.length > 0) {
-            const embedsToProcess = [];
-            item.embeds.forEach(embed => {
-                // UPDATED: Handle Tenor embeds manually to fix empty embed issue
-                // Check if it's a Tenor embed and has a thumbnail (which contains the GIF)
-                const isTenor = (embed.provider?.name === 'Tenor' || embed.url?.includes('tenor.com')) && embed.thumbnail?.url;
-                
-                // Handle GIPHY embeds (#41)
-                const isGiphy = (embed.provider?.name === 'GIPHY' || embed.url?.includes('giphy.com')) && (embed.thumbnail?.url || embed.image?.url);
-                
-                // Handle YouTube embeds (#52)
-                const isYouTube = (embed.provider?.name === 'YouTube' || embed.url?.includes('youtube.com') || embed.url?.includes('youtu.be')) && embed.thumbnail?.url;
-                
-                if (isTenor && imagesCookie == 1) {
-                    const gifUrl = embed.thumbnail.url;
-                    const urlToFind = embed.url;
-                    
-                    let replaced = false;
-                    // Try to find and replace the anchor tag created by markdown
-                    if (urlToFind) {
-                        const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-                        const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
-                        
-                        if (anchorRegex.test(messagetext)) {
-                            messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`);
-                            replaced = true;
-                        }
-                    }
-                    
-                    // If replacement failed (e.g. link not in text), append the image
-                    if (!replaced) {
-                        messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`;
-                    }
-                    // Do NOT add to embedsToProcess (prevents double rendering/empty box)
-                } else if (isGiphy && imagesCookie == 1) {
-                    // Handle GIPHY similarly to Tenor
-                    const gifUrl = embed.image?.url || embed.thumbnail?.url;
-                    const urlToFind = embed.url;
-                    
-                    let replaced = false;
-                    if (urlToFind && gifUrl) {
-                        const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-                        const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
-                        
-                        if (anchorRegex.test(messagetext)) {
-                            messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`);
-                            replaced = true;
-                        }
-                    }
-                    
-                    if (!replaced && gifUrl) {
-                        messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`;
-                    }
-                } else if (isYouTube && imagesCookie == 1) {
-                    // Show YouTube thumbnail with play button overlay
-                    const thumbnailUrl = embed.thumbnail.url;
-                    const videoUrl = embed.url;
-                    
-                    if (thumbnailUrl) {
-                        messagetext += `<br><div style="position: relative; display: inline-block;">` +
-                            `<a href="${videoUrl}" target="_blank">` +
-                            `<img src="${thumbnailUrl}" style="max-width: 100%; border-radius: 4px;" alt="YouTube Video">` +
-                            `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; background: rgba(0,0,0,0.7); border-radius: 12px;">` +
-                            `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-30%, -50%); width: 0; height: 0; border-left: 20px solid #fff; border-top: 12px solid transparent; border-bottom: 12px solid transparent;"></div>` +
-                            `</div></a></div>`;
-                    }
-                } else {
-                    embedsToProcess.push(embed);
-                }
-            });
-            
-            if (embedsToProcess.length > 0) {
-                messagetext += processEmbeds(req, embedsToProcess, imagesCookie, animationsCookie, clientTimezone);
-            }
-        }
-        
-        // Process polls
-        if (item?.poll) {
-          messagetext += processPoll(item.poll, imagesCookie);
-        }
-        
-        // Check for direct user mention
-        if (item.mentions && item.mentions.members) {
-          isMentioned = item.mentions.members.has(discordID);
-        }
-        
-        // Check for reply with ping to current user
-        if (!isMentioned && isReply && replyData.mentionsPing && replyData.authorId === discordID) {
-          isMentioned = true;
-        }
-        
-        // Check for @everyone or @here mention
-        if (!isMentioned && item.mentions && item.mentions.everyone) {
-          isMentioned = true;
-        }
-        
-        // Check for role mention
-        if (!isMentioned && item.mentions && item.mentions.roles) {
-          item.mentions.roles.forEach(function (role) {
-            if (member.roles.cache.has(role.id)) {
-              isMentioned = true;
-            }
-          });
-        }
-        
-        // Process user mentions
-        if (item.mentions && item.mentions.members) {
-          item.mentions.members.forEach(function (user) {
-            if (user) {
-              messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
-              messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + user.displayName)));
-            }
-          });
-          
-          // Handle role mentions
-          if (item.mentions.roles) {
-            item.mentions.roles.forEach(function (role) {
-              if (role) {
-                messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id.toString() + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + role.name)));
-              }
-            });
-          }
-        }
-        
-        // Handle any remaining user mentions (unknown users not in cache)
-        messagetext = messagetext.replace(/&lt;@!?(\d{17,19})&gt;/g, function(match, userId) {
-          // Try to find in guild members cache
-          try {
-            const cachedMember = chnl.guild.members.cache.get(userId);
-            if (cachedMember) {
-              return mention_template.replace("{$USERNAME}", escape("@" + cachedMember.displayName));
-            }
-          } catch (err) {
-            // Ignore errors
-          }
-          // If not found, show as unknown-user
-          return mention_template.replace("{$USERNAME}", "@unknown-user");
-        });
-
-        // https://stackoverflow.com/questions/6323417/regex-to-extract-all-matches-from-string-using-regexp-exec
-
-        var regex = /&lt;#([0-9]{18})&gt;/g; // Regular expression to detect channel IDs
-        var m;
-
-        do {
-          m = regex.exec(messagetext);
-          if (m) {
-            const channel = bot.client.channels.cache.get(m[1]);
-            if (channel) {
-              // #12: Make channel mentions clickable links (#6)
-              const channelLink = `/channels/${channel.id}`;
-              messagetext = strReplace(messagetext, m[0], `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(channel.name)}</font></a>`);
-            }
-          }
-        } while (m);
-
-        // Process @everyone and @here mentions
-        if (item.mentions && item.mentions.everyone) {
-          if (messagetext.includes("@everyone")) {
-            messagetext = strReplace(messagetext, "@everyone", mention_template.replace("{$USERNAME}", "@everyone"));
-          }
-          if (messagetext.includes("@here")) {
-            messagetext = strReplace(messagetext, "@here", mention_template.replace("{$USERNAME}", "@here"));
-          }
-        }
-
-        // Process role mentions
-        if (item.mentions && item.mentions.roles) {
-          item.mentions.roles.forEach(function (role) {
-            if (role) {
-              messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id + "&gt;", mention_template.replace("{$USERNAME}", escape("@" + role.name)));
-            }
-          });
-        }
-
-        // If the last message is not going to be merged with this one, use the template for the first message, otherwise use the template for merged messages
-        if (!lastauthor || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000) {
-          messagetext = first_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
-        } else {
-          messagetext = merged_message_content_template.replace("{$MESSAGE_TEXT}", messagetext);
-        }
-
-        // Process and add reactions to the message
-        const reactionsHtml = processReactions(item.reactions, imagesCookie, reactions_template, reaction_template, animationsCookie);
-        messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
-
-        // Skip messages that are effectively blank (issue #32)
-        // But NOT system messages like member joins (#31)
-        const isSystemMessage = item.type !== 0 && item.type !== 19; // 0 = Default, 19 = Reply
-        const tempDiv = messagetext.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-        
-        if (!isSystemMessage && tempDiv.length === 0 && (!item.attachments || item.attachments.size === 0) && (!item.embeds || item.embeds.length === 0) && (!item.stickers || item.stickers.size === 0)) {
-          // Skip this blank message (but not system messages)
-          return;
-        }
-        
-        // Handle system messages (#31 - member joins, etc.)
-        if (isSystemMessage && tempDiv.length === 0) {
-          const systemMessages = {
-            1: 'added a new member',
-            2: 'left',
-            3: 'boosted the server',
-            7: 'welcomed a new member',
-            8: 'boosted the server to level 1',
-            9: 'boosted the server to level 2',
-            10: 'boosted the server to level 3',
-            11: 'followed this channel',
-            12: 'went live'
-          };
-          
-          const systemText = systemMessages[item.type] || 'performed an action';
-          messagetext = `<font style="font-size:14px;color:`+authorText+`;font-style:italic;" face="rodin,sans-serif">${systemText}</font>`;
-        }
-
-        lastauthor = item.author;
-        // Use the member data we already fetched early in the function
-        lastmember = currentMember;
-        lastdate = item.createdAt;
-        currentmessage += messagetext;
-        messageid = item.id;
-        
-        // Save mention and reply state for next iteration
-        lastMentioned = isMentioned;
-        lastReply = isReply;
-        lastReplyData = replyData;
-
-      }
-
-      for (const item of messages) {
-        await handlemessage(item);
-      }
-
-      // Handle the last message
-      // Uses the function in the foreach from earlier
-
-      islastmessage = true;
-      await handlemessage();
+      });
 
       template = strReplace(template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
@@ -736,10 +707,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
       final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
-      
-      // Remove any existing end anchors from messages HTML before appending exactly one
-      response = removeExistingEndAnchors(response);
-      response += '<a id="end" name="end"></a>';
       final = strReplace(final, "{$MESSAGES}", response);
       res.writeHead(200, { "Content-Type": "text/html" });
       res.write(final); //write a response to the client
