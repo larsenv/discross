@@ -180,23 +180,12 @@
             }
         }
 
-        /* Old browser compatibility fixes */
+        /* Message input - matches channel page style */
         .message-form-container {
-            /* Use fixed positioning for compatibility with non-flexbox browsers */
-            position: fixed;
-            bottom: 0;
-            left: 60px;
-            right: 0;
-            /* Ensure it doesn't overflow */
-            width: auto;
-            max-width: 100%;
-            overflow: hidden;
-            /* Add background to ensure visibility */
             background: #36393f;
-            /* Add border for separation */
             border-top: 1px solid #40444b;
-            /* Add z-index to ensure it's above content */
-            z-index: 100;
+            padding: 12px;
+            width: 100%;
         }
 
         .message-buttons-container {
@@ -227,7 +216,7 @@
 
         /* Light theme adjustments for message form */
         .light-theme .message-form-container {
-            background: #ffffff !important;
+            background: #f9f9f9 !important;
             border-top-color: #e3e5e8 !important;
         }
 
@@ -334,7 +323,6 @@
 
         /* --- TOOLBAR STYLES --- */
         #toolbar-container {
-          background-color: #2f3136;
           padding: 5px;
           border-bottom: 1px solid #202225;
           display: table;
@@ -375,7 +363,6 @@
         #canvas-wrapper {
             margin: 0 auto 20px auto;
             display: block;
-            background: #2f3136;
             padding: 5px;
             width: 610px; /* Snug fit wrapper */
             max-width: 100%; /* Responsive for mobile */
@@ -403,6 +390,7 @@
                 box-sizing: border-box;
             }
 
+            /* Mobile responsive adjustments for canvas */
             #canvas-wrapper {
                 width: calc(100% - 16px);
                 margin: 0 8px 20px 8px;
@@ -432,121 +420,107 @@
             .mobile-break {
                 display: block;
             }
-            
-            /* Fix message form on mobile */
-            .message-form-container {
-                left: 0 !important;
-                right: 0 !important;
-                padding: 0 8px;
-                box-sizing: border-box;
-            }
         }
     </style>
 </head>
 
 <body {$WHITE_THEME_ENABLED}>
-    <div id="toolbar-container">
-        <div id="c1" class="c-box" style="background:#000000;" onclick="setColor('#000000', 'c1')"></div>
-        <div id="c2" class="c-box" style="background:#555555;" onclick="setColor('#555555', 'c2')"></div>
-        <div id="c3" class="c-box" style="background:#aaaaaa;" onclick="setColor('#aaaaaa', 'c3')"></div>
-        <div id="c4" class="c-box" style="background:#ffffff;" onclick="setColor('#ffffff', 'c4')"></div>
-        <div id="c5" class="c-box" style="background:#800000;" onclick="setColor('#800000', 'c5')"></div>
-        <div id="c6" class="c-box" style="background:#ff0000;" onclick="setColor('#ff0000', 'c6')"></div>
-        <div id="c7" class="c-box" style="background:#ff9900;" onclick="setColor('#ff9900', 'c7')"></div>
-        <div id="c8" class="c-box" style="background:#ffff00;" onclick="setColor('#ffff00', 'c8')"></div>
-        <br>
-        <div id="c9" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c9')"></div>
-        <div id="c10" class="c-box" style="background:#004d00;" onclick="setColor('#004d00', 'c10')"></div>
-        <div id="c11" class="c-box" style="background:#00ff00;" onclick="setColor('#00ff00', 'c11')"></div>
-        <div id="c12" class="c-box" style="background:#000080;" onclick="setColor('#000080', 'c12')"></div>
-        <div id="c13" class="c-box" style="background:#00ffff;" onclick="setColor('#00ffff', 'c13')"></div>
-        <div id="c14" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c14')"></div>
-        <div id="c15" class="c-box" style="background:#ff00ff;" onclick="setColor('#ff00ff', 'c15')"></div>
-        <div id="c16" class="c-box" style="background:#8b4513;" onclick="setColor('#8b4513', 'c16')"></div>
-        
-        <span class="toolbar-separator"></span>
-
-        <div id="s1" class="s-btn" onclick="setSize(2, 's1')"><div class="s-inner" style="width:2px; height:2px;"></div></div>
-        <div id="s2" class="s-btn" onclick="setSize(5, 's2')"><div class="s-inner" style="width:5px; height:5px;"></div></div>
-        <div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div>
-        <div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div>
-
-        <button type="button" id="btn-clear" class="clear-button" onclick="wipe()">Clear</button>
-    </div>
-
-    <div id="canvas-wrapper">
-        <canvas id="sketchpad" width="600" height="350"></canvas>
-    </div>
-
-    
     <div id="wrapper">
         <a href="../server/{$SERVER_ID}" class="menu-button">
             <img src="/resources/images/menu.gif" alt="Menu" class="menu-icon">
         </a>
 
-        <div class="content-padding">
-            <div class="scrollable-content">
-                <div id="emoji" style="display: none;">
-                    <div class="emoji-grid">
-                        <button onclick="document.getElementById('message').value += ' :sob:'">
-                            <img src="/resources/twemoji/1f62d.gif" alt="sob" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
-                            <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :skull:'">
-                            <img src="/resources/twemoji/1f480.gif" alt="skull" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pleading_face:'">
-                            <img src="/resources/twemoji/1f97a.gif" alt="pleading_face" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :heart:'">
-                            <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsup:'">
-                            <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
-                            <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :pray:'">
-                            <img src="/resources/twemoji/1f64f.gif" alt="pray" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :tada:'">
-                            <img src="/resources/twemoji/1f389.gif" alt="tada" class="emoji-icon">
-                        </button>
-                        <button onclick="document.getElementById('message').value += ' :slight_smile:'">
-                            <img src="/resources/twemoji/1f642.gif" alt="slight_smile" class="emoji-icon">
-                        </button>
-                    </div>
-                </div>
-                <a id="end" name="end"></a>
-            </div>
-            <div class="message-form-container">
-                <form action="../senddrawing" method="post" id="sendform">
-                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                    <input type="hidden" id="drawinginput" name="drawinginput" value="">
-                    <input type="hidden" id="lite" name="lite" value="False">
+        <div id="toolbar-container">
+            <div id="c1" class="c-box" style="background:#000000;" onclick="setColor('#000000', 'c1')"></div>
+            <div id="c2" class="c-box" style="background:#555555;" onclick="setColor('#555555', 'c2')"></div>
+            <div id="c3" class="c-box" style="background:#aaaaaa;" onclick="setColor('#aaaaaa', 'c3')"></div>
+            <div id="c4" class="c-box" style="background:#ffffff;" onclick="setColor('#ffffff', 'c4')"></div>
+            <div id="c5" class="c-box" style="background:#800000;" onclick="setColor('#800000', 'c5')"></div>
+            <div id="c6" class="c-box" style="background:#ff0000;" onclick="setColor('#ff0000', 'c6')"></div>
+            <div id="c7" class="c-box" style="background:#ff9900;" onclick="setColor('#ff9900', 'c7')"></div>
+            <div id="c8" class="c-box" style="background:#ffff00;" onclick="setColor('#ffff00', 'c8')"></div>
+            <br>
+            <div id="c9" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c9')"></div>
+            <div id="c10" class="c-box" style="background:#004d00;" onclick="setColor('#004d00', 'c10')"></div>
+            <div id="c11" class="c-box" style="background:#00ff00;" onclick="setColor('#00ff00', 'c11')"></div>
+            <div id="c12" class="c-box" style="background:#000080;" onclick="setColor('#000080', 'c12')"></div>
+            <div id="c13" class="c-box" style="background:#00ffff;" onclick="setColor('#00ffff', 'c13')"></div>
+            <div id="c14" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c14')"></div>
+            <div id="c15" class="c-box" style="background:#ff00ff;" onclick="setColor('#ff00ff', 'c15')"></div>
+            <div id="c16" class="c-box" style="background:#8b4513;" onclick="setColor('#8b4513', 'c16')"></div>
+            
+            <span class="toolbar-separator"></span>
 
-                    <div class="message-input-bar-wrapper" style="background: #{$COLOR}; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
-                        <table style="width: 100%; margin: 0; padding: 0; border-collapse: collapse;">
-                            <tr>
-                                <td style="width: 100%; padding: 0;">
-                                    <input type="text" name="message" id="message" value="" class="message-input-field"
-                                        style="width: 100%; background: transparent; border: none; outline: none; height: 19px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 19px; box-sizing: border-box;"
-                                         placeholder="Message #{$CHANNEL_NAME}">
-                                </td>
-                                <td style="padding: 0 8px 0 0;">
-                                    <button onclick="prepareAndSend()" type="submit" class="send-button-input"
-                                        style="flex: 0 0 auto; border: none; border-radius: 4px; color: white; padding: 0px 24px; cursor: pointer; font-family: rodin, Whitney, Helvetica Neue, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; height: 38px; line-height: 38px; text-align: center; white-space: nowrap; margin-right: 8px; background: rgb(88, 101, 242);"
-                                        onmouseover="this.style.background='#4752c4'"
-                                        onmouseout="this.style.background='#5865f2'">Send</button>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </form>
+            <div id="s1" class="s-btn" onclick="setSize(2, 's1')"><div class="s-inner" style="width:2px; height:2px;"></div></div>
+            <div id="s2" class="s-btn" onclick="setSize(5, 's2')"><div class="s-inner" style="width:5px; height:5px;"></div></div>
+            <div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div>
+            <div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div>
+
+            <button type="button" id="btn-clear" class="clear-button" onclick="wipe()">Clear</button>
+        </div>
+
+        <div id="canvas-wrapper">
+            <canvas id="sketchpad" width="600" height="350"></canvas>
+        </div>
+
+        <div class="message-form-container">
+            <div id="emoji" style="display: none;">
+                <div class="emoji-grid">
+                    <button onclick="document.getElementById('message').value += ' :sob:'">
+                        <img src="/resources/twemoji/1f62d.gif" alt="sob" class="emoji-icon">
+                    </button>
+                    <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
+                        <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" class="emoji-icon">
+                    </button>
+                    <button onclick="document.getElementById('message').value += ' :skull:'">
+                        <img src="/resources/twemoji/1f480.gif" alt="skull" class="emoji-icon">
+                    </button>
+                    <button onclick="document.getElementById('message').value += ' :pleading_face:'">
+                        <img src="/resources/twemoji/1f97a.gif" alt="pleading_face" class="emoji-icon">
+                    </button>
+                    <button onclick="document.getElementById('message').value += ' :heart:'">
+                        <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" class="emoji-icon">
+                    </button>
+                    <button onclick="document.getElementById('message').value += ' :thumbsup:'">
+                        <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" class="emoji-icon">
+                    </button>
+                    <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
+                        <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" class="emoji-icon">
+                    </button>
+                    <button onclick="document.getElementById('message').value += ' :pray:'">
+                        <img src="/resources/twemoji/1f64f.gif" alt="pray" class="emoji-icon">
+                    </button>
+                    <button onclick="document.getElementById('message').value += ' :tada:'">
+                        <img src="/resources/twemoji/1f389.gif" alt="tada" class="emoji-icon">
+                    </button>
+                    <button onclick="document.getElementById('message').value += ' :slight_smile:'">
+                        <img src="/resources/twemoji/1f642.gif" alt="slight_smile" class="emoji-icon">
+                    </button>
+                </div>
             </div>
+            <form action="../senddrawing" method="post" id="sendform">
+                <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                <input type="hidden" id="drawinginput" name="drawinginput" value="">
+                <input type="hidden" id="lite" name="lite" value="False">
+
+                <div class="message-input-bar-wrapper" style="background: {$COLOR}; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
+                    <table style="width: 100%; margin: 0; padding: 0; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 100%; padding: 0;">
+                                <input type="text" name="message" id="message" value="" class="message-input-field"
+                                    style="width: 100%; background: transparent; border: none; outline: none; height: 19px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 19px; box-sizing: border-box;"
+                                     placeholder="Message #{$CHANNEL_NAME}">
+                            </td>
+                            <td style="padding: 0 8px 0 0;">
+                                <button onclick="prepareAndSend()" type="submit" class="send-button-input"
+                                    style="flex: 0 0 auto; border: none; border-radius: 4px; color: white; padding: 0px 24px; cursor: pointer; font-family: rodin, Whitney, Helvetica Neue, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; height: 38px; line-height: 38px; text-align: center; white-space: nowrap; margin-right: 8px; background: rgb(88, 101, 242);"
+                                    onmouseover="this.style.background='#4752c4'"
+                                    onmouseout="this.style.background='#5865f2'">Send</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </form>
         </div>
     </div>
 
