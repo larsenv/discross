@@ -432,6 +432,43 @@
                 display: block;
             }
         }
+
+        /* DSi (256x192) specific overrides.
+           Opera Mobile 9.5 (DSi browser) does not support position:fixed, so the
+           send form must fall into normal document flow. Also shrink the toolbar
+           color boxes so the page scrolls less on the tiny 256x192 screen. */
+        @media (max-width: 256px) {
+            /* Drop position:fixed - not supported in Opera Mobile 9.5 (DSi) */
+            .message-form-container {
+                position: static;
+                margin-top: 8px;
+                border-top: 1px solid #40444b;
+                padding: 6px;
+            }
+            body { padding-bottom: 0; }
+
+            /* Shrink color boxes from 24px to 15px so two rows + size buttons
+               take up less vertical space on the 192px tall screen */
+            .c-box {
+                width: 15px;
+                height: 15px;
+                margin: 1px;
+            }
+
+            .s-btn {
+                margin: 0 1px;
+                padding: 1px;
+            }
+
+            #btn-clear {
+                font-size: 11px !important;
+                height: 26px !important;
+                padding: 0 6px !important;
+            }
+
+            /* Hide emoji picker - too small to be useful on DSi */
+            #emoji { display: none !important; }
+        }
     </style>
 </head>
 
@@ -581,12 +618,14 @@
         }
 
         // --- COORDINATE SYSTEM ---
-        // getCanvasRect: falls back to offsetLeft/offsetTop traversal on browsers
-        // that don't support getBoundingClientRect() (e.g. older DS browsers).
-        function getCanvasRect() {
-            if (canvas.getBoundingClientRect) {
-                return canvas.getBoundingClientRect();
-            }
+        // Use pageX/pageY (document-relative) combined with the canvas's document-
+        // relative page position obtained via offsetLeft/offsetTop traversal.
+        // Both are document-relative, so page scroll has no effect on accuracy.
+        // This is more reliable than getBoundingClientRect()+clientX/Y because on
+        // DSi Opera 9.5, getBoundingClientRect() returns page-relative coordinates
+        // instead of viewport-relative ones, causing completely wrong drawing coords
+        // whenever the page is scrolled.
+        function getCanvasPagePos() {
             var left = 0, top = 0;
             var el = canvas;
             while (el) {
@@ -594,24 +633,34 @@
                 top += el.offsetTop || 0;
                 el = el.offsetParent;
             }
-            return {
-                left: left,
-                top: top,
-                // Use offsetWidth/offsetHeight (CSS display size) for accurate scaling.
-                // Only fall back to canvas.width/canvas.height if the element has no
-                // display size (e.g. hidden), in which case scale will be 1:1.
-                width: canvas.offsetWidth > 0 ? canvas.offsetWidth : canvas.width,
-                height: canvas.offsetHeight > 0 ? canvas.offsetHeight : canvas.height
-            };
+            return { left: left, top: top };
+        }
+
+        function getScrollOffset() {
+            var sx, sy;
+            if (window.pageXOffset !== undefined) {
+                sx = window.pageXOffset;
+                sy = window.pageYOffset;
+            } else if (document.documentElement && document.documentElement.scrollLeft !== undefined) {
+                sx = document.documentElement.scrollLeft;
+                sy = document.documentElement.scrollTop;
+            } else {
+                sx = document.body.scrollLeft || 0;
+                sy = document.body.scrollTop || 0;
+            }
+            return { x: sx, y: sy };
         }
 
         function getPos(e) {
-            var rect = getCanvasRect();
-            var scaleX = canvas.width / rect.width;
-            var scaleY = canvas.height / rect.height;
+            var scroll = getScrollOffset();
+            var pageX = e.pageX !== undefined ? e.pageX : (e.clientX + scroll.x);
+            var pageY = e.pageY !== undefined ? e.pageY : (e.clientY + scroll.y);
+            var cp = getCanvasPagePos();
+            var dispW = canvas.offsetWidth > 0 ? canvas.offsetWidth : canvas.width;
+            var dispH = canvas.offsetHeight > 0 ? canvas.offsetHeight : canvas.height;
             return {
-                x: (e.clientX - rect.left) * scaleX,
-                y: (e.clientY - rect.top) * scaleY
+                x: (pageX - cp.left) * (canvas.width / dispW),
+                y: (pageY - cp.top) * (canvas.height / dispH)
             };
         }
 
@@ -654,12 +703,15 @@
         function getTouchPos(e) {
             if (!e.touches || e.touches.length === 0) return null;
             var touch = e.touches[0];
-            var rect = getCanvasRect();
-            var scaleX = canvas.width / rect.width;
-            var scaleY = canvas.height / rect.height;
+            var scroll = getScrollOffset();
+            var pageX = touch.pageX !== undefined ? touch.pageX : (touch.clientX + scroll.x);
+            var pageY = touch.pageY !== undefined ? touch.pageY : (touch.clientY + scroll.y);
+            var cp = getCanvasPagePos();
+            var dispW = canvas.offsetWidth > 0 ? canvas.offsetWidth : canvas.width;
+            var dispH = canvas.offsetHeight > 0 ? canvas.offsetHeight : canvas.height;
             return {
-                x: (touch.clientX - rect.left) * scaleX,
-                y: (touch.clientY - rect.top) * scaleY
+                x: (pageX - cp.left) * (canvas.width / dispW),
+                y: (pageY - cp.top) * (canvas.height / dispH)
             };
         }
 
