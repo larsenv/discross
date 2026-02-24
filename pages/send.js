@@ -163,12 +163,16 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
       // redirect back to the channel (use the provided channel id if available)
       const redirectChannel = (parsedurl.query && parsedurl.query.channel) ? parsedurl.query.channel : (args?.[2] || "");
-      res.writeHead(302, { "Location": `/channels/${redirectChannel}` });
+      const sessionID = parsedurl.query.sessionID || ''
+      const sessionPart = sessionID ? '?sessionID=' + encodeURIComponent(sessionID) : ''
+      const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)))
+      res.writeHead(302, { "Location": baseUrl + '/channels/' + redirectChannel + sessionPart });
       res.end();
     });
   } catch (err) {
     console.error("Error sending message:", err);
-    res.writeHead(302, { "Location": "/server/" });
+    const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)))
+    res.writeHead(302, { "Location": baseUrl + '/server/' });
     res.end();
   }
 };
