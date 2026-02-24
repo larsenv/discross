@@ -2,6 +2,7 @@ const url = require('url');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -152,7 +153,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
         const message = await webhook.send({
           content: processedmessage,
-          username: member.displayName || member.user.tag,
+          username: normalizeWeirdUnicode(member.displayName || member.user.tag),
           avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
           disableEveryone: true,
         });
