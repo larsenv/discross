@@ -166,11 +166,14 @@
             top: 16px;
             left: 16px;
             z-index: 1000;
-            background: #36393f;
-            border: 1px solid #40444b;
-            border-radius: 4px;
-            padding: 8px;
+            background: none !important;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            display: block;
         }
+        .menu-button img { width: 24px; height: 24px; display: block; }
+        .menu-icon { width: 24px; height: 24px; display: block; }
 
         /* Responsive design */
         @media (max-width: 768px) {
@@ -180,12 +183,16 @@
             }
         }
 
-        /* Message input - matches channel page style */
+        /* Message input - fixed to bottom of viewport, full width, matching channel page */
         .message-form-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
             background: #36393f;
             border-top: 1px solid #40444b;
             padding: 12px;
-            width: 100%;
         }
 
         .message-buttons-container {
@@ -225,6 +232,9 @@
             background: #000000 !important;
             border-top-color: #333333 !important;
         }
+
+        /* Add bottom padding to body so fixed form doesn't cover canvas */
+        body { padding-bottom: 80px; }
 
         /* Chat container - consistent spacing */
         .chat, .chat-container, #chat {
@@ -512,7 +522,7 @@
                                      placeholder="Message #{$CHANNEL_NAME}">
                             </td>
                             <td style="padding: 0 8px 0 0;">
-                                <button onclick="prepareAndSend()" type="submit" class="send-button-input"
+                                <button onclick="prepareAndSend()" type="button" class="send-button-input"
                                     style="flex: 0 0 auto; border: none; border-radius: 4px; color: white; padding: 0px 24px; cursor: pointer; font-family: rodin, Whitney, Helvetica Neue, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; height: 38px; line-height: 38px; text-align: center; white-space: nowrap; margin-right: 8px; background: rgb(88, 101, 242);"
                                     onmouseover="this.style.background='#4752c4'"
                                     onmouseout="this.style.background='#5865f2'">Send</button>
