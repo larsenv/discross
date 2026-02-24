@@ -4,6 +4,8 @@
  * across all message rendering pages.
  */
 
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
+
 /**
  * Get the display name following Discord's order:
  * server nickname -> Discord global name -> Discord username
@@ -13,33 +15,26 @@
  * @returns {string} Display name to show
  */
 function getDisplayName(member, author) {
-  if (member) {
+  let name;
+  if (member && member.nickname) {
     // Server nickname (guild nickname) first
-    if (member.nickname) {
-      return member.nickname;
-    }
-    // Otherwise Discord global name (from user object)
-    if (member.user && member.user.globalName) {
-      return member.user.globalName;
-    }
-    if (member.user && member.user.username) {
-      return member.user.username;
-    }
+    name = member.nickname;
+  } else if (member && member.user && member.user.globalName) {
+    // Discord global name (from user object)
+    name = member.user.globalName;
+  } else if (member && member.user && member.user.username) {
+    name = member.user.username;
+  } else if (member) {
     // Fallback to member display name
-    return member.displayName;
+    name = member.displayName;
+  } else if (author && author.globalName) {
+    // For webhooks or when no member data, use author data
+    name = author.globalName;
+  } else if (author && author.username) {
+    name = author.username;
   }
-  
-  // For webhooks or when no member data, use author data
-  if (author) {
-    if (author.globalName) {
-      return author.globalName;
-    }
-    if (author.username) {
-      return author.username;
-    }
-  }
-  
-  return "Unknown User";
+
+  return normalizeWeirdUnicode(name || "Unknown User");
 }
 
 /**
