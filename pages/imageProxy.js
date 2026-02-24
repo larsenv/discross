@@ -2,18 +2,22 @@ const https = require('https');
 const http = require('http');
 const sharp = require('sharp');
 
+// Smallest valid 1x1 transparent GIF, used as a fallback when an upstream image fails to load
+const EMPTY_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+
 exports.imageProxy = async function imageProxy(res, URL) {
     // Choose the appropriate protocol handler
     const protocol = URL.startsWith('https:') ? https : http;
     
     protocol.get(URL, (proxyRes) => {
-        // If the upstream server returned an error, don't try to process the body as an image
+        // If the upstream server returned an error, return a 1x1 transparent GIF so the
+        // browser renders nothing rather than showing a broken image or error text.
         if (proxyRes.statusCode < 200 || proxyRes.statusCode >= 300) {
             console.log(`Image proxy: upstream returned ${proxyRes.statusCode} for ${URL}`);
             // Drain the response to free the socket
             proxyRes.resume();
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('Image not found');
+            res.writeHead(200, { 'Content-Type': 'image/gif', 'Content-Length': EMPTY_GIF.length });
+            res.end(EMPTY_GIF);
             return;
         }
         const chunks = [];
