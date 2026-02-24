@@ -2,11 +2,24 @@ const https = require('https');
 const http = require('http');
 const sharp = require('sharp');
 
+// Smallest valid 1x1 transparent GIF, used as a fallback when an upstream image fails to load
+const EMPTY_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+
 exports.imageProxy = async function imageProxy(res, URL) {
     // Choose the appropriate protocol handler
     const protocol = URL.startsWith('https:') ? https : http;
     
     protocol.get(URL, (proxyRes) => {
+        // If the upstream server returned an error, return a 1x1 transparent GIF so the
+        // browser renders nothing rather than showing a broken image or error text.
+        if (proxyRes.statusCode < 200 || proxyRes.statusCode >= 300) {
+            console.log(`Image proxy: upstream returned ${proxyRes.statusCode} for ${URL}`);
+            // Drain the response to free the socket
+            proxyRes.resume();
+            res.writeHead(200, { 'Content-Type': 'image/gif', 'Content-Length': EMPTY_GIF.length });
+            res.end(EMPTY_GIF);
+            return;
+        }
         const chunks = [];
         proxyRes.on('data', (chunk) => {
             chunks.push(chunk);
@@ -15,37 +28,30 @@ exports.imageProxy = async function imageProxy(res, URL) {
             const buffer = Buffer.concat(chunks);
             let gifbuffer = buffer
             try {
+                // Resize options: cap all images at 256x256 to keep transfers small for Wii Internet Channel
+                const resizeOptions = { width: 256, height: 256, fit: 'inside', withoutEnlargement: true };
                 if (buffer.length > 200000) { // If the buffer is way too big the server crashes. I don't know the exact threshold but it's around 200000
-                    await sharp(buffer)
-                        .metadata()
-                        .then(async metadata => {
-                            gifbuffer = await sharp(buffer)
-                                .resize(Math.floor(metadata.width / 4), Math.floor(metadata.height / 4)) // Compress to make it smaller.
-                                .toFormat('gif', { colors: 16 })                 // Hopefully this will be enough to avoid crashes.
-                                .toBuffer()
-                        })
-                        .catch(err => {
-                            // If conversion fails, just send original
-                            console.log('Could not convert large image, sending original');
-                            gifbuffer = buffer;
-                        });
+                    try {
+                        gifbuffer = await sharp(buffer, { animated: true })
+                            .resize(resizeOptions)
+                            .toFormat('gif', { colors: 256 })                 // Hopefully this will be enough to avoid crashes.
+                            .toBuffer();
+                    } catch (err) {
+                        // If conversion fails, just send original
+                        console.log('Could not convert large image, sending original');
+                        gifbuffer = buffer;
+                    }
                 } else {
-                    await sharp(buffer)
-                        .metadata()
-                        .then(async metadata => {
-                            if (metadata.format == "gif") {
-                                gifbuffer = buffer
-                            } else {
-                                gifbuffer = await sharp(buffer)
-                                    .toFormat('gif')
-                                    .toBuffer();
-                            }
-                        })
-                        .catch(err => {
-                            // If conversion fails, just send original
-                            console.log('Could not convert image format, sending original');
-                            gifbuffer = buffer;
-                        });
+                    try {
+                        gifbuffer = await sharp(buffer, { animated: true })
+                            .resize(resizeOptions)
+                            .toFormat('gif', { colors: 256 })
+                            .toBuffer();
+                    } catch (err) {
+                        // If conversion fails, just send original
+                        console.log('Could not convert image format, sending original');
+                        gifbuffer = buffer;
+                    }
                 }
                 res.writeHead(200, {
                     'Content-Type': 'image/gif',
