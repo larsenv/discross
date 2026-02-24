@@ -3,6 +3,7 @@ const md = require('markdown-it')({ breaks: true, linkify: true });
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { formatDateWithTimezone } = require('../timezoneUtils');
 const fs = require('fs');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
 
@@ -83,7 +84,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     let authorHtml = '';
     if (embed.author) {
       // Create the author text span
-      let content = `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(embed.author.name)}</span>`;
+      let content = `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(normalizeWeirdUnicode(embed.author.name))}</span>`;
       
       // If URL exists, wrap the content in an anchor tag
       if (embed.author.url) {
@@ -101,9 +102,9 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     if (embed.title) {
       titleHtml = `<div style="font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">`;
       if (embed.url) {
-        titleHtml += `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${escape(embed.title)}</a>`;
+        titleHtml += `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${escape(normalizeWeirdUnicode(embed.title))}</a>`;
       } else {
-        titleHtml += escape(embed.title);
+        titleHtml += escape(normalizeWeirdUnicode(embed.title));
       }
       titleHtml += '</div>';
     }
@@ -120,8 +121,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     
     // Process embed fields with emoji support (#11)
     let fieldsHtml = '';
-    if (embed.fields && embed.fields.length > 0) {
-      // Use table layout for Wii Internet Channel (Opera) compatibility instead of CSS grid
+    if (embed.fields && embed.fields.length > 0) 
       fieldsHtml = '<table width="100%" cellpadding="2" cellspacing="0" style="margin-bottom: 8px;">';
       let rowOpen = false;
       let inlineCount = 0;
@@ -129,14 +129,14 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
         if (!field.inline) {
           if (rowOpen) { fieldsHtml += '</tr>'; rowOpen = false; inlineCount = 0; }
           fieldsHtml += '<tr><td colspan="3" style="padding-bottom: 4px;">';
-          fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(field.name)}</div>`;
+          fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
           const renderedValue = renderDiscordMarkdown(field.value);
           fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
           fieldsHtml += '</td></tr>';
         } else {
           if (!rowOpen) { fieldsHtml += '<tr>'; rowOpen = true; inlineCount = 0; }
           fieldsHtml += '<td valign="top" style="padding-bottom: 4px; padding-right: 4px;">';
-          fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(field.name)}</div>`;
+          fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
           const renderedValue = renderDiscordMarkdown(field.value);
           fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
           fieldsHtml += '</td>';
@@ -182,7 +182,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     if (embed.footer || embed.timestamp) {
       footerHtml = '<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">';
       if (embed.footer) {
-        footerHtml += `<span>${escape(embed.footer.text)}</span>`;
+        footerHtml += `<span>${escape(normalizeWeirdUnicode(embed.footer.text))}</span>`;
       }
       if (embed.timestamp) {
         if (embed.footer) {

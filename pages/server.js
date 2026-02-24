@@ -7,6 +7,7 @@ const sharp = require("sharp")
 const sanitizer = require("path-sanitizer").default;
 const emojiRegex = require("./twemojiRegex").regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 // Templates for viewing the channels in a server
 const server_template = fs.readFileSync('pages/templates/server.html', 'utf-8');
@@ -99,6 +100,7 @@ function processServerChannels(server, member, response) {
     channelsSorted.forEach((item, index) => {
       // Check if the member has permission to view the channel
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
+        const escapedName = escape(normalizeWeirdUnicode(item.name));
         if (item.type == ChannelType.GuildCategory) {
           // Close previous category if exists
           if (currentCategoryId !== null) {
@@ -106,29 +108,29 @@ function processServerChannels(server, member, response) {
           }
           currentCategoryId = item.id;
           channelList += category_channel_template
-            .replace("{$CHANNEL_NAME}", escape(item.name))
+            .replace("{$CHANNEL_NAME}", escapedName)
             .replace("{$CATEGORY_ID}", item.id);
         } else if (item.type == ChannelType.GuildForum) {
           // Forum channels (#16)
-          channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.type == ChannelType.GuildAnnouncement || item.type == ChannelType.GuildNews) {
           // Use announcement template for announcement/news channels
-          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.type == ChannelType.GuildVoice) {
           // Voice channels - check if they're locked (#27)
           const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
           if (!canSendMessages) {
             // Locked voice channel
-            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           } else {
             // Voice channel with text capability (#14)
-            channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+            channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           }
         } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
-          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.type == ChannelType.GuildStageVoice) {
           // Stage channels
-          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
         } else if (item.isTextBased()) {
           // Text-based channels - check if locked or if it's a rules channel
           const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
@@ -137,14 +139,14 @@ function processServerChannels(server, member, response) {
           const isRulesChannel = item.name.toLowerCase().includes('rule');
           
           if (isRulesChannel) {
-            channelList += rules_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+            channelList += rules_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           } else if (!canSendMessages) {
             // Locked channel (#12)
-            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escape(item.name)).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           } else {
             // Regular text channel
             channelList += text_channel_template
-              .replace("{$CHANNEL_NAME}", escape(item.name))
+              .replace("{$CHANNEL_NAME}", escapedName)
               .replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
           }
         }
@@ -232,7 +234,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       const targetServer = bot.client.guilds.cache.get(args[2]);
       await lock.acquire(discordID, async () => {
         if (targetServer) {
-          response = response.replace("{$DISCORD_NAME}", '<b><font color="#999999" size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + targetServer.name + "</font></b><br>");
+          response = response.replace("{$DISCORD_NAME}", '<b><font color="#999999" size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
             response = processServerChannels(targetServer, member, response);
@@ -353,7 +355,7 @@ function createServerHTML(server, member, imagesCookie) {
   serverName = serverName.replace(emojiRegex, '');
   serverName = serverName.trim();
   
-  serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", escape(serverName));
+  serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", escape(normalizeWeirdUnicode(serverName)));
   return serverHTML;
 }
 

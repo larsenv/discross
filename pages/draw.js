@@ -9,6 +9,7 @@ const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
 const fetch = require("sync-fetch");
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const channel_template = fs.readFileSync('pages/templates/draw.html', 'utf-8');
 
 const message_template = fs.readFileSync('pages/templates/message/message.html', 'utf-8');
@@ -141,7 +142,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       // We load the "channel_template" which is your 'draw.html'
       template = strReplace(template, "{$SERVER_ID}", chnl.guild.id);
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
-      template = strReplace(template, "{$CHANNEL_NAME}", chnl.name);
+      template = strReplace(template, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
 
       // 6. Security: Check Send Permissions (Optional but good for UX)
       // Even though we aren't displaying messages, we can check if they are allowed to send drawings.
