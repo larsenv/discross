@@ -7,6 +7,15 @@ exports.imageProxy = async function imageProxy(res, URL) {
     const protocol = URL.startsWith('https:') ? https : http;
     
     protocol.get(URL, (proxyRes) => {
+        // If the upstream server returned an error, don't try to process the body as an image
+        if (proxyRes.statusCode < 200 || proxyRes.statusCode >= 300) {
+            console.log(`Image proxy: upstream returned ${proxyRes.statusCode} for ${URL}`);
+            // Drain the response to free the socket
+            proxyRes.resume();
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Image not found');
+            return;
+        }
         const chunks = [];
         proxyRes.on('data', (chunk) => {
             chunks.push(chunk);
