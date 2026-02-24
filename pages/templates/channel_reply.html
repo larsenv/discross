@@ -136,13 +136,6 @@
                 // Check if browser supports fetch API (for older browsers like 3DS)
                 if (typeof fetch === 'undefined' || typeof FormData === 'undefined') {
                     // Use traditional form submission for older browsers
-                    var uploadForm = document.getElementById('uploadFileForm');
-                    var mainFileInput = document.getElementById('fileUpload');
-                    
-                    // Move the file input to the upload form temporarily
-                    uploadForm.appendChild(mainFileInput);
-                    mainFileInput.setAttribute('name', 'file');
-                    
                     uploadFileTraditional();
                 } else {
                     // Upload file immediately using fetch for modern browsers
@@ -900,7 +893,6 @@
                             <img src="/resources/twemoji/1f4e4.gif" alt="Upload file"
                                 style="width: 24px; height: 24px;">
                         </label>
-                        <input type="file" id="fileUpload" style="display:none;" onchange="handleFileSelect(this)">
                         <a href="/draw/{$CHANNEL_ID}" class="message-action-btn">
                             <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
                         </a>
@@ -914,11 +906,19 @@
                     {$INPUT}
                 </form>
                 
-                <!-- Hidden form for traditional file upload (for older browsers like 3DS) -->
-                <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data" style="display:none;">
+                <!-- File upload form - visible for 3DS/legacy browsers; hidden by JS for modern browsers -->
+                <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data">
+                    <input type="file" id="fileUpload" name="file" onchange="handleFileSelect(this)">
                     <input type="hidden" name="channel" id="channelUpload" value="{$CHANNEL_ID}">
                     <input type="hidden" name="message" value="">
+                    <button type="submit">Upload file</button>
                 </form>
+                <script>
+                    if (typeof fetch !== 'undefined' && typeof FormData !== 'undefined') {
+                        var f = document.getElementById('uploadFileForm');
+                        if (f) f.style.display = 'none';
+                    }
+                </script>
             </div>
         </div>
     </div>
