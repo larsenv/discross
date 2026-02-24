@@ -23,7 +23,9 @@
         }
 
         /* Global reset + consistent box sizing and font */
-        *, *::before, *::after {
+        /* Note: *::before/*::after omitted — the CSS3 double-colon syntax can
+           trigger Opera 9.x (DSi) to attempt schema validation at xml.opera.com */
+        * {
             box-sizing: border-box;
         }
 
@@ -592,6 +594,13 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = currColor;
 
+        // Canvas display dimensions (CSS pixels). Stored explicitly so coordinate
+        // calculations don't rely on canvas.offsetWidth, which on older Opera (DSi)
+        // incorrectly returns the HTML attribute value (600) instead of the actual
+        // CSS-constrained display width, causing a 2-3x coordinate scaling error.
+        var canvasDisplayW = canvas.width;
+        var canvasDisplayH = canvas.height;
+
         // --- CANVAS DISPLAY RESIZE ---
         // Explicitly set the canvas element's CSS width and height to maintain
         // aspect ratio on small screens. CSS height:auto is unreliable on
@@ -602,29 +611,35 @@
             var maxW = wrapper.offsetWidth - 10;
             if (maxW > 0 && maxW < canvas.width) {
                 var ratio = maxW / canvas.width;
-                canvas.style.width = maxW + 'px';
-                canvas.style.height = Math.round(canvas.height * ratio) + 'px';
-            } else {
+                canvasDisplayW = maxW;
+                canvasDisplayH = Math.round(canvas.height * ratio);
+                canvas.style.width = canvasDisplayW + 'px';
+                canvas.style.height = canvasDisplayH + 'px';
+            } else if (maxW > 0) {
+                canvasDisplayW = canvas.width;
+                canvasDisplayH = canvas.height;
                 canvas.style.width = '';
                 canvas.style.height = '';
             }
+            // If maxW <= 0 layout isn't ready yet; values stay at previous setting
         }
         resizeCanvasDisplay();
-        // Attach resize listener using old-style fallback for maximum compatibility
+        // Also run on load to catch any layout changes after inline execution
         if (window.addEventListener) {
+            window.addEventListener('load', resizeCanvasDisplay, false);
             window.addEventListener('resize', resizeCanvasDisplay, false);
         } else if (window.attachEvent) {
+            window.attachEvent('onload', resizeCanvasDisplay);
             window.attachEvent('onresize', resizeCanvasDisplay);
         }
 
         // --- COORDINATE SYSTEM ---
-        // Use pageX/pageY (document-relative) combined with the canvas's document-
-        // relative page position obtained via offsetLeft/offsetTop traversal.
-        // Both are document-relative, so page scroll has no effect on accuracy.
-        // This is more reliable than getBoundingClientRect()+clientX/Y because on
-        // DSi Opera 9.5, getBoundingClientRect() returns page-relative coordinates
-        // instead of viewport-relative ones, causing completely wrong drawing coords
-        // whenever the page is scrolled.
+        // Primary: e.offsetX/offsetY — coordinates relative to the canvas element.
+        // Available in Opera 9+ (DSi browser), Chrome, Safari, IE9+.
+        // No scroll correction or element-position traversal needed.
+        //
+        // Fallback (Firefox <39 and other browsers without offsetX):
+        // Use pageX/pageY (document-relative) + canvas document-offset traversal.
         function getCanvasPagePos() {
             var left = 0, top = 0;
             var el = canvas;
@@ -652,15 +667,22 @@
         }
 
         function getPos(e) {
+            // e.offsetX/offsetY: element-relative CSS pixels. Available in Opera 9+.
+            // Works correctly regardless of page scroll or element position.
+            if (e.offsetX !== undefined) {
+                return {
+                    x: e.offsetX * (canvas.width / canvasDisplayW),
+                    y: e.offsetY * (canvas.height / canvasDisplayH)
+                };
+            }
+            // Fallback: pageX/pageY + canvas page offset
             var scroll = getScrollOffset();
             var pageX = e.pageX !== undefined ? e.pageX : (e.clientX + scroll.x);
             var pageY = e.pageY !== undefined ? e.pageY : (e.clientY + scroll.y);
             var cp = getCanvasPagePos();
-            var dispW = canvas.offsetWidth > 0 ? canvas.offsetWidth : canvas.width;
-            var dispH = canvas.offsetHeight > 0 ? canvas.offsetHeight : canvas.height;
             return {
-                x: (pageX - cp.left) * (canvas.width / dispW),
-                y: (pageY - cp.top) * (canvas.height / dispH)
+                x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
+                y: (pageY - cp.top) * (canvas.height / canvasDisplayH)
             };
         }
 
@@ -707,11 +729,9 @@
             var pageX = touch.pageX !== undefined ? touch.pageX : (touch.clientX + scroll.x);
             var pageY = touch.pageY !== undefined ? touch.pageY : (touch.clientY + scroll.y);
             var cp = getCanvasPagePos();
-            var dispW = canvas.offsetWidth > 0 ? canvas.offsetWidth : canvas.width;
-            var dispH = canvas.offsetHeight > 0 ? canvas.offsetHeight : canvas.height;
             return {
-                x: (pageX - cp.left) * (canvas.width / dispW),
-                y: (pageY - cp.top) * (canvas.height / dispH)
+                x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
+                y: (pageY - cp.top) * (canvas.height / canvasDisplayH)
             };
         }
 
