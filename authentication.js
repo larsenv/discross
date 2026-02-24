@@ -198,11 +198,11 @@ exports.handleLoginRegister = async function (req, res, body) {
           const sep = redirectBase.includes('?') ? '&' : '?'
           const redirectWithSession = redirectBase + sep + 'sessionID=' + encodeURIComponent(result.sessionID) + '#end'
           res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectWithSession, 'Content-Type': 'text/html' })
-          res.write('<head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" />' + 'Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</head>')
+          res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</body></html>')
         } else {
           const redirectWithSession = '/server/?sessionID=' + encodeURIComponent(result.sessionID) + '#end'
           res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectWithSession, 'Content-Type': 'text/html' })
-          res.write('<head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" />' + 'Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</head>')
+          res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</body></html>')
         }
         res.end()
       } else {
