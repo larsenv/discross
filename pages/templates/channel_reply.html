@@ -154,15 +154,21 @@
         
         function uploadFileTraditional() {
             // Traditional form submission for older browsers (3DS, etc.)
-            var uploadForm = document.getElementById('uploadFileForm');
-            if (uploadForm) {
-                // Show uploading indicator
+            // Repurpose the send form for upload so no DOM move is needed
+            var fileInput = document.getElementById('fileUpload');
+            if (!fileInput) return;
+            var sendForm = fileInput.form;
+            if (sendForm) {
+                fileInput.setAttribute('name', 'file');
+                sendForm.setAttribute('action', '/uploadFile?traditional=true');
+                sendForm.setAttribute('method', 'POST');
+                sendForm.setAttribute('enctype', 'multipart/form-data');
                 var messageInput = document.getElementById('message');
                 if (messageInput) {
                     messageInput.disabled = true;
                     messageInput.value = 'Uploading file...';
                 }
-                uploadForm.submit();
+                sendForm.submit();
             }
         }
         
@@ -892,10 +898,13 @@
                             <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji"
                                 style="width: 24px; height: 24px;">
                         </button>
-                        <label for="fileUpload" class="message-action-btn">
-                            <img src="/resources/twemoji/1f4e4.gif" alt="Upload file"
-                                style="width: 24px; height: 24px;">
-                        </label>
+                        <span style="position:relative;display:inline-block;vertical-align:middle;">
+                            <span class="message-action-btn" style="display:block;">
+                                <img src="/resources/twemoji/1f4e4.gif" alt="Upload file"
+                                    style="width: 24px; height: 24px;">
+                            </span>
+                            <input type="file" id="fileUpload" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;" onchange="handleFileSelect(this)">
+                        </span>
                         <a href="/draw/{$CHANNEL_ID}" class="message-action-btn">
                             <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" style="width: 24px; height: 24px;">
                         </a>
@@ -909,9 +918,8 @@
                     {$INPUT}
                 </form>
                 
-                <!-- File upload form - positioned off-screen so it is invisible but still submittable on all browsers -->
-                <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data" style="position:absolute;left:-9999px;top:-9999px;">
-                    <input type="file" id="fileUpload" name="file" onchange="handleFileSelect(this)">
+                <!-- Hidden form reference; file submitted via send form on legacy browsers -->
+                <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data" style="display:none;">
                     <input type="hidden" name="channel" id="channelUpload" value="{$CHANNEL_ID}">
                     <input type="hidden" name="message" value="">
                 </form>
