@@ -31,23 +31,15 @@
       font-weight: 700;
     }
 
-    /* Global reset + consistent box sizing and font */
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
-
     html,
-    body {
+    body,
+    #wrapper {
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      font-size: 16px;
-      line-height: 1.45;
+      font-family: 'rodin', Arial, Helvetica, sans-serif;
       background-color: #303338;
       color: #dddddd;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
     .light-theme #wrapper {
@@ -84,12 +76,12 @@
       margin: 8px 0;
     }
 
-    .light-theme .discross-button {
+    .light-theme #wrapper .discross-button {
       background: #5865f2 !important;
       color: white !important;
     }
 
-    .light-theme .discross-button:hover {
+    .light-theme #wrapper .discross-button:hover {
       background: #4752c4 !important;
     }
 
@@ -105,21 +97,21 @@
     }
     
     /* Fix buttons in AMOLED theme */
-    .amoled-theme .discross-button {
+    .amoled-theme #wrapper .discross-button {
       background: #5865f2 !important;
       color: white !important;
     }
     
-    .amoled-theme .discross-button:hover {
+    .amoled-theme #wrapper .discross-button:hover {
       background: #4752c4 !important;
     }
     
-    .amoled-theme .discross-button.secondary {
+    .amoled-theme #wrapper .discross-button.secondary {
       background: #4f545c !important;
       color: white !important;
     }
     
-    .amoled-theme .discross-button.secondary:hover {
+    .amoled-theme #wrapper .discross-button.secondary:hover {
       background: #5d6269 !important;
     }
 
@@ -170,15 +162,15 @@
 <body style="margin: 0;" {$WHITE_THEME_ENABLED}>
   <div id="wrapper">
     <table style="width: 100%;">
-      <tr>
-        <td><img src="/resources/logo.gif" alt="Logo"></td>
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
         <td>
           <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
         </td>
         <td width="100%" align="right">
           <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; {$MENU_OPTIONS}</font>
         </td>
-        <td valign="right">
+        <td valign="middle">
           <form action="/switchtheme" method="post">
             <button type="submit" style="background: none; border: none;">
               <img src="/resources/images/themeswitch.gif" alt="Switch theme">
