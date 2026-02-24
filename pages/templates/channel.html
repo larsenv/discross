@@ -136,6 +136,13 @@
                 // Check if browser supports fetch API (for older browsers like 3DS)
                 if (typeof fetch === 'undefined' || typeof FormData === 'undefined') {
                     // Use traditional form submission for older browsers
+                    var uploadForm = document.getElementById('uploadFileForm');
+                    var mainFileInput = document.getElementById('fileUpload');
+                    
+                    // Move the file input to the upload form
+                    uploadForm.appendChild(mainFileInput);
+                    mainFileInput.setAttribute('name', 'file');
+                    
                     uploadFileTraditional();
                 } else {
                     // Upload file immediately using fetch for modern browsers
@@ -143,6 +150,10 @@
                 }
             } else if (input.value) {
                 // Fallback for browsers that don't support files API (e.g. 3DS)
+                var uploadForm = document.getElementById('uploadFileForm');
+                var mainFileInput = document.getElementById('fileUpload');
+                uploadForm.appendChild(mainFileInput);
+                mainFileInput.setAttribute('name', 'file');
                 uploadFileTraditional();
             }
         }
@@ -154,21 +165,15 @@
         
         function uploadFileTraditional() {
             // Traditional form submission for older browsers (3DS, etc.)
-            // Repurpose the send form for upload so no DOM move is needed
-            var fileInput = document.getElementById('fileUpload');
-            if (!fileInput) return;
-            var sendForm = fileInput.form;
-            if (sendForm) {
-                fileInput.setAttribute('name', 'file');
-                sendForm.setAttribute('action', '/uploadFile?traditional=true');
-                sendForm.setAttribute('method', 'POST');
-                sendForm.setAttribute('enctype', 'multipart/form-data');
+            var uploadForm = document.getElementById('uploadFileForm');
+            if (uploadForm) {
+                // Show uploading indicator
                 var messageInput = document.getElementById('message');
                 if (messageInput) {
                     messageInput.disabled = true;
                     messageInput.value = 'Uploading file...';
                 }
-                sendForm.submit();
+                uploadForm.submit();
             }
         }
         
