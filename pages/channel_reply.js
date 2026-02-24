@@ -3,6 +3,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const { getDisplayName } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { buildMessagesHtml } = require('./channel');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 // Templates for viewing messages in a channel (Reply Context)
 const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8');
@@ -190,7 +191,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
-      final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
+      final = strReplace(final, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
       final = strReplace(final, "{$MESSAGES}", response);
 
       res.writeHead(200, { "Content-Type": "text/html" });

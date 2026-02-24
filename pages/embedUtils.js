@@ -3,6 +3,7 @@ const md = require('markdown-it')({ breaks: true, linkify: true });
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { formatDateWithTimezone } = require('../timezoneUtils');
 const fs = require('fs');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
 
@@ -83,7 +84,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     let authorHtml = '';
     if (embed.author) {
       // Create the author text span
-      let content = `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(embed.author.name)}</span>`;
+      let content = `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(normalizeWeirdUnicode(embed.author.name))}</span>`;
       
       // If URL exists, wrap the content in an anchor tag
       if (embed.author.url) {
@@ -101,9 +102,9 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     if (embed.title) {
       titleHtml = `<div style="font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">`;
       if (embed.url) {
-        titleHtml += `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${escape(embed.title)}</a>`;
+        titleHtml += `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${escape(normalizeWeirdUnicode(embed.title))}</a>`;
       } else {
-        titleHtml += escape(embed.title);
+        titleHtml += escape(normalizeWeirdUnicode(embed.title));
       }
       titleHtml += '</div>';
     }
@@ -126,7 +127,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
       embed.fields.forEach(field => {
         const fieldStyle = field.inline ? 'grid-column: span 1;' : 'grid-column: 1 / -1;';
         fieldsHtml += `<div style="${fieldStyle}">`;
-        fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(field.name)}</div>`;
+        fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
         const renderedValue = renderDiscordMarkdown(field.value);
         const valueWithEmoji = processEmojiInHTML(renderedValue, imagesCookie, animationsCookie);
         fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${valueWithEmoji}</div>`;
@@ -164,7 +165,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     if (embed.footer || embed.timestamp) {
       footerHtml = '<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">';
       if (embed.footer) {
-        footerHtml += `<span>${escape(embed.footer.text)}</span>`;
+        footerHtml += `<span>${escape(normalizeWeirdUnicode(embed.footer.text))}</span>`;
       }
       if (embed.timestamp) {
         if (embed.footer) {
