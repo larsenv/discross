@@ -243,7 +243,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         }
 
         const replyAuthor = getDisplayName(replyMember, replyUser);
-        const mentionsRepliedUser = item.mentions?.repliedUser !== undefined;
+        const mentionsRepliedUser = item.mentions?.repliedUser != null;
 
         let replyContent = '';
         if (replyMessage && replyMessage.content) {
