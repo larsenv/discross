@@ -103,9 +103,10 @@ async function ensureMemberData(message, guild, cache = null) {
     }
     return member;
   } catch (error) {
-    // Silently return null - member not found (#11)
-    // Since we're not using role colors (getMemberColor always returns white),
-    // failed member fetches are not critical
+    // Cache null so we don't retry repeatedly for the same user
+    if (cache) {
+      cache.set(cacheKey, null);
+    }
     return null;
   }
 }
