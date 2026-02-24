@@ -909,19 +909,12 @@
                     {$INPUT}
                 </form>
                 
-                <!-- File upload form - hidden for modern browsers via JS; visible for 3DS/legacy -->
-                <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data">
+                <!-- File upload form - positioned off-screen so it is invisible but still submittable on all browsers -->
+                <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data" style="position:absolute;left:-9999px;top:-9999px;">
                     <input type="file" id="fileUpload" name="file" onchange="handleFileSelect(this)">
                     <input type="hidden" name="channel" id="channelUpload" value="{$CHANNEL_ID}">
                     <input type="hidden" name="message" value="">
-                    <button type="submit">Upload file</button>
                 </form>
-                <script>
-                    if (typeof fetch !== 'undefined' && typeof FormData !== 'undefined') {
-                        var f = document.getElementById('uploadFileForm');
-                        if (f) f.style.display = 'none';
-                    }
-                </script>
             </div>
         </div>
     </div>
