@@ -121,7 +121,8 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     
     // Process embed fields with emoji support (#11)
     let fieldsHtml = '';
-    if (embed.fields && embed.fields.length > 0) 
+    if (embed.fields && embed.fields.length > 0)
+    {
       fieldsHtml = '<table width="100%" cellpadding="2" cellspacing="0" style="margin-bottom: 8px;">';
       let rowOpen = false;
       let inlineCount = 0;
