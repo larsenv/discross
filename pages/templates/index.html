@@ -31,23 +31,15 @@
       font-weight: 700;
     }
 
-    /* Global reset + consistent box sizing and font */
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
-
     html,
-    body {
+    body,
+    #wrapper {
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      font-size: 16px;
-      line-height: 1.45;
+      font-family: 'rodin', Arial, Helvetica, sans-serif;
       background-color: #303338;
       color: #dddddd;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
     .light-theme #wrapper {
@@ -173,7 +165,7 @@
       <tr>
         <td><img src="/resources/logo.gif" alt="Logo"></td>
         <td>
-          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>discross</b></font>
         </td>
         <td width="100%" align="right">
           <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; {$MENU_OPTIONS}</font>
