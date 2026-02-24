@@ -193,14 +193,16 @@ exports.handleLoginRegister = async function (req, res, body) {
     if (params.username && params.password) {
       const result = await exports.login(params.username, params.password)
       if (result.status === 'success') {
+        const baseUrl = (https ? 'https' : 'http') + '://' + (req.headers.host || 'localhost')
         if (params.redirect) {
           const redirectBase = params.redirect
           const sep = redirectBase.includes('?') ? '&' : '?'
-          const redirectWithSession = redirectBase + sep + 'sessionID=' + encodeURIComponent(result.sessionID) + '#end'
+          const redirectPath = redirectBase + sep + 'sessionID=' + encodeURIComponent(result.sessionID) + '#end'
+          const redirectWithSession = baseUrl + redirectPath
           res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectWithSession, 'Content-Type': 'text/html' })
           res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</body></html>')
         } else {
-          const redirectWithSession = '/server/?sessionID=' + encodeURIComponent(result.sessionID) + '#end'
+          const redirectWithSession = baseUrl + '/server/?sessionID=' + encodeURIComponent(result.sessionID) + '#end'
           res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectWithSession, 'Content-Type': 'text/html' })
           res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</body></html>')
         }
