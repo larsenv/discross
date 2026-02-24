@@ -366,39 +366,44 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         const isYouTube = (embed.provider?.name === 'YouTube' || urlMatchesDomain(embed.url, 'youtube.com') || urlMatchesDomain(embed.url, 'youtu.be')) && embed.thumbnail?.url;
 
         if (isTenor && imagesCookie == 1) {
-          const gifUrl = embed.thumbnail.url;
+          const rawGifUrl = embed.thumbnail.url;
+          if (!rawGifUrl) { embedsToProcess.push(embed); return; }
+          const gifUrl = `/imageProxy/external/${Buffer.from(rawGifUrl).toString('base64')}`;
           const urlToFind = embed.url;
           let replaced = false;
           if (urlToFind) {
             const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
             const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
             if (anchorRegex.test(messagetext)) {
-              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`);
+              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="Tenor GIF">`);
               replaced = true;
             }
           }
           if (!replaced) {
-            messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="Tenor GIF">`;
+            messagetext += `<br><img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="Tenor GIF">`;
           }
         } else if (isGiphy && imagesCookie == 1) {
-          const gifUrl = embed.image?.url || embed.thumbnail?.url;
+          const rawGifUrl = embed.image?.url || embed.thumbnail?.url;
+          const gifUrl = rawGifUrl ? `/imageProxy/external/${Buffer.from(rawGifUrl).toString('base64')}` : null;
           const urlToFind = embed.url;
           let replaced = false;
           if (urlToFind && gifUrl) {
             const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
             const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
             if (anchorRegex.test(messagetext)) {
-              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`);
+              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="GIPHY GIF">`);
               replaced = true;
             }
           }
           if (!replaced && gifUrl) {
-            messagetext += `<br><img src="${gifUrl}" style="max-width: 100%; border-radius: 4px;" alt="GIPHY GIF">`;
+            messagetext += `<br><img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="GIPHY GIF">`;
           }
         } else if (isYouTube && imagesCookie == 1) {
-          const thumbnailUrl = embed.thumbnail.url;
+          const rawThumbnailUrl = embed.thumbnail.url;
+          if (!rawThumbnailUrl) { embedsToProcess.push(embed); return; }
+          const thumbnailUrl = `/imageProxy/external/${Buffer.from(rawThumbnailUrl).toString('base64')}`;
           const videoUrl = embed.url;
-          if (thumbnailUrl) {
+          if (rawThumbnailUrl) {
             messagetext += `<br><a href="${videoUrl}" target="_blank"><img src="${thumbnailUrl}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
           }
         } else {
