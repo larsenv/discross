@@ -21,7 +21,7 @@ exports.imageProxy = async function imageProxy(res, URL) {
                     try {
                         gifbuffer = await sharp(buffer, { animated: true })
                             .resize(resizeOptions)
-                            .toFormat('gif', { colors: 32 })                 // Hopefully this will be enough to avoid crashes.
+                            .toFormat('gif', { colors: 256 })                 // Hopefully this will be enough to avoid crashes.
                             .toBuffer();
                     } catch (err) {
                         // If conversion fails, just send original
@@ -32,7 +32,7 @@ exports.imageProxy = async function imageProxy(res, URL) {
                     try {
                         gifbuffer = await sharp(buffer, { animated: true })
                             .resize(resizeOptions)
-                            .toFormat('gif', { colors: 128 })
+                            .toFormat('gif', { colors: 256 })
                             .toBuffer();
                     } catch (err) {
                         // If conversion fails, just send original
