@@ -1,4 +1,5 @@
 const sharp = require('sharp');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 /**
  * Generate an acronym from a server name, preserving case and punctuation
@@ -14,6 +15,9 @@ function generateAcronym(serverName) {
     return '?';
   }
 
+  // Normalize weird Unicode characters (e.g. mathematical styled letters) before processing
+  serverName = normalizeWeirdUnicode(serverName);
+
   // Split by spaces to get words
   const words = serverName.trim().split(/\s+/);
   
@@ -24,8 +28,8 @@ function generateAcronym(serverName) {
   
   // Multiple words: take first character of each word with its surrounding punctuation
   return words.map(word => {
-    // Find the first letter
-    const firstLetterMatch = word.match(/[a-zA-Z]/);
+    // Find the first Unicode letter (covers Latin, CJK, Arabic, etc.)
+    const firstLetterMatch = word.match(/\p{L}/u);
     if (!firstLetterMatch) {
       // No letter found, return first character
       return word.charAt(0);
