@@ -15,6 +15,7 @@ const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 function readTemplate(filePath) {
   let content = fs.readFileSync(filePath, 'utf-8');
@@ -443,15 +444,15 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     if (item.mentions && item.mentions.members) {
       item.mentions.members.forEach(function (user) {
         if (user) {
-          messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + user.displayName)));
-          messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + user.displayName)));
+          messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(user.displayName))));
+          messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(user.displayName))));
         }
       });
 
       if (item.mentions.roles) {
         item.mentions.roles.forEach(function (role) {
           if (role) {
-            messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + role.name)));
+            messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(role.name))));
           }
         });
       }
@@ -461,7 +462,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       try {
         const cachedMember = chnl.guild.members.cache.get(userId);
         if (cachedMember) {
-          return tmpl_mention.replace("{$USERNAME}", escape("@" + cachedMember.displayName));
+          return tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(cachedMember.displayName)));
         }
       } catch (err) {
         // Ignore errors
@@ -477,7 +478,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         const channel = bot.client.channels.cache.get(m[1]);
         if (channel) {
           const channelLink = `/channels/${channel.id}`;
-          messagetext = strReplace(messagetext, m[0], `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(channel.name)}</font></a>`);
+          messagetext = strReplace(messagetext, m[0], `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(normalizeWeirdUnicode(channel.name))}</font></a>`);
         }
       }
     } while (m);
@@ -494,7 +495,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     if (item.mentions && item.mentions.roles) {
       item.mentions.roles.forEach(function (role) {
         if (role) {
-          messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + role.name)));
+          messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(role.name))));
         }
       });
     }
@@ -706,7 +707,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
-      final = strReplace(final, "{$CHANNEL_NAME}", chnl.name);
+      final = strReplace(final, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
       final = strReplace(final, "{$MESSAGES}", response);
       res.writeHead(200, { "Content-Type": "text/html" });
       res.write(final); //write a response to the client
