@@ -387,7 +387,9 @@
             display: block;
             border: 1px solid #202225;
             max-width: 100%; /* Responsive for mobile */
-            height: auto;
+            /* NOTE: do NOT set height:auto here — on canvas elements it does not
+               proportionally scale in older browsers (DSi/3DS). Height is managed
+               by resizeCanvasDisplay() in JS instead. */
         }
 
         /* Mobile responsive adjustments */
@@ -406,9 +408,8 @@
                 margin: 0 8px 20px 8px;
             }
 
-            canvas {
-                width: 100%;
-            }
+            /* canvas width/height on small screens is handled by JS to maintain
+               aspect ratio on old DS browsers that ignore height:auto on canvas */
 
             .c-box {
                 width: 20px;
@@ -554,9 +555,58 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = currColor;
 
+        // --- CANVAS DISPLAY RESIZE ---
+        // Explicitly set the canvas element's CSS width and height to maintain
+        // aspect ratio on small screens. CSS height:auto is unreliable on
+        // <canvas> in older browsers (DSi/3DS NetFront/WebKit).
+        function resizeCanvasDisplay() {
+            var wrapper = document.getElementById('canvas-wrapper');
+            // Subtract 10px to account for the 5px padding on each side of #canvas-wrapper
+            var maxW = wrapper.offsetWidth - 10;
+            if (maxW > 0 && maxW < canvas.width) {
+                var ratio = maxW / canvas.width;
+                canvas.style.width = maxW + 'px';
+                canvas.style.height = Math.round(canvas.height * ratio) + 'px';
+            } else {
+                canvas.style.width = '';
+                canvas.style.height = '';
+            }
+        }
+        resizeCanvasDisplay();
+        // Attach resize listener using old-style fallback for maximum compatibility
+        if (window.addEventListener) {
+            window.addEventListener('resize', resizeCanvasDisplay, false);
+        } else if (window.attachEvent) {
+            window.attachEvent('onresize', resizeCanvasDisplay);
+        }
+
         // --- COORDINATE SYSTEM ---
+        // getCanvasRect: falls back to offsetLeft/offsetTop traversal on browsers
+        // that don't support getBoundingClientRect() (e.g. older DS browsers).
+        function getCanvasRect() {
+            if (canvas.getBoundingClientRect) {
+                return canvas.getBoundingClientRect();
+            }
+            var left = 0, top = 0;
+            var el = canvas;
+            while (el) {
+                left += el.offsetLeft || 0;
+                top += el.offsetTop || 0;
+                el = el.offsetParent;
+            }
+            return {
+                left: left,
+                top: top,
+                // Use offsetWidth/offsetHeight (CSS display size) for accurate scaling.
+                // Only fall back to canvas.width/canvas.height if the element has no
+                // display size (e.g. hidden), in which case scale will be 1:1.
+                width: canvas.offsetWidth > 0 ? canvas.offsetWidth : canvas.width,
+                height: canvas.offsetHeight > 0 ? canvas.offsetHeight : canvas.height
+            };
+        }
+
         function getPos(e) {
-            var rect = canvas.getBoundingClientRect();
+            var rect = getCanvasRect();
             var scaleX = canvas.width / rect.width;
             var scaleY = canvas.height / rect.height;
             return {
@@ -604,7 +654,7 @@
         function getTouchPos(e) {
             if (!e.touches || e.touches.length === 0) return null;
             var touch = e.touches[0];
-            var rect = canvas.getBoundingClientRect();
+            var rect = getCanvasRect();
             var scaleX = canvas.width / rect.width;
             var scaleY = canvas.height / rect.height;
             return {
