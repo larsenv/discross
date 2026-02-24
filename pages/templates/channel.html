@@ -12,7 +12,7 @@
     <meta name="msapplication-TileColor" content="#2b5797">
     <meta name="theme-color" content="#ffffff">
     <title>Discross - #{$CHANNEL_NAME}</title>
-    <script><!--
+    <script>
             console.log('%cHold Up!', 'font-weight: bold; -webkit-text-fill-color: #5865f2; -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: black; font-size: 71px;');
             console.log('%cIf someone told you to copy/paste something here you have an 11/10 chance you\'re being scammed.', 'font-size: 17px;');
             console.log('%cPasting anything in here could give attackers access to your Discross account.', 'color: red; font-weight: bold; font-size: 17px;');
@@ -222,8 +222,8 @@
         function clearBg(el) {
             el.style.background = 'none';
         }
-    //--></script>
-    <style><!--
+    </script>
+    <style>
         @font-face {
             font-family: 'rodin';
             src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
@@ -824,7 +824,7 @@
         @media (max-width: 768px) {
             .menu-button { top: 8px; left: 8px; }
         }
-    --></style>
+    </style>
 </head>
 
 <body {$WHITE_THEME_ENABLED}>
@@ -881,6 +881,7 @@
                     </a>
                 </div>
                 <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                <input type="hidden" name="sessionID" value="{$SESSION_ID}">
                 <input type="hidden" id="lite" name="lite" value="False">
                 {$INPUT}
             </form>
