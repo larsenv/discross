@@ -94,10 +94,10 @@
     <br /><br />
     <font size="4">Please update your server list to see all your servers (this requires a modern browser)</font>
     <br /><br />
-    <button class="discross-button"
-      onclick="window.location.href='https://discord.com/oauth2/authorize?client_id=968999890640338955&response_type=token&redirect_uri=https%3A%2F%2Fdiscross.net%2Fdiscord.html&scope=identify+guilds&prompt=none'">
+    <a class="discross-button"
+      href="https://discord.com/oauth2/authorize?client_id=968999890640338955&response_type=token&redirect_uri=https%3A%2F%2Fdiscross.net%2Fdiscord.html&scope=identify+guilds&prompt=none">
       Update Server List
-    </button>
+    </a>
     <br />
     <font size="2" style="color: rgba(255, 255, 255, 0.8);">
       This will sync your current Discord servers with Discross (this requires a modern browser)
@@ -111,12 +111,8 @@
 {$IMAGES_WARNING}
 <br>
 <form action="/toggleAnimations" method="post">
-  <button class="discross-button" type="submit">
-    Toggle Animations
-  </button>
+  <input class="discross-button" type="submit" value="Toggle Animations">
 </form>
 <form action="/switchtheme" method="post">
-  <button class="discross-button" type="submit">
-    Switch Theme
-  </button>
+  <input class="discross-button" type="submit" value="Switch Theme">
 </form>
