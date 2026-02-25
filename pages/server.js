@@ -45,7 +45,7 @@ so imma leave it as is :)
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 
-function processServerChannels(server, member, response) {
+function processServerChannels(server, member, response, sessionParam) {
   try {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
@@ -112,25 +112,25 @@ function processServerChannels(server, member, response) {
             .replace("{$CATEGORY_ID}", item.id);
         } else if (item.type == ChannelType.GuildForum) {
           // Forum channels (#16)
-          channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildAnnouncement || item.type == ChannelType.GuildNews) {
           // Use announcement template for announcement/news channels
-          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildVoice) {
           // Voice channels - check if they're locked (#27)
           const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
           if (!canSendMessages) {
             // Locked voice channel
-            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           } else {
             // Voice channel with text capability (#14)
-            channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+            channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           }
         } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
-          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildStageVoice) {
           // Stage channels
-          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.isTextBased()) {
           // Text-based channels - check if locked or if it's a rules channel
           const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
@@ -139,15 +139,15 @@ function processServerChannels(server, member, response) {
           const isRulesChannel = item.name.toLowerCase().includes('rule');
           
           if (isRulesChannel) {
-            channelList += rules_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+            channelList += rules_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           } else if (!canSendMessages) {
             // Locked channel (#12)
-            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           } else {
             // Regular text channel
             channelList += text_channel_template
               .replace("{$CHANNEL_NAME}", escapedName)
-              .replace("{$CHANNEL_LINK}", `../channels/${item.id}`);
+              .replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           }
         }
       }
@@ -173,6 +173,11 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     let serverList = "";
     let serversDeleted = 0; // Track if servers were deleted due to sync issues
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+
+    const url = require('url');
+    const parsedUrl = url.parse(req.url, true);
+    const urlSessionID = parsedUrl.query.sessionID || ''
+    const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''
 
     // Acquire lock for this user to prevent race conditions where users might see other users' servers
     await lock.acquire(discordID, async () => {
@@ -200,7 +205,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           if (member && member.user) {
             const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
             const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;
-            const serverHTML = createServerHTML(server, member, imagesCookie);
+            const serverHTML = createServerHTML(server, member, imagesCookie, sessionParam);
             serverList += serverHTML;
           }
         } else {
@@ -224,9 +229,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
     let response = server_template.replace("{$SERVER_LIST}", serverList);
 
-    // Check for sync_needed parameter
-    const url = require('url');
-    const parsedUrl = url.parse(req.url, true);
+    // syncNeeded already parsed via parsedUrl above
     const syncNeeded = parsedUrl.query.sync_needed;
 
     // Process specific server if `args[2]` is given
@@ -237,7 +240,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           response = response.replace("{$DISCORD_NAME}", '<b><font color="#999999" size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
-            response = processServerChannels(targetServer, member, response);
+            response = processServerChannels(targetServer, member, response, sessionParam);
           } else {
             response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
           }
@@ -298,6 +301,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     // Parse and add user agent display
     response = addUserAgentDisplay(response, req);
     
+    // Inject sessionID parameter into template links
+    response = response.split('{$SESSION_PARAM}').join(urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '');
+    
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(response);
     res.end();
@@ -341,10 +347,10 @@ function applyUserPreferences(response, req) {
   return response;
 }
 
-function createServerHTML(server, member, imagesCookie) {
+function createServerHTML(server, member, imagesCookie, sessionParam) {
   // Generate server-specific HTML
   let serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
-  serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id);
+  serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id + (sessionParam || ''));
   
   // Always strip emoji from server name to prevent twemoji rendering inside the name text
   let serverName = server.name;

@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid')
 const { parse } = require('querystring')
 const passStrength = require('owasp-password-strength-test')
 const he = require('he') // Encodes HTML attributes
+const url = require('url')
 
 passStrength.config({
   minLength: 8
@@ -158,11 +159,15 @@ exports.checkAuth = async function (req, res, noRedirect) {
     cookiedict[parts.shift().trim()] = decodeURI(parts.join('='))
   })
 
-  if (cookiedict.sessionID) {
+  // Fall back to URL query parameter for browsers without cookie support (e.g. IE1, IE2)
+  const parsedUrl = url.parse(req.url, true)
+  const sessionIDToCheck = cookiedict.sessionID || parsedUrl.query.sessionID
+
+  if (sessionIDToCheck) {
     /*if (cookiedict.sessionID === 'guest') {
       return ['guest', cookiedict.guestUsername]
     } else {*/
-    const session = await exports.checkSession(cookiedict.sessionID)
+    const session = await exports.checkSession(sessionIDToCheck)
     if (session) {
       return session
     } else {
@@ -188,12 +193,18 @@ exports.handleLoginRegister = async function (req, res, body) {
     if (params.username && params.password) {
       const result = await exports.login(params.username, params.password)
       if (result.status === 'success') {
+        const baseUrl = (https ? 'https' : 'http') + '://' + (req.headers.host || 'localhost')
         if (params.redirect) {
-          res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/;'], Location: params.redirect + '#end', 'Content-Type': 'text/html' })
-          res.write('<head><meta http-equiv="refresh" content="0; URL=' + he.encode(params.redirect) + '" />' + 'Logged in. Click <a href="' + he.encode(params.redirect) + '">here</a> to continue</head>')
+          const redirectBase = params.redirect
+          const sep = redirectBase.includes('?') ? '&' : '?'
+          const redirectPath = redirectBase + sep + 'sessionID=' + encodeURIComponent(result.sessionID) + '#end'
+          const redirectWithSession = baseUrl + redirectPath
+          res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectWithSession, 'Content-Type': 'text/html' })
+          res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</body></html>')
         } else {
-          res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/;'], Location: '/server/' + '#end', 'Content-Type': 'text/html' })
-          res.write('<head><meta http-equiv="refresh" content="0; URL=/server/" />' + 'Logged in. Click <a href="/server/">here</a> to continue</head>')
+          const redirectWithSession = baseUrl + '/server/?sessionID=' + encodeURIComponent(result.sessionID) + '#end'
+          res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectWithSession, 'Content-Type': 'text/html' })
+          res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</body></html>')
         }
         res.end()
       } else {
