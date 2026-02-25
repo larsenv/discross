@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width">
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/themes.css">
@@ -97,7 +97,7 @@
             border-color: #333333 !important;
         }
 
-        .amoled-theme #emoji button:hover {
+        .amoled-theme #emoji a:hover {
             background: rgba(255, 255, 255, 0.08) !important;
         }
 
@@ -152,15 +152,17 @@
             width: 100%;
         }
 
-        #emoji button {
+        #emoji a {
             background: none;
             border: none;
             cursor: pointer;
             padding: 8px;
             border-radius: 4px;
+            display: inline-block;
+            text-decoration: none;
         }
 
-        #emoji button:hover {
+        #emoji a:hover {
             background: rgba(255, 255, 255, 0.06);
         }
 
@@ -508,7 +510,7 @@
             <div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div>
             <div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div>
 
-            <button type="button" id="btn-clear" class="clear-button" onclick="wipe()">Clear</button>
+            <input type="button" id="btn-clear" class="clear-button" onclick="wipe()" value="Clear">
         </div>
 
         <div id="canvas-wrapper">
@@ -518,36 +520,36 @@
         <div class="message-form-container">
             <div id="emoji" style="display: none;">
                 <div class="emoji-grid">
-                    <button onclick="document.getElementById('message').value += ' :sob:'">
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :sob:'">
                         <img src="/resources/twemoji/1f62d.gif" alt="sob" class="emoji-icon">
-                    </button>
-                    <button onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
+                    </a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :face_with_raised_eyebrow:'">
                         <img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" class="emoji-icon">
-                    </button>
-                    <button onclick="document.getElementById('message').value += ' :skull:'">
+                    </a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :skull:'">
                         <img src="/resources/twemoji/1f480.gif" alt="skull" class="emoji-icon">
-                    </button>
-                    <button onclick="document.getElementById('message').value += ' :pleading_face:'">
+                    </a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :pleading_face:'">
                         <img src="/resources/twemoji/1f97a.gif" alt="pleading_face" class="emoji-icon">
-                    </button>
-                    <button onclick="document.getElementById('message').value += ' :heart:'">
+                    </a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :heart:'">
                         <img src="/resources/twemoji/2764-fe0f.gif" alt="heart" class="emoji-icon">
-                    </button>
-                    <button onclick="document.getElementById('message').value += ' :thumbsup:'">
+                    </a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :thumbsup:'">
                         <img src="/resources/twemoji/1f44d.gif" alt="thumbsup" class="emoji-icon">
-                    </button>
-                    <button onclick="document.getElementById('message').value += ' :thumbsdown:'">
+                    </a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :thumbsdown:'">
                         <img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" class="emoji-icon">
-                    </button>
-                    <button onclick="document.getElementById('message').value += ' :pray:'">
+                    </a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :pray:'">
                         <img src="/resources/twemoji/1f64f.gif" alt="pray" class="emoji-icon">
-                    </button>
-                    <button onclick="document.getElementById('message').value += ' :tada:'">
+                    </a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :tada:'">
                         <img src="/resources/twemoji/1f389.gif" alt="tada" class="emoji-icon">
-                    </button>
-                    <button onclick="document.getElementById('message').value += ' :slight_smile:'">
+                    </a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('message').value += ' :slight_smile:'">
                         <img src="/resources/twemoji/1f642.gif" alt="slight_smile" class="emoji-icon">
-                    </button>
+                    </a>
                 </div>
             </div>
             <form action="../senddrawing" method="post" id="sendform">
@@ -565,10 +567,10 @@
                                      placeholder="Message #{$CHANNEL_NAME}">
                             </td>
                             <td style="padding: 0 8px 0 0;">
-                                <button onclick="prepareAndSend()" type="button" class="send-button-input"
+                                <input type="button" onclick="prepareAndSend()" class="send-button-input" value="Send"
                                     style="flex: 0 0 auto; border: none; border-radius: 4px; color: white; padding: 0px 24px; cursor: pointer; font-family: rodin, Whitney, Helvetica Neue, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; height: 38px; line-height: 38px; text-align: center; white-space: nowrap; margin-right: 8px; background: rgb(88, 101, 242);"
                                     onmouseover="this.style.background='#4752c4'"
-                                    onmouseout="this.style.background='#5865f2'">Send</button>
+                                    onmouseout="this.style.background='#5865f2'">
                             </td>
                         </tr>
                     </table>
