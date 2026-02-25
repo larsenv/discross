@@ -193,7 +193,7 @@ exports.handleLoginRegister = async function (req, res, body) {
     if (params.username && params.password) {
       const result = await exports.login(params.username, params.password)
       if (result.status === 'success') {
-        const baseUrl = "http://discross.net/"
+        const baseUrl = "http://discross.net"
         if (params.redirect) {
           const redirectBase = params.redirect
           const sep = redirectBase.includes('?') ? '&' : '?'
