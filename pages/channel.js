@@ -560,6 +560,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
   const urlSessionID = url.parse(req.url, true).query.sessionID || '';
+  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
   let boxColor;
   let authorText;
@@ -664,6 +665,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         final = strReplace(final, "{$MESSAGES}", no_message_history_template);
         final = strReplace(final, "{$SESSION_ID}", urlSessionID);
+        final = strReplace(final, "{$SESSION_PARAM}", sessionParam);
 
         res.write(final); //write a response to the client
         res.end(); //end the response
@@ -693,8 +695,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
       template = strReplace(template, "{$SERVER_ID}", chnl.guild.id)
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
-      const sessionParam = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : ''
-      template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + sessionParam)
+      template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : ''))
 
       let final;
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
@@ -714,6 +715,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       final = strReplace(final, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
       final = strReplace(final, "{$MESSAGES}", response);
       final = strReplace(final, "{$SESSION_ID}", urlSessionID);
+      final = strReplace(final, "{$SESSION_PARAM}", sessionParam);
       res.writeHead(200, { "Content-Type": "text/html" });
       res.write(final); //write a response to the client
       res.end(); //end the response

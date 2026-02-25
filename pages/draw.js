@@ -90,6 +90,9 @@ function getMemberColor(member) {
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+  const url = require('url');
+  const urlSessionID = url.parse(req.url, true).query.sessionID || '';
+  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
   let boxColor;
 
@@ -143,6 +146,8 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       template = strReplace(template, "{$SERVER_ID}", chnl.guild.id);
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
       template = strReplace(template, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
+      template = strReplace(template, "{$SESSION_ID}", urlSessionID);
+      template = strReplace(template, "{$SESSION_PARAM}", sessionParam);
 
       // 6. Security: Check Send Permissions (Optional but good for UX)
       // Even though we aren't displaying messages, we can check if they are allowed to send drawings.
