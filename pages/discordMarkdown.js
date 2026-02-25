@@ -207,9 +207,9 @@ function renderDiscordMarkdown(text) {
           // Use table-based spoiler for Wii Internet Channel compatibility
           // The show() function in the template files reveals the spoiler by removing background and showing text
           return '<table cellpadding="0" cellspacing="0" style="display:inline-table;background:black;vertical-align:bottom" onclick="show(this);event.stopPropagation();return false">' +
-                 '<tbody><tr><td>' +
+                 '<tr><td>' +
                  '<font face="sans-serif" style="visibility:hidden">' + rendered + '</font>' +
-                 '</td></tr></tbody></table>';
+                 '</td></tr></table>';
       });
 
       // Restore Underlines
