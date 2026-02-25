@@ -23,7 +23,9 @@
         }
 
         /* Global reset + consistent box sizing and font */
-        *, *::before, *::after {
+        /* Note: *::before/*::after omitted — the CSS3 double-colon syntax can
+           trigger Opera 9.x (DSi) to attempt schema validation at xml.opera.com */
+        * {
             box-sizing: border-box;
         }
 
@@ -387,7 +389,9 @@
             display: block;
             border: 1px solid #202225;
             max-width: 100%; /* Responsive for mobile */
-            height: auto;
+            /* NOTE: do NOT set height:auto here — on canvas elements it does not
+               proportionally scale in older browsers (DSi/3DS). Height is managed
+               by resizeCanvasDisplay() in JS instead. */
         }
 
         /* Mobile responsive adjustments */
@@ -406,9 +410,8 @@
                 margin: 0 8px 20px 8px;
             }
 
-            canvas {
-                width: 100%;
-            }
+            /* canvas width/height on small screens is handled by JS to maintain
+               aspect ratio on old DS browsers that ignore height:auto on canvas */
 
             .c-box {
                 width: 20px;
@@ -430,6 +433,43 @@
             .mobile-break {
                 display: block;
             }
+        }
+
+        /* DSi (256x192) specific overrides.
+           Opera Mobile 9.5 (DSi browser) does not support position:fixed, so the
+           send form must fall into normal document flow. Also shrink the toolbar
+           color boxes so the page scrolls less on the tiny 256x192 screen. */
+        @media (max-width: 256px) {
+            /* Drop position:fixed - not supported in Opera Mobile 9.5 (DSi) */
+            .message-form-container {
+                position: static;
+                margin-top: 8px;
+                border-top: 1px solid #40444b;
+                padding: 6px;
+            }
+            body { padding-bottom: 0; }
+
+            /* Shrink color boxes from 24px to 15px so two rows + size buttons
+               take up less vertical space on the 192px tall screen */
+            .c-box {
+                width: 15px;
+                height: 15px;
+                margin: 1px;
+            }
+
+            .s-btn {
+                margin: 0 1px;
+                padding: 1px;
+            }
+
+            #btn-clear {
+                font-size: 11px !important;
+                height: 26px !important;
+                padding: 0 6px !important;
+            }
+
+            /* Hide emoji picker - too small to be useful on DSi */
+            #emoji { display: none !important; }
         }
     </style>
 </head>
@@ -555,14 +595,95 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = currColor;
 
+        // Canvas display dimensions (CSS pixels). Stored explicitly so coordinate
+        // calculations don't rely on canvas.offsetWidth, which on older Opera (DSi)
+        // incorrectly returns the HTML attribute value (600) instead of the actual
+        // CSS-constrained display width, causing a 2-3x coordinate scaling error.
+        var canvasDisplayW = canvas.width;
+        var canvasDisplayH = canvas.height;
+
+        // --- CANVAS DISPLAY RESIZE ---
+        // Explicitly set the canvas element's CSS width and height to maintain
+        // aspect ratio on small screens. CSS height:auto is unreliable on
+        // <canvas> in older browsers (DSi/3DS NetFront/WebKit).
+        function resizeCanvasDisplay() {
+            var wrapper = document.getElementById('canvas-wrapper');
+            // Subtract 10px to account for the 5px padding on each side of #canvas-wrapper
+            var maxW = wrapper.offsetWidth - 10;
+            if (maxW > 0 && maxW < canvas.width) {
+                var ratio = maxW / canvas.width;
+                canvasDisplayW = maxW;
+                canvasDisplayH = Math.round(canvas.height * ratio);
+                canvas.style.width = canvasDisplayW + 'px';
+                canvas.style.height = canvasDisplayH + 'px';
+            } else if (maxW > 0) {
+                canvasDisplayW = canvas.width;
+                canvasDisplayH = canvas.height;
+                canvas.style.width = '';
+                canvas.style.height = '';
+            }
+            // If maxW <= 0 layout isn't ready yet; values stay at previous setting
+        }
+        resizeCanvasDisplay();
+        // Also run on load to catch any layout changes after inline execution
+        if (window.addEventListener) {
+            window.addEventListener('load', resizeCanvasDisplay, false);
+            window.addEventListener('resize', resizeCanvasDisplay, false);
+        } else if (window.attachEvent) {
+            window.attachEvent('onload', resizeCanvasDisplay);
+            window.attachEvent('onresize', resizeCanvasDisplay);
+        }
+
         // --- COORDINATE SYSTEM ---
+        // Primary: e.offsetX/offsetY — coordinates relative to the canvas element.
+        // Available in Opera 9+ (DSi browser), Chrome, Safari, IE9+.
+        // No scroll correction or element-position traversal needed.
+        //
+        // Fallback (Firefox <39 and other browsers without offsetX):
+        // Use pageX/pageY (document-relative) + canvas document-offset traversal.
+        function getCanvasPagePos() {
+            var left = 0, top = 0;
+            var el = canvas;
+            while (el) {
+                left += el.offsetLeft || 0;
+                top += el.offsetTop || 0;
+                el = el.offsetParent;
+            }
+            return { left: left, top: top };
+        }
+
+        function getScrollOffset() {
+            var sx, sy;
+            if (window.pageXOffset !== undefined) {
+                sx = window.pageXOffset;
+                sy = window.pageYOffset;
+            } else if (document.documentElement && document.documentElement.scrollLeft !== undefined) {
+                sx = document.documentElement.scrollLeft;
+                sy = document.documentElement.scrollTop;
+            } else {
+                sx = document.body.scrollLeft || 0;
+                sy = document.body.scrollTop || 0;
+            }
+            return { x: sx, y: sy };
+        }
+
         function getPos(e) {
-            var rect = canvas.getBoundingClientRect();
-            var scaleX = canvas.width / rect.width;
-            var scaleY = canvas.height / rect.height;
+            // e.offsetX/offsetY: element-relative CSS pixels. Available in Opera 9+.
+            // Works correctly regardless of page scroll or element position.
+            if (e.offsetX !== undefined) {
+                return {
+                    x: e.offsetX * (canvas.width / canvasDisplayW),
+                    y: e.offsetY * (canvas.height / canvasDisplayH)
+                };
+            }
+            // Fallback: pageX/pageY + canvas page offset
+            var scroll = getScrollOffset();
+            var pageX = e.pageX !== undefined ? e.pageX : (e.clientX + scroll.x);
+            var pageY = e.pageY !== undefined ? e.pageY : (e.clientY + scroll.y);
+            var cp = getCanvasPagePos();
             return {
-                x: (e.clientX - rect.left) * scaleX,
-                y: (e.clientY - rect.top) * scaleY
+                x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
+                y: (pageY - cp.top) * (canvas.height / canvasDisplayH)
             };
         }
 
@@ -605,12 +726,13 @@
         function getTouchPos(e) {
             if (!e.touches || e.touches.length === 0) return null;
             var touch = e.touches[0];
-            var rect = canvas.getBoundingClientRect();
-            var scaleX = canvas.width / rect.width;
-            var scaleY = canvas.height / rect.height;
+            var scroll = getScrollOffset();
+            var pageX = touch.pageX !== undefined ? touch.pageX : (touch.clientX + scroll.x);
+            var pageY = touch.pageY !== undefined ? touch.pageY : (touch.clientY + scroll.y);
+            var cp = getCanvasPagePos();
             return {
-                x: (touch.clientX - rect.left) * scaleX,
-                y: (touch.clientY - rect.top) * scaleY
+                x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
+                y: (pageY - cp.top) * (canvas.height / canvasDisplayH)
             };
         }
 
