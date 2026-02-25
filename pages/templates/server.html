@@ -128,40 +128,42 @@
                 }
                 
                 // Store state in localStorage
-                if (typeof localStorage !== 'undefined') {
+                try {
                     var categoryId = categoryDiv.id;
                     if (categoryId) {
                         localStorage.setItem(categoryId, isCollapsed ? 'collapsed' : 'expanded');
                     }
+                } catch (e) {
+                    // localStorage might not be available
                 }
             }
         }
         
         // Restore category states on page load
         window.onload = function() {
-            if (typeof localStorage !== 'undefined' && typeof document.querySelectorAll !== 'undefined') {
+            try {
                 var categories = document.querySelectorAll('.category-channels');
-                if (categories.forEach) {
-                    categories.forEach(function(cat) {
-                        var state = localStorage.getItem(cat.id);
-                        if (state === 'collapsed') {
-                            cat.classList.add('collapsed');
-                            
-                            // Find the previous category link to update arrow
-                            var prevSibling = cat.previousElementSibling;
-                            while (prevSibling) {
-                                if (prevSibling.tagName === 'A' && prevSibling.onclick) {
-                                    var arrow = prevSibling.querySelector('.category-arrow');
-                                    if (arrow) {
-                                        arrow.classList.add('collapsed');
-                                        break;
-                                    }
+                categories.forEach(function(cat) {
+                    var state = localStorage.getItem(cat.id);
+                    if (state === 'collapsed') {
+                        cat.classList.add('collapsed');
+                        
+                        // Find the previous category link to update arrow
+                        var prevSibling = cat.previousElementSibling;
+                        while (prevSibling) {
+                            if (prevSibling.tagName === 'A' && prevSibling.onclick) {
+                                var arrow = prevSibling.querySelector('.category-arrow');
+                                if (arrow) {
+                                    arrow.classList.add('collapsed');
+                                    break;
                                 }
-                                prevSibling = prevSibling.previousElementSibling;
                             }
+                            prevSibling = prevSibling.previousElementSibling;
                         }
-                    });
-                }
+                    }
+                });
+            } catch (e) {
+                // localStorage might not be available
             }
         };
     </script>
