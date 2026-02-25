@@ -34,7 +34,6 @@
         #wrapper {
             margin: 0;
             padding: 0;
-            height: 100%;
             font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             font-size: 16px;
             line-height: 1.45;
@@ -42,18 +41,22 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Suppress the html-level scrollbar so body is the sole scroll container,
-           preventing the double-scrollbar that appears when both html and body
-           have overflow:auto with height:100%. */
+        /* html is the sole scroll container. body and #wrapper are height:auto
+           so they never overflow themselves, preventing any secondary scrollbar. */
         html {
-            overflow: hidden;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body, #wrapper {
+            height: auto;
+            min-height: 0;
         }
 
         body {
             background: #36393f;
             color: #dcddde;
-            overflow-x: hidden;
-            overflow-y: auto;
         }
 
         /* Light theme overrides */
