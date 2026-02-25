@@ -436,7 +436,7 @@
 
 <body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <a href="../server/{$SERVER_ID}" class="menu-button">
+        <a href="../server/{$SERVER_ID}{$SESSION_PARAM}" class="menu-button">
             <img src="/resources/images/menu.gif" alt="Menu" class="menu-icon">
         </a>
 
@@ -510,6 +510,7 @@
             </div>
             <form action="../senddrawing" method="post" id="sendform">
                 <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                <input type="hidden" name="sessionID" value="{$SESSION_ID}">
                 <input type="hidden" id="drawinginput" name="drawinginput" value="">
                 <input type="hidden" id="lite" name="lite" value="False">
 
