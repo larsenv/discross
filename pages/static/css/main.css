@@ -724,7 +724,7 @@ html.page-draw #wrapper {
         z-index: 100;
     }
     /* Padding so the fixed bar doesn't cover the bottom of the canvas. */
-    html.page-draw body { padding-top: 40px; padding-bottom: 100px; }
+    html.page-draw body { padding-bottom: 100px; }
 }
 
 /* ================================================================
