@@ -54,7 +54,7 @@ function processPoll(poll, imagesCookie) {
             // Custom emoji
             const isAnimated = emoji.animated || false;
             const extension = isAnimated ? 'gif' : 'png';
-            emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
+            emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
           } else if (emoji.name && imagesCookie == 1) {
             // Unicode emoji - convert to twemoji
             const codePoints = [];
@@ -67,7 +67,7 @@ function processPoll(poll, imagesCookie) {
               }
             }
             const emojiCode = codePoints.join('-');
-            emojiHtml = `<img src="/resources/twemoji/${emojiCode}.gif" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
+            emojiHtml = `<img src="/resources/twemoji/${emojiCode}.gif" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
           } else if (emoji.name) {
             // Fallback to unicode emoji text
             emojiHtml = `<span style="font-size: 20px;">${emoji.name}</span>`;
