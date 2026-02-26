@@ -496,7 +496,7 @@ button:focus, input:focus, textarea:focus {
     display: table;
     margin: 0 auto 5px auto;
     border-radius: 8px;
-    text-align: left;
+    text-align: center;
     position: relative;
     z-index: 10;
 }
@@ -724,7 +724,7 @@ html.page-draw #wrapper {
         z-index: 100;
     }
     /* Padding so the fixed bar doesn't cover the bottom of the canvas. */
-    html.page-draw body { padding-bottom: 100px; }
+    html.page-draw body { padding-top: 40px; padding-bottom: 100px; }
 }
 
 /* ================================================================
