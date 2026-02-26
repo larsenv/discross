@@ -155,6 +155,7 @@ server.on('request', async (req, res) => {
         }
       })().catch((err) => {
         console.log(err);
+        if (sentryEnabled) Sentry.captureException(err);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
       });
@@ -168,6 +169,7 @@ server.on('request', async (req, res) => {
     })
     req.on('error', (err) => {
       console.error('Error reading request body:', err);
+      if (sentryEnabled) Sentry.captureException(err);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Error reading request data');
@@ -209,6 +211,7 @@ server.on('request', async (req, res) => {
       } else if (parsedurl == "/senddrawing") {
         senddrawingAsync(req, res, body).then(() => {}).catch((err) => {
           console.log(err)
+          if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' })
           res.end('Internal Server Error')
         }
@@ -218,6 +221,7 @@ server.on('request', async (req, res) => {
       }
     })
   } else {
+    try {
     const parsedurl = new URL(req.url, 'http://localhost')
 
     const args = strReplace(parsedurl.pathname, '?', '/').split('/') // Split by / or ?
@@ -372,6 +376,14 @@ server.on('request', async (req, res) => {
     } else {
       const filename = path.resolve("pages/static", sanitizer(parsedurl.pathname));
       await servePage(filename, res)
+    }
+    } catch (err) {
+      console.error(err);
+      if (sentryEnabled) Sentry.captureException(err);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Internal Server Error');
+      }
     }
   }
 })
