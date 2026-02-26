@@ -73,17 +73,18 @@ function getDisplayName(member, author) {
 
 // Get the member's highest role color or default to white
 function getMemberColor(member) {
-  if (!member || !member.roles || !member.roles.highest) {
+  if (!member || !member.roles) {
     return "#ffffff"; // Default white color
   }
   
-  const roleColor = member.roles.highest.color;
-  if (roleColor === 0) {
-    return "#ffffff"; // Default role has color 0, use white
+  // member.roles.color returns the highest role that has a non-zero color set
+  const colorRole = member.roles.color;
+  if (!colorRole) {
+    return "#ffffff"; // No colored role found
   }
   
   // Convert Discord color integer to hex
-  return `#${roleColor.toString(16).padStart(6, '0')}`;
+  return `#${colorRole.color.toString(16).padStart(6, '0')}`;
 }
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
