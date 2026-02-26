@@ -478,11 +478,25 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       }
     }
 
+    // Collect any remaining unresolved mention IDs and fetch missing members
+    const unresolvedMentionIds = new Set(
+      [...messagetext.matchAll(/&lt;@!?(\d{17,19})&gt;/g)].map(m => m[1])
+    );
+    const idsToFetch = [...unresolvedMentionIds].filter(userId => !memberCache.has(userId));
+    await Promise.allSettled(idsToFetch.map(async (userId) => {
+      try {
+        const fetchedMember = await chnl.guild.members.fetch(userId);
+        memberCache.set(userId, fetchedMember);
+      } catch (err) {
+        memberCache.set(userId, null);
+      }
+    }));
+
     messagetext = messagetext.replace(/&lt;@!?(\d{17,19})&gt;/g, function(match, userId) {
       try {
-        const cachedMember = chnl.guild.members.cache.get(userId);
-        if (cachedMember) {
-          return tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(cachedMember.displayName)));
+        const resolvedMember = memberCache.get(userId) || chnl.guild.members.cache.get(userId);
+        if (resolvedMember) {
+          return tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(getDisplayName(resolvedMember, resolvedMember.user))));
         }
       } catch (err) {
         // Ignore errors
