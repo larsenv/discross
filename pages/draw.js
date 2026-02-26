@@ -10,7 +10,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
 const fetch = require("sync-fetch");
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
-const channel_template = fs.readFileSync('pages/templates/draw.html', 'utf-8');
+const channel_template = fs.readFileSync('pages/templates/draw.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 const message_template = fs.readFileSync('pages/templates/message/message.html', 'utf-8');
 const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
