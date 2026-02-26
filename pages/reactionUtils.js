@@ -49,7 +49,7 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
           if (imagesCookie === 1) {
             // Use animations setting for animated emoji
             const extension = (emoji.animated && animationsCookie === 1) ? 'gif' : 'png';
-            emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
+            emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
           } else {
             // Fallback to emoji name if images are disabled
             emojiHtml = `:${emoji.name}:`;
@@ -79,7 +79,7 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
             
             // Use animations setting for twemoji
             const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
-            emojiHtml = `<img src="/resources/twemoji/${output}.${emojiExt}" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
+            emojiHtml = `<img src="/resources/twemoji/${output}.${emojiExt}" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
           } else {
             // Show the unicode emoji directly
             emojiHtml = emoji.name;
