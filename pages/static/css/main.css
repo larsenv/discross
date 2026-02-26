@@ -731,6 +731,20 @@ html.page-draw #wrapper {
        (must not apply to channel/server pages — would override specific styles)
    ================================================================ */
 
+/* Reset the global input sizing for page-simple pages which use custom inline div-box styling.
+   The inputs inside padding divs should not get the extra CSS padding/margin/max-width. */
+html.page-simple input[type="text"],
+html.page-simple input[type="password"],
+html.page-simple input[type="email"] {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    width: 100%;
+}
+
 html.page-simple .light-theme #wrapper {
     background: #FFFFFF !important;
     color: #000000 !important;
