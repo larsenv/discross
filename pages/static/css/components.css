@@ -371,7 +371,6 @@ label {
 .server-layout { display: table; width: 100%; }
 .server-sidebar, .server-main { vertical-align: top; }
 .server-icon { height: 48px; width: 48px; }
-.server-br { display: none; }
 .server-select-title {
   font-size: 1.875rem;
   color: #5865f2;
