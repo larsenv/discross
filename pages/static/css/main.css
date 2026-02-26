@@ -407,7 +407,6 @@ input[type="email"],
 textarea {
     background: #40444b;
     border: 1px solid #40444b;
-    border-radius: 8px;
     color: #dcddde;
     padding: 10px 12px;
     font-size: 16px;
