@@ -6,7 +6,7 @@ const { buildMessagesHtml } = require('./channel');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 // Templates for viewing messages in a channel (Reply Context)
-const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8');
 
 // Reply-specific message wrapper templates
 const message_template = fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8');
