@@ -36,7 +36,7 @@ body {
 h1 { margin: 24px 0 12px 0; font-size: 51px; font-weight: 600; }
 h2 { margin: 22px 0 11px 0; font-size: 42px; font-weight: 600; }
 h3 { margin: 20px 0 10px 0; font-size: 33px; font-weight: 600; }
-p, ul { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
+p, ul, .section { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
 ul { padding-left: 20px; }
 
 /* Scope UL padding to message content only so reactions aren't indented */
@@ -522,10 +522,10 @@ button:focus, input:focus, textarea:focus {
 #canvas-wrapper {
     margin: 0 auto 20px auto;
     display: block;
-    background: #2f3136;
     padding: 5px;
     width: 610px;
     max-width: 100%;
+    box-sizing: border-box;
     position: relative;
     z-index: 10;
 }
@@ -602,6 +602,13 @@ br.nodisp { display: none; }
 .light-theme textarea:focus { border-color: #5865f2; background: #e3e5e8; }
 .light-theme .send-button,
 .light-theme .btn-send { background: #5865f2 !important; color: #ffffff !important; }
+.light-theme button,
+.light-theme input[type="submit"],
+.light-theme input[type="button"] {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+    border-color: #4752c4 !important;
+}
 .light-theme hr { border-color: #e3e5e8; }
 
 /* ================================================================
@@ -656,10 +663,14 @@ br.nodisp { display: none; }
    20. PAGE-CHANNEL: channel.html needs height:auto on body
    ================================================================ */
 
+html.page-channel,
 html.page-channel body,
 html.page-channel #wrapper {
     height: auto;
     min-height: 0;
+}
+
+html.page-channel body {
     overflow-y: auto;
 }
 
@@ -684,10 +695,14 @@ html.page-channel-reply .message-form-container {
    22. PAGE-DRAW: draw.html needs height:auto on body
    ================================================================ */
 
+html.page-draw,
 html.page-draw body,
 html.page-draw #wrapper {
     height: auto;
     min-height: 0;
+}
+
+html.page-draw body {
     overflow-y: auto;
 }
 
@@ -755,9 +770,15 @@ html.page-simple .amoled-theme #wrapper .discross-button {
     background: #5865f2 !important;
     color: white !important;
 }
+html.page-simple .amoled-theme #wrapper .discross-button:hover {
+    background: #4752c4 !important;
+}
 html.page-simple .amoled-theme #wrapper .discross-button.secondary {
     background: #4f545c !important;
     color: white !important;
+}
+html.page-simple .amoled-theme #wrapper .discross-button.secondary:hover {
+    background: #5d6269 !important;
 }
 
 /* ================================================================
@@ -829,6 +850,8 @@ html.page-server .amoled-theme button {
     }
     canvas { width: 100%; }
     .c-box { width: 20px; height: 20px; margin: 2px; }
+    .s-btn { margin: 0 2px; }
+    #btn-clear { font-size: 12px !important; height: 36px !important; padding: 0 12px !important; }
     .mobile-break { display: block; }
 
     .message-form-container { padding: 8px; }
