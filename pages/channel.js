@@ -590,22 +590,25 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   authorText = "#72767d";
   replyText = "#b5bac1";
     
+  const userAgent = req.headers['user-agent'] || '';
+  const isPlanetWeb = /PlanetWeb/i.test(userAgent);
+
   // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
   if (whiteThemeCookie == 1) {
     boxColor = "#ffffff";
     authorText = "#000000";
     replyText = "#000000";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", isPlanetWeb ? "class=\"light-theme planetweb\"" : "class=\"light-theme\"");
   } else if (whiteThemeCookie == 2) {
     boxColor = "#40444b";
     authorText = "#72767d";
     replyText = "#b5bac1";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", isPlanetWeb ? "class=\"amoled-theme planetweb\"" : "class=\"amoled-theme\"");
   } else {
     boxColor = "#40444b";
     authorText = "#72767d";
     replyText = "#b5bac1";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", isPlanetWeb ? "class=\"planetweb\"" : "");
   }
 
   const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
