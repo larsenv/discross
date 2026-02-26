@@ -192,18 +192,16 @@ exports.handleLoginRegister = async function (req, res, body) {
     if (params.username && params.password) {
       const result = await exports.login(params.username, params.password)
       if (result.status === 'success') {
-        const baseUrl = "http://discross.net"
         if (params.redirect) {
           const redirectBase = params.redirect
           const sep = redirectBase.includes('?') ? '&' : '?'
           const redirectPath = redirectBase + sep + 'sessionID=' + encodeURIComponent(result.sessionID) + '#end'
-          const redirectWithSession = baseUrl + redirectPath
-          res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectWithSession, 'Content-Type': 'text/html' })
-          res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</body></html>')
+          res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectPath, 'Content-Type': 'text/html' })
+          res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectPath) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectPath) + '">here</a> to continue</body></html>')
         } else {
-          const redirectWithSession = baseUrl + '/server/?sessionID=' + encodeURIComponent(result.sessionID) + '#end'
-          res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectWithSession, 'Content-Type': 'text/html' })
-          res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectWithSession) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectWithSession) + '">here</a> to continue</body></html>')
+          const redirectPath = '/server/?sessionID=' + encodeURIComponent(result.sessionID) + '#end'
+          res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectPath, 'Content-Type': 'text/html' })
+          res.write('<html><head><meta http-equiv="refresh" content="0; URL=' + he.encode(redirectPath) + '" /></head><body>Logged in. Click <a href="' + he.encode(redirectPath) + '">here</a> to continue</body></html>')
         }
         res.end()
       } else {
