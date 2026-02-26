@@ -31,7 +31,7 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
     const ext = match[2] ? "gif" : "png"; // 'a' means animated
     const emojiId = match[4];
     if (emojiId) {
-      result = result.replace(match[0], `<img src="/imageProxy/emoji/${emojiId}.${ext}" style="width: 1.25em; height: 1.25em; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+      result = result.replace(match[0], `<img src="/imageProxy/emoji/${emojiId}.${ext}" width="20" height="20" style="width: 1.25em; height: 1.25em; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
     }
   });
   

@@ -282,6 +282,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
 
     const emojiSize = isJumbo ? "2.75em" : "1.375em";
+    const emojiPxSize = isJumbo ? 44 : 22;
 
     if (imagesCookie === 1) {
       if (messagetext.match(emojiRegex)) {
@@ -305,7 +306,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             output = points.join("-");
           }
           const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
-          messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+          messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" width="${emojiPxSize}" height="${emojiPxSize}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
         });
       }
 
@@ -313,7 +314,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       if (custom_emoji_matches.length > 0) {
         custom_emoji_matches.forEach(match => {
           const ext = match[2] ? "gif" : "png";
-          messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+          messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" width="${emojiPxSize}" height="${emojiPxSize}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
         });
       }
     }
