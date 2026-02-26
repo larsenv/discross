@@ -1,5 +1,4 @@
 var fs = require('fs');
-const url = require('url');
 const { PermissionFlagsBits } = require('discord.js');
 const { getDisplayName } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
@@ -33,7 +32,7 @@ function strReplace(string, needle, replacement) {
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const urlSessionID = url.parse(req.url, true).query.sessionID || '';
+  const urlSessionID = new URL(req.url, 'http://localhost').searchParams.get('sessionID') || '';
   const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
   let boxColor;

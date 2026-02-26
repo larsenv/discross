@@ -2,7 +2,6 @@ var fs = require('fs');
 var escape = require('escape-html');
 var he = require('he');
 const path = require('path');
-const url = require('url');
 const sharp = require("sharp");
 const emojiRegex = require("./twemojiRegex").regex;
 const sanitizer = require("path-sanitizer").default;
@@ -559,7 +558,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const urlSessionID = url.parse(req.url, true).query.sessionID || '';
+  const urlSessionID = new URL(req.url, 'http://localhost').searchParams.get('sessionID') || '';
   const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
   let boxColor;

@@ -1,4 +1,3 @@
-var url = require('url')
 const WebSocket = require('ws')
 
 let wss
@@ -51,7 +50,7 @@ function processMessage(connectionType, isAuthed, listenChannel, message) {
 }
 
 exports.processRequest = async function (req, res) {
-  const parsedurl = url.parse(req.url, true)
+  const parsedurl = new URL(req.url, 'http://localhost')
   if (parsedurl.pathname === '/longpoll.js') {
     // console.log(req.url)
     // console.log('User polling (js)')
@@ -74,7 +73,7 @@ exports.processRequest = async function (req, res) {
     }))
   } else if (parsedurl.pathname === '/api.js') {
     // console.log(parsedurl.query)
-    processMessage('longpoll', true, '', parsedurl.query.message)
+    processMessage('longpoll', true, '', parsedurl.searchParams.get('message'))
     // console.log(req.url);
     // res.write("send?");
     // sendToAll(req.url);

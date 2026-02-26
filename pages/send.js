@@ -1,4 +1,3 @@
-const url = require('url');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
@@ -48,8 +47,8 @@ function isValidSnowflake(id) {
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
   try {
     await lock.acquire(discordID, async () => {
-      const parsedurl = url.parse(req.url, true);
-      const query = parsedurl.query || {};
+      const parsedurl = new URL(req.url, 'http://localhost');
+      const query = Object.fromEntries(parsedurl.searchParams);
 
       // Ensure message exists and is a non-empty string
       if (typeof query.message === 'string' && query.message !== "") {
