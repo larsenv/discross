@@ -72,39 +72,45 @@ function getMemberColor(member) {
  * @returns {Promise<Object|null>} GuildMember object or null if fetch fails
  */
 async function ensureMemberData(message, guild, cache = null) {
-  // If member is already present, return it
-  if (message.member) {
-    return message.member;
-  }
-  
   // If there's no author or guild, we can't fetch member data
   if (!message.author || !guild) {
     console.warn('ensureMemberData: Missing author or guild');
     return null;
   }
-  
+
   // Check cache first if provided (use webhook:username for webhook messages)
   const cacheKey = message.webhookId ? `webhook:${message.author.username}` : message.author.id;
   if (cache && cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
-  
-  // Try to fetch the member from the guild (non-webhook message)
-  try {
-    console.debug(`Fetching member data for user ${message.author.id} (${message.author.username})`);
-    const member = await guild.members.fetch(message.author.id);
-    // Store in cache if provided
-    if (cache) {
-      cache.set(cacheKey, member);
+
+  // For regular (non-webhook) messages, fetch from guild to get a fully-resolved
+  // member object with all roles populated (Discord.js serves this from its own
+  // member cache when available, so repeated calls are cheap).
+  if (!message.webhookId) {
+    try {
+      const member = await guild.members.fetch(message.author.id);
+      if (cache) {
+        cache.set(cacheKey, member);
+      }
+      return member;
+    } catch (error) {
+      // guild.members.fetch() failed (e.g. bot lost access). Fall back to the
+      // partial message.member — role colors may not be resolved in this case.
+      const fallback = message.member || null;
+      if (cache) {
+        cache.set(cacheKey, fallback);
+      }
+      return fallback;
     }
-    return member;
-  } catch (error) {
-    // Cache null so we don't retry repeatedly for the same user
-    if (cache) {
-      cache.set(cacheKey, null);
-    }
-    return null;
   }
+
+  // For webhook messages, message.member will be null; return it as-is
+  const result = message.member || null;
+  if (cache) {
+    cache.set(cacheKey, result);
+  }
+  return result;
 }
 
 module.exports = {
