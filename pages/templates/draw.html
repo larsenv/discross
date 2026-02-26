@@ -376,6 +376,11 @@
             display: none;
         }
 
+        /* Hide DSi-specific row break on non-DSi screens */
+        .dsi-break {
+            display: none;
+        }
+
         /* --- CANVAS STYLES --- */
         #canvas-wrapper {
             margin: 0 auto 20px auto;
@@ -465,6 +470,10 @@
 
             /* Hide emoji picker - too small to be useful on DSi */
             #emoji { display: none !important; }
+
+            /* Force a row break after every 7th color — only 7 color boxes fit
+               per row on the DSi's 256px-wide screen */
+            .dsi-break { display: block; }
         }
     </style>
 </head>
@@ -483,6 +492,7 @@
             <div id="c5" class="c-box" style="background:#800000;" onclick="setColor('#800000', 'c5')"></div>
             <div id="c6" class="c-box" style="background:#ff0000;" onclick="setColor('#ff0000', 'c6')"></div>
             <div id="c7" class="c-box" style="background:#ff9900;" onclick="setColor('#ff9900', 'c7')"></div>
+            <span class="dsi-break"></span>
             <div id="c8" class="c-box" style="background:#ffff00;" onclick="setColor('#ffff00', 'c8')"></div>
             <br>
             <div id="c9" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c9')"></div>
@@ -491,6 +501,7 @@
             <div id="c12" class="c-box" style="background:#000080;" onclick="setColor('#000080', 'c12')"></div>
             <div id="c13" class="c-box" style="background:#00ffff;" onclick="setColor('#00ffff', 'c13')"></div>
             <div id="c14" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c14')"></div>
+            <span class="dsi-break"></span>
             <div id="c15" class="c-box" style="background:#ff00ff;" onclick="setColor('#ff00ff', 'c15')"></div>
             <div id="c16" class="c-box" style="background:#8b4513;" onclick="setColor('#8b4513', 'c16')"></div>
             
@@ -573,6 +584,17 @@
     <script type="text/javascript">
         var canvas = document.getElementById('sketchpad');
         var ctx = canvas.getContext('2d');
+        
+        // On very small screens (DSi: 256px wide), shrink the canvas backing buffer
+        // before any drawing. The internal canvas is 600×350 = 210,000 pixels; even
+        // a single ctx.stroke() forces Opera 9.5 to repaint all of them which is
+        // very slow. 240×140 has the same 12:7 aspect ratio but only ~33,600 pixels
+        // — roughly 6× fewer pixels per repaint, which brings drawing to a usable fps.
+        // This must happen BEFORE ctx operations (resizing canvas resets its content).
+        if (screen.width && screen.width <= 256) {
+            canvas.width = 240;
+            canvas.height = 140;
+        }
         
         var isDrawing = false;
         var lastX = 0;
