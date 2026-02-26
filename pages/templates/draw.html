@@ -580,6 +580,14 @@
         var currColor = '#000000';
         var currSize = 5;
 
+        // Point queue for batched rendering.
+        // Instead of calling ctx.stroke() on every mousemove (one repaint per event,
+        // which is very slow on DSi Opera 9.5), we accumulate points here and flush
+        // them all in a single stroke() call at a fixed interval.
+        var pointQueue = [];
+        var lastDrawnX = 0;
+        var lastDrawnY = 0;
+
         // Defaults
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -682,6 +690,28 @@
             };
         }
 
+        // --- BATCHED RENDERING ---
+        // Flush all queued line segments in a single stroke() call.
+        // This is the key DSi performance fix: each ctx.stroke() triggers a full
+        // canvas repaint in Opera 9.5, so we batch many segments into one repaint
+        // instead of one repaint per mousemove event.
+        function flushDrawQueue() {
+            if (pointQueue.length === 0) return;
+            ctx.beginPath();
+            ctx.moveTo(lastDrawnX, lastDrawnY);
+            for (var i = 0; i < pointQueue.length; i++) {
+                ctx.lineTo(pointQueue[i].x, pointQueue[i].y);
+            }
+            ctx.stroke();
+            var last = pointQueue[pointQueue.length - 1];
+            lastDrawnX = last.x;
+            lastDrawnY = last.y;
+            pointQueue = [];
+        }
+        // Flush at ~30ms intervals (~33fps). DSi Opera 9.5 does not support
+        // requestAnimationFrame, so setInterval is used instead.
+        setInterval(flushDrawQueue, 30);
+
         // --- DRAWING EVENTS ---
         canvas.onmousedown = function(e) {
             if(e.preventDefault) e.preventDefault(); // Stop Wii Drag
@@ -689,6 +719,9 @@
             var pos = getPos(e);
             lastX = pos.x;
             lastY = pos.y;
+            lastDrawnX = pos.x;
+            lastDrawnY = pos.y;
+            pointQueue = [];
             
             ctx.beginPath();
             ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
@@ -704,17 +737,13 @@
             if(e.preventDefault) e.preventDefault(); 
 
             var pos = getPos(e);
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            
+            pointQueue.push({ x: pos.x, y: pos.y });
             lastX = pos.x;
             lastY = pos.y;
         };
 
-        canvas.onmouseup = function() { isDrawing = false; };
-        canvas.onmouseout = function() { isDrawing = false; };
+        canvas.onmouseup = function() { flushDrawQueue(); isDrawing = false; };
+        canvas.onmouseout = function() { flushDrawQueue(); isDrawing = false; };
 
         // --- TOUCH SUPPORT FOR MOBILE ---
         // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
@@ -738,6 +767,9 @@
             if (!pos) return;
             lastX = pos.x;
             lastY = pos.y;
+            lastDrawnX = pos.x;
+            lastDrawnY = pos.y;
+            pointQueue = [];
             
             ctx.beginPath();
             ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
@@ -752,22 +784,20 @@
             
             var pos = getTouchPos(e);
             if (!pos) return;
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            
+            pointQueue.push({ x: pos.x, y: pos.y });
             lastX = pos.x;
             lastY = pos.y;
         }, { passive: false });
 
         canvas.addEventListener('touchend', function(e) {
             if(e.preventDefault) e.preventDefault();
+            flushDrawQueue();
             isDrawing = false;
         }, { passive: false });
 
         canvas.addEventListener('touchcancel', function(e) {
             if(e.preventDefault) e.preventDefault();
+            flushDrawQueue();
             isDrawing = false;
         }, { passive: false });
 
