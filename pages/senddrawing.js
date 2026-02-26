@@ -49,6 +49,15 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       } else {
         parsedurl = urlQuery;
       }
+      // Check bot connectivity before attempting any Discord API calls
+      const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+      if (!clientIsReady) {
+        res.writeHead(503, { "Content-Type": "text/html" });
+        res.write("The bot isn't connected, try again in a moment");
+        res.end();
+        return;
+      }
+
       // Allow sending drawings with or without a message
       const channel = await bot.client.channels.fetch(parsedurl.channel);
       let member;
@@ -95,7 +104,13 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         } while (m);
       }
       
-      await webhook.edit({ channel: channel });
+      try {
+        await webhook.edit({ channel: channel });
+      } catch (editErr) {
+        // Editing webhook channel can fail if missing permissions; log but continue
+        console.error("Failed to edit webhook channel:", editErr);
+      }
+
       const base64Data = parsedurl.drawinginput;
 
       // Validate that we have drawing data
