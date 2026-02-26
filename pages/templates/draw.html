@@ -56,7 +56,12 @@
             color: #dcddde;
             overflow-x: hidden;
             overflow-y: auto;
-            min-height: 100vh; /* ensure body fills viewport so no html background shows through */
+            min-height: 100vh;
+        }
+
+        /* Override themes.css which sets #wrapper to #303338; keep it matching body */
+        #wrapper {
+            background: #36393f;
         }
 
         /* Light theme overrides */
