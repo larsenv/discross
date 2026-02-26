@@ -198,13 +198,20 @@
             }
         }
 
-        /* Message input - in normal document flow, matching channel page */
+        /* Message input - fixed to bottom of viewport, full width */
         .message-form-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
             background: #36393f;
             border-top: 1px solid #40444b;
             padding: 12px;
-            width: 100%;
         }
+
+        /* Add bottom padding to body so fixed form doesn't cover canvas */
+        body { padding-bottom: 80px; }
 
         .message-buttons-container {
             /* Fallback layout for old browsers */
@@ -480,6 +487,13 @@
             /* Hide the fixed hamburger on DSi — position:fixed is unsupported in
                Opera 9.5 and the button overlaps the toolbar. */
             .menu-button { display: none !important; }
+
+            /* Drop position:fixed - not supported in Opera Mobile 9.5 (DSi) */
+            .message-form-container {
+                position: static;
+                margin-top: 8px;
+            }
+            body { padding-bottom: 0; }
         }
     </style>
 </head>
