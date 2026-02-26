@@ -188,7 +188,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     let currentMember = null;
     if (item.member) {
       currentMember = item.member;
-    } else if (item.webhookId) {
+    } else {
       currentMember = await ensureMemberData(item, chnl.guild, memberCache);
     }
 
