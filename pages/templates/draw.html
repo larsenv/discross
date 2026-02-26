@@ -444,12 +444,22 @@
            Shrink the toolbar color boxes so the page scrolls less on the tiny
            256x192 screen. */
         @media (max-width: 256px) {
-            /* DSi Opera Mobile 9.5 — shrink the toolbar color boxes so all 8
-               fit on one row of the ~240px DSi screen */
+            /* DSi Opera Mobile 9.5 — force the toolbar to never wrap so all 8
+               color boxes stay on one row. white-space:nowrap propagates to
+               inline-block children and prevents wrapping regardless of gaps. */
+            #toolbar-container {
+                white-space: nowrap;
+                width: auto;
+            }
+
+            /* Shrink color boxes to 10px; border is already 2px so total per
+               box = 10px. 8 boxes = 80px, well within the DSi's ~230px usable
+               toolbar width. */
             .c-box {
-                width: 12px;
-                height: 12px;
+                width: 10px;
+                height: 10px;
                 margin: 0;
+                border-width: 1px;
             }
 
             .s-btn {
