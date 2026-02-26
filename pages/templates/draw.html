@@ -204,23 +204,30 @@
             }
         }
 
-        /* Message input - fixed to bottom of viewport, full width */
+        /* Message input - default static flow (works on DSi/Dreamcast which lack
+           position:fixed support and may not parse CSS3 media queries at all).
+           Modern browsers opt-in to fixed via the @media min-width rule below. */
         .message-form-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
             background: #36393f;
             border-top: 1px solid #40444b;
             padding: 12px;
         }
 
-        /* Add bottom padding to body so fixed form doesn't cover canvas.
-           Form container is ~86px tall (12px padding + 8px margin + 4px inner
-           padding + 38px button + 4px inner padding + 8px margin + 12px padding),
-           so 100px gives comfortable clearance. */
-        body { padding-bottom: 100px; }
+        /* Modern browsers (viewport > 256px): pin the form to the viewport bottom.
+           DSi Opera 9.5 ignores this block either because its viewport is 256px
+           (min-width:257px never matches) or because it doesn't parse media queries. */
+        @media (min-width: 257px) {
+            .message-form-container {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 100;
+            }
+            /* Padding so the fixed bar doesn't cover the bottom of the canvas.
+               Form is ~86px tall; 100px gives comfortable clearance. */
+            body { padding-bottom: 100px; }
+        }
 
         .message-buttons-container {
             /* Fallback layout for old browsers */
@@ -496,13 +503,6 @@
             /* Hide the fixed hamburger on DSi — position:fixed is unsupported in
                Opera 9.5 and the button overlaps the toolbar. */
             .menu-button { display: none !important; }
-
-            /* Drop position:fixed - not supported in Opera Mobile 9.5 (DSi) */
-            .message-form-container {
-                position: static;
-                margin-top: 8px;
-            }
-            body { padding-bottom: 0; }
         }
     </style>
 </head>
