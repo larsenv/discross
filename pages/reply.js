@@ -1,4 +1,3 @@
-const url = require('url');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
@@ -43,8 +42,8 @@ const lock = new AsyncLock(); // Create a new lock instance
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
   try {
     await lock.acquire(discordID, async () => {
-      const parsedurl = url.parse(req.url, true);
-      if (parsedurl.query.message !== "") {
+      const parsedurl = new URL(req.url, 'http://localhost');
+      if (parsedurl.searchParams.get('message') !== "") {
         // Check if bot is connected
         const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
         
@@ -55,7 +54,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
           return;
         }
 
-        const channel = await bot.client.channels.fetch(parsedurl.query.channel);
+        const channel = await bot.client.channels.fetch(parsedurl.searchParams.get('channel'));
         if (!channel) {
           res.writeHead(404, { "Content-Type": "text/plain" });
           res.write("Channel not found");
@@ -82,7 +81,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
         const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-        let processedmessage = parsedurl.query.message;
+        let processedmessage = parsedurl.searchParams.get('message');
         const regex = /@([^#]{2,32}#\d{4})/g;
         let m;
         do {
@@ -103,7 +102,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
           }
         } while (m);
 
-        let reply_message = await channel.messages.fetch(parsedurl.query.reply_message_id);
+        let reply_message = await channel.messages.fetch(parsedurl.searchParams.get('reply_message_id'));
         let reply_message_content = reply_message.content;
         
         // #38: Escape mentions in reply content to prevent ping issues
@@ -140,7 +139,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         bot.addToCache(message);
       }
 
-      res.writeHead(302, { "Location": `/channels/${parsedurl.query.channel}` });
+      res.writeHead(302, { "Location": `/channels/${parsedurl.searchParams.get('channel')}` });
       res.end();
     });
   } catch (err) {
