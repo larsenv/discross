@@ -89,7 +89,7 @@ function urlMatchesDomain(url, domain) {
 exports.buildMessagesHtml = async function buildMessagesHtml(params) {
   const {
     bot, chnl, member, discordID, req,
-    imagesCookie, animationsCookie,
+    imagesCookie, animationsCookie = 1,
     authorText, replyText, clientTimezone,
     channelId, // for {$MESSAGE_REPLY_LINK}; pass null to skip
     templates: {
@@ -600,9 +600,21 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 };
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
+  const urlTheme = parsedUrl.searchParams.get('theme');
+  const urlImages = parsedUrl.searchParams.get('images');
+
+  // Build combined URL params for links (propagates session, theme, and images)
+  const linkParamParts = [];
+  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
+  if (urlTheme !== null) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const urlSessionID = new URL(req.url, 'http://localhost').searchParams.get('sessionID') || '';
-  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
+  // URL param takes priority over cookie
+  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
 
   let boxColor;
   let authorText;
@@ -613,13 +625,13 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   authorText = "#72767d";
   replyText = "#b5bac1";
     
-  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
-  if (whiteThemeCookie == 1) {
+  // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
+  if (theme === 1) {
     boxColor = "#ffffff";
     authorText = "#000000";
     replyText = "#000000";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-  } else if (whiteThemeCookie == 2) {
+  } else if (theme === 2) {
     boxColor = "#40444b";
     authorText = "#72767d";
     replyText = "#b5bac1";
@@ -641,10 +653,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   }
   
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-  const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
-  
-  const animationsCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('animations='))?.split('=')[1];
-  const animationsCookie = animationsCookieValue !== undefined ? parseInt(animationsCookieValue) : 1;  // Default to 1 (on)
+  const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);  // Default to 1 (on)
     
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
@@ -717,7 +726,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       console.log("Processed valid channel request");
       const response = await exports.buildMessagesHtml({
         bot, chnl, member, discordID, req,
-        imagesCookie, animationsCookie,
+        imagesCookie,
         authorText, replyText, clientTimezone,
         channelId: args[2],
         templates: {
