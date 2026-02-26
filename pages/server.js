@@ -229,7 +229,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     let response = server_template.replace("{$SERVER_LIST}", serverList);
 
     // syncNeeded already parsed via parsedUrl above
-    const syncNeeded = parsedUrl.query.sync_needed;
+    const syncNeeded = parsedUrl.searchParams.get('sync_needed');
 
     // Process specific server if `args[2]` is given
     if (args[2]) {
