@@ -41,15 +41,12 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* html is the sole scroll container. body and #wrapper are height:auto
-           so they never overflow themselves, preventing any secondary scrollbar. */
-        html {
-            height: 100%;
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-
-        body, #wrapper {
+        /* Match channel.html scroll approach exactly: html/body/#wrapper are all
+           height:auto. Browser propagates body's overflow-y:auto to the viewport,
+           giving a single window-level scrollbar. */
+        html,
+        body,
+        #wrapper {
             height: auto;
             min-height: 0;
         }
@@ -57,6 +54,8 @@
         body {
             background: #36393f;
             color: #dcddde;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         /* Light theme overrides */
