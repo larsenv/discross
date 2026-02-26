@@ -1,4 +1,3 @@
-const url = require('url');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
@@ -48,8 +47,8 @@ function isValidSnowflake(id) {
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
   try {
     await lock.acquire(discordID, async () => {
-      const parsedurl = url.parse(req.url, true);
-      const query = parsedurl.query || {};
+      const parsedurl = new URL(req.url, 'http://localhost');
+      const query = Object.fromEntries(parsedurl.searchParams);
 
       // Ensure message exists and is a non-empty string
       if (typeof query.message === 'string' && query.message !== "") {
@@ -162,8 +161,8 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       }
 
       // redirect back to the channel (use the provided channel id if available)
-      const redirectChannel = (parsedurl.query && parsedurl.query.channel) ? parsedurl.query.channel : (args?.[2] || "");
-      const sessionID = parsedurl.query.sessionID || ''
+      const redirectChannel = parsedurl.searchParams.get('channel') || (args?.[2] || "");
+      const sessionID = parsedurl.searchParams.get('sessionID') || ''
       const sessionPart = sessionID ? '?sessionID=' + encodeURIComponent(sessionID) : ''
       const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)))
       res.writeHead(302, { "Location": baseUrl + '/channels/' + redirectChannel + sessionPart });

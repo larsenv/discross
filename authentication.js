@@ -4,7 +4,6 @@ const { v4: uuidv4 } = require('uuid')
 const { parse } = require('querystring')
 const passStrength = require('owasp-password-strength-test')
 const he = require('he') // Encodes HTML attributes
-const url = require('url')
 
 passStrength.config({
   minLength: 8
@@ -160,8 +159,8 @@ exports.checkAuth = async function (req, res, noRedirect) {
   })
 
   // Fall back to URL query parameter for browsers without cookie support (e.g. IE1, IE2)
-  const parsedUrl = url.parse(req.url, true)
-  const sessionIDToCheck = cookiedict.sessionID || parsedUrl.query.sessionID
+  const parsedUrl = new URL(req.url, 'http://localhost')
+  const sessionIDToCheck = cookiedict.sessionID || parsedUrl.searchParams.get('sessionID')
 
   if (sessionIDToCheck) {
     /*if (cookiedict.sessionID === 'guest') {

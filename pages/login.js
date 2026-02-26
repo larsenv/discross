@@ -1,4 +1,3 @@
-var url = require('url');
 var fs = require('fs');
 var escape = require('escape-html');
 
@@ -19,16 +18,16 @@ exports.processLogin = async function (bot, req, res, args) {
     res.writeHead(301, { "Location": "/server/", "Content-Type": "text/html" });
     res.write('Logged in! Click <a href="/server/">here</a> to continue.');
   } else {
-    parsedurl = url.parse(req.url, true);
+    parsedurl = new URL(req.url, 'http://localhost');
     response = login_template;
     response = strReplace(response, "{$MENU_OPTIONS}", logged_out_template);
-    if (parsedurl.query.redirect) {
-      response = strReplace(response, "{$REDIRECT_URL}", strReplace(parsedurl.query.redirect, '"', "%22"));
+    if (parsedurl.searchParams.get('redirect')) {
+      response = strReplace(response, "{$REDIRECT_URL}", strReplace(parsedurl.searchParams.get('redirect'), '"', "%22"));
     } else {
       response = strReplace(response, "{$REDIRECT_URL}", "/server/");
     }
-    if (parsedurl.query.errortext) {
-      response = strReplace(response, "{$ERROR}", strReplace(error_template, "{$ERROR_MESSAGE}", strReplace(escape(parsedurl.query.errortext), "\n", "<br>")));
+    if (parsedurl.searchParams.get('errortext')) {
+      response = strReplace(response, "{$ERROR}", strReplace(error_template, "{$ERROR_MESSAGE}", strReplace(escape(parsedurl.searchParams.get('errortext')), "\n", "<br>")));
     } else {
       response = strReplace(response, "{$ERROR}", "");
     }

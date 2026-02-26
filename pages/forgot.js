@@ -1,4 +1,3 @@
-var url = require('url');
 var fs = require('fs');
 var escape = require('escape-html');
 
@@ -13,11 +12,11 @@ function strReplace(string, needle, replacement) {
 };
 
 exports.processForgot = async function (bot, req, res, args) {
-  parsedurl = url.parse(req.url, true);
+  parsedurl = new URL(req.url, 'http://localhost');
   response = forgot_template;
   response = strReplace(response, "{$MENU_OPTIONS}", logged_out_template);
-  if (parsedurl.query.errortext) {
-    response = strReplace(response, "{$ERROR}", strReplace(error_template, "{$ERROR_MESSAGE}", strReplace(escape(parsedurl.query.errortext), "\n", "<br>")));
+  if (parsedurl.searchParams.get('errortext')) {
+    response = strReplace(response, "{$ERROR}", strReplace(error_template, "{$ERROR_MESSAGE}", strReplace(escape(parsedurl.searchParams.get('errortext')), "\n", "<br>")));
   } else {
     response = strReplace(response, "{$ERROR}", "");
   }
