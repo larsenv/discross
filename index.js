@@ -8,10 +8,29 @@ const bot = require('./bot.js')
 const connectionHandler = require('./connectionHandler.js')
 const sharp = require("sharp")
 const sanitizer = require("path-sanitizer").default;
+const Sentry = require("@sentry/node");
 
 const options = {}
 
-process.on("unhandledRejection", (err) => console.log(err));
+const sentryEnabled = !!process.env.SENTRY_DSN;
+if (sentryEnabled) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN });
+}
+
+process.on("unhandledRejection", (err) => {
+  console.log(err);
+  if (sentryEnabled) Sentry.captureException(err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error(err);
+  if (sentryEnabled) {
+    Sentry.captureException(err);
+    Sentry.flush(2000).finally(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
+});
 
 try { // Use HTTPS if keys are available
   options.key = fs.readFileSync('secrets/key.pem')

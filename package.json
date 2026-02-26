@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "@bhavingajjar/html-minify": "^1.0.0",
+    "@sentry/node": "^10.40.0",
     "async": "^3.2.6",
     "async-lock": "^1.4.1",
     "bcrypt": "^6.0.0",
