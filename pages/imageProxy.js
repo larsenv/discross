@@ -8,8 +8,15 @@ const EMPTY_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAA
 exports.imageProxy = async function imageProxy(res, URL) {
     // Choose the appropriate protocol handler
     const protocol = URL.startsWith('https:') ? https : http;
-    
-    protocol.get(URL, (proxyRes) => {
+
+    const requestOptions = {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; Discross/1.0; +https://discross.net)',
+            'Accept': 'image/*,*/*;q=0.8',
+        }
+    };
+
+    protocol.get(URL, requestOptions, (proxyRes) => {
         // If the upstream server returned an error, return a 1x1 transparent GIF so the
         // browser renders nothing rather than showing a broken image or error text.
         if (proxyRes.statusCode < 200 || proxyRes.statusCode >= 300) {
