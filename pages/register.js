@@ -3,7 +3,7 @@ var escape = require('escape-html');
 
 var auth = require('../authentication.js');
 
-const register_template = fs.readFileSync('pages/templates/register.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const register_template = fs.readFileSync('pages/templates/register.html', 'utf-8');
 const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
 const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
 

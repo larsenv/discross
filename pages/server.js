@@ -10,7 +10,7 @@ const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 // Templates for viewing the channels in a server
-const server_template = fs.readFileSync('pages/templates/server.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const server_template = fs.readFileSync('pages/templates/server.html', 'utf-8');
 
 const text_channel_template = fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8');
 const announcement_channel_template = fs.readFileSync('pages/templates/channellist/announcementchannel.html', 'utf-8');
