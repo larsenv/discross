@@ -34,12 +34,21 @@
         #wrapper {
             margin: 0;
             padding: 0;
-            height: 100%;
             font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             font-size: 16px;
             line-height: 1.45;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Match channel.html scroll approach exactly: html/body/#wrapper are all
+           height:auto. Browser propagates body's overflow-y:auto to the viewport,
+           giving a single window-level scrollbar. */
+        html,
+        body,
+        #wrapper {
+            height: auto;
+            min-height: 0;
         }
 
         body {
@@ -189,16 +198,12 @@
             }
         }
 
-        /* Message input - fixed to bottom of viewport, full width, matching channel page */
+        /* Message input - in normal document flow, matching channel page */
         .message-form-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
             background: #36393f;
             border-top: 1px solid #40444b;
             padding: 12px;
+            width: 100%;
         }
 
         .message-buttons-container {
@@ -238,9 +243,6 @@
             background: #000000 !important;
             border-top-color: #333333 !important;
         }
-
-        /* Add bottom padding to body so fixed form doesn't cover canvas */
-        body { padding-bottom: 80px; }
 
         /* Chat container - consistent spacing */
         .chat, .chat-container, #chat {
@@ -440,25 +442,25 @@
         }
 
         /* DSi (256x192) specific overrides.
-           Opera Mobile 9.5 (DSi browser) does not support position:fixed, so the
-           send form must fall into normal document flow. Also shrink the toolbar
-           color boxes so the page scrolls less on the tiny 256x192 screen. */
+           Shrink the toolbar color boxes so the page scrolls less on the tiny
+           256x192 screen. */
         @media (max-width: 256px) {
-            /* Drop position:fixed - not supported in Opera Mobile 9.5 (DSi) */
-            .message-form-container {
-                position: static;
-                margin-top: 8px;
-                border-top: 1px solid #40444b;
-                padding: 6px;
+            /* DSi Opera Mobile 9.5 — force the toolbar to never wrap so all 8
+               color boxes stay on one row. white-space:nowrap propagates to
+               inline-block children and prevents wrapping regardless of gaps. */
+            #toolbar-container {
+                white-space: nowrap;
+                width: auto;
             }
-            body { padding-bottom: 0; }
 
-            /* Shrink color boxes from 24px to 15px so two rows + size buttons
-               take up less vertical space on the 192px tall screen */
+            /* Shrink color boxes to 10px; border is already 2px so total per
+               box = 10px. 8 boxes = 80px, well within the DSi's ~230px usable
+               toolbar width. */
             .c-box {
-                width: 15px;
-                height: 15px;
-                margin: 1px;
+                width: 10px;
+                height: 10px;
+                margin: 0;
+                border-width: 1px;
             }
 
             .s-btn {
@@ -474,6 +476,10 @@
 
             /* Hide emoji picker - too small to be useful on DSi */
             #emoji { display: none !important; }
+
+            /* Hide the fixed hamburger on DSi — position:fixed is unsupported in
+               Opera 9.5 and the button overlaps the toolbar. */
+            .menu-button { display: none !important; }
         }
     </style>
 </head>
@@ -583,11 +589,30 @@
         var canvas = document.getElementById('sketchpad');
         var ctx = canvas.getContext('2d');
         
+        // On very small screens (DSi: 256px wide), shrink the canvas backing buffer
+        // before any drawing. The internal canvas is 600×350 = 210,000 pixels; even
+        // a single ctx.stroke() forces Opera 9.5 to repaint all of them which is
+        // very slow. 240×140 has the same 12:7 aspect ratio but only ~33,600 pixels
+        // — roughly 6× fewer pixels per repaint, which brings drawing to a usable fps.
+        // This must happen BEFORE ctx operations (resizing canvas resets its content).
+        if (screen.width && screen.width <= 256) {
+            canvas.width = 240;
+            canvas.height = 140;
+        }
+        
         var isDrawing = false;
         var lastX = 0;
         var lastY = 0;
         var currColor = '#000000';
         var currSize = 5;
+
+        // Point queue for batched rendering.
+        // Instead of calling ctx.stroke() on every mousemove (one repaint per event,
+        // which is very slow on DSi Opera 9.5), we accumulate points here and flush
+        // them all in a single stroke() call at a fixed interval.
+        var pointQueue = [];
+        var lastDrawnX = 0;
+        var lastDrawnY = 0;
 
         // Defaults
         ctx.lineCap = 'round';
@@ -691,6 +716,28 @@
             };
         }
 
+        // --- BATCHED RENDERING ---
+        // Flush all queued line segments in a single stroke() call.
+        // This is the key DSi performance fix: each ctx.stroke() triggers a full
+        // canvas repaint in Opera 9.5, so we batch many segments into one repaint
+        // instead of one repaint per mousemove event.
+        function flushDrawQueue() {
+            if (pointQueue.length === 0) return;
+            ctx.beginPath();
+            ctx.moveTo(lastDrawnX, lastDrawnY);
+            for (var i = 0; i < pointQueue.length; i++) {
+                ctx.lineTo(pointQueue[i].x, pointQueue[i].y);
+            }
+            ctx.stroke();
+            var last = pointQueue[pointQueue.length - 1];
+            lastDrawnX = last.x;
+            lastDrawnY = last.y;
+            pointQueue = [];
+        }
+        // Flush at ~30ms intervals (~33fps). DSi Opera 9.5 does not support
+        // requestAnimationFrame, so setInterval is used instead.
+        setInterval(flushDrawQueue, 30);
+
         // --- DRAWING EVENTS ---
         canvas.onmousedown = function(e) {
             if(e.preventDefault) e.preventDefault(); // Stop Wii Drag
@@ -698,6 +745,9 @@
             var pos = getPos(e);
             lastX = pos.x;
             lastY = pos.y;
+            lastDrawnX = pos.x;
+            lastDrawnY = pos.y;
+            pointQueue = [];
             
             ctx.beginPath();
             ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
@@ -713,17 +763,13 @@
             if(e.preventDefault) e.preventDefault(); 
 
             var pos = getPos(e);
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            
+            pointQueue.push({ x: pos.x, y: pos.y });
             lastX = pos.x;
             lastY = pos.y;
         };
 
-        canvas.onmouseup = function() { isDrawing = false; };
-        canvas.onmouseout = function() { isDrawing = false; };
+        canvas.onmouseup = function() { flushDrawQueue(); isDrawing = false; };
+        canvas.onmouseout = function() { flushDrawQueue(); isDrawing = false; };
 
         // --- TOUCH SUPPORT FOR MOBILE ---
         // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
@@ -747,6 +793,9 @@
             if (!pos) return;
             lastX = pos.x;
             lastY = pos.y;
+            lastDrawnX = pos.x;
+            lastDrawnY = pos.y;
+            pointQueue = [];
             
             ctx.beginPath();
             ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
@@ -761,22 +810,20 @@
             
             var pos = getTouchPos(e);
             if (!pos) return;
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            
+            pointQueue.push({ x: pos.x, y: pos.y });
             lastX = pos.x;
             lastY = pos.y;
         }, { passive: false });
 
         canvas.addEventListener('touchend', function(e) {
             if(e.preventDefault) e.preventDefault();
+            flushDrawQueue();
             isDrawing = false;
         }, { passive: false });
 
         canvas.addEventListener('touchcancel', function(e) {
             if(e.preventDefault) e.preventDefault();
+            flushDrawQueue();
             isDrawing = false;
         }, { passive: false });
 
