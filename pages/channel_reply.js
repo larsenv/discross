@@ -44,21 +44,18 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   authorText = "#72767d";
   replyText = "#b5bac1";
 
-  const userAgent = req.headers['user-agent'] || '';
-  const isPlanetWeb = /PlanetWeb/i.test(userAgent);
-
   if (whiteThemeCookie == 1) {
     boxColor = "#ffffff";
     authorText = "#000000";
     replyText = "#000000";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", isPlanetWeb ? "class=\"light-theme planetweb\"" : "class=\"light-theme\"");
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
   } else if (whiteThemeCookie == 2) {
     boxColor = "#40444b";
     authorText = "#72767d";
     replyText = "#b5bac1";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", isPlanetWeb ? "class=\"amoled-theme planetweb\"" : "class=\"amoled-theme\"");
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
   } else {
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", isPlanetWeb ? "class=\"planetweb\"" : "");
+    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
   }
 
   const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
