@@ -1,5 +1,4 @@
 const fs = require('fs');
-const url = require('url');
 const https = require('https');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
@@ -112,8 +111,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
 
       // Detect if this is a traditional form submission (for older browsers like 3DS)
       // Check for explicit query parameter
-      const parsedUrl = url.parse(req.url, true);
-      const isTraditionalSubmission = parsedUrl.query.traditional === 'true';
+      const parsedUrl = new URL(req.url, 'http://localhost');
+      const isTraditionalSubmission = parsedUrl.searchParams.get('traditional') === 'true';
 
       if (!clientIsReady) {
         if (isTraditionalSubmission) {
@@ -249,8 +248,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
     console.error("Error in uploadFile:", err);
     if (!res.headersSent) {
         // Re-parse URL to check for traditional submission flag
-        const parsedUrl = url.parse(req.url, true);
-        const isTraditionalSubmission = parsedUrl.query.traditional === 'true';
+        const parsedUrl = new URL(req.url, 'http://localhost');
+        const isTraditionalSubmission = parsedUrl.searchParams.get('traditional') === 'true';
         if (isTraditionalSubmission) {
           res.writeHead(500, { "Content-Type": "text/html" });
           res.end("<script>alert('Internal Server Error'); history.back();</script>");

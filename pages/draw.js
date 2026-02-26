@@ -90,8 +90,7 @@ function getMemberColor(member) {
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const url = require('url');
-  const urlSessionID = url.parse(req.url, true).query.sessionID || '';
+  const urlSessionID = new URL(req.url, 'http://localhost').searchParams.get('sessionID') || '';
   const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
   let boxColor;

@@ -174,9 +174,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     let serversDeleted = 0; // Track if servers were deleted due to sync issues
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
 
-    const url = require('url');
-    const parsedUrl = url.parse(req.url, true);
-    const urlSessionID = parsedUrl.query.sessionID || ''
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const urlSessionID = parsedUrl.searchParams.get('sessionID') || ''
     const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''
 
     // Acquire lock for this user to prevent race conditions where users might see other users' servers
@@ -230,7 +229,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     let response = server_template.replace("{$SERVER_LIST}", serverList);
 
     // syncNeeded already parsed via parsedUrl above
-    const syncNeeded = parsedUrl.query.sync_needed;
+    const syncNeeded = parsedUrl.searchParams.get('sync_needed');
 
     // Process specific server if `args[2]` is given
     if (args[2]) {

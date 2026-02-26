@@ -1,4 +1,3 @@
-const url = require('url');
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
@@ -46,7 +45,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     await lock.acquire(discordID, async () => {
       let parsedurl;
       if (urlQuery == null) {
-        parsedurl = url.parse(req.url, true).query;
+        parsedurl = Object.fromEntries(new URL(req.url, 'http://localhost').searchParams);
       } else {
         parsedurl = urlQuery;
       }
