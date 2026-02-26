@@ -179,11 +179,16 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     const urlTheme = parsedUrl.searchParams.get('theme');
     const urlImages = parsedUrl.searchParams.get('images');
 
-    // Build combined URL params for links (propagates session, theme, and images)
+    // Read cookies up front to decide whether URL params need to be propagated
+    const whiteThemeCookieForParam = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+    const imagesCookieForParam = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+
+    // Build combined URL params for links — only include preference params when the
+    // corresponding cookie is absent (i.e. the browser doesn't support cookies)
     const linkParamParts = [];
     if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-    if (urlTheme !== null) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-    if (urlImages !== null) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+    if (urlTheme !== null && whiteThemeCookieForParam === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+    if (urlImages !== null && imagesCookieForParam === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
     const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
     // Acquire lock for this user to prevent race conditions where users might see other users' servers

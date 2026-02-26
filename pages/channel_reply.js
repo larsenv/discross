@@ -36,14 +36,17 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  // Build combined URL params for links (propagates session, theme, and images)
+  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+
+  // Build combined URL params for links — only include preference params when the
+  // corresponding cookie is absent (i.e. the browser doesn't support cookies)
   const linkParamParts = [];
   if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  if (urlTheme !== null && whiteThemeCookie === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && imagesCookieValue === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
   const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
-  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
   // URL param takes priority over cookie
   const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
 
@@ -70,7 +73,6 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
   }
 
-  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
   const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);
 
   const clientIP = getClientIP(req);
