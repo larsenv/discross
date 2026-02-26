@@ -381,17 +381,6 @@
             display: none;
         }
 
-        /* DSi-only inline menu link shown in the toolbar when the fixed hamburger
-           is hidden. Hidden on all other screen sizes. */
-        .dsi-menu-link {
-            display: none;
-            color: #00aff4;
-            text-decoration: none;
-            font-size: 11px;
-            vertical-align: middle;
-            margin-right: 4px;
-        }
-
         /* --- CANVAS STYLES --- */
         #canvas-wrapper {
             margin: 0 auto 20px auto;
@@ -486,11 +475,9 @@
                per row on the DSi's 256px-wide screen */
             .dsi-break { display: block; }
 
-            /* The fixed hamburger overlaps the toolbar on DSi (position:fixed is
-               unsupported in Opera 9.5 and falls back to overlapping). Hide it
-               and show the inline DSi-only menu link in the toolbar instead. */
+            /* Hide the fixed hamburger on DSi — position:fixed is unsupported in
+               Opera 9.5 and the button overlaps the toolbar. */
             .menu-button { display: none !important; }
-            .dsi-menu-link { display: inline-block !important; }
         }
     </style>
 </head>
@@ -502,7 +489,6 @@
         </a>
 
         <div id="toolbar-container">
-            <a href="../server/{$SERVER_ID}{$SESSION_PARAM}" class="dsi-menu-link">Menu</a>
             <div id="c1" class="c-box" style="background:#000000;" onclick="setColor('#000000', 'c1')"></div>
             <div id="c2" class="c-box" style="background:#555555;" onclick="setColor('#555555', 'c2')"></div>
             <div id="c3" class="c-box" style="background:#aaaaaa;" onclick="setColor('#aaaaaa', 'c3')"></div>
