@@ -1,3 +1,4 @@
+require('./instrument.js')
 require('dotenv').config()
 const path = require('path')
 const fs = require('fs')
@@ -13,9 +14,6 @@ const Sentry = require("@sentry/node");
 const options = {}
 
 const sentryEnabled = !!process.env.SENTRY_DSN;
-if (sentryEnabled) {
-  Sentry.init({ dsn: process.env.SENTRY_DSN });
-}
 
 process.on("unhandledRejection", (err) => {
   console.log(err);
