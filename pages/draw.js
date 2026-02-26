@@ -89,20 +89,32 @@ function getMemberColor(member) {
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
+  const urlTheme = parsedUrl.searchParams.get('theme');
+  const urlImages = parsedUrl.searchParams.get('images');
+
+  // Build combined URL params for links (propagates session, theme, and images)
+  const linkParamParts = [];
+  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
+  if (urlTheme !== null) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const urlSessionID = new URL(req.url, 'http://localhost').searchParams.get('sessionID') || '';
-  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
+  // URL param takes priority over cookie
+  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
 
   let boxColor;
 
   boxColor = "#40444b";
     
-  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
-  if (whiteThemeCookie == 1) {
+  // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
+  if (theme === 1) {
     boxColor = "#ffffff";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
     template = strReplace(template, "{$COLOR}", boxColor);
-  } else if (whiteThemeCookie == 2) {
+  } else if (theme === 2) {
     boxColor = "#40444b";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
     template = strReplace(template, "{$COLOR}", boxColor);

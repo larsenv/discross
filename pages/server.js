@@ -175,8 +175,16 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
 
     const parsedUrl = new URL(req.url, 'http://localhost');
-    const urlSessionID = parsedUrl.searchParams.get('sessionID') || ''
-    const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''
+    const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
+    const urlTheme = parsedUrl.searchParams.get('theme');
+    const urlImages = parsedUrl.searchParams.get('images');
+
+    // Build combined URL params for links (propagates session, theme, and images)
+    const linkParamParts = [];
+    if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
+    if (urlTheme !== null) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+    if (urlImages !== null) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+    const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
     // Acquire lock for this user to prevent race conditions where users might see other users' servers
     await lock.acquire(discordID, async () => {
@@ -203,7 +211,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           // Construct server list HTML if the member is valid
           if (member && member.user) {
             const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-            const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;
+            const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);
             const serverHTML = createServerHTML(server, member, imagesCookie, sessionParam);
             serverList += serverHTML;
           }
@@ -263,7 +271,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     }
 
     const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-    const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;
+    const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);
 
     // Handle theme and images preferences
     response = applyUserPreferences(response, req);
@@ -300,8 +308,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     // Parse and add user agent display
     response = addUserAgentDisplay(response, req);
     
-    // Inject sessionID parameter into template links
-    response = response.split('{$SESSION_PARAM}').join(urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '');
+    // Inject URL parameters into template links
+    response = response.split('{$SESSION_PARAM}').join(sessionParam);
     
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(response);
@@ -328,19 +336,25 @@ async function fetchAndCacheMember(server, discordID) {
 }
 
 function applyUserPreferences(response, req) {
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlTheme = parsedUrl.searchParams.get('theme');
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
 
-  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
-  if (whiteThemeCookie == 1) {
+  // URL param takes priority over cookie
+  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
+
+  // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
+  if (theme === 1) {
     response = response.replace("{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-  } else if (whiteThemeCookie == 2) {
+  } else if (theme === 2) {
     response = response.replace("{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
   } else {
     response = response.replace("{$WHITE_THEME_ENABLED}", "bgcolor=\"303338\"");
   }
 
+  const urlImages = parsedUrl.searchParams.get('images');
   const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-  const imagesEnabled = imagesCookie === '1' || imagesCookie === undefined; // Default to enabled (1) if not set
+  const imagesEnabled = urlImages !== null ? urlImages === '1' : (imagesCookie === '1' || imagesCookie === undefined); // Default to enabled (1) if not set
   response = imagesEnabled ? response.replace("{$IMAGES_WARNING}", images_enabled_template) : response.replace("{$IMAGES_WARNING}", no_images_warning_template);
 
   return response;

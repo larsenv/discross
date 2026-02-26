@@ -39,7 +39,6 @@ var { toggleTheme } = require('./pages/themeToggle.js')
 var { imageProxy } = require('./pages/imageProxy.js')
 var { fileProxy } = require('./pages/fileProxy.js')
 var { toggleImages } = require('./pages/toggleImages.js')
-var { toggleAnimations } = require('./pages/toggleAnimations.js')
 var { uploadFile } = require('./pages/uploadFile.js')
 var chanelreplypage = require('./pages/channel_reply.js')
 var replypage = require('./pages/reply.js')
@@ -155,13 +154,7 @@ server.on('request', async (req, res) => {
       }
     })
     req.on('end', () => {
-      if (parsedurl == "/switchtheme") {
-        toggleTheme(req, res)
-      } else if (parsedurl == "/toggleImages") {
-        toggleImages(req, res)
-      } else if (parsedurl == "/toggleAnimations") {
-        toggleAnimations(req, res)
-      } else if (parsedurl == "/toggleCategory") {
+      if (parsedurl == "/toggleCategory") {
         // Handle category toggle
         (async () => {
           const discordID = await auth.checkAuth(req, res, true)
@@ -214,6 +207,11 @@ server.on('request', async (req, res) => {
       if (discordID) {
         await replypage.replyMessage(bot, req, res, args, discordID)
       }
+    }
+    else if (args[1] === 'switchtheme') {
+      toggleTheme(req, res)
+    } else if (args[1] === 'toggleImages') {
+      toggleImages(req, res)
     }
     else if (args[1] === 'logout') {
       const discordID = await auth.checkAuth(req, res, true) // True = no redirect to login page
@@ -338,13 +336,15 @@ server.on('request', async (req, res) => {
       const iconFilename = args[4];
       const iconHash = iconFilename.replace('.gif', '');
       
-      // Determine theme from cookies
+      // Determine theme from URL param (takes priority) or cookie
       let theme = 'dark';
       if (discordID) {
+        const urlTheme = parsedurl.searchParams.get('theme');
         const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-        if (whiteThemeCookie === '1') {
+        const themeValue = urlTheme !== null ? urlTheme : whiteThemeCookie;
+        if (themeValue === '1') {
           theme = 'light';
-        } else if (whiteThemeCookie === '2') {
+        } else if (themeValue === '2') {
           theme = 'amoled';
         }
       }
