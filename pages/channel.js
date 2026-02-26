@@ -504,18 +504,27 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       return tmpl_mention.replace("{$USERNAME}", "@unknown-user");
     });
 
-    var regex = /&lt;#([0-9]{18})&gt;/g;
-    var m;
-    do {
-      m = regex.exec(messagetext);
-      if (m) {
-        const channel = bot.client.channels.cache.get(m[1]);
-        if (channel) {
-          const channelLink = `/channels/${channel.id}`;
-          messagetext = strReplace(messagetext, m[0], `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(normalizeWeirdUnicode(channel.name))}</font></a>`);
-        }
+    // Collect any remaining unresolved channel IDs and fetch missing channels
+    const unresolvedChannelIds = new Set(
+      [...messagetext.matchAll(/&lt;#(\d{17,19})&gt;/g)].map(m => m[1])
+    );
+    const channelIdsToFetch = [...unresolvedChannelIds].filter(id => !bot.client.channels.cache.has(id));
+    await Promise.allSettled(channelIdsToFetch.map(async (id) => {
+      try {
+        await bot.client.channels.fetch(id);
+      } catch (err) {
+        // Channel not accessible; leave absent from cache
       }
-    } while (m);
+    }));
+
+    messagetext = messagetext.replace(/&lt;#(\d{17,19})&gt;/g, function(match, channelId) {
+      const channel = bot.client.channels.cache.get(channelId);
+      if (channel) {
+        const channelLink = `/channels/${channel.id}`;
+        return `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(normalizeWeirdUnicode(channel.name))}</font></a>`;
+      }
+      return match;
+    });
 
     if (item.mentions && item.mentions.everyone) {
       if (messagetext.includes("@everyone")) {
