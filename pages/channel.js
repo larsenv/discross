@@ -409,6 +409,25 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           if (rawThumbnailUrl) {
             messagetext += `<br><a href="${videoUrl}" target="_blank"><img src="${thumbnailUrl}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
           }
+        } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
+          if (imagesCookie == 1) {
+            const rawImageUrl = embed.thumbnail?.url || embed.image?.url;
+            if (!rawImageUrl) { return; }
+            const imageUrl = `/imageProxy/external/${Buffer.from(rawImageUrl).toString('base64')}`;
+            const urlToFind = embed.url;
+            let replaced = false;
+            if (urlToFind) {
+              const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+              const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
+              if (anchorRegex.test(messagetext)) {
+                messagetext = messagetext.replace(anchorRegex, `<img src="${imageUrl}" style="max-width:256px;max-height:200px;" alt="Image">`);
+                replaced = true;
+              }
+            }
+            if (!replaced) {
+              messagetext += `<br><img src="${imageUrl}" style="max-width:256px;max-height:200px;" alt="Image">`;
+            }
+          }
         } else {
           embedsToProcess.push(embed);
         }
