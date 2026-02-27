@@ -10,7 +10,7 @@ const { channel } = require('diagnostics_channel');
 const fetch = require("sync-fetch");
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
-const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator, areDifferentDays } = require('../timezoneUtils');
+const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator, areDifferentDays, formatForwardedTimestamp } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
@@ -143,11 +143,13 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
           currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
           currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+          currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
         } else if (isForwarded) {
           currentmessage = tmpl_message_forwarded.replace("{$MESSAGE_CONTENT}", currentmessage);
           currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
           currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
           currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+          currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
         } else if (lastMentioned) {
           currentmessage = tmpl_message_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
           if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
@@ -209,11 +211,43 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           : forwardedMessage.content;
         const forwardedDate = formatDateWithTimezone(forwardedMessage.createdAt, clientTimezone);
 
+        // Compute origin HTML (channel + time shown below forwarded content)
+        let originHtml = '';
+        try {
+          const fwdChannelId = forwardedMessage.channelId;
+          const fwdGuildId = forwardedMessage.guildId;
+          const snowflakeRe = /^\d{17,19}$/;
+          if (fwdGuildId && snowflakeRe.test(fwdChannelId) && snowflakeRe.test(forwardedMessage.id)) {
+            const fwdChannel = forwardedMessage.channel || bot.client.channels.cache.get(fwdChannelId);
+            if (fwdChannel) {
+              const timeDisplay = formatForwardedTimestamp(forwardedMessage.createdAt, clientTimezone);
+              const jumpLink = `/channels/${fwdChannelId}/${forwardedMessage.id}`;
+              const chanLink = `<a href="${jumpLink}" style="color:#b5bac1;text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay} &gt;</a>`;
+              if (fwdGuildId === chnl.guild.id) {
+                originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${chanLink}</font>`;
+              } else {
+                const otherGuild = bot.client.guilds.cache.get(fwdGuildId);
+                if (otherGuild) {
+                  try {
+                    await otherGuild.members.fetch(discordID);
+                    originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
+                  } catch (e) {
+                    // User not in that guild — show nothing
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          originHtml = '';
+        }
+
         isForwarded = true;
         forwardData = {
           author: forwardedAuthor,
           content: renderDiscordMarkdown(forwardedContent),
-          date: forwardedDate
+          date: forwardedDate,
+          origin: originHtml
         };
       } catch (err) {
         isForwarded = false;
