@@ -87,8 +87,13 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       }
 
       const webhook = await withTimeout(getOrCreateWebhook(channel, channel.guild.id), 15000);
-      // webhook is already in the correct channel (fetched via channel.fetchWebhooks()),
-      // so webhook.edit() is not needed and could hang if Discord API is slow
+
+      try {
+        await withTimeout(webhook.edit({ channel }), 15000);
+      } catch (err) {
+        // Editing webhook channel can fail if missing permissions; log but continue to attempt send
+        console.error("Failed to edit webhook channel:", err);
+      }
 
       let processedmessage = parsedurl.message || "";
 
