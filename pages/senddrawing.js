@@ -38,7 +38,7 @@ async function getOrCreateWebhook(channel, guildID) {
 }
 
 const AsyncLock = require('async-lock');
-const lock = new AsyncLock(); // Create a new lock instance
+const lock = new AsyncLock({ timeout: 30000 }); // 30 s timeout to acquire the lock
 
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
   try {
@@ -95,7 +95,12 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         } while (m);
       }
       
-      await webhook.edit({ channel: channel });
+      // NOTE: webhook.edit({ channel }) was removed — getOrCreateWebhook already
+      // fetches/creates the webhook inside the target channel, so editing it again
+      // on every send is redundant.  The extra Discord API call consumed rate-limit
+      // budget and, when Discord was rate-limiting, caused Discord.js to block
+      // waiting for the reset window — holding the async-lock and making all
+      // subsequent drawing submissions from the same user time out.
       const base64Data = parsedurl.drawinginput;
 
       // Validate that we have drawing data
