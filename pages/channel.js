@@ -16,6 +16,7 @@ const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
 const { isEmojiOnlyMessage } = require('./messageUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
 
 function readTemplate(filePath) {
   let content = fs.readFileSync(filePath, 'utf-8');
@@ -286,23 +287,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       if (messagetext.match(emojiRegex)) {
         const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
         unicode_emoji_matches.forEach(match => {
-          const points = [];
-          let char = 0;
-          let previous = 0;
-          let i = 0;
-          let output;
-          while (i < match.length) {
-            char = match.charCodeAt(i++);
-            if (previous) {
-              points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
-              previous = 0;
-            } else if (char > 0xd800 && char <= 0xdbff) {
-              previous = char;
-            } else {
-              points.push(char.toString(16));
-            }
-            output = points.join("-");
-          }
+          const output = unicodeToTwemojiCode(match);
           const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
           messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" width="${emojiPxSize}" height="${emojiPxSize}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
         });
@@ -311,8 +296,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
       if (custom_emoji_matches.length > 0) {
         custom_emoji_matches.forEach(match => {
-          const ext = match[2] ? "gif" : "png";
-          messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${ext}" width="${emojiPxSize}" height="${emojiPxSize}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+          const animated = !!match[2];
+          const emojiExt = (animated && animationsCookie === 1) ? 'gif' : 'png';
+          cacheCustomEmoji(match[4], match[3], animated);
+          messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${emojiExt}" width="${emojiPxSize}" height="${emojiPxSize}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
         });
       }
     }

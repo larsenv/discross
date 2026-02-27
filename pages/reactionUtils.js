@@ -1,4 +1,5 @@
 // Shared utility functions for processing and rendering reactions
+const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -49,6 +50,7 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
           if (imagesCookie === 1) {
             // Use animations setting for animated emoji
             const extension = (emoji.animated && animationsCookie === 1) ? 'gif' : 'png';
+            cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
             emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
           } else {
             // Fallback to emoji name if images are disabled
@@ -57,26 +59,7 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
         } else if (emoji.name) {
           // Unicode emoji (twemoji)
           if (imagesCookie === 1) {
-            // Convert unicode emoji to twemoji format
-            const points = [];
-            let char = 0;
-            let previous = 0;
-            let i = 0;
-            let output = '';
-            
-            while (i < emoji.name.length) {
-              char = emoji.name.charCodeAt(i++);
-              if (previous) {
-                points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
-                previous = 0;
-              } else if (char > 0xd800 && char <= 0xdbff) {
-                previous = char;
-              } else {
-                points.push(char.toString(16));
-              }
-            }
-            output = points.join("-");
-            
+            const output = unicodeToTwemojiCode(emoji.name);
             // Use animations setting for twemoji
             const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
             emojiHtml = `<img src="/resources/twemoji/${output}.${emojiExt}" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
