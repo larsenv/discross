@@ -4,6 +4,7 @@ const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { formatDateWithTimezone } = require('../timezoneUtils');
 const fs = require('fs');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const { processUnicodeEmojiInText, cacheCustomEmoji } = require('./emojiUtils');
 
 const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
 
@@ -24,14 +25,20 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
   }
   
   let result = text;
-  
+
+  // Process unicode emojis (twemoji) — cached via emojiUtils, always GIF
+  result = processUnicodeEmojiInText(result, 20, '1.25em');
+
   // Process custom emoji (HTML escaped format from markdown)
   const customEmojiMatches = [...result.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
   customEmojiMatches.forEach(match => {
-    const ext = match[2] ? "gif" : "png"; // 'a' means animated
+    const animated = !!match[2]; // 'a' means animated
     const emojiId = match[4];
+    const emojiName = match[3];
     if (emojiId) {
-      result = result.replace(match[0], `<img src="/imageProxy/emoji/${emojiId}.${ext}" width="20" height="20" style="width: 1.25em; height: 1.25em; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+      const emojiExt = (animated && animationsCookie === 1) ? 'gif' : 'png';
+      cacheCustomEmoji(emojiId, emojiName, animated);
+      result = result.replace(match[0], `<img src="/imageProxy/emoji/${emojiId}.${emojiExt}" width="20" height="20" style="width: 1.25em; height: 1.25em; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
     }
   });
   
