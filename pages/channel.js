@@ -167,7 +167,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:`+authorText+`" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
           replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
             '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-            '<td style="padding-left:4px;vertical-align:top"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">Replying to @' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
+            '<td style="padding-left:4px;vertical-align:top"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
             '</tr></table>';
         }
         currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
