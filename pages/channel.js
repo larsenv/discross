@@ -166,10 +166,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
         let replyIndicator = '';
         if (lastReply) {
-          const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:`+authorText+`" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
+          const contentPart = lastReplyData.content ? ' ' + escape(lastReplyData.content) : '';
           replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
             '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-            '<td style="padding-left:4px;vertical-align:top"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
+            '<td style="padding-left:4px;vertical-align:top;overflow:hidden;max-width:400px;white-space:nowrap;text-overflow:ellipsis"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPart + '</font></td>' +
             '</tr></table>';
         }
         currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -281,9 +281,11 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         let replyContent = '';
         if (replyMessage && replyMessage.content) {
           const maxLength = 50;
-          replyContent = replyMessage.content.length > maxLength
-            ? replyMessage.content.substring(0, maxLength) + '...'
-            : replyMessage.content;
+          // Collapse newlines to spaces so multiline messages appear on one line
+          const flatContent = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ');
+          replyContent = flatContent.length > maxLength
+            ? flatContent.substring(0, maxLength) + '...'
+            : flatContent;
         }
 
         isReply = true;
