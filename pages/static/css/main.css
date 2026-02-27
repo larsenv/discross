@@ -566,6 +566,7 @@ br.nodisp { display: none; }
    18. LIGHT THEME - channel-style specific overrides
    ================================================================ */
 
+body.light-theme,
 .light-theme body,
 .light-theme #wrapper { background: #f9f9f9 !important; color: #2e3338 !important; }
 .light-theme .content-padding,
@@ -630,6 +631,7 @@ br.nodisp { display: none; }
    19. AMOLED THEME - channel-style specific overrides
    ================================================================ */
 
+body.amoled-theme,
 .amoled-theme body,
 .amoled-theme #wrapper { background: #000000 !important; color: #ffffff !important; }
 .amoled-theme .content-padding,
