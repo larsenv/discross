@@ -495,7 +495,7 @@ button:focus, input:focus, textarea:focus {
     display: table;
     margin: 0 auto 5px auto;
     border-radius: 8px;
-    text-align: left;
+    text-align: center;
     position: relative;
     z-index: 10;
 }
