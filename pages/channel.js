@@ -28,7 +28,7 @@ const message_template = readTemplate('pages/templates/message/message.html');
 const message_forwarded_template = readTemplate('pages/templates/message/forwarded_message.html');
 const message_mentioned_template = readTemplate('pages/templates/message/message_mentioned.html');
 const message_forwarded_mentioned_template = readTemplate('pages/templates/message/forwarded_message_mentioned.html');
-const channel_template = fs.readFileSync('pages/templates/channel.html', 'utf-8');
+const channel_template = fs.readFileSync('pages/templates/channel.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
 const merged_message_content_template = fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8');
 const mention_template = fs.readFileSync('pages/templates/message/mention.html', 'utf-8');
@@ -89,7 +89,7 @@ function urlMatchesDomain(url, domain) {
 exports.buildMessagesHtml = async function buildMessagesHtml(params) {
   const {
     bot, chnl, member, discordID, req,
-    imagesCookie, animationsCookie,
+    imagesCookie, animationsCookie = 1,
     authorText, replyText, clientTimezone,
     channelId, // for {$MESSAGE_REPLY_LINK}; pass null to skip
     templates: {
@@ -166,9 +166,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         if (lastReply) {
           const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:`+authorText+`" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
           replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-            '<td style="width:2px;height:10px;background-color:#4e5058;border-radius:2px 0 0 2px;vertical-align:top"></td>' +
-            '<td style="width:12px;height:10px;vertical-align:bottom"><div style="height:2px;background-color:#4e5058;border-radius:0 0 0 2px"></div></td>' +
-            '<td style="padding-left:4px"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">Replying to @' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
+            '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
+            '<td style="padding-left:4px;vertical-align:top"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
             '</tr></table>';
         }
         currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -185,12 +184,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       return;
     }
 
-    let currentMember = null;
-    if (item.member) {
-      currentMember = item.member;
-    } else if (item.webhookId) {
-      currentMember = await ensureMemberData(item, chnl.guild, memberCache);
-    }
+    const currentMember = await ensureMemberData(item, chnl.guild, memberCache);
 
     if (clientTimezone && areDifferentDays(item.createdAt, lastmessagedate, clientTimezone)) {
       const separatorText = formatDateSeparator(item.createdAt, clientTimezone);
@@ -205,7 +199,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     if (item.reference?.type === MessageReferenceType.Forward) {
       try {
         const forwardedMessage = await item.fetchReference();
-        const forwardedMember = forwardedMessage.member;
+        let forwardedMember = null;
+        if (!forwardedMessage.author?.bot) {
+          forwardedMember = await ensureMemberData(forwardedMessage, chnl.guild, memberCache);
+        }
         const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
         const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH
           ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..."
@@ -238,8 +235,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           // Message was likely deleted or is inaccessible.
         }
 
-        if (replyMessage && replyMessage.member) {
-          replyMember = replyMessage.member;
+        if (replyMessage) {
+          if (!replyMessage.author?.bot) {
+            replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
+          }
         }
 
         const replyAuthor = getDisplayName(replyMember, replyUser);
@@ -600,9 +599,24 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 };
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
+  const urlTheme = parsedUrl.searchParams.get('theme');
+  const urlImages = parsedUrl.searchParams.get('images');
+
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const urlSessionID = new URL(req.url, 'http://localhost').searchParams.get('sessionID') || '';
-  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
+  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+
+  // Build combined URL params for links — only include preference params when the
+  // corresponding cookie is absent (i.e. the browser doesn't support cookies)
+  const linkParamParts = [];
+  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
+  if (urlTheme !== null && whiteThemeCookie === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && imagesCookieValue === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+
+  // URL param takes priority over cookie
+  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
 
   let boxColor;
   let authorText;
@@ -613,13 +627,13 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   authorText = "#72767d";
   replyText = "#b5bac1";
     
-  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
-  if (whiteThemeCookie == 1) {
+  // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
+  if (theme === 1) {
     boxColor = "#ffffff";
     authorText = "#000000";
     replyText = "#000000";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-  } else if (whiteThemeCookie == 2) {
+  } else if (theme === 2) {
     boxColor = "#40444b";
     authorText = "#72767d";
     replyText = "#b5bac1";
@@ -640,11 +654,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     return;
   }
   
-  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-  const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;  // Default to 1 (on)
-  
-  const animationsCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('animations='))?.split('=')[1];
-  const animationsCookie = animationsCookieValue !== undefined ? parseInt(animationsCookieValue) : 1;  // Default to 1 (on)
+  const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);  // Default to 1 (on)
     
   // Get client's timezone from IP
   const clientIP = getClientIP(req);
@@ -717,7 +727,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       console.log("Processed valid channel request");
       const response = await exports.buildMessagesHtml({
         bot, chnl, member, discordID, req,
-        imagesCookie, animationsCookie,
+        imagesCookie,
         authorText, replyText, clientTimezone,
         channelId: args[2],
         templates: {

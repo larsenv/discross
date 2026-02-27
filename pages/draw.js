@@ -10,7 +10,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const { channel } = require('diagnostics_channel');
 const fetch = require("sync-fetch");
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
-const channel_template = fs.readFileSync('pages/templates/draw.html', 'utf-8');
+const channel_template = fs.readFileSync('pages/templates/draw.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 const message_template = fs.readFileSync('pages/templates/message/message.html', 'utf-8');
 const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
@@ -73,36 +73,52 @@ function getDisplayName(member, author) {
 
 // Get the member's highest role color or default to white
 function getMemberColor(member) {
-  if (!member || !member.roles || !member.roles.highest) {
+  if (!member || !member.roles) {
     return "#ffffff"; // Default white color
   }
   
-  const roleColor = member.roles.highest.color;
-  if (roleColor === 0) {
-    return "#ffffff"; // Default role has color 0, use white
+  // member.roles.color returns the highest role that has a non-zero color set
+  const colorRole = member.roles.color;
+  if (!colorRole) {
+    return "#ffffff"; // No colored role found
   }
   
   // Convert Discord color integer to hex
-  return `#${roleColor.toString(16).padStart(6, '0')}`;
+  return `#${colorRole.color.toString(16).padStart(6, '0')}`;
 }
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
+  const urlTheme = parsedUrl.searchParams.get('theme');
+  const urlImages = parsedUrl.searchParams.get('images');
+
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const urlSessionID = new URL(req.url, 'http://localhost').searchParams.get('sessionID') || '';
-  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
+  const imagesCookieForParam = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+
+  // Build combined URL params for links — only include preference params when the
+  // corresponding cookie is absent (i.e. the browser doesn't support cookies)
+  const linkParamParts = [];
+  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
+  if (urlTheme !== null && whiteThemeCookie === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && imagesCookieForParam === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+
+  // URL param takes priority over cookie
+  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
 
   let boxColor;
 
   boxColor = "#40444b";
     
-  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
-  if (whiteThemeCookie == 1) {
+  // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
+  if (theme === 1) {
     boxColor = "#ffffff";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
     template = strReplace(template, "{$COLOR}", boxColor);
-  } else if (whiteThemeCookie == 2) {
+  } else if (theme === 2) {
     boxColor = "#40444b";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
     template = strReplace(template, "{$COLOR}", boxColor);

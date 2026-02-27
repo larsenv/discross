@@ -6,7 +6,7 @@ const { buildMessagesHtml } = require('./channel');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 
 // Templates for viewing messages in a channel (Reply Context)
-const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8');
+const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 // Reply-specific message wrapper templates
 const message_template = fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8');
@@ -31,9 +31,24 @@ function strReplace(string, needle, replacement) {
 }
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
+  const urlTheme = parsedUrl.searchParams.get('theme');
+  const urlImages = parsedUrl.searchParams.get('images');
+
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const urlSessionID = new URL(req.url, 'http://localhost').searchParams.get('sessionID') || '';
-  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
+  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+
+  // Build combined URL params for links — only include preference params when the
+  // corresponding cookie is absent (i.e. the browser doesn't support cookies)
+  const linkParamParts = [];
+  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
+  if (urlTheme !== null && whiteThemeCookie === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && imagesCookieValue === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+
+  // URL param takes priority over cookie
+  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
 
   let boxColor;
   let authorText;
@@ -44,12 +59,12 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   authorText = "#72767d";
   replyText = "#b5bac1";
 
-  if (whiteThemeCookie == 1) {
+  if (theme === 1) {
     boxColor = "#ffffff";
     authorText = "#000000";
     replyText = "#000000";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-  } else if (whiteThemeCookie == 2) {
+  } else if (theme === 2) {
     boxColor = "#40444b";
     authorText = "#72767d";
     replyText = "#b5bac1";
@@ -58,11 +73,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
   }
 
-  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-  const imagesCookie = imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1;
-
-  const animationsCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('animations='))?.split('=')[1];
-  const animationsCookie = animationsCookieValue !== undefined ? parseInt(animationsCookieValue) : 1;
+  const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);
 
   const clientIP = getClientIP(req);
   const clientTimezone = getTimezoneFromIP(clientIP);
@@ -131,7 +142,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       console.log("Processed valid channel reply request");
       const response = await buildMessagesHtml({
         bot, chnl, member, discordID, req,
-        imagesCookie, animationsCookie,
+        imagesCookie,
         authorText, replyText, clientTimezone,
         channelId: null, // no reply links in reply context
         templates: {
