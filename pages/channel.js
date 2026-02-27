@@ -136,7 +136,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
   const handlemessage = async function (item) {
     if (lastauthor) {
-      if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000 || (item.reference && item.reference.type !== MessageReferenceType.Forward)))) {
+      if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000 || (item.reference && item.reference.type !== MessageReferenceType.Forward) || lastReply))) {
 
         if (isForwarded && lastMentioned) {
           currentmessage = tmpl_message_forwarded_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
