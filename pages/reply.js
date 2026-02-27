@@ -36,14 +36,10 @@ async function getOrCreateWebhook(channel, guildID) {
   }
 }
 
-const AsyncLock = require('async-lock');
-const lock = new AsyncLock(); // Create a new lock instance
-
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
   try {
-    await lock.acquire(discordID, async () => {
-      const parsedurl = new URL(req.url, 'http://localhost');
-      if (parsedurl.searchParams.get('message') !== "") {
+    const parsedurl = new URL(req.url, 'http://localhost');
+    if (parsedurl.searchParams.get('message') !== "") {
         // Check if bot is connected
         const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
         
@@ -87,7 +83,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         do {
           m = regex.exec(processedmessage);
           if (m) {
-            let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === m[1]);
+            let mentioneduser = channel.guild.members.cache.find(member => member.user.tag === m[1]);
             if (!mentioneduser) {
               try {
                 mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
@@ -128,7 +124,6 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
         processedmessage = "> Replying to " + reply_message_content + " from " + author_name + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
         
-        await webhook.edit({ channel: channel });
         const message = await webhook.send({
           content: processedmessage,
           username: member.displayName || member.user.tag,
@@ -141,7 +136,6 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
       res.writeHead(302, { "Location": `/channels/${parsedurl.searchParams.get('channel')}` });
       res.end();
-    });
   } catch (err) {
     console.error("Error sending message:", err);
     res.writeHead(302, { "Location": "/server/" });
