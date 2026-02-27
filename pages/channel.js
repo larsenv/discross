@@ -10,7 +10,7 @@ const { channel } = require('diagnostics_channel');
 const fetch = require("sync-fetch");
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
-const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator, areDifferentDays } = require('../timezoneUtils');
+const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator, areDifferentDays, formatForwardedTimestamp } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
@@ -110,6 +110,17 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
   let response = "";
   const messages = await bot.getHistoryCached(chnl);
+
+  // Build a set of message IDs that are referenced by replies within this page.
+  // Those original messages will be suppressed since their content is already
+  // shown in the reply indicator of the referencing message.
+  const referencedMessageIds = new Set();
+  for (const msg of messages) {
+    if (msg.reference && msg.reference.type !== MessageReferenceType.Forward && msg.reference.messageId) {
+      referencedMessageIds.add(msg.reference.messageId);
+    }
+  }
+
   let lastauthor = undefined;
   let lastmember = undefined;
   let lastdate = new Date('1995-12-17T03:24:00');
@@ -137,18 +148,20 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
   const handlemessage = async function (item) {
     if (lastauthor) {
-      if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000))) {
+      if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000 || (item.reference && item.reference.type !== MessageReferenceType.Forward) || lastReply))) {
 
         if (isForwarded && lastMentioned) {
           currentmessage = tmpl_message_forwarded_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
           currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
           currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
           currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+          currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
         } else if (isForwarded) {
           currentmessage = tmpl_message_forwarded.replace("{$MESSAGE_CONTENT}", currentmessage);
           currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
           currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
           currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+          currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
         } else if (lastMentioned) {
           currentmessage = tmpl_message_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
           if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
@@ -165,10 +178,11 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
         let replyIndicator = '';
         if (lastReply) {
-          const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:`+authorText+`" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
+          // replyContent is already rendered HTML from renderDiscordMarkdown — do not escape() it
+          const contentPart = lastReplyData.content ? ' ' + lastReplyData.content : '';
           replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
             '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-            '<td style="padding-left:4px;vertical-align:top"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
+            '<td style="padding-left:4px;vertical-align:top;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPart + '</font></td>' +
             '</tr></table>';
         }
         currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -182,6 +196,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
 
     if (!item) {
+      return;
+    }
+
+    // Skip messages that are referenced by a reply on this page — they will be
+    // visible via the reply indicator and don't need a standalone block.
+    if (referencedMessageIds.has(item.id)) {
       return;
     }
 
@@ -210,11 +230,43 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           : forwardedMessage.content;
         const forwardedDate = formatDateWithTimezone(forwardedMessage.createdAt, clientTimezone);
 
+        // Compute origin HTML (channel + time shown below forwarded content)
+        let originHtml = '';
+        try {
+          const fwdChannelId = forwardedMessage.channelId;
+          const fwdGuildId = forwardedMessage.guildId;
+          const snowflakeRe = /^\d{17,19}$/;
+          if (fwdGuildId && snowflakeRe.test(fwdChannelId) && snowflakeRe.test(forwardedMessage.id)) {
+            const fwdChannel = forwardedMessage.channel || bot.client.channels.cache.get(fwdChannelId);
+            if (fwdChannel) {
+              const timeDisplay = formatForwardedTimestamp(forwardedMessage.createdAt, clientTimezone);
+              const jumpLink = `/channels/${fwdChannelId}/${forwardedMessage.id}`;
+              const chanLink = `<a href="${jumpLink}" style="color:#b5bac1;text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
+              if (fwdGuildId === chnl.guild.id) {
+                originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${chanLink}</font>`;
+              } else {
+                const otherGuild = bot.client.guilds.cache.get(fwdGuildId);
+                if (otherGuild) {
+                  try {
+                    await otherGuild.members.fetch(discordID);
+                    originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
+                  } catch (e) {
+                    // User not in that guild — show nothing
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          originHtml = '';
+        }
+
         isForwarded = true;
         forwardData = {
           author: forwardedAuthor,
           content: renderDiscordMarkdown(forwardedContent),
-          date: forwardedDate
+          date: forwardedDate,
+          origin: originHtml
         };
       } catch (err) {
         isForwarded = false;
@@ -248,9 +300,13 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         let replyContent = '';
         if (replyMessage && replyMessage.content) {
           const maxLength = 50;
-          replyContent = replyMessage.content.length > maxLength
-            ? replyMessage.content.substring(0, maxLength) + '...'
-            : replyMessage.content;
+          // Collapse newlines to spaces so multiline messages appear on one line,
+          // then truncate the raw text before rendering markdown to avoid cutting HTML tags.
+          const flatContent = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
+          const truncated = flatContent.length > maxLength
+            ? flatContent.substring(0, maxLength) + '...'
+            : flatContent;
+          replyContent = renderDiscordMarkdown(truncated);
         }
 
         isReply = true;
@@ -528,7 +584,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       });
     }
 
-    if (!lastauthor || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000) {
+    if (!lastauthor || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000 || isReply) {
       messagetext = tmpl_first_message_content.replace("{$MESSAGE_TEXT}", messagetext);
     } else {
       messagetext = tmpl_merged_message_content.replace("{$MESSAGE_TEXT}", messagetext);
