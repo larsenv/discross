@@ -107,7 +107,14 @@ function show(el) {
 var selectedFile = null;
 
 function handleFileSelect(input) {
-    if (input.files && input.files[0]) {
+    // Browsers without the files API (very old browsers like PS3) -
+    // the file input is already inside uploadFileForm, so submit directly.
+    if (!input.files) {
+        uploadFileTraditional();
+        return;
+    }
+
+    if (input.files[0]) {
         var file = input.files[0];
         var maxSize = 249 * 1024 * 1024; // 249MB limit for transfer.whalebone.io
         
@@ -118,16 +125,11 @@ function handleFileSelect(input) {
             return;
         }
         
-        // Check if browser supports fetch API (for older browsers like 3DS)
+        // Check if browser supports fetch API (for older browsers like 3DS, PS3)
         if (typeof fetch === 'undefined' || typeof FormData === 'undefined') {
-            // Use traditional form submission for older browsers
-            var uploadForm = document.getElementById('uploadFileForm');
-            var mainFileInput = document.getElementById('fileUpload');
-            
-            // Move the file input to the upload form temporarily
-            uploadForm.appendChild(mainFileInput);
-            mainFileInput.setAttribute('name', 'file');
-            
+            // Use traditional form submission for older browsers.
+            // The file input is already inside uploadFileForm with name="file",
+            // so no DOM manipulation is needed.
             uploadFileTraditional();
         } else {
             // Upload file immediately using fetch for modern browsers
