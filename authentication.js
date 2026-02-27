@@ -186,6 +186,14 @@ function setup() {
   queryRun('CREATE TABLE IF NOT EXISTS pending_totp (discordID TEXT PRIMARY KEY, secret TEXT, expires INT)')
   queryRun('CREATE TABLE IF NOT EXISTS backup_codes (id INTEGER PRIMARY KEY AUTOINCREMENT, discordID TEXT, code_hash TEXT)')
   queryRun('CREATE TABLE IF NOT EXISTS emoji_cache (emoji_key TEXT PRIMARY KEY, twemoji_code TEXT)')
+  // One-time migration: clear emoji_cache to fix stale entries that used the
+  // incorrect fe0f-including codes (e.g. #️⃣ → "23-fe0f-20e3" instead of "23-20e3").
+  // The marker table prevents this from running again after the first startup.
+  let needsEmojiCacheClean = false;
+  try { queryRun('CREATE TABLE emoji_cache_cleared_v1 (done INTEGER)'); needsEmojiCacheClean = true; } catch (_) {}
+  if (needsEmojiCacheClean) {
+    try { queryRun('DELETE FROM emoji_cache') } catch (err) { console.error('emoji_cache migration error:', err); }
+  }
   queryRun('CREATE TABLE IF NOT EXISTS custom_emoji_cache (emoji_id TEXT PRIMARY KEY, emoji_name TEXT, animated INTEGER)')
 }
 

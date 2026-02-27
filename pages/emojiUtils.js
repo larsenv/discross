@@ -21,11 +21,19 @@ function unicodeToTwemojiCode(emojiStr) {
   const cached = _getCode.get(emojiStr);
   if (cached) return cached.twemoji_code;
 
+  // Strip U+FE0F (variation selector-16) unless the emoji contains U+200D (ZWJ).
+  // This matches the official twemoji algorithm: keycap sequences like #️⃣ are
+  // stored as "23-20e3.gif" (without fe0f), while ZWJ sequences like ❤️‍🔥 keep
+  // the fe0f because it appears before the joiner ("2764-fe0f-200d-1f525.gif").
+  const normalized = emojiStr.indexOf('\u200d') < 0
+    ? emojiStr.replace(/\ufe0f/g, '')
+    : emojiStr;
+
   // This algorithm was inspired by the official Twitter Twemoji parser.
   const points = [];
   let char = 0, previous = 0, i = 0;
-  while (i < emojiStr.length) {
-    char = emojiStr.charCodeAt(i++);
+  while (i < normalized.length) {
+    char = normalized.charCodeAt(i++);
     if (previous) {
       points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
       previous = 0;
