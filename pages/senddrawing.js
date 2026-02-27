@@ -88,13 +88,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
       const webhook = await withTimeout(getOrCreateWebhook(channel, channel.guild.id), 15000);
 
-      try {
-        await withTimeout(webhook.edit({ channel }), 15000);
-      } catch (err) {
-        // Editing webhook channel can fail if missing permissions; log but continue to attempt send
-        console.error("Failed to edit webhook channel:", err);
-      }
-
       let processedmessage = parsedurl.message || "";
 
       // Process mentions only if there's a message
@@ -119,6 +112,8 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
           }
         } while (m);
       }
+
+      await webhook.edit({ channel: channel });
 
       const base64Data = parsedurl.drawinginput;
 
@@ -169,7 +164,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         webhookOptions.content = processedmessage;
       }
       
-      const message = await withTimeout(webhook.send(webhookOptions), 30000);
+      const message = await webhook.send(webhookOptions);
       bot.addToCache(message);
       
       console.log("Redirecting to channel...");
