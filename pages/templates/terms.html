@@ -1,88 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html class="page-simple">
 
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta name="viewport" content="width=device-width">
+  {$COMMON_HEAD}
   <title>Discross - Terms</title>
-  <style>
-    @font-face {
-      font-family: 'rodin';
-      src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
-           url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
-      font-weight: 400;
-    }
-
-    @font-face {
-      font-family: 'rodin';
-      src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
-           url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
-      font-weight: 700;
-    }
-
-    html,
-    body,
-    #wrapper {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: 'rodin', Arial, Helvetica, sans-serif;
-    }
-
-    .light-theme #wrapper {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-    }
-
-    .light-theme #wrapper * {
-      background: #FFFFFF !important;
-      color: #000000 !important;
-    }
-
-    .amoled-theme {
-      background: #000000 !important;
-    }
-
-    .amoled-theme #wrapper {
-      background: #000000 !important;
-      color: #ffffff !important;
-    }
-
-    .amoled-theme #wrapper * {
-      background: #000000 !important;
-      color: #ffffff !important;
-    }
-
-    .amoled-theme a {
-      color: #5865f2 !important;
-    }
-  </style>
 </head>
 
-<body style="margin: 0;" bgcolor="#303338">
-  <script>
-    (function() {
-      function getCookie(n) {
-        var c = document.cookie.split('; ');
-        for (var i = 0; i < c.length; i++) { var p = c[i].split('='); if (p[0] === n) return p[1]; }
-        return null;
-      }
-      var t = getCookie('whiteThemeCookie');
-      if (t === '1') document.body.className = 'light-theme';
-      else if (t === '2') document.body.className = 'amoled-theme';
-      window.addEventListener('DOMContentLoaded', function() {
-        var s = getCookie('sessionID');
-        var m = document.getElementById('menu-options');
-        if (m) {
-          if (s && s !== '-') {
-            m.innerHTML = '<a style="color: #dddddd;" href="/server/"><font color="#dddddd">Server list</font></a>&#160;&#160;<a style="color: #dddddd;" href="/logout"><font color="#dddddd">Logout</font></a>&#160;&#160;';
-          } else {
-            m.innerHTML = '<a style="color: #dddddd;" href="/login.html"><font color="#dddddd">Login</font></a>&#160;&#160;<a style="color: #dddddd;" href="/register.html"><font color="#dddddd">Register</font></a>&#160;&#160;';
-          }
-        }
-      });
-    })();
-  </script>
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
   <div id="wrapper">
     <table style="width: 100%;">
       <tr valign="middle">
@@ -91,7 +15,7 @@
           <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
         </td>
         <td width="100%" align="right">
-          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; <span id="menu-options"></span></font>
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; {$MENU_OPTIONS}</font>
         </td>
         <td valign="middle">
           <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
