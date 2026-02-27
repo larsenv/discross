@@ -45,6 +45,8 @@ var replypage = require('./pages/reply.js')
 var drawpage = require('./pages/draw.js')
 var senddrawing = require('./pages/senddrawing.js')
 var { handleServerIcon } = require('./pages/serverIconHandler.js')
+var changepasswordpage = require('./pages/changepassword.js')
+var setup2fapage = require('./pages/setup2fa.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -187,6 +189,34 @@ server.on('request', async (req, res) => {
           res.end('Internal Server Error')
         }
         )
+      } else if (parsedurl == "/changepassword") {
+        (async () => {
+          const discordID = await auth.checkAuth(req, res, true)
+          if (discordID) {
+            await changepasswordpage.handleChangePassword(bot, req, res, body, discordID)
+          } else {
+            res.writeHead(302, { Location: '/login.html' })
+            res.end()
+          }
+        })().catch((err) => {
+          console.error(err)
+          res.writeHead(500, { 'Content-Type': 'text/plain' })
+          res.end('Internal Server Error')
+        })
+      } else if (parsedurl == "/setup2fa") {
+        (async () => {
+          const discordID = await auth.checkAuth(req, res, true)
+          if (discordID) {
+            await setup2fapage.handleSetup2FA(bot, req, res, body, discordID)
+          } else {
+            res.writeHead(302, { Location: '/login.html' })
+            res.end()
+          }
+        })().catch((err) => {
+          console.error(err)
+          res.writeHead(500, { 'Content-Type': 'text/plain' })
+          res.end('Internal Server Error')
+        })
       } else {
         auth.handleLoginRegister(req, res, body)
       }
@@ -270,6 +300,10 @@ server.on('request', async (req, res) => {
       await registerpage.processRegister(bot, req, res, args)
     } else if (args[1] === 'forgot.html') {
       await forgotpage.processForgot(bot, req, res, args)
+    } else if (args[1] === 'changepassword.html') {
+      await changepasswordpage.processChangePassword(bot, req, res, args)
+    } else if (args[1] === 'setup2fa.html') {
+      await setup2fapage.processSetup2FA(bot, req, res, args)
     } else if (args[1] === 'index.html' || parsedurl.pathname === '/') {
       await indexpage.processIndex(bot, req, res, args)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
