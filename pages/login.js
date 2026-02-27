@@ -18,7 +18,7 @@ exports.processLogin = async function (bot, req, res, args) {
     res.writeHead(301, { "Location": "/server/", "Content-Type": "text/html" });
     res.write('Logged in! Click <a href="/server/">here</a> to continue.');
   } else {
-    parsedurl = new URL(req.url, 'http://localhost');
+    const parsedurl = new URL(req.url, 'http://localhost');
     response = login_template;
     response = strReplace(response, "{$MENU_OPTIONS}", logged_out_template);
     if (parsedurl.searchParams.get('redirect')) {
@@ -32,7 +32,6 @@ exports.processLogin = async function (bot, req, res, args) {
       response = strReplace(response, "{$ERROR}", "");
     }
 
-    const parsedurl = new URL(req.url, 'http://localhost');
     const urlTheme = parsedurl.searchParams.get('theme');
     const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
     
