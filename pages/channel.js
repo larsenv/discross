@@ -184,7 +184,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       return;
     }
 
-    let currentMember = await ensureMemberData(item, chnl.guild, memberCache);
+    const currentMember = await ensureMemberData(item, chnl.guild, memberCache);
 
     if (clientTimezone && areDifferentDays(item.createdAt, lastmessagedate, clientTimezone)) {
       const separatorText = formatDateSeparator(item.createdAt, clientTimezone);

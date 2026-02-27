@@ -407,7 +407,6 @@ input[type="email"],
 textarea {
     background: #40444b;
     border: 1px solid #40444b;
-    border-radius: 8px;
     color: #dcddde;
     padding: 10px 12px;
     font-size: 16px;
@@ -732,6 +731,20 @@ html.page-draw #wrapper {
        (must not apply to channel/server pages — would override specific styles)
    ================================================================ */
 
+/* Reset the global input sizing for page-simple pages which use custom inline div-box styling.
+   The inputs inside padding divs should not get the extra CSS padding/margin/max-width. */
+html.page-simple input[type="text"],
+html.page-simple input[type="password"],
+html.page-simple input[type="email"] {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    width: 100%;
+}
+
 html.page-simple .light-theme #wrapper {
     background: #FFFFFF !important;
     color: #000000 !important;
@@ -828,6 +841,18 @@ html.page-server .light-theme #wrapper button {
     background: #5865f2 !important;
     color: #ffffff !important;
 }
+/* Ensure discross-button links and submit inputs keep purple background and white text */
+html.page-server .light-theme #wrapper .discross-button,
+html.page-server .light-theme #wrapper input[type="submit"],
+html.page-server .light-theme #wrapper input[type="button"] {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+/* Button inside warning box should be white with purple text */
+html.page-server .light-theme #wrapper .warning-box .discross-button {
+    background: #ffffff !important;
+    color: #5865f2 !important;
+}
 html.page-server .light-theme hr {
     border-color: #e3e5e8 !important;
 }
@@ -849,6 +874,23 @@ html.page-server .amoled-theme a {
 html.page-server .amoled-theme button {
     background: #5865f2 !important;
     color: #ffffff !important;
+}
+/* Override the wildcard black background for buttons/links in AMOLED server page */
+html.page-server .amoled-theme #wrapper .discross-button,
+html.page-server .amoled-theme #wrapper button,
+html.page-server .amoled-theme #wrapper input[type="submit"],
+html.page-server .amoled-theme #wrapper input[type="button"] {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+/* Warning box should keep its purple background in AMOLED mode */
+html.page-server .amoled-theme #wrapper .warning-box {
+    background: #5865f2 !important;
+}
+/* Button inside warning box should be white with purple text */
+html.page-server .amoled-theme #wrapper .warning-box .discross-button {
+    background: #ffffff !important;
+    color: #5865f2 !important;
 }
 
 /* ================================================================
