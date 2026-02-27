@@ -1,3 +1,4 @@
+require('./instrument.js')
 require('dotenv').config({ quiet: true })
 const path = require('path')
 const fs = require('fs')
@@ -8,10 +9,26 @@ const bot = require('./bot.js')
 const connectionHandler = require('./connectionHandler.js')
 const sharp = require("sharp")
 const sanitizer = require("path-sanitizer").default;
+const Sentry = require("@sentry/node");
 
 const options = {}
 
-process.on("unhandledRejection", (err) => console.log(err));
+const sentryEnabled = !!process.env.SENTRY_DSN;
+
+process.on("unhandledRejection", (err) => {
+  console.log(err);
+  if (sentryEnabled) Sentry.captureException(err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error(err);
+  if (sentryEnabled) {
+    Sentry.captureException(err);
+    Sentry.flush(2000).finally(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
+});
 
 try { // Use HTTPS if keys are available
   options.key = fs.readFileSync('secrets/key.pem')
@@ -135,6 +152,7 @@ server.on('request', async (req, res) => {
         }
       })().catch((err) => {
         console.log(err);
+        if (sentryEnabled) Sentry.captureException(err);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
       });
@@ -148,6 +166,7 @@ server.on('request', async (req, res) => {
     })
     req.on('error', (err) => {
       console.error('Error reading request body:', err);
+      if (sentryEnabled) Sentry.captureException(err);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Error reading request data');
@@ -183,6 +202,7 @@ server.on('request', async (req, res) => {
       } else if (parsedurl == "/senddrawing") {
         senddrawingAsync(req, res, body).then(() => {}).catch((err) => {
           console.log(err)
+          if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' })
           res.end('Internal Server Error')
         }
@@ -192,6 +212,7 @@ server.on('request', async (req, res) => {
       }
     })
   } else {
+    try {
     const parsedurl = new URL(req.url, 'http://localhost')
 
     const args = strReplace(parsedurl.pathname, '?', '/').split('/') // Split by / or ?
@@ -359,6 +380,14 @@ server.on('request', async (req, res) => {
     } else {
       const filename = path.resolve("pages/static", sanitizer(parsedurl.pathname));
       await servePage(filename, res)
+    }
+    } catch (err) {
+      console.error(err);
+      if (sentryEnabled) Sentry.captureException(err);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Internal Server Error');
+      }
     }
   }
 })
