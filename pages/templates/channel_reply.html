@@ -14,25 +14,24 @@
         </a>
 
         <!-- Main content area with padding at bottom for message input -->
-        <div style="padding-left: 60px;"> <!-- Padding accommodates message form container height -->
+        <div style="padding-left: 60px; padding-bottom: 190px;"> <!-- Extra padding keeps last messages above fixed reply bar -->
             <div style="padding: 16px;">
                 <div id="msgcontainer">
                     {$MESSAGES}
                 </div>
             </div>
         </div>
-
-        <div id="replying_to">
-            <div style="color: #b9bbbe; font-size: 14px; margin-bottom: 4px;">
-                <strong>Replying to {$REPLY_MESSAGE_AUTHOR}</strong>
-                <a href="./" style="color: #ed4245; margin-left: 8px; font-size: 12px;">Cancel</a>
-            </div>
-            <div style="color: #dcddde; font-size: 14px;">
-                {$REPLY_MESSAGE_CONTENT}
-            </div>
-        </div>
-
+        
         <div class="message-form-container">
+            <div id="replying_to">
+                <div class="reply-label">
+                    <strong>Replying to {$REPLY_MESSAGE_AUTHOR}</strong>
+                    <a href="./" class="reply-cancel">Cancel</a>
+                </div>
+                <div class="reply-content-preview">
+                    {$REPLY_MESSAGE_CONTENT}
+                </div>
+            </div>
             <div id="emoji" style="display: none;">
                 <table cellpadding="0" cellspacing="0" width="100%">
                     <tr>

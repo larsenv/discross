@@ -566,6 +566,7 @@ br.nodisp { display: none; }
    18. LIGHT THEME - channel-style specific overrides
    ================================================================ */
 
+body.light-theme,
 .light-theme body,
 .light-theme #wrapper { background: #f9f9f9 !important; color: #2e3338 !important; }
 .light-theme .content-padding,
@@ -630,6 +631,7 @@ br.nodisp { display: none; }
    19. AMOLED THEME - channel-style specific overrides
    ================================================================ */
 
+body.amoled-theme,
 .amoled-theme body,
 .amoled-theme #wrapper { background: #000000 !important; color: #ffffff !important; }
 .amoled-theme .content-padding,
@@ -704,6 +706,42 @@ html.page-channel-reply .message-form-container {
     left: 0;
     right: 0;
     z-index: 100;
+}
+
+/* Replying-to banner inside the fixed form bar */
+html.page-channel-reply #replying_to {
+    padding: 6px 12px;
+    border-bottom: 1px solid #40444b;
+}
+html.page-channel-reply #replying_to .reply-label {
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: #b9bbbe;
+}
+html.page-channel-reply #replying_to .reply-cancel {
+    color: #ed4245;
+    margin-left: 8px;
+    font-size: 12px;
+}
+html.page-channel-reply #replying_to .reply-content-preview {
+    font-size: 14px;
+    color: #dcddde;
+}
+html.light-theme.page-channel-reply #replying_to,
+html.page-channel-reply .light-theme #replying_to {
+    border-bottom-color: #e3e5e8;
+}
+html.light-theme.page-channel-reply #replying_to .reply-label,
+html.page-channel-reply .light-theme #replying_to .reply-label {
+    color: #4f5660;
+}
+html.light-theme.page-channel-reply #replying_to .reply-content-preview,
+html.page-channel-reply .light-theme #replying_to .reply-content-preview {
+    color: #2e3338;
+}
+html.amoled-theme.page-channel-reply #replying_to,
+html.page-channel-reply .amoled-theme #replying_to {
+    border-bottom-color: #333333;
 }
 
 /* ================================================================
