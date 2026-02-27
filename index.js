@@ -112,7 +112,9 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
 }
 
 async function senddrawingAsync(req, res, body) {
+  console.log(`[senddrawing] body received, length=${body.length}`);
   const discordID = await auth.checkAuth(req, res)
+  console.log(`[senddrawing] auth result discordID=${discordID}`);
   
   // Validate body is not empty
   if (!body || body.trim() === '') {
@@ -124,6 +126,7 @@ async function senddrawingAsync(req, res, body) {
   
   // Use querystring module to handle large base64 data
   const urlQuery = querystring.parse(body);
+  console.log(`[senddrawing] parsed query keys=${Object.keys(urlQuery).join(',')}, drawinginput_len=${urlQuery.drawinginput ? urlQuery.drawinginput.length : 0}`);
   
   if (!urlQuery || !urlQuery.drawinginput) {
     console.error('Error: senddrawingAsync - drawinginput not found in parsed URL query');

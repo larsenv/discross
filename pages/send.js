@@ -37,18 +37,14 @@ async function getOrCreateWebhook(channel, guildID) {
   }
 }
 
-const AsyncLock = require('async-lock');
-const lock = new AsyncLock(); // Create a new lock instance
-
 function isValidSnowflake(id) {
   return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
 }
 
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
   try {
-    await lock.acquire(discordID, async () => {
-      const parsedurl = new URL(req.url, 'http://localhost');
-      const query = Object.fromEntries(parsedurl.searchParams);
+    const parsedurl = new URL(req.url, 'http://localhost');
+    const query = Object.fromEntries(parsedurl.searchParams);
 
       // Ensure message exists and is a non-empty string
       if (typeof query.message === 'string' && query.message !== "") {
@@ -111,7 +107,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
         do {
           m = regex.exec(processedmessage);
           if (m) {
-            let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === m[1]);
+            let mentioneduser = channel.guild.members.cache.find(member => member.user.tag === m[1]);
             if (!mentioneduser) {
               try {
                 mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
@@ -143,13 +139,6 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
           }
         }
 
-        try {
-          await webhook.edit({ channel: channel });
-        } catch (err) {
-          // Editing webhook channel can fail if missing permissions; log but continue to attempt send
-          console.error("Failed to edit webhook channel:", err);
-        }
-
         const message = await webhook.send({
           content: processedmessage,
           username: normalizeWeirdUnicode(member.displayName || member.user.tag),
@@ -167,7 +156,6 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)))
       res.writeHead(302, { "Location": baseUrl + '/channels/' + redirectChannel + sessionPart });
       res.end();
-    });
   } catch (err) {
     console.error("Error sending message:", err);
     const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)))
