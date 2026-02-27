@@ -1,0 +1,965 @@
+/* main.css - Unified stylesheet for all Discross pages */
+
+/* ================================================================
+   1. GLOBAL RESET
+   ================================================================ */
+
+/* Note: *::before and *::after omitted — the CSS3 double-colon syntax
+   can trigger Opera 9.x (DSi) to attempt schema validation. */
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#wrapper {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'rodin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    background: #36393f;
+    color: #dcddde;
+    overflow-x: hidden;
+}
+
+/* ================================================================
+   2. TYPOGRAPHY
+   ================================================================ */
+
+h1 { margin: 24px 0 12px 0; font-size: 51px; font-weight: 600; }
+h2 { margin: 22px 0 11px 0; font-size: 42px; font-weight: 600; }
+h3 { margin: 20px 0 10px 0; font-size: 33px; font-weight: 600; }
+p, ul, .section { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
+ul { padding-left: 20px; }
+
+/* Scope UL padding to message content only so reactions aren't indented */
+.messagecontent ul { padding-left: 20px; }
+
+/* Links */
+a {
+    color: #00aff4;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* Horizontal rule */
+hr {
+    border: solid 1px #494c50;
+    margin: 0;
+}
+
+/* Tables */
+table {
+    padding-bottom: 5px;
+}
+
+/* Blockquotes */
+.blockquote-container {
+    display: table;
+    width: 100%;
+    margin: 4px 0;
+}
+.blockquote-bar {
+    display: table-cell;
+    width: 4px;
+    background: #4e5058;
+    border-radius: 2px;
+    vertical-align: top;
+}
+.discord-quote {
+    display: table-cell;
+    padding-left: 12px;
+    color: #b5bac1;
+    margin: 0;
+}
+
+/* Subtext */
+.subtext {
+    font-size: 12px;
+    color: #b5bac1;
+}
+
+/* ================================================================
+   3. CODE BLOCKS
+   ================================================================ */
+
+pre {
+    background: #2f3136;
+    border: 1px solid #202225;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 4px 0;
+    overflow: auto;
+    max-height: 400px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 14px;
+}
+code {
+    background: #2f3136;
+    border-radius: 3px;
+    padding: 2px 4px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 14px;
+    color: #dcddde;
+}
+pre code { background: none; border: none; padding: 0; }
+
+/* ================================================================
+   4. HEADER
+   ================================================================ */
+
+.header-table { width: 100%; }
+.header-logo img { display: block; }
+.header-title {
+    font-size: 2.625rem;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+    color: #dddddd;
+}
+.header-menu {
+    width: 100%;
+    text-align: right;
+    font-size: 1.5rem;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+    color: #dddddd;
+}
+.header-menu a,
+.header-menu-link {
+    color: #dddddd;
+    text-decoration: none;
+    font-size: 1.125rem;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+.header-user-info {
+    color: #aaaaaa;
+    font-size: 0.75rem;
+}
+
+/* ================================================================
+   5. LAYOUT / CONTAINERS
+   ================================================================ */
+
+/* Homepage container */
+.homepage, .home, #home {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Channel layout padding */
+.content-padding {
+    padding-left: 60px;
+    padding-bottom: 160px;
+}
+.scrollable-content {
+    padding: 16px;
+}
+
+/* ================================================================
+   6. MENU BUTTON
+   ================================================================ */
+
+.menu-button {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    background: none !important;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: block;
+}
+.menu-button img { width: 24px; height: 24px; display: block; }
+.menu-icon { width: 24px; height: 24px; display: block; }
+
+/* ================================================================
+   7. MESSAGES
+   ================================================================ */
+
+.message {
+    margin: 0;
+}
+.message:hover {
+    background: rgba(4, 4, 5, 0.07);
+}
+.message-header { margin-bottom: 4px; }
+.message-author, .message-author-font {
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+    color: #ffffff;
+    display: inline;
+}
+.message-date, .message-date-font {
+    font-size: 12px;
+    color: #72767d;
+    display: inline;
+}
+.message-link { text-decoration: none; color: inherit; display: block; }
+.messagecontent, .messagecontent-font {
+    color: #dcddde;
+    font-size: 16px;
+    line-height: 20px;
+    word-wrap: break-word;
+}
+.messagecontent a { color: #00b0f4; }
+.firstmessage { margin: 0; }
+
+/* Message mentions */
+.message.mentioned {
+    border-left: 4px solid #faa61a;
+    background-color: rgba(250, 166, 26, 0.1);
+    padding-left: 12px;
+}
+.mention {
+    color: #00aff4;
+    background: rgba(88, 101, 242, 0.3);
+    padding: 0 2px;
+    border-radius: 3px;
+}
+
+/* ================================================================
+   8. EMBEDS
+   ================================================================ */
+
+.embed {
+    margin-top: 8px;
+    max-width: 520px;
+    display: flex;
+}
+.embed-color-bar {
+    width: 4px;
+    background-color: #202225;
+    border-radius: 4px 0 0 4px;
+    flex-shrink: 0;
+}
+.embed-content {
+    background-color: #2f3136;
+    border: 1px solid #202225;
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    padding: 8px 12px;
+    flex-grow: 1;
+}
+
+/* ================================================================
+   9. REACTIONS
+   ================================================================ */
+
+.reaction {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #2f3136;
+    border-radius: 4px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+}
+.reaction img { width: 16px; height: 16px; vertical-align: middle; }
+.reaction-count { color: #dcddde; font-size: 12px; margin-left: 4px; }
+
+/* ================================================================
+   10. FORWARDED MESSAGES
+   ================================================================ */
+
+.forwarded-content-wrapper {
+    padding: 8px;
+    background: rgba(47, 49, 54, 0.6);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+/* ================================================================
+   11. MESSAGE FORM (default: not fixed, in document flow)
+   ================================================================ */
+
+.message-form-container {
+    background: #36393f;
+    border-top: 1px solid #40444b;
+    padding: 12px;
+    width: 100%;
+}
+
+/* Buttons row */
+.message-buttons-container {
+    padding: 0 0 8px 0;
+    margin: 0;
+    display: table;
+    width: 100%;
+}
+.message-button-cell {
+    display: table-cell;
+    width: 32px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    display: inline-block;
+}
+.icon-button:hover { background: rgba(255, 255, 255, 0.06); }
+
+.message-action-btn {
+    display: inline-block;
+    vertical-align: middle;
+    padding: 8px;
+    border-radius: 4px;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+.message-action-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+.emoji-icon { width: 24px; height: 24px; vertical-align: middle; }
+
+/* Input row */
+.message-input-wrapper {
+    width: 100%;
+    background: transparent;
+    padding: 0;
+}
+.message-input-container {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 10px 0;
+}
+.message-input {
+    display: table-cell;
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: none;
+    background: #40444b;
+    color: #dcddde;
+    font-size: 16px;
+    vertical-align: middle;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+    outline: none;
+    border-radius: 8px;
+}
+.send-button {
+    display: table-cell;
+    vertical-align: middle;
+    width: 1%;
+    white-space: nowrap;
+    padding: 10px 24px;
+    background: #5865f2;
+    color: #fff;
+    border: none !important;
+    outline: none !important;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+    border-radius: 8px;
+}
+.send-button:hover { background: #4752c4; }
+.send-button:focus { border: none !important; outline: none !important; }
+
+/* ================================================================
+   12. EMOJI PICKER
+   ================================================================ */
+
+#emoji {
+    background: #2f3136;
+    border: 1px solid #40444b;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 8px 12px;
+}
+#emoji table { width: 100%; }
+#emoji a {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    display: inline-block;
+    text-decoration: none;
+}
+#emoji a:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* ================================================================
+   13. FORM INPUTS & LABELS
+   ================================================================ */
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea {
+    background: #40444b;
+    border: 1px solid #40444b;
+    color: #dcddde;
+    padding: 10px 12px;
+    font-size: 16px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+    width: 100%;
+    max-width: 400px;
+    margin: 8px 0;
+    outline: none;
+}
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus {
+    border-color: #5865f2;
+    background: #383a40;
+}
+label {
+    display: block;
+    margin: 12px 0 4px 0;
+    font-weight: 600;
+    color: #dcddde;
+}
+
+/* Focus outlines */
+button:focus, input:focus, textarea:focus {
+    box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.12);
+    border-color: #5865f2;
+}
+
+/* ================================================================
+   14. BUTTONS
+   ================================================================ */
+
+.buttons { margin: 16px 0; }
+.discross-button {
+    display: inline-block;
+    background: #5865f2;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    margin: 8px 0;
+}
+.discross-button:hover { background: #4752c4; }
+.discross-button.secondary { background: #4f545c; }
+.discross-button.secondary:hover { background: #5d6269; }
+
+/* ================================================================
+   15. SERVER PAGE COMPONENTS
+   ================================================================ */
+
+.server-layout { display: table; width: 100%; }
+.server-sidebar, .server-main { vertical-align: top; }
+.server-icon { height: 48px; width: 48px; }
+.server-br { display: none; }
+.server-select-title {
+    font-size: 1.875rem;
+    color: #5865f2;
+    font-weight: bold;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+.server-select-text {
+    font-size: 1.5rem;
+    color: #dddddd;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+
+/* Category collapse (server page) */
+.category-channels { display: block; }
+.category-channels.collapsed { display: none; }
+.category-arrow { display: inline-block; vertical-align: middle; }
+
+/* ================================================================
+   16. DRAWING / CANVAS
+   ================================================================ */
+
+#toolbar-container {
+    background-color: #2f3136;
+    padding: 5px;
+    border-bottom: 1px solid #202225;
+    display: table;
+    margin: 0 auto 5px auto;
+    border-radius: 8px;
+    text-align: left;
+    position: relative;
+    z-index: 10;
+}
+.c-box {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #555;
+    display: inline-block;
+    margin: 1px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+.s-btn {
+    background: #b9bbbe;
+    border: 2px solid #000;
+    display: inline-block;
+    margin: 0 3px;
+    cursor: pointer;
+    vertical-align: middle;
+    padding: 2px;
+}
+.s-inner { background: black; font-size: 1px; }
+#canvas-wrapper {
+    margin: 0 auto 20px auto;
+    display: block;
+    padding: 5px;
+    width: 610px;
+    max-width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 10;
+}
+canvas {
+    background: #ffffff;
+    cursor: crosshair;
+    display: block;
+    border: 1px solid #202225;
+    max-width: 100%;
+}
+
+/* Mobile-only break in draw toolbar */
+.mobile-break { display: none; }
+
+/* ================================================================
+   17. MISC
+   ================================================================ */
+
+/* Hide legacy elements */
+br.nodisp { display: none; }
+
+/* ================================================================
+   18. LIGHT THEME - channel-style specific overrides
+   ================================================================ */
+
+.light-theme body,
+.light-theme #wrapper { background: #f9f9f9 !important; color: #2e3338 !important; }
+.light-theme .content-padding,
+.light-theme .scrollable-content { background: #f9f9f9; color: #060607; }
+.light-theme .header-title,
+.light-theme .header-menu,
+.light-theme .header-menu-link { color: #060607; }
+.light-theme .header-user-info { color: #4f5660; }
+.light-theme .message { border-color: #e3e5e8 !important; }
+.light-theme .message .content,
+.light-theme .messagecontent { color: #060607 !important; }
+.light-theme .messagecontent-font { color: #060607 !important; }
+.light-theme .message:hover { background: #f2f3f5 !important; }
+.light-theme .message-author { color: #060607; }
+.light-theme .message-author-font { color: #060607 !important; }
+.light-theme .message-date { color: #5c5e66; }
+.light-theme .message-date-font { color: #5c5e66 !important; }
+.light-theme .messagecontent a { color: #0067e0; }
+.light-theme .message-form-container { background: #f9f9f9 !important; border-top-color: #e3e5e8 !important; }
+.light-theme .message-input { color: #060607; background: #ebedef; }
+.light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
+.light-theme .message-action-btn { background: #f9f9f9 !important; }
+.light-theme .message-action-btn:hover { background: rgba(0, 0, 0, 0.08); }
+.light-theme pre,
+.light-theme code { background: #f2f3f5; border-color: #e3e5e8; color: #2e3338; }
+.light-theme .embed-content,
+.light-theme .forwarded-content-wrapper { background: #f2f3f5; border-color: #e3e5e8; }
+.light-theme #emoji { background: #f9f9f9 !important; border-color: #e3e5e8; }
+.light-theme #emoji a:hover { background: rgba(0, 0, 0, 0.08); }
+.light-theme .reaction { background: #f2f3f5; }
+.light-theme .mention { color: #0c4a6e; background: rgba(88, 101, 242, 0.15); }
+.light-theme a { color: #0067e0; }
+.light-theme .menu-button {
+    background: none !important;
+    border: none !important;
+}
+.light-theme .menu-button img {
+    filter: brightness(0) saturate(100%) invert(9%) sepia(8%) saturate(1040%) hue-rotate(185deg) brightness(96%) contrast(90%);
+}
+.light-theme .discross-button { background: #5865f2 !important; color: white !important; }
+.light-theme .discross-button:hover { background: #4752c4 !important; }
+.light-theme input[type="text"],
+.light-theme input[type="password"],
+.light-theme input[type="email"],
+.light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #060607; }
+.light-theme input[type="text"]:focus,
+.light-theme input[type="password"]:focus,
+.light-theme input[type="email"]:focus,
+.light-theme textarea:focus { border-color: #5865f2; background: #e3e5e8; }
+.light-theme .send-button,
+.light-theme .btn-send { background: #5865f2 !important; color: #ffffff !important; }
+.light-theme button,
+.light-theme input[type="submit"],
+.light-theme input[type="button"] {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+    border-color: #4752c4 !important;
+}
+.light-theme hr { border-color: #e3e5e8; }
+
+/* ================================================================
+   19. AMOLED THEME - channel-style specific overrides
+   ================================================================ */
+
+.amoled-theme body,
+.amoled-theme #wrapper { background: #000000 !important; color: #ffffff !important; }
+.amoled-theme .content-padding,
+.amoled-theme .scrollable-content { background: #000; color: #fff; }
+.amoled-theme .header-title,
+.amoled-theme .header-menu,
+.amoled-theme .header-menu-link { color: #fff; }
+.amoled-theme .message { border-color: #333333 !important; background: #000000 !important; }
+.amoled-theme .message .content,
+.amoled-theme .messagecontent { color: #ffffff !important; }
+.amoled-theme .messagecontent a { color: #5865f2; }
+.amoled-theme .message:hover { background: rgba(255, 255, 255, 0.05) !important; }
+.amoled-theme .message-author { color: #fff; }
+.amoled-theme .message-date { color: #a0a0a0; }
+.amoled-theme .message-form-container { background: #000000 !important; border-top-color: #333333 !important; }
+.amoled-theme .message-input { color: #fff; background: #0a0a0a; }
+.amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
+.amoled-theme .message-action-btn:hover { background: rgba(255, 255, 255, 0.08) !important; }
+.amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
+.amoled-theme #emoji a:hover { background: rgba(255, 255, 255, 0.08) !important; }
+.amoled-theme .reaction { background: #0a0a0a; border-color: #222; }
+.amoled-theme .embed-content,
+.amoled-theme .forwarded-content-wrapper { background: #0a0a0a; border-color: #222; }
+.amoled-theme pre,
+.amoled-theme code { background: #0a0a0a; border-color: #222; color: #fff; }
+.amoled-theme a { color: #5865f2 !important; }
+.amoled-theme .menu-button {
+    background: none !important;
+    border: none !important;
+}
+.amoled-theme .discross-button { background: #5865f2 !important; color: white !important; }
+.amoled-theme .discross-button:hover { background: #4752c4 !important; }
+.amoled-theme input[type="text"],
+.amoled-theme input[type="password"],
+.amoled-theme input[type="email"],
+.amoled-theme textarea { background: #0a0a0a; border-color: #333; color: #fff; }
+.amoled-theme input[type="text"]:focus,
+.amoled-theme input[type="password"]:focus,
+.amoled-theme input[type="email"]:focus,
+.amoled-theme textarea:focus { border-color: #5865f2; background: #111; }
+.amoled-theme .send-button,
+.amoled-theme .btn-send { background: #5865f2 !important; color: #ffffff !important; }
+.amoled-theme hr { border-color: #555555; }
+
+/* ================================================================
+   20. PAGE-CHANNEL: channel.html needs height:auto on body
+   ================================================================ */
+
+html.page-channel,
+html.page-channel body,
+html.page-channel #wrapper {
+    height: auto;
+    min-height: 0;
+}
+
+html.page-channel body {
+    overflow-y: auto;
+}
+
+/* ================================================================
+   21. PAGE-CHANNEL-REPLY: fixed message form at bottom
+   ================================================================ */
+
+html.page-channel-reply body,
+html.page-channel-reply #wrapper {
+    height: 100%;
+}
+
+html.page-channel-reply .message-form-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+}
+
+/* ================================================================
+   22. PAGE-DRAW: draw.html needs height:auto on body
+   ================================================================ */
+
+html.page-draw,
+html.page-draw body,
+html.page-draw #wrapper {
+    height: auto;
+    min-height: 0;
+}
+
+html.page-draw body {
+    overflow-y: auto;
+    min-height: 100vh;
+}
+
+/* Override themes.css which sets #wrapper to #303338; keep it matching body */
+html.page-draw #wrapper {
+    background: #36393f;
+}
+
+/* Message form on draw page: fixed at bottom for modern browsers (viewport > 256px).
+   DSi Opera 9.5 stays static (either viewport is 256px so min-width:257px never
+   matches, or it doesn't parse media queries at all). */
+@media (min-width: 257px) {
+    html.page-draw .message-form-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+    }
+    /* Padding so the fixed bar doesn't cover the bottom of the canvas. */
+    html.page-draw body { padding-bottom: 100px; }
+}
+
+/* ================================================================
+   23. PAGE-SIMPLE: Blanket theme overrides for login/register/forgot/index
+       (must not apply to channel/server pages — would override specific styles)
+   ================================================================ */
+
+/* Reset the global input sizing for page-simple pages which use custom inline div-box styling.
+   The inputs inside padding divs should not get the extra CSS padding/margin/max-width. */
+html.page-simple input[type="text"],
+html.page-simple input[type="password"],
+html.page-simple input[type="email"] {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    width: 100%;
+}
+
+html.page-simple .light-theme #wrapper {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+}
+html.page-simple .light-theme #wrapper * {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+}
+html.page-simple .light-theme #wrapper input[type="submit"] {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+html.page-simple .light-theme #wrapper table div {
+    background: #ebedef !important;
+}
+html.page-simple .light-theme #wrapper input[type="text"],
+html.page-simple .light-theme #wrapper input[type="password"],
+html.page-simple .light-theme #wrapper input[type="email"] {
+    background: #ebedef !important;
+    color: #060607 !important;
+    border: none !important;
+}
+html.page-simple .light-theme #wrapper .discross-button {
+    background: #5865f2 !important;
+    color: white !important;
+}
+html.page-simple .light-theme #wrapper .discross-button:hover {
+    background: #4752c4 !important;
+}
+
+html.page-simple .amoled-theme {
+    background: #000000 !important;
+}
+html.page-simple .amoled-theme #wrapper {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+html.page-simple .amoled-theme #wrapper * {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+html.page-simple .amoled-theme #wrapper table div {
+    background: #111111 !important;
+}
+html.page-simple .amoled-theme #wrapper input[type="text"],
+html.page-simple .amoled-theme #wrapper input[type="password"],
+html.page-simple .amoled-theme #wrapper input[type="email"] {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+html.page-simple .amoled-theme #wrapper input[type="submit"] {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+html.page-simple .amoled-theme #wrapper .discross-button {
+    background: #5865f2 !important;
+    color: white !important;
+}
+html.page-simple .amoled-theme #wrapper .discross-button:hover {
+    background: #4752c4 !important;
+}
+html.page-simple .amoled-theme #wrapper .discross-button.secondary {
+    background: #4f545c !important;
+    color: white !important;
+}
+html.page-simple .amoled-theme #wrapper .discross-button.secondary:hover {
+    background: #5d6269 !important;
+}
+
+/* ================================================================
+   24. PAGE-SERVER: Server page specific styles
+   ================================================================ */
+
+html.page-server .light-theme {
+    background: #FFFFFF !important;
+    color: #060607 !important;
+}
+html.page-server .light-theme #wrapper * {
+    color: #060607 !important;
+}
+/* Preserve explicit white colors in warning boxes */
+html.page-server .light-theme #wrapper font[color="#ffffff"] {
+    color: #ffffff !important;
+}
+html.page-server .light-theme #wrapper font[color="#ffffff"] * {
+    color: #ffffff !important;
+}
+html.page-server .light-theme a {
+    color: #5865f2 !important;
+}
+html.page-server .light-theme button,
+html.page-server .light-theme #wrapper button {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+/* Ensure discross-button links and submit inputs keep purple background and white text */
+html.page-server .light-theme #wrapper .discross-button,
+html.page-server .light-theme #wrapper input[type="submit"],
+html.page-server .light-theme #wrapper input[type="button"] {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+/* Button inside warning box should be white with purple text */
+html.page-server .light-theme #wrapper .warning-box .discross-button {
+    background: #ffffff !important;
+    color: #5865f2 !important;
+}
+html.page-server .light-theme hr {
+    border-color: #e3e5e8 !important;
+}
+
+html.page-server .amoled-theme {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+html.page-server .amoled-theme #wrapper * {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+html.page-server .amoled-theme hr {
+    border-color: #555555 !important;
+}
+html.page-server .amoled-theme a {
+    color: #5865f2 !important;
+}
+html.page-server .amoled-theme button {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+/* Override the wildcard black background for buttons/links in AMOLED server page */
+html.page-server .amoled-theme #wrapper .discross-button,
+html.page-server .amoled-theme #wrapper button,
+html.page-server .amoled-theme #wrapper input[type="submit"],
+html.page-server .amoled-theme #wrapper input[type="button"] {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+/* Warning box should keep its purple background in AMOLED mode */
+html.page-server .amoled-theme #wrapper .warning-box {
+    background: #5865f2 !important;
+}
+/* Button inside warning box should be white with purple text */
+html.page-server .amoled-theme #wrapper .warning-box .discross-button {
+    background: #ffffff !important;
+    color: #5865f2 !important;
+}
+
+/* ================================================================
+   25. RESPONSIVE MEDIA QUERIES
+   ================================================================ */
+
+@media (max-width: 640px) {
+    .content-padding { padding-left: 50px; padding-bottom: 160px; }
+    .homepage, .home, #home { padding: 12px; }
+
+    #toolbar-container {
+        width: calc(100% - 16px);
+        margin: 8px 8px 5px 8px;
+        padding: 8px 5px;
+        box-sizing: border-box;
+    }
+    #canvas-wrapper {
+        width: calc(100% - 16px);
+        margin: 0 8px 20px 8px;
+    }
+    canvas { width: 100%; }
+    .c-box { width: 20px; height: 20px; margin: 2px; }
+    .s-btn { margin: 0 2px; }
+    #btn-clear { font-size: 12px !important; height: 36px !important; padding: 0 12px !important; }
+    .mobile-break { display: block; }
+
+    .message-form-container { padding: 8px; }
+    .send-button { padding: 8px 10px; min-height: 40px; font-size: 0.9rem; }
+
+    html.page-channel-reply .message-form-container {
+        left: 0 !important;
+        right: 0 !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .menu-button { top: 8px; left: 8px; }
+}
+
+/* DSi Opera 9.5 (256px screen) */
+@media (max-width: 256px) {
+    #toolbar-container {
+        white-space: nowrap;
+        width: auto;
+    }
+    .c-box { width: 10px; height: 10px; margin: 0; border-width: 1px; }
+    .s-btn { margin: 0 1px; padding: 1px; }
+    #btn-clear { font-size: 11px !important; height: 26px !important; padding: 0 6px !important; }
+    #emoji { display: none !important; }
+    /* position:fixed is unsupported in Opera 9.5 on DSi */
+    .menu-button { display: none !important; }
+}
+
+/* ================================================================
+   26. @font-face — placed last for IE1/IE2 compatibility
+       (old browsers stop parsing on unknown @ rules; normal rules above
+        are all applied before reaching this point)
+   ================================================================ */
+
+@font-face {
+    font-family: 'rodin';
+    src: url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
+         url('https://mariocube.com/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'rodin';
+    src: url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
+         url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
+    font-weight: 700;
+}
