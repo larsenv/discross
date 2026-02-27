@@ -2,16 +2,33 @@ const bcrypt = require('bcrypt')
 const sqlite3 = require('better-sqlite3')
 const { v4: uuidv4 } = require('uuid')
 const { parse } = require('querystring')
-const passStrength = require('owasp-password-strength-test')
 const he = require('he') // Encodes HTML attributes
-
-passStrength.config({
-  minLength: 8
-})
+const otplib = require('otplib')
+const qrcode = require('qrcode')
+const crypto = require('crypto')
 
 const saltRounds = 10
 const expiryTime = 24 * 60 * 60 // For sessions - expires in 24 hours
 const codeExpiryTime = 30 * 60 // For verification codes - expires in 30 minutes
+const pendingTotpExpiryTime = 10 * 60 // Pending TOTP setup expires in 10 minutes
+
+// Password validation: ≥7 chars, ≥1 uppercase, ≥1 lowercase, ≥1 digit
+function validatePassword(password) {
+  const errors = []
+  if (!password || password.length < 7) {
+    errors.push('The password must be at least 7 characters long.')
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('The password must contain at least one uppercase letter.')
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('The password must contain at least one lowercase letter.')
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('The password must contain at least one number.')
+  }
+  return { strong: errors.length === 0, errors }
+}
 
 let https = true // Just to make sure - determines whether cookies have the Secure; option
 
@@ -56,26 +73,46 @@ exports.createUser = async function (discordID, username, password) {
   if (match) {
     return { status: 'error', reason: "There's already an account linked to that Discord account!\nTry resetting your password on the login page." }
   }
-  const tested = passStrength.test(password)
+  const tested = validatePassword(password)
   if (tested.strong) {
     const hashedPassword = await bcrypt.hash(password, saltRounds)
-    queryRun('INSERT INTO users VALUES (?,?,?)', [discordID, username, hashedPassword])
+    queryRun('INSERT INTO users (discordID, username, hashedPassword) VALUES (?,?,?)', [discordID, username, hashedPassword])
     return { status: 'success' }
   } else {
     return { status: 'error', reason: tested.errors.join('\n') }
   }
 }
 
-exports.login = async function (username, password) {
+exports.login = async function (username, password, totpToken) {
   const match = querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username])
   if (!match) {
     return { status: 'error', reason: "That account doesn't exist!" }
   } else {
     const correctPassword = await bcrypt.compare(password, match.hashedPassword)
     if (correctPassword) {
+      // Check 2FA if enabled
+      if (match.totp_secret) {
+        const code = (totpToken || '').trim()
+        if (!code) {
+          return { status: 'error', reason: 'Invalid 2FA code!' }
+        }
+        // Try TOTP first (only if it looks like a 6-digit code)
+        let codeAccepted = false
+        if (/^\d{6}$/.test(code)) {
+          const totpValid = otplib.verifySync({ type: 'totp', token: code, secret: match.totp_secret })
+          codeAccepted = totpValid.valid
+        }
+        if (!codeAccepted) {
+          // Try backup code
+          codeAccepted = await verifyBackupCode(match.discordID, code)
+        }
+        if (!codeAccepted) {
+          return { status: 'error', reason: 'Invalid 2FA code!' }
+        }
+      }
       const sessionID = uuidv4()
       const expiresAt = unixTime() + expiryTime
-      queryRun('INSERT INTO sessions VALUES (?,?,?)', [match.discordID, sessionID, unixTime() + expiryTime])
+      queryRun('INSERT INTO sessions VALUES (?,?,?)', [match.discordID, sessionID, expiresAt])
       return { status: 'success', sessionID: sessionID, expires: expiresAt }
     } else {
       return { status: 'error', reason: 'Incorrect password!' }
@@ -139,14 +176,142 @@ exports.checkVerificationCode = async function (code) {
 
 function setup() {
   queryRun('CREATE TABLE IF NOT EXISTS users (discordID TEXT, username STRING, hashedPassword STRING)')
+  // Add totp_secret column if it doesn't exist (migration for existing installs)
+  try { queryRun('ALTER TABLE users ADD COLUMN totp_secret TEXT') } catch (_) {}
   queryRun('CREATE TABLE IF NOT EXISTS sessions (discordID TEXT, sessionID STRING, expires INT)')
   queryRun('CREATE TABLE IF NOT EXISTS webhooks (serverID TEXT, webhookID TEXT, token STRING)')
   queryRun('CREATE TABLE IF NOT EXISTS verificationcodes (discordID TEXT, code STRING, expires INT)')
   queryRun('CREATE TABLE IF NOT EXISTS servers (serverID TEXT, discordID TEXT, unique (serverID, discordID))')
   queryRun('CREATE TABLE IF NOT EXISTS channel_preferences (discordID TEXT, serverID TEXT, channelID TEXT, collapsed INTEGER DEFAULT 0, PRIMARY KEY (discordID, serverID, channelID))')
+  queryRun('CREATE TABLE IF NOT EXISTS pending_totp (discordID TEXT PRIMARY KEY, secret TEXT, expires INT)')
+  queryRun('CREATE TABLE IF NOT EXISTS backup_codes (id INTEGER PRIMARY KEY AUTOINCREMENT, discordID TEXT, code_hash TEXT)')
 }
 
 setup();
+
+// --- 2FA / TOTP helpers ---
+
+// Generate 10-character alphanumeric backup code (uppercase + digits)
+function generateBackupCodeValue() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // unambiguous charset
+  let code = ''
+  for (let i = 0; i < 10; i++) {
+    code += chars[crypto.randomInt(chars.length)]
+  }
+  return code
+}
+
+async function verifyBackupCode(discordID, plainCode) {
+  const rows = queryAll('SELECT id, code_hash FROM backup_codes WHERE discordID=?', [discordID])
+  for (const row of rows) {
+    const match = await bcrypt.compare(plainCode.toUpperCase(), row.code_hash)
+    if (match) {
+      queryRun('DELETE FROM backup_codes WHERE id=?', [row.id])
+      return true
+    }
+  }
+  return false
+}
+
+// Begin 2FA setup: generate secret and store as pending, return QR data URL
+exports.beginTOTPSetup = async function (discordID, username) {
+  const time = unixTime()
+  queryRun('DELETE FROM pending_totp WHERE NOT expires > ?', [time])
+  // Reuse existing pending TOTP if still valid (so user can retry the same QR code)
+  const existing = querySingle('SELECT secret FROM pending_totp WHERE discordID=? AND expires > ?', [discordID, time])
+  const secret = existing ? existing.secret : otplib.generateSecret()
+  const otpauthUrl = otplib.generateURI({ type: 'totp', secret, label: username || discordID, issuer: 'Discross' })
+  const qrDataUrl = await qrcode.toDataURL(otpauthUrl)
+  if (!existing) {
+    queryRun('INSERT OR REPLACE INTO pending_totp (discordID, secret, expires) VALUES (?,?,?)', [discordID, secret, time + pendingTotpExpiryTime])
+  }
+  return { secret, qrDataUrl }
+}
+
+// Verify TOTP code against pending secret, enable 2FA, generate backup codes
+// Returns { success, backupCodes } or { success: false, error }
+exports.verifyAndEnableTOTP = async function (discordID, password, token) {
+  // Check password first
+  const user = querySingle('SELECT hashedPassword, totp_secret FROM users WHERE discordID=?', [discordID])
+  if (!user) {
+    return { success: false, error: 'User not found.' }
+  }
+  if (user.totp_secret) {
+    return { success: false, error: '2FA is already enabled. Disable it first before setting it up again.' }
+  }
+  const correctPassword = await bcrypt.compare(password || '', user.hashedPassword)
+  if (!correctPassword) {
+    return { success: false, error: 'Incorrect password.' }
+  }
+  const time = unixTime()
+  const pending = querySingle('SELECT secret FROM pending_totp WHERE discordID=? AND expires > ?', [discordID, time])
+  if (!pending) {
+    return { success: false, error: 'Setup session expired. Please start again.' }
+  }
+  const result = otplib.verifySync({ type: 'totp', token: (token || '').trim(), secret: pending.secret })
+  if (!result.valid) {
+    return { success: false, error: 'Invalid code. Please try again.' }
+  }
+  // Enable 2FA
+  queryRun('UPDATE users SET totp_secret=? WHERE discordID=?', [pending.secret, discordID])
+  queryRun('DELETE FROM pending_totp WHERE discordID=?', [discordID])
+  // Clear any existing backup codes
+  queryRun('DELETE FROM backup_codes WHERE discordID=?', [discordID])
+  // Generate 8 backup codes
+  const backupCodes = []
+  for (let i = 0; i < 8; i++) {
+    const code = generateBackupCodeValue()
+    backupCodes.push(code)
+    const hash = await bcrypt.hash(code, saltRounds)
+    queryRun('INSERT INTO backup_codes (discordID, code_hash) VALUES (?,?)', [discordID, hash])
+  }
+  return { success: true, backupCodes }
+}
+
+// Disable 2FA after verifying password
+exports.disableTOTP = async function (discordID, password) {
+  const user = querySingle('SELECT hashedPassword, totp_secret FROM users WHERE discordID=?', [discordID])
+  if (!user) {
+    return { success: false, error: 'User not found.' }
+  }
+  if (!user.totp_secret) {
+    return { success: false, error: '2FA is not enabled on this account.' }
+  }
+  const correctPassword = await bcrypt.compare(password || '', user.hashedPassword)
+  if (!correctPassword) {
+    return { success: false, error: 'Incorrect password.' }
+  }
+  queryRun('UPDATE users SET totp_secret=NULL WHERE discordID=?', [discordID])
+  queryRun('DELETE FROM backup_codes WHERE discordID=?', [discordID])
+  queryRun('DELETE FROM pending_totp WHERE discordID=?', [discordID])
+  return { success: true }
+}
+
+exports.getTOTPStatus = function (discordID) {
+  const match = querySingle('SELECT totp_secret FROM users WHERE discordID=?', [discordID])
+  return !!(match && match.totp_secret)
+}
+
+// Change password for a logged-in user
+exports.changePassword = async function (discordID, currentPassword, newPassword) {
+  const match = querySingle('SELECT hashedPassword FROM users WHERE discordID=?', [discordID])
+  if (!match) {
+    return { status: 'error', reason: 'User not found.' }
+  }
+  const correctPassword = await bcrypt.compare(currentPassword, match.hashedPassword)
+  if (!correctPassword) {
+    return { status: 'error', reason: 'Current password is incorrect.' }
+  }
+  const tested = validatePassword(newPassword)
+  if (!tested.strong) {
+    return { status: 'error', reason: tested.errors.join('\n') }
+  }
+  const hashedPassword = await bcrypt.hash(newPassword, saltRounds)
+  queryRun('UPDATE users SET hashedPassword=? WHERE discordID=?', [hashedPassword, discordID])
+  // Invalidate all sessions for security
+  queryRun('DELETE FROM sessions WHERE discordID=?', [discordID])
+  return { status: 'success' }
+}
 
 exports.checkAuth = async function (req, res, noRedirect) {
   const cookies = req.headers.cookie
@@ -190,7 +355,7 @@ exports.handleLoginRegister = async function (req, res, body) {
   if (req.url === '/login') {
     const params = parse(body)
     if (params.username && params.password) {
-      const result = await exports.login(params.username, params.password)
+      const result = await exports.login(params.username, params.password, params.totp_code)
       if (result.status === 'success') {
         if (params.redirect) {
           const redirectBase = params.redirect
@@ -258,6 +423,8 @@ exports.handleLoginRegister = async function (req, res, body) {
       queryRun('DELETE FROM sessions WHERE discordID = ?', [id])
       queryRun('DELETE FROM verificationcodes WHERE discordID = ?', [id])
       queryRun('DELETE FROM servers WHERE discordID = ?', [id])
+      queryRun('DELETE FROM backup_codes WHERE discordID = ?', [id])
+      queryRun('DELETE FROM pending_totp WHERE discordID = ?', [id])
       res.writeHead(303, { Location: '/register.html' })
       res.end()
     } else {
