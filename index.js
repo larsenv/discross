@@ -64,6 +64,8 @@ var senddrawing = require('./pages/senddrawing.js')
 var { handleServerIcon } = require('./pages/serverIconHandler.js')
 var changepasswordpage = require('./pages/changepassword.js')
 var setup2fapage = require('./pages/setup2fa.js')
+var privacypage = require('./pages/privacy.js')
+var termspage = require('./pages/terms.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -341,6 +343,10 @@ server.on('request', async (req, res) => {
       await setup2fapage.processSetup2FA(bot, req, res, args)
     } else if (args[1] === 'index.html' || parsedurl.pathname === '/') {
       await indexpage.processIndex(bot, req, res, args)
+    } else if (args[1] === 'privacy.html') {
+      await privacypage.processPrivacy(bot, req, res, args)
+    } else if (args[1] === 'terms.html') {
+      await termspage.processTerms(bot, req, res, args)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
       connectionHandler.processRequest(req, res)
     } else if (args[1] === "discord") {
