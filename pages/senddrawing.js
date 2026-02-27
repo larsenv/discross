@@ -38,7 +38,7 @@ async function getOrCreateWebhook(channel, guildID) {
 }
 
 const AsyncLock = require('async-lock');
-const lock = new AsyncLock(); // Create a new lock instance
+const lock = new AsyncLock({ timeout: 30000 }); // 30-second timeout to prevent indefinite queue buildup
 
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
   try {
@@ -78,9 +78,11 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       }
 
       const webhook = await getOrCreateWebhook(channel, channel.guild.id);
+      // webhook is already in the correct channel (fetched via channel.fetchWebhooks()),
+      // so webhook.edit() is not needed and could hang if Discord API is slow
 
       let processedmessage = parsedurl.message || "";
-      
+
       // Process mentions only if there's a message
       if (processedmessage) {
         const regex = /@([^#]{2,32}#\d{4})/g;
@@ -102,13 +104,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             }
           }
         } while (m);
-      }
-      
-      try {
-        await webhook.edit({ channel: channel });
-      } catch (editErr) {
-        // Editing webhook channel can fail if missing permissions; log but continue
-        console.error("Failed to edit webhook channel:", editErr);
       }
 
       const base64Data = parsedurl.drawinginput;

@@ -214,7 +214,7 @@ canvas.addEventListener('touchstart', function(e) {
     ctx.fillStyle = currColor;
     ctx.fill();
     ctx.beginPath();
-}, false);
+}, { passive: false });
 
 canvas.addEventListener('touchmove', function(e) {
     if (!isDrawing) return;
@@ -225,19 +225,19 @@ canvas.addEventListener('touchmove', function(e) {
     pointQueue.push({ x: pos.x, y: pos.y });
     lastX = pos.x;
     lastY = pos.y;
-}, false);
+}, { passive: false });
 
 canvas.addEventListener('touchend', function(e) {
     if(e.preventDefault) e.preventDefault();
     flushDrawQueue();
     isDrawing = false;
-}, false);
+}, { passive: false });
 
 canvas.addEventListener('touchcancel', function(e) {
     if(e.preventDefault) e.preventDefault();
     flushDrawQueue();
     isDrawing = false;
-}, false);
+}, { passive: false });
 
 // --- UI FUNCTIONS ---
 function setColor(col, id) {
