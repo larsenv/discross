@@ -185,6 +185,8 @@ function setup() {
   queryRun('CREATE TABLE IF NOT EXISTS channel_preferences (discordID TEXT, serverID TEXT, channelID TEXT, collapsed INTEGER DEFAULT 0, PRIMARY KEY (discordID, serverID, channelID))')
   queryRun('CREATE TABLE IF NOT EXISTS pending_totp (discordID TEXT PRIMARY KEY, secret TEXT, expires INT)')
   queryRun('CREATE TABLE IF NOT EXISTS backup_codes (id INTEGER PRIMARY KEY AUTOINCREMENT, discordID TEXT, code_hash TEXT)')
+  queryRun('CREATE TABLE IF NOT EXISTS emoji_cache (emoji_key TEXT PRIMARY KEY, twemoji_code TEXT)')
+  queryRun('CREATE TABLE IF NOT EXISTS custom_emoji_cache (emoji_id TEXT PRIMARY KEY, emoji_name TEXT, animated INTEGER)')
 }
 
 setup();

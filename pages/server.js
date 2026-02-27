@@ -8,6 +8,7 @@ const sanitizer = require("path-sanitizer").default;
 const emojiRegex = require("./twemojiRegex").regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const { unicodeToTwemojiCode } = require('./emojiUtils');
 
 // Templates for viewing the channels in a server
 const server_template = fs.readFileSync('pages/templates/server.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
@@ -284,23 +285,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     if (response.match?.(emojiRegex) && imagesCookie === 1) {
       const unicode_emoji_matches = [...response.match?.(emojiRegex)]
       unicode_emoji_matches.forEach(match => {
-        const points = [];
-        let char = 0;
-        let previous = 0;                  // This whole code block was "inspired" by the official Twitter Twemoji parser.
-        let i = 0;                         // I would have done it myself but my code wasn't ready for skin tones/emoji variation
-        let output                         // The Regex I wouldn't have done myself, so thanks for that too!
-        while (i < match.length) {
-          char = match.charCodeAt(i++);
-          if (previous) {
-            points.push((0x10000 + ((previous - 0xd800) << 10) + (char - 0xdc00)).toString(16));
-            previous = 0;
-          } else if (char > 0xd800 && char <= 0xdbff) {
-            previous = char;
-          } else {
-            points.push(char.toString(16));
-          }
-          output = points.join("-")
-        }
+        const output = unicodeToTwemojiCode(match);
         response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" width="22" height="22" style="width: 6%;vertical-align:top;" alt="emoji">`)
       });
     }
