@@ -177,10 +177,11 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
         let replyIndicator = '';
         if (lastReply) {
-          const contentPart = lastReplyData.content ? ' ' + escape(lastReplyData.content) : '';
+          // replyContent is already rendered HTML from renderDiscordMarkdown — do not escape() it
+          const contentPart = lastReplyData.content ? ' ' + lastReplyData.content : '';
           replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
             '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-            '<td style="padding-left:4px;vertical-align:top;overflow:hidden;max-width:400px;white-space:nowrap;text-overflow:ellipsis"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPart + '</font></td>' +
+            '<td style="padding-left:4px;vertical-align:top;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPart + '</font></td>' +
             '</tr></table>';
         }
         currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -298,11 +299,13 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         let replyContent = '';
         if (replyMessage && replyMessage.content) {
           const maxLength = 50;
-          // Collapse newlines to spaces so multiline messages appear on one line
-          const flatContent = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ');
-          replyContent = flatContent.length > maxLength
+          // Collapse newlines to spaces so multiline messages appear on one line,
+          // then truncate the raw text before rendering markdown to avoid cutting HTML tags.
+          const flatContent = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
+          const truncated = flatContent.length > maxLength
             ? flatContent.substring(0, maxLength) + '...'
             : flatContent;
+          replyContent = renderDiscordMarkdown(truncated);
         }
 
         isReply = true;
