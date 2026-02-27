@@ -86,8 +86,8 @@ exports.handleChangePassword = async function (bot, req, res, body, discordID) {
   const result = await auth.changePassword(discordID, params.current_password, params.new_password);
 
   if (result.status === 'success') {
-    // Sessions are cleared by changePassword; redirect to login
-    res.writeHead(302, { 'Set-Cookie': 'sessionID=; path=/; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT', Location: '/login.html?errortext=' + encodeURIComponent('Password changed. Please log in with your new password.') });
+    // Sessions are cleared by changePassword (all DB sessions deleted); redirect to login
+    res.writeHead(302, { Location: '/login.html?errortext=' + encodeURIComponent('Password changed. Please log in with your new password.') });
     res.end();
   } else {
     const parsedUrl = new URL(req.url, 'http://localhost');

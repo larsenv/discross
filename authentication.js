@@ -191,9 +191,8 @@ setup();
 function generateBackupCodeValue() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // unambiguous charset
   let code = ''
-  const bytes = crypto.randomBytes(10)
   for (let i = 0; i < 10; i++) {
-    code += chars[bytes[i] % chars.length]
+    code += chars[crypto.randomInt(chars.length)]
   }
   return code
 }
@@ -217,7 +216,7 @@ exports.beginTOTPSetup = async function (discordID, username) {
   // Reuse existing pending TOTP if still valid (so user can retry the same QR code)
   const existing = querySingle('SELECT secret FROM pending_totp WHERE discordID=? AND expires > ?', [discordID, time])
   const secret = existing ? existing.secret : otplib.generateSecret()
-  const otpauthUrl = otplib.generateURI({ type: 'totp', secret, label: `Discross:${username}`, issuer: 'Discross' })
+  const otpauthUrl = otplib.generateURI({ type: 'totp', secret, label: username || discordID, issuer: 'Discross' })
   const qrDataUrl = await qrcode.toDataURL(otpauthUrl)
   if (!existing) {
     queryRun('INSERT OR REPLACE INTO pending_totp (discordID, secret, expires) VALUES (?,?,?)', [discordID, secret, time + pendingTotpExpiryTime])
