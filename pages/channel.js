@@ -166,9 +166,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         if (lastReply) {
           const contentPreview = lastReplyData.content ? `<br><font style="font-size:12px;color:`+authorText+`" face="rodin,sans-serif">${escape(lastReplyData.content)}</font>` : '';
           replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-            '<td style="width:2px;height:10px;background-color:#4e5058;border-radius:2px 0 0 2px;vertical-align:top"></td>' +
-            '<td style="width:12px;height:10px;vertical-align:bottom"><div style="height:2px;background-color:#4e5058;border-radius:0 0 0 2px"></div></td>' +
-            '<td style="padding-left:4px"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">Replying to @' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
+            '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
+            '<td style="padding-left:4px;vertical-align:top"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPreview + '</font></td>' +
             '</tr></table>';
         }
         currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -200,7 +199,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     if (item.reference?.type === MessageReferenceType.Forward) {
       try {
         const forwardedMessage = await item.fetchReference();
-        const forwardedMember = forwardedMessage.member;
+        let forwardedMember = null;
+        if (!forwardedMessage.author?.bot) {
+          forwardedMember = await ensureMemberData(forwardedMessage, chnl.guild, memberCache);
+        }
         const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
         const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH
           ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..."
@@ -233,8 +235,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           // Message was likely deleted or is inaccessible.
         }
 
-        if (replyMessage && replyMessage.member) {
-          replyMember = replyMessage.member;
+        if (replyMessage) {
+          if (!replyMessage.author?.bot) {
+            replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
+          }
         }
 
         const replyAuthor = getDisplayName(replyMember, replyUser);
