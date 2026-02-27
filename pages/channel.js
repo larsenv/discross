@@ -538,7 +538,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
 
     const isSystemMessage = item.type !== 0 && item.type !== 19;
-    const tempDiv = messagetext.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    // Replace <img> tags with a placeholder before stripping HTML so that
+    // emoji-only messages (where every character was replaced by an <img>)
+    // are not treated as empty and silently skipped.
+    const tempDiv = messagetext.replace(/<img\b[^>]*>/gi, 'x').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
     if (!isSystemMessage && tempDiv.length === 0 && (!item.attachments || item.attachments.size === 0) && (!item.embeds || item.embeds.length === 0) && (!item.stickers || item.stickers.size === 0)) {
       return;
