@@ -109,6 +109,17 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
   let response = "";
   const messages = await bot.getHistoryCached(chnl);
+
+  // Build a set of message IDs that are referenced by replies within this page.
+  // Those original messages will be suppressed since their content is already
+  // shown in the reply indicator of the referencing message.
+  const referencedMessageIds = new Set();
+  for (const msg of messages) {
+    if (msg.reference && msg.reference.type !== MessageReferenceType.Forward && msg.reference.messageId) {
+      referencedMessageIds.add(msg.reference.messageId);
+    }
+  }
+
   let lastauthor = undefined;
   let lastmember = undefined;
   let lastdate = new Date('1995-12-17T03:24:00');
@@ -183,6 +194,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
 
     if (!item) {
+      return;
+    }
+
+    // Skip messages that are referenced by a reply on this page — they will be
+    // visible via the reply indicator and don't need a standalone block.
+    if (referencedMessageIds.has(item.id)) {
       return;
     }
 
