@@ -459,7 +459,7 @@ button:focus, input:focus, textarea:focus {
 .discross-button:hover { background: #4752c4; }
 .discross-button.secondary { background: #4f545c; }
 .discross-button.secondary:hover { background: #5d6269; }
-.discross-button-sm { padding: 4px 12px; font-size: 14px; border-radius: 4px; margin: 0; }
+.discross-button-sm { padding: 6px 16px; font-size: 14px; border-radius: 4px; margin: 0; }
 
 /* ================================================================
    15. SERVER PAGE COMPONENTS
