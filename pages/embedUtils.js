@@ -25,10 +25,9 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
   }
   
   let result = text;
-  const ext = animationsCookie === 1 ? 'gif' : 'png';
 
-  // Process unicode emojis (twemoji) — cached via emojiUtils
-  result = processUnicodeEmojiInText(result, 20, '1.25em', ext);
+  // Process unicode emojis (twemoji) — cached via emojiUtils, always GIF
+  result = processUnicodeEmojiInText(result, 20, '1.25em');
 
   // Process custom emoji (HTML escaped format from markdown)
   const customEmojiMatches = [...result.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];

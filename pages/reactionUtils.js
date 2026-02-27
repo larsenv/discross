@@ -60,9 +60,7 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
           // Unicode emoji (twemoji)
           if (imagesCookie === 1) {
             const output = unicodeToTwemojiCode(emoji.name);
-            // Use animations setting for twemoji
-            const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
-            emojiHtml = `<img src="/resources/twemoji/${output}.${emojiExt}" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
+            emojiHtml = `<img src="/resources/twemoji/${output}.gif" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
           } else {
             // Show the unicode emoji directly
             emojiHtml = emoji.name;
