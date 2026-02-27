@@ -220,6 +220,12 @@ server.on('request', async (req, res) => {
       }
       res.writeHead(302, { Location: '/'/*, 'Set-Cookie': 'sessionID=' + "-" + '; SameSite=Strict; ' + (usinghttps ? 'Secure;' : '') + ' Expires=' + new Date() */ })
       res.end()
+    } else if (parsedurl.pathname === '/switchtheme') {
+      toggleTheme(req, res)
+    } else if (parsedurl.pathname === '/toggleImages') {
+      toggleImages(req, res)
+    } else if (parsedurl.pathname === '/toggleAnimations') {
+      toggleAnimations(req, res)
     } else if (args[1] === 'server') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
