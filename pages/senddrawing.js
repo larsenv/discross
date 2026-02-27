@@ -37,142 +37,130 @@ async function getOrCreateWebhook(channel, guildID) {
   }
 }
 
-const AsyncLock = require('async-lock');
-const lock = new AsyncLock({ timeout: 30000 }); // 30 s timeout to acquire the lock
-
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
   const t0 = Date.now();
   console.log(`[sendDrawing] start discordID=${discordID}`);
   try {
-    await lock.acquire(discordID, async () => {
-      console.log(`[sendDrawing] lock acquired (+${Date.now()-t0}ms)`);
-      let parsedurl;
-      if (urlQuery == null) {
-        parsedurl = Object.fromEntries(new URL(req.url, 'http://localhost').searchParams);
-      } else {
-        parsedurl = urlQuery;
-      }
-      console.log(`[sendDrawing] channelID=${parsedurl.channel} drawinginput_len=${parsedurl.drawinginput ? parsedurl.drawinginput.length : 0}`);
+    let parsedurl;
+    if (urlQuery == null) {
+      parsedurl = Object.fromEntries(new URL(req.url, 'http://localhost').searchParams);
+    } else {
+      parsedurl = urlQuery;
+    }
+    console.log(`[sendDrawing] channelID=${parsedurl.channel} drawinginput_len=${parsedurl.drawinginput ? parsedurl.drawinginput.length : 0}`);
 
-      // Allow sending drawings with or without a message
-      console.log(`[sendDrawing] fetching channel (+${Date.now()-t0}ms)`);
-      const channel = await bot.client.channels.fetch(parsedurl.channel);
-      console.log(`[sendDrawing] channel fetched (+${Date.now()-t0}ms)`);
+    // Allow sending drawings with or without a message
+    console.log(`[sendDrawing] fetching channel (+${Date.now()-t0}ms)`);
+    const channel = await bot.client.channels.fetch(parsedurl.channel);
+    console.log(`[sendDrawing] channel fetched (+${Date.now()-t0}ms)`);
 
-      let member;
-      try {
-        console.log(`[sendDrawing] fetching member (+${Date.now()-t0}ms)`);
-        member = await channel.guild.members.fetch(discordID);
-        console.log(`[sendDrawing] member fetched (+${Date.now()-t0}ms)`);
-      } catch (err) {
-        console.error(`[sendDrawing] failed to fetch member (+${Date.now()-t0}ms):`, err);
-        res.writeHead(500, { "Content-Type": "text/html" });
-        res.write("Failed to verify user permissions. Please ensure you have access to this channel or try again later.");
-        res.end();
-        return;
-      }
+    let member;
+    try {
+      console.log(`[sendDrawing] fetching member (+${Date.now()-t0}ms)`);
+      member = await channel.guild.members.fetch(discordID);
+      console.log(`[sendDrawing] member fetched (+${Date.now()-t0}ms)`);
+    } catch (err) {
+      console.error(`[sendDrawing] failed to fetch member (+${Date.now()-t0}ms):`, err);
+      res.writeHead(500, { "Content-Type": "text/html" });
+      res.write("Failed to verify user permissions. Please ensure you have access to this channel or try again later.");
+      res.end();
+      return;
+    }
 
-      if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
-        console.warn(`[sendDrawing] user lacks SendMessages permission`);
-        res.write("You don't have permission to do that!");
-        res.end();
-        return;
-      }
+    if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
+      console.warn(`[sendDrawing] user lacks SendMessages permission`);
+      res.write("You don't have permission to do that!");
+      res.end();
+      return;
+    }
 
-      console.log(`[sendDrawing] getting webhook (+${Date.now()-t0}ms)`);
-      const webhook = await getOrCreateWebhook(channel, channel.guild.id);
-      console.log(`[sendDrawing] webhook ready id=${webhook.id} (+${Date.now()-t0}ms)`);
+    console.log(`[sendDrawing] getting webhook (+${Date.now()-t0}ms)`);
+    const webhook = await getOrCreateWebhook(channel, channel.guild.id);
+    console.log(`[sendDrawing] webhook ready id=${webhook.id} (+${Date.now()-t0}ms)`);
 
-      let processedmessage = parsedurl.message || "";
-      
-      // Process mentions only if there's a message
-      if (processedmessage) {
-        const regex = /@([^#]{2,32}#\d{4})/g;
-        let m;
-        do {
-          m = regex.exec(processedmessage);
-          if (m) {
-            let mentioneduser = await channel.guild.members.cache.find(member => member.user.tag === m[1]);
-            if (!mentioneduser) {
-              try {
-                mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
-              } catch (err) {
-                console.error("Failed to fetch members for mention:", err);
-                // Continue without resolving the mention
-              }
-            }
-            if (mentioneduser) {
-              processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
+    let processedmessage = parsedurl.message || "";
+    
+    // Process mentions only if there's a message
+    if (processedmessage) {
+      const regex = /@([^#]{2,32}#\d{4})/g;
+      let m;
+      do {
+        m = regex.exec(processedmessage);
+        if (m) {
+          let mentioneduser = channel.guild.members.cache.find(member => member.user.tag === m[1]);
+          if (!mentioneduser) {
+            try {
+              mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
+            } catch (err) {
+              console.error("Failed to fetch members for mention:", err);
+              // Continue without resolving the mention
             }
           }
-        } while (m);
-      }
-      
-      // NOTE: webhook.edit({ channel }) was removed — getOrCreateWebhook already
-      // fetches/creates the webhook inside the target channel, so editing it again
-      // on every send is redundant.  The extra Discord API call consumed rate-limit
-      // budget and, when Discord was rate-limiting, caused Discord.js to block
-      // waiting for the reset window — holding the async-lock and making all
-      // subsequent drawing submissions from the same user time out.
-      const base64Data = parsedurl.drawinginput;
+          if (mentioneduser) {
+            processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
+          }
+        }
+      } while (m);
+    }
+    
+    const base64Data = parsedurl.drawinginput;
 
-      // Validate that we have drawing data
-      if (!base64Data || base64Data.trim() === '') {
-        console.error('[sendDrawing] Error processing image: Input Buffer is empty');
-        res.writeHead(400, { "Content-Type": "text/html" });
-        res.write("No drawing data provided. Please draw something before sending.");
-        res.end();
-        return;
-      }
-
-      // Remove the data URL prefix
-      const base64Image = base64Data.split(';base64,').pop();
-      
-      // Validate the base64 string is not empty
-      if (!base64Image || base64Image.trim() === '') {
-        console.error('[sendDrawing] Error processing image: Base64 data is empty after split');
-        res.writeHead(400, { "Content-Type": "text/html" });
-        res.write("Invalid drawing data format. Please try again.");
-        res.end();
-        return;
-      }
-
-      const imageBuffer = Buffer.from(base64Image, 'base64');
-      console.log(`[sendDrawing] imageBuffer size=${imageBuffer.length} bytes (+${Date.now()-t0}ms)`);
-      
-      // Validate the buffer is not empty
-      if (!imageBuffer || imageBuffer.length === 0) {
-        console.error('[sendDrawing] Error processing image: Generated buffer is empty');
-        res.writeHead(400, { "Content-Type": "text/html" });
-        res.write("Failed to process drawing data. Please try again.");
-        res.end();
-        return;
-      }
-
-      // Discord.js requires Buffer for attachments
-      const webhookOptions = {
-        username: member.displayName || member.user.tag,
-        avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-        files: [{
-          attachment: imageBuffer,
-          name: "drawing.png"
-        }]
-      };
-      
-      // Only add content if there's a message
-      if (processedmessage && processedmessage.length > 0) {
-        webhookOptions.content = processedmessage;
-      }
-      
-      console.log(`[sendDrawing] calling webhook.send (+${Date.now()-t0}ms)`);
-      const message = await webhook.send(webhookOptions);
-      console.log(`[sendDrawing] webhook.send complete (+${Date.now()-t0}ms)`);
-      bot.addToCache(message);
-      
-      res.writeHead(302, { "Location": `/channels/${parsedurl.channel}#end` });
+    // Validate that we have drawing data
+    if (!base64Data || base64Data.trim() === '') {
+      console.error('[sendDrawing] Error processing image: Input Buffer is empty');
+      res.writeHead(400, { "Content-Type": "text/html" });
+      res.write("No drawing data provided. Please draw something before sending.");
       res.end();
-      console.log(`[sendDrawing] done, redirected (+${Date.now()-t0}ms)`);
-    });
+      return;
+    }
+
+    // Remove the data URL prefix
+    const base64Image = base64Data.split(';base64,').pop();
+    
+    // Validate the base64 string is not empty
+    if (!base64Image || base64Image.trim() === '') {
+      console.error('[sendDrawing] Error processing image: Base64 data is empty after split');
+      res.writeHead(400, { "Content-Type": "text/html" });
+      res.write("Invalid drawing data format. Please try again.");
+      res.end();
+      return;
+    }
+
+    const imageBuffer = Buffer.from(base64Image, 'base64');
+    console.log(`[sendDrawing] imageBuffer size=${imageBuffer.length} bytes (+${Date.now()-t0}ms)`);
+    
+    // Validate the buffer is not empty
+    if (!imageBuffer || imageBuffer.length === 0) {
+      console.error('[sendDrawing] Error processing image: Generated buffer is empty');
+      res.writeHead(400, { "Content-Type": "text/html" });
+      res.write("Failed to process drawing data. Please try again.");
+      res.end();
+      return;
+    }
+
+    // Discord.js requires Buffer for attachments
+    const webhookOptions = {
+      username: member.displayName || member.user.tag,
+      avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
+      files: [{
+        attachment: imageBuffer,
+        name: "drawing.png"
+      }]
+    };
+    
+    // Only add content if there's a message
+    if (processedmessage && processedmessage.length > 0) {
+      webhookOptions.content = processedmessage;
+    }
+    
+    console.log(`[sendDrawing] calling webhook.send (+${Date.now()-t0}ms)`);
+    const message = await webhook.send(webhookOptions);
+    console.log(`[sendDrawing] webhook.send complete (+${Date.now()-t0}ms)`);
+    bot.addToCache(message);
+    
+    res.writeHead(302, { "Location": `/channels/${parsedurl.channel}#end` });
+    res.end();
+    console.log(`[sendDrawing] done, redirected (+${Date.now()-t0}ms)`);
   } catch (err) {
     console.error(`[sendDrawing] Error (+${Date.now()-t0}ms):`, err);
     res.writeHead(500, { "Content-Type": "text/html" });
