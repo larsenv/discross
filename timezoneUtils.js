@@ -204,10 +204,52 @@ function areDifferentDays(date1, date2, timezone) {
   }
 }
 
+/**
+ * Format a timestamp for use in forwarded message origin footers.
+ * Shows time only (e.g. "12:20 PM") if the message was sent today,
+ * otherwise shows date only (e.g. "01/15/26") with no time component.
+ * @param {Date} date - Date object to format
+ * @param {string|null} timezone - Timezone string or null for default
+ * @returns {string} - Formatted time or date string
+ */
+function formatForwardedTimestamp(date, timezone) {
+  try {
+    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const now = new Date();
+    const messageComps = getDateComponentsInTimezone(date, userTimezone);
+    const todayComps = getDateComponentsInTimezone(now, userTimezone);
+
+    const messageDateOnly = Date.UTC(messageComps.year, messageComps.month - 1, messageComps.day);
+    const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
+    const diffDays = Math.round((todayDateOnly - messageDateOnly) / MILLISECONDS_PER_DAY);
+
+    if (diffDays === 0) {
+      return date.toLocaleString('en-US', {
+        timeZone: userTimezone,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } else {
+      return date.toLocaleString('en-US', {
+        timeZone: userTimezone,
+        month: '2-digit',
+        day: '2-digit',
+        year: '2-digit'
+      });
+    }
+  } catch (err) {
+    console.error('Error formatting forwarded timestamp:', err);
+    return date.toLocaleDateString('en-US');
+  }
+}
+
 module.exports = {
   getClientIP,
   getTimezoneFromIP,
   formatDateWithTimezone,
   formatDateSeparator,
-  areDifferentDays
+  areDifferentDays,
+  formatForwardedTimestamp
 };
