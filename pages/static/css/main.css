@@ -453,6 +453,7 @@ button:focus, input:focus, textarea:focus {
     font-weight: 500;
     border: none;
     cursor: pointer;
+    transition: background-color 0.2s ease;
     margin: 8px 0;
 }
 .discross-button:hover { background: #4752c4; }
@@ -477,6 +478,21 @@ button:focus, input:focus, textarea:focus {
     font-size: 1.5rem;
     color: #dddddd;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+
+/* Warning box (used in sync_warning embedded template) */
+.warning-box {
+    background: #5865f2;
+    border: 2px solid #4752c4;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+    text-align: center;
+}
+/* White button inside warning box */
+.warning-box .discross-button {
+    background: #ffffff !important;
+    color: #5865f2 !important;
 }
 
 /* Category collapse (server page) */
@@ -891,6 +907,12 @@ html.page-server .amoled-theme #wrapper .warning-box {
 html.page-server .amoled-theme #wrapper .warning-box .discross-button {
     background: #ffffff !important;
     color: #5865f2 !important;
+}
+/* Keep warning box child elements purple (counteract the #wrapper * wildcard above) */
+html.page-server .amoled-theme #wrapper .warning-box img,
+html.page-server .amoled-theme #wrapper .warning-box font,
+html.page-server .amoled-theme #wrapper .warning-box b {
+    background: #5865f2 !important;
 }
 
 /* ================================================================
