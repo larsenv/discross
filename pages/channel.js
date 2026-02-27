@@ -288,8 +288,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
         unicode_emoji_matches.forEach(match => {
           const output = unicodeToTwemojiCode(match);
-          const emojiExt = animationsCookie === 1 ? 'gif' : 'png';
-          messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.${emojiExt}" width="${emojiPxSize}" height="${emojiPxSize}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+          messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.gif" width="${emojiPxSize}" height="${emojiPxSize}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
         });
       }
 

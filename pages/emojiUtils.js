@@ -3,6 +3,10 @@ const emojiRegex = require('./twemojiRegex').regex;
 
 const db = new sqlite3('db/discross.db');
 
+// Ensure cache tables exist on this connection before preparing statements
+db.prepare('CREATE TABLE IF NOT EXISTS emoji_cache (emoji_key TEXT PRIMARY KEY, twemoji_code TEXT)').run();
+db.prepare('CREATE TABLE IF NOT EXISTS custom_emoji_cache (emoji_id TEXT PRIMARY KEY, emoji_name TEXT, animated INTEGER)').run();
+
 const _getCode = db.prepare('SELECT twemoji_code FROM emoji_cache WHERE emoji_key=?');
 const _insertCode = db.prepare('INSERT OR IGNORE INTO emoji_cache (emoji_key, twemoji_code) VALUES (?,?)');
 const _insertCustom = db.prepare('INSERT OR IGNORE INTO custom_emoji_cache (emoji_id, emoji_name, animated) VALUES (?,?,?)');
@@ -56,18 +60,18 @@ function cacheCustomEmoji(emojiId, emojiName, animated) {
 
 /**
  * Replace unicode emojis in text with twemoji <img> tags.
+ * Always uses .gif extension since only GIF twemoji files are available.
  * @param {string} text - Text that may contain unicode emojis
  * @param {number} sizePx - Size in pixels (e.g. 22)
  * @param {string} sizeEm - Size in em (e.g. "1.375em")
- * @param {string} ext - File extension: "gif" or "png"
  * @returns {string} Text with unicode emojis replaced by img tags
  */
-function processUnicodeEmojiInText(text, sizePx, sizeEm, ext) {
+function processUnicodeEmojiInText(text, sizePx, sizeEm) {
   if (!text.match(emojiRegex)) return text;
   const matches = [...text.match(emojiRegex)];
   matches.forEach(match => {
     const code = unicodeToTwemojiCode(match);
-    text = text.replace(match, `<img src="/resources/twemoji/${code}.${ext}" width="${sizePx}" height="${sizePx}" style="width: ${sizeEm}; height: ${sizeEm}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+    text = text.replace(match, `<img src="/resources/twemoji/${code}.gif" width="${sizePx}" height="${sizePx}" style="width: ${sizeEm}; height: ${sizeEm}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
   });
   return text;
 }
