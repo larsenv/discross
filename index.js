@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config({ quiet: true })
 const path = require('path')
 const fs = require('fs')
 const querystring = require('querystring')
