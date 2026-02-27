@@ -40,6 +40,15 @@ async function getOrCreateWebhook(channel, guildID) {
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock({ timeout: 30000 }); // 30-second timeout to prevent indefinite queue buildup
 
+// Wrap a promise with a timeout so Discord API calls don't hang the request indefinitely
+function withTimeout(promise, ms) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Discord API call timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
   try {
     await lock.acquire(discordID, async () => {
@@ -59,10 +68,10 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       }
 
       // Allow sending drawings with or without a message
-      const channel = await bot.client.channels.fetch(parsedurl.channel);
+      const channel = await withTimeout(bot.client.channels.fetch(parsedurl.channel), 15000);
       let member;
       try {
-        member = await channel.guild.members.fetch(discordID);
+        member = await withTimeout(channel.guild.members.fetch(discordID), 15000);
       } catch (err) {
         console.error("Failed to fetch member:", err);
         res.writeHead(500, { "Content-Type": "text/html" });
@@ -77,7 +86,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         return;
       }
 
-      const webhook = await getOrCreateWebhook(channel, channel.guild.id);
+      const webhook = await withTimeout(getOrCreateWebhook(channel, channel.guild.id), 15000);
       // webhook is already in the correct channel (fetched via channel.fetchWebhooks()),
       // so webhook.edit() is not needed and could hang if Discord API is slow
 
@@ -155,7 +164,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         webhookOptions.content = processedmessage;
       }
       
-      const message = await webhook.send(webhookOptions);
+      const message = await withTimeout(webhook.send(webhookOptions), 30000);
       bot.addToCache(message);
       
       console.log("Redirecting to channel...");
