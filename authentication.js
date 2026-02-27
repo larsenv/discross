@@ -96,14 +96,18 @@ exports.login = async function (username, password, totpToken) {
         if (!code) {
           return { status: 'error', reason: 'Invalid 2FA code!' }
         }
-        // Try TOTP first
-        const totpValid = otplib.verifySync({ type: 'totp', token: code, secret: match.totp_secret })
-        if (!totpValid.valid) {
+        // Try TOTP first (only if it looks like a 6-digit code)
+        let codeAccepted = false
+        if (/^\d{6}$/.test(code)) {
+          const totpValid = otplib.verifySync({ type: 'totp', token: code, secret: match.totp_secret })
+          codeAccepted = totpValid.valid
+        }
+        if (!codeAccepted) {
           // Try backup code
-          const backupResult = await verifyBackupCode(match.discordID, code)
-          if (!backupResult) {
-            return { status: 'error', reason: 'Invalid 2FA code!' }
-          }
+          codeAccepted = await verifyBackupCode(match.discordID, code)
+        }
+        if (!codeAccepted) {
+          return { status: 'error', reason: 'Invalid 2FA code!' }
         }
       }
       const sessionID = uuidv4()
