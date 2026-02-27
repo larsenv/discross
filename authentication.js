@@ -226,7 +226,19 @@ exports.beginTOTPSetup = async function (discordID, username) {
 
 // Verify TOTP code against pending secret, enable 2FA, generate backup codes
 // Returns { success, backupCodes } or { success: false, error }
-exports.verifyAndEnableTOTP = async function (discordID, token) {
+exports.verifyAndEnableTOTP = async function (discordID, password, token) {
+  // Check password first
+  const user = querySingle('SELECT hashedPassword, totp_secret FROM users WHERE discordID=?', [discordID])
+  if (!user) {
+    return { success: false, error: 'User not found.' }
+  }
+  if (user.totp_secret) {
+    return { success: false, error: '2FA is already enabled. Disable it first before setting it up again.' }
+  }
+  const correctPassword = await bcrypt.compare(password || '', user.hashedPassword)
+  if (!correctPassword) {
+    return { success: false, error: 'Incorrect password.' }
+  }
   const time = unixTime()
   const pending = querySingle('SELECT secret FROM pending_totp WHERE discordID=? AND expires > ?', [discordID, time])
   if (!pending) {
@@ -250,6 +262,25 @@ exports.verifyAndEnableTOTP = async function (discordID, token) {
     queryRun('INSERT INTO backup_codes (discordID, code_hash) VALUES (?,?)', [discordID, hash])
   }
   return { success: true, backupCodes }
+}
+
+// Disable 2FA after verifying password
+exports.disableTOTP = async function (discordID, password) {
+  const user = querySingle('SELECT hashedPassword, totp_secret FROM users WHERE discordID=?', [discordID])
+  if (!user) {
+    return { success: false, error: 'User not found.' }
+  }
+  if (!user.totp_secret) {
+    return { success: false, error: '2FA is not enabled on this account.' }
+  }
+  const correctPassword = await bcrypt.compare(password || '', user.hashedPassword)
+  if (!correctPassword) {
+    return { success: false, error: 'Incorrect password.' }
+  }
+  queryRun('UPDATE users SET totp_secret=NULL WHERE discordID=?', [discordID])
+  queryRun('DELETE FROM backup_codes WHERE discordID=?', [discordID])
+  queryRun('DELETE FROM pending_totp WHERE discordID=?', [discordID])
+  return { success: true }
 }
 
 exports.getTOTPStatus = function (discordID) {

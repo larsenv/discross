@@ -237,6 +237,20 @@ server.on('request', async (req, res) => {
           res.writeHead(500, { 'Content-Type': 'text/plain' })
           res.end('Internal Server Error')
         })
+      } else if (parsedurl == "/disable2fa") {
+        (async () => {
+          const discordID = await auth.checkAuth(req, res, true)
+          if (discordID) {
+            await setup2fapage.handleDisable2FA(bot, req, res, body, discordID)
+          } else {
+            res.writeHead(302, { Location: '/login.html' })
+            res.end()
+          }
+        })().catch((err) => {
+          console.error(err)
+          res.writeHead(500, { 'Content-Type': 'text/plain' })
+          res.end('Internal Server Error')
+        })
       } else {
         auth.handleLoginRegister(req, res, body)
       }
