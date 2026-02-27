@@ -52,7 +52,6 @@
                         <img src="/resources/twemoji/1f4e4.gif" alt="Upload file" width="24" height="24"
                             style="width: 24px; height: 24px;">
                     </button>
-                    <input type="file" id="fileUpload" style="display:none;" onchange="handleFileSelect(this)">
                     <a href="/draw/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
                         <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" width="24" height="24" style="width: 24px; height: 24px;">
                     </a>
@@ -66,10 +65,11 @@
                 {$INPUT}
             </form>
             
-            <!-- Hidden form for traditional file upload (for older browsers like 3DS) -->
+            <!-- Hidden form for traditional file upload (for older browsers like PS3, 3DS) -->
             <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data" style="display:none;">
                 <input type="hidden" name="channel" id="channelUpload" value="{$CHANNEL_ID}">
                 <input type="hidden" name="message" value="">
+                <input type="file" id="fileUpload" name="file" style="display:none;" onchange="handleFileSelect(this)">
             </form>
         </div>
         <a id="end" name="end"></a>
