@@ -66,7 +66,6 @@ var changepasswordpage = require('./pages/changepassword.js')
 var setup2fapage = require('./pages/setup2fa.js')
 var privacypage = require('./pages/privacy.js')
 var termspage = require('./pages/terms.js')
-var dmpage = require('./pages/dm.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -301,11 +300,6 @@ server.on('request', async (req, res) => {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
         await serverpage.processServer(bot, req, res, args, discordID)
-      }
-    } else if (args[1] === 'dm') {
-      const discordID = await auth.checkAuth(req, res)
-      if (discordID) {
-        await dmpage.processDM(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'channels') {
       const discordID = await auth.checkAuth(req, res)
