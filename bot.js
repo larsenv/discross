@@ -13,14 +13,13 @@ const intentsArray = [
   Discord.GatewayIntentBits.Guilds,
   Discord.GatewayIntentBits.GuildMessages,
   Discord.GatewayIntentBits.MessageContent,
-  Discord.GatewayIntentBits.DirectMessages,
 ];
 if (guildMembersIntentEnabled) {
   intentsArray.push(Discord.GatewayIntentBits.GuildMembers);
 }
 
 const client = new Discord.Client({ 
-  partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.User], 
+  partials: [Discord.Partials.Message, Discord.Partials.Channel], 
   shards: "auto", 
   intents: intentsArray
 })
@@ -101,6 +100,3 @@ exports.getHistoryCached = async function (chnl) {
 
 exports.client = client
 
-exports.getDMChannels = function () {
-  return client.channels.cache.filter(c => c.type === Discord.ChannelType.DM);
-}

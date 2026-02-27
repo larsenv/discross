@@ -84,19 +84,6 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
           return;
         }
 
-        // Handle DM channels separately — no guild, no webhook, no member lookup needed
-        if (channel.type === discord.ChannelType.DM) {
-          const message = await channel.send({ content: query.message });
-          bot.addToCache(message);
-
-          const sessionID = parsedurl.searchParams.get('sessionID') || '';
-          const sessionPart = sessionID ? '?sessionID=' + encodeURIComponent(sessionID) : '';
-          const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)));
-          res.writeHead(302, { "Location": baseUrl + '/dm/' + channelId + sessionPart });
-          res.end();
-          return;
-        }
-
         // Attempt to fetch member and check permissions
         let member;
         try {
