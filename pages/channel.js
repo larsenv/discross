@@ -136,7 +136,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
   const handlemessage = async function (item) {
     if (lastauthor) {
-      if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000))) {
+      if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000 || (item.reference && item.reference.type !== MessageReferenceType.Forward)))) {
 
         if (isForwarded && lastMentioned) {
           currentmessage = tmpl_message_forwarded_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
@@ -222,7 +222,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             if (fwdChannel) {
               const timeDisplay = formatForwardedTimestamp(forwardedMessage.createdAt, clientTimezone);
               const jumpLink = `/channels/${fwdChannelId}/${forwardedMessage.id}`;
-              const chanLink = `<a href="${jumpLink}" style="color:#b5bac1;text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay} &gt;</a>`;
+              const chanLink = `<a href="${jumpLink}" style="color:#b5bac1;text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
               if (fwdGuildId === chnl.guild.id) {
                 originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${chanLink}</font>`;
               } else {
@@ -578,7 +578,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       });
     }
 
-    if (!lastauthor || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000) {
+    if (!lastauthor || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000 || isReply) {
       messagetext = tmpl_first_message_content.replace("{$MESSAGE_TEXT}", messagetext);
     } else {
       messagetext = tmpl_merged_message_content.replace("{$MESSAGE_TEXT}", messagetext);
