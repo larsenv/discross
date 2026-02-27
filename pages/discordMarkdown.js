@@ -43,6 +43,10 @@ function highlightCode(code, lang) {
 function renderDiscordMarkdown(text) {
   if (!text) return '';
 
+  // Replace curly/smart apostrophes and quotes with straight ones
+  // The Rodin font does not render them properly
+  text = text.replace(/\u2018|\u2019/g, "'").replace(/\u201C|\u201D/g, '"');
+
   const codePlaceholders = [];
   const underlinePlaceholders = [];
   const spoilerPlaceholders = [];
