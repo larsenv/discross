@@ -6,14 +6,23 @@ const connectionHandler = require('./connectionHandler.js')
 
 const cachelength = 100 // Length of message history
 const msghistory = {}
+
+// Optionally enable Guild Members Intent for automatic server sync
+const guildMembersIntentEnabled = process.env.GUILD_MEMBERS_INTENT === 'true';
+const intentsArray = [
+  Discord.GatewayIntentBits.Guilds,
+  Discord.GatewayIntentBits.GuildMessages,
+  Discord.GatewayIntentBits.MessageContent,
+  Discord.GatewayIntentBits.DirectMessages,
+];
+if (guildMembersIntentEnabled) {
+  intentsArray.push(Discord.GatewayIntentBits.GuildMembers);
+}
+
 const client = new Discord.Client({ 
-  partials: [Discord.Partials.Message, Discord.Partials.Channel], 
+  partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.User], 
   shards: "auto", 
-  intents: [
-    Discord.GatewayIntentBits.Guilds, 
-    Discord.GatewayIntentBits.GuildMessages, 
-    Discord.GatewayIntentBits.MessageContent
-  ]
+  intents: intentsArray
 })
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
@@ -46,6 +55,21 @@ client.on('messageCreate', async function (msg) {
   connectionHandler.sendToAll(msg.content, msg.channel.id)
 })
 
+// Auto-sync server membership when GuildMembers intent is enabled
+if (guildMembersIntentEnabled) {
+  client.on('guildMemberAdd', async (member) => {
+    // Only add the server if the user is a registered Discross user
+    const user = auth.dbQuerySingle('SELECT discordID FROM users WHERE discordID=?', [member.user.id]);
+    if (user) {
+      auth.insertServers([{ serverID: member.guild.id, discordID: member.user.id, icon: member.guild.icon }]);
+    }
+  });
+
+  client.on('guildMemberRemove', async (member) => {
+    auth.dbQueryRun('DELETE FROM servers WHERE serverID=? AND discordID=?', [member.guild.id, member.user.id]);
+  });
+}
+
 // client.on('messageDelete
 
 exports.startBot = async function () {
@@ -76,3 +100,7 @@ exports.getHistoryCached = async function (chnl) {
 }
 
 exports.client = client
+
+exports.getDMChannels = function () {
+  return client.channels.cache.filter(c => c.type === Discord.ChannelType.DM);
+}
