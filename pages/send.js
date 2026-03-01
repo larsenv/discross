@@ -122,29 +122,33 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
           }
         } while (m);
 
-        // Handle reply if reply_message_id is present
-        if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
-          try {
-            let reply_message = await channel.messages.fetch(query.reply_message_id);
-            let reply_message_content = reply_message.content;
-            if (reply_message_content.length > 30) {
-              reply_message_content = reply_message_content.substring(0, 30) + "...";
+        const replyMessageId = (query.reply_message_id && isValidSnowflake(query.reply_message_id)) ? query.reply_message_id : null;
+
+        let message;
+        if (replyMessageId) {
+          // Use REST directly to include message_reference (native reply), since
+          // discord.js's WebhookMessageCreateOptions does not expose the reply option.
+          const rawMsg = await bot.client.rest.post(
+            `/webhooks/${webhook.id}/${webhook.token}?wait=true`,
+            {
+              body: {
+                content: processedmessage,
+                username: normalizeWeirdUnicode(member.displayName || member.user.tag),
+                avatar_url: member.user.avatarURL() || member.user.defaultAvatarURL,
+                message_reference: { message_id: replyMessageId, fail_if_not_exists: false },
+                allowed_mentions: { parse: ['users', 'roles'] },
+              },
             }
-            let author_id = reply_message.author.id;
-            let author_mention = `<@${author_id}>`;
-
-            processedmessage = `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
-          } catch (err) {
-            console.error("Failed to reply:", err);
-          }
+          );
+          message = { id: rawMsg.id, channel: { id: channel.id } };
+        } else {
+          message = await webhook.send({
+            content: processedmessage,
+            username: normalizeWeirdUnicode(member.displayName || member.user.tag),
+            avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
+            disableEveryone: true,
+          });
         }
-
-        const message = await webhook.send({
-          content: processedmessage,
-          username: normalizeWeirdUnicode(member.displayName || member.user.tag),
-          avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-          disableEveryone: true,
-        });
 
         bot.addToCache(message);
       }
