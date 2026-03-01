@@ -46,8 +46,18 @@ so imma leave it as is :)
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 
-function processServerChannels(server, member, response, sessionParam) {
+async function processServerChannels(server, member, response, sessionParam) {
   try {
+    const discordID = member.id;
+
+    // Fetch active threads once so their member caches are populated
+    let activeThreadsResult = null;
+    try {
+      activeThreadsResult = await server.channels.fetchActiveThreads();
+    } catch (err) {
+      console.error("Failed to fetch active threads:", err);
+    }
+
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
@@ -64,32 +74,34 @@ function processServerChannels(server, member, response, sessionParam) {
       );
     });
 
-    // Add threads from voice channels (voice channel threads)
-    // Threads are in the guild's channels cache with parentId pointing to voice channels
-    const allThreads = server.channels.cache.filter(channel => 
-      channel.type == ChannelType.PublicThread || channel.type == ChannelType.PrivateThread
-    );
-    
-    // Group threads by their parent voice channel for efficient insertion
+    // Collect threads the user is a member of, from all parent channel types
+    // Use fetchActiveThreads result when available (member caches are populated),
+    // fall back to guild channel cache
+    const threadSource = activeThreadsResult
+      ? activeThreadsResult.threads
+      : server.channels.cache.filter(channel =>
+          channel.type == ChannelType.PublicThread ||
+          channel.type == ChannelType.PrivateThread ||
+          channel.type == ChannelType.AnnouncementThread
+        );
+
+    // Group by parent, keeping only threads the user is a member of
     const threadsByParent = new Map();
-    allThreads.forEach(thread => {
-      if (thread.parentId) {
-        const parent = server.channels.cache.get(thread.parentId);
-        // Only collect threads whose parent is a voice channel
-        if (parent && parent.type == ChannelType.GuildVoice) {
-          if (!threadsByParent.has(thread.parentId)) {
-            threadsByParent.set(thread.parentId, []);
-          }
-          threadsByParent.get(thread.parentId).push(thread);
-        }
+    threadSource.forEach(thread => {
+      if (!thread.parentId) return;
+      if (!thread.members.cache.has(discordID)) return;
+      if (!threadsByParent.has(thread.parentId)) {
+        threadsByParent.set(thread.parentId, []);
       }
+      threadsByParent.get(thread.parentId).push(thread);
     });
-    
-    // Insert threads after their parent voice channels in reverse order to maintain positions
+
+    // Insert threads after their parent channels (any type) in reverse order to maintain positions
     for (let i = channelsSorted.length - 1; i >= 0; i--) {
       const channel = channelsSorted[i];
-      if (channel.type == ChannelType.GuildVoice && threadsByParent.has(channel.id)) {
-        const threads = threadsByParent.get(channel.id).sort((a, b) => a.position - b.position);
+      if (threadsByParent.has(channel.id)) {
+        const threads = threadsByParent.get(channel.id)
+          .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
         channelsSorted.splice(i + 1, 0, ...threads);
       }
     }
@@ -127,7 +139,11 @@ function processServerChannels(server, member, response, sessionParam) {
             // Voice channel with text capability (#14)
             channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           }
-        } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
+        } else if (
+          item.type == ChannelType.PublicThread ||
+          item.type == ChannelType.PrivateThread ||
+          item.type == ChannelType.AnnouncementThread
+        ) {
           channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildStageVoice) {
           // Stage channels
@@ -260,7 +276,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           response = response.replace("{$DISCORD_NAME}", '<b><font color="#999999" size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
-            response = processServerChannels(targetServer, member, response, sessionParam);
+            response = await processServerChannels(targetServer, member, response, sessionParam);
           } else {
             response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
           }
