@@ -291,13 +291,23 @@ function floodFill(startX, startY) {
 
     if (targetR === fillR && targetG === fillG && targetB === fillB && targetA === 255) return;
 
+    // Tolerance of 32 (squared: 1024) catches anti-aliased edge pixels that are
+    // blended near-target colors, preventing the stray-pixel halo left by exact fill.
+    var tolSq = 32 * 32;
+    var visited = [];
     var stack = [startX + startY * w];
     while (stack.length > 0) {
         var pos = stack.pop();
+        if (visited[pos]) continue;
+        visited[pos] = 1;
         var x = pos % w;
         var y = (pos - x) / w;
         var i = pos * 4;
-        if (data[i] !== targetR || data[i + 1] !== targetG || data[i + 2] !== targetB || data[i + 3] !== targetA) continue;
+        var dr = data[i] - targetR;
+        var dg = data[i + 1] - targetG;
+        var db = data[i + 2] - targetB;
+        var da = data[i + 3] - targetA;
+        if (dr*dr + dg*dg + db*db + da*da > tolSq) continue;
         data[i] = fillR;
         data[i + 1] = fillG;
         data[i + 2] = fillB;
