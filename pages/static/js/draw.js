@@ -17,6 +17,7 @@ var lastX = 0;
 var lastY = 0;
 var currColor = '#000000';
 var currSize = 5;
+var currTool = 'draw';
 
 // Point queue for batched rendering.
 // Instead of calling ctx.stroke() on every mousemove (one repaint per event,
@@ -153,8 +154,12 @@ setInterval(flushDrawQueue, 30);
 // --- DRAWING EVENTS ---
 canvas.onmousedown = function(e) {
     if(e.preventDefault) e.preventDefault(); // Stop Wii Drag
-    isDrawing = true;
     var pos = getPos(e);
+    if (currTool === 'fill') {
+        floodFill(pos.x, pos.y);
+        return false;
+    }
+    isDrawing = true;
     lastX = pos.x;
     lastY = pos.y;
     lastDrawnX = pos.x;
@@ -200,9 +205,13 @@ function getTouchPos(e) {
 
 canvas.addEventListener('touchstart', function(e) {
     if(e.preventDefault) e.preventDefault(); // Prevent scrolling
-    isDrawing = true;
     var pos = getTouchPos(e);
     if (!pos) return;
+    if (currTool === 'fill') {
+        floodFill(pos.x, pos.y);
+        return;
+    }
+    isDrawing = true;
     lastX = pos.x;
     lastY = pos.y;
     lastDrawnX = pos.x;
@@ -250,6 +259,55 @@ function setColor(col, id) {
         if(el) el.style.border = "2px solid #555";
     }
     document.getElementById(id).style.border = "2px solid white";
+}
+
+function setTool(tool) {
+    currTool = (currTool === tool) ? 'draw' : tool;
+    var fillBtn = document.getElementById('btn-fill');
+    if (fillBtn) {
+        fillBtn.style.outline = (currTool === 'fill') ? '2px solid white' : '';
+    }
+}
+
+function floodFill(startX, startY) {
+    startX = Math.round(startX);
+    startY = Math.round(startY);
+    if (startX < 0 || startX >= canvas.width || startY < 0 || startY >= canvas.height) return;
+
+    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    var data = imageData.data;
+    var w = canvas.width;
+    var h = canvas.height;
+
+    var fillR = parseInt(currColor.slice(1, 3), 16);
+    var fillG = parseInt(currColor.slice(3, 5), 16);
+    var fillB = parseInt(currColor.slice(5, 7), 16);
+
+    var idx = (startY * w + startX) * 4;
+    var targetR = data[idx];
+    var targetG = data[idx + 1];
+    var targetB = data[idx + 2];
+    var targetA = data[idx + 3];
+
+    if (targetR === fillR && targetG === fillG && targetB === fillB && targetA === 255) return;
+
+    var stack = [startX + startY * w];
+    while (stack.length > 0) {
+        var pos = stack.pop();
+        var x = pos % w;
+        var y = (pos - x) / w;
+        var i = pos * 4;
+        if (data[i] !== targetR || data[i + 1] !== targetG || data[i + 2] !== targetB || data[i + 3] !== targetA) continue;
+        data[i] = fillR;
+        data[i + 1] = fillG;
+        data[i + 2] = fillB;
+        data[i + 3] = 255;
+        if (x > 0) stack.push(pos - 1);
+        if (x < w - 1) stack.push(pos + 1);
+        if (y > 0) stack.push(pos - w);
+        if (y < h - 1) stack.push(pos + w);
+    }
+    ctx.putImageData(imageData, 0, 0);
 }
 
 function setSize(s, id) {
