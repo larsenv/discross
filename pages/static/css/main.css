@@ -975,6 +975,7 @@ html.page-server .amoled-theme #wrapper .warning-box b {
     .c-box { width: 20px; height: 20px; margin: 2px; }
     .s-btn { margin: 0 2px; }
     #btn-clear { font-size: 12px !important; height: 36px !important; padding: 0 12px !important; }
+    #btn-fill { font-size: 12px !important; height: 36px !important; padding: 0 12px !important; }
     .mobile-break { display: block; }
 
     .message-form-container { padding: 8px; }
@@ -999,6 +1000,7 @@ html.page-server .amoled-theme #wrapper .warning-box b {
     .c-box { width: 10px; height: 10px; margin: 0; border-width: 1px; }
     .s-btn { margin: 0 1px; padding: 1px; }
     #btn-clear { font-size: 11px !important; height: 26px !important; padding: 0 6px !important; }
+    #btn-fill { font-size: 11px !important; height: 26px !important; padding: 0 6px !important; }
     #emoji { display: none !important; }
     /* position:fixed is unsupported in Opera 9.5 on DSi */
     .menu-button { display: none !important; }
