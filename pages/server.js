@@ -175,6 +175,13 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     let serversDeleted = 0; // Track if servers were deleted due to sync issues
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
 
+    if (!clientIsReady) {
+      res.writeHead(503, { "Content-Type": "text/plain" });
+      res.write("The bot isn't connected, try again in a moment");
+      res.end();
+      return;
+    }
+
     const parsedUrl = new URL(req.url, 'http://localhost');
     const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
     const urlTheme = parsedUrl.searchParams.get('theme');
