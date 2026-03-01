@@ -44,6 +44,7 @@ const file_download_template = fs.readFileSync('pages/templates/channel/file_dow
 const reactions_template = fs.readFileSync('pages/templates/message/reactions.html', 'utf-8');
 const reaction_template = fs.readFileSync('pages/templates/message/reaction.html', 'utf-8');
 const date_separator_template = fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8');
+const message_continuation_template = fs.readFileSync('pages/templates/message/message_continuation.html', 'utf-8');
 // Constants
 const FORWARDED_CONTENT_MAX_LENGTH = 100;
 
@@ -136,6 +137,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
   let lastMentioned = false;
   let lastReply = false;
   let lastReplyData = {};
+  let isContinuationBlock = false;
 
   const memberCache = new Map();
 
@@ -151,7 +153,9 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000 || (item.reference && item.reference.type !== MessageReferenceType.Forward) || lastReply))) {
 
         if (currentmessage !== '') {
-          if (isForwarded && lastMentioned) {
+          if (isContinuationBlock && !isForwarded && !lastMentioned) {
+            currentmessage = message_continuation_template.replace("{$MESSAGE_CONTENT}", currentmessage);
+          } else if (isForwarded && lastMentioned) {
             currentmessage = tmpl_message_forwarded_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
             currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
             currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
@@ -589,8 +593,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
     if (!lastauthor || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000 || isReply) {
       messagetext = tmpl_first_message_content.replace("{$MESSAGE_TEXT}", messagetext);
+      // Empty buffer means this is the first message in a new block; not a continuation.
+      if (currentmessage === '') isContinuationBlock = false;
     } else {
       messagetext = tmpl_merged_message_content.replace("{$MESSAGE_TEXT}", messagetext);
+      // Empty buffer means this block starts as a stacked continuation (same author, recent, no reply).
+      if (currentmessage === '') isContinuationBlock = true;
     }
 
     const reactionsHtml = processReactions(item.reactions, imagesCookie, tmpl_reactions, tmpl_reaction, animationsCookie);
