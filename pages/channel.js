@@ -182,7 +182,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           const contentPart = lastReplyData.content ? ' ' + lastReplyData.content : '';
           replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
             '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-            '<td style="padding-left:4px;vertical-align:top;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPart + '</font></td>' +
+            '<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPart + '</font></td>' +
             '</tr></table>';
         }
         currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
@@ -291,6 +291,19 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         if (replyMessage) {
           if (!replyMessage.author?.bot) {
             replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
+          }
+        } else if (replyUser?.id) {
+          // Reply message is deleted/inaccessible — try to resolve member from cache or guild
+          const cacheKey = replyUser.id;
+          if (memberCache.has(cacheKey)) {
+            replyMember = memberCache.get(cacheKey);
+          } else {
+            try {
+              replyMember = await chnl.guild.members.fetch(replyUser.id);
+              memberCache.set(cacheKey, replyMember);
+            } catch (err) {
+              // User left the server or is otherwise unavailable
+            }
           }
         }
 
