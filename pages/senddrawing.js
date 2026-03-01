@@ -2,7 +2,7 @@ const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
 const { Buffer } = require('buffer');
-const { emojify } = require('discord-emoji-converter');
+const { convertEmoji } = require('./emojiConvert');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -79,7 +79,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     const webhook = await getOrCreateWebhook(channel, channel.guild.id);
     console.log(`[sendDrawing] webhook ready id=${webhook.id} (+${Date.now()-t0}ms)`);
 
-    let processedmessage = emojify(parsedurl.message || "");
+    let processedmessage = convertEmoji(parsedurl.message || "");
     
     // Process mentions only if there's a message
     if (processedmessage) {
