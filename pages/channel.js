@@ -449,6 +449,21 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           if (rawThumbnailUrl) {
             messagetext += `<br><a href="${videoUrl}" target="_blank"><img src="${thumbnailUrl}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
           }
+        } else if (embed.data?.type === 'poll_result') {
+          // Poll result system embed — extract fields and format as human-readable HTML
+          const fieldMap = {};
+          if (embed.fields) embed.fields.forEach(f => { fieldMap[f.name] = f.value; });
+          const prQuestion = fieldMap['poll_question_text'] || '';
+          const prWinnerText = fieldMap['victor_answer_text'] || '';
+          const prWinnerEmoji = fieldMap['victor_answer_emoji_name'] || '';
+          const prWinnerVotes = fieldMap['victor_answer_votes'] || '0';
+          const prTotalVotes = fieldMap['total_votes'] || '0';
+          let prHtml = `<div style="font-size:14px;color:#b9bbbe;margin-top:4px;">`;
+          prHtml += `Poll ended: <b>${escape(prQuestion)}</b><br>`;
+          prHtml += `Winner: ${prWinnerEmoji ? escape(prWinnerEmoji) + ' ' : ''}<b>${escape(prWinnerText)}</b>`;
+          prHtml += ` (${escape(prWinnerVotes)}/${escape(prTotalVotes)} votes)`;
+          prHtml += `</div>`;
+          messagetext += prHtml;
         } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
           if (imagesCookie == 1) {
             const rawImageUrl = embed.thumbnail?.url || embed.image?.url;
@@ -613,7 +628,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         9: 'boosted the server to level 2',
         10: 'boosted the server to level 3',
         11: 'followed this channel',
-        12: 'went live'
+        12: 'went live',
+        46: 'Poll ended'
       };
 
       const systemText = systemMessages[item.type] || 'performed an action';
