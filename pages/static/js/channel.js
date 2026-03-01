@@ -121,13 +121,7 @@ function handleFileSelect(input) {
         // Check if browser supports fetch API (for older browsers like 3DS)
         if (typeof fetch === 'undefined' || typeof FormData === 'undefined') {
             // Use traditional form submission for older browsers
-            var uploadForm = document.getElementById('uploadFileForm');
-            var mainFileInput = document.getElementById('fileUpload');
-            
-            // Move the file input to the upload form temporarily
-            uploadForm.appendChild(mainFileInput);
-            mainFileInput.setAttribute('name', 'file');
-            
+            // The file input is already inside uploadFileForm with name="file"
             uploadFileTraditional();
         } else {
             // Upload file immediately using fetch for modern browsers
