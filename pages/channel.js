@@ -150,47 +150,49 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     if (lastauthor) {
       if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000 || (item.reference && item.reference.type !== MessageReferenceType.Forward) || lastReply))) {
 
-        if (isForwarded && lastMentioned) {
-          currentmessage = tmpl_message_forwarded_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
-          currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
-          currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
-          currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
-          currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
-        } else if (isForwarded) {
-          currentmessage = tmpl_message_forwarded.replace("{$MESSAGE_CONTENT}", currentmessage);
-          currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
-          currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
-          currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
-          currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
-        } else if (lastMentioned) {
-          currentmessage = tmpl_message_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
-          if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
-        } else {
-          currentmessage = tmpl_message.replace("{$MESSAGE_CONTENT}", currentmessage);
-          if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
+        if (currentmessage !== '') {
+          if (isForwarded && lastMentioned) {
+            currentmessage = tmpl_message_forwarded_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
+            currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
+            currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
+            currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+            currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
+          } else if (isForwarded) {
+            currentmessage = tmpl_message_forwarded.replace("{$MESSAGE_CONTENT}", currentmessage);
+            currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
+            currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
+            currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
+            currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
+          } else if (lastMentioned) {
+            currentmessage = tmpl_message_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
+            if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
+          } else {
+            currentmessage = tmpl_message.replace("{$MESSAGE_CONTENT}", currentmessage);
+            if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
+          }
+
+          const displayName = getDisplayName(lastmember, lastauthor);
+          const authorColor = getMemberColor(lastmember, authorText);
+
+          currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
+          currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
+
+          let replyIndicator = '';
+          if (lastReply) {
+            // replyContent is already rendered HTML from renderDiscordMarkdown — do not escape() it
+            const contentPart = lastReplyData.content ? '<font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif"> ' + lastReplyData.content + '</font>' : '';
+            replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
+              '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
+              '<td style="padding-left:4px;vertical-align:top;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;font-weight:600;color:' + lastReplyData.authorColor + '" face="rodin,sans-serif">@' + escape(lastReplyData.author) + '</font>' + contentPart + '</td>' +
+              '</tr></table>';
+          }
+          currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
+          currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", '');
+
+          currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatDateWithTimezone(lastdate, clientTimezone));
+          currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
+          response += currentmessage;
         }
-
-        const displayName = getDisplayName(lastmember, lastauthor);
-        const authorColor = getMemberColor(lastmember, authorText);
-
-        currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
-        currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
-
-        let replyIndicator = '';
-        if (lastReply) {
-          // replyContent is already rendered HTML from renderDiscordMarkdown — do not escape() it
-          const contentPart = lastReplyData.content ? '<font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif"> ' + lastReplyData.content + '</font>' : '';
-          replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-            '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-            '<td style="padding-left:4px;vertical-align:top;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;font-weight:600;color:' + lastReplyData.authorColor + '" face="rodin,sans-serif">@' + escape(lastReplyData.author) + '</font>' + contentPart + '</td>' +
-            '</tr></table>';
-        }
-        currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
-        currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", '');
-
-        currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatDateWithTimezone(lastdate, clientTimezone));
-        currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
-        response += currentmessage;
         currentmessage = "";
       }
     }
