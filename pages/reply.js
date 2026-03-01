@@ -1,7 +1,7 @@
 const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
-const { emojify } = require('discord-emoji-converter');
+const { convertEmoji } = require('./emojiConvert');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -78,7 +78,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
         const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-        let processedmessage = emojify(parsedurl.searchParams.get('message') || '');
+        let processedmessage = convertEmoji(parsedurl.searchParams.get('message') || '');
         const regex = /@([^#]{2,32}#\d{4})/g;
         let m;
         do {
