@@ -117,6 +117,10 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
         if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
           try {
             let reply_message = await channel.messages.fetch(query.reply_message_id);
+            // Verify the reply message belongs to the channel to prevent reply spoofing
+            if (reply_message.channelId !== channel.id) {
+              throw new Error('Reply message does not belong to this channel');
+            }
             let reply_message_content = reply_message.content;
             if (reply_message_content.length > 30) {
               reply_message_content = reply_message_content.substring(0, 30) + "...";
