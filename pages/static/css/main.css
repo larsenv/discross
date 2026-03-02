@@ -33,9 +33,9 @@ body {
    2. TYPOGRAPHY
    ================================================================ */
 
-h1 { margin: 24px 0 12px 0; font-size: 2rem; font-weight: 600; line-height: 1.25; }
-h2 { margin: 20px 0 10px 0; font-size: 1.5rem; font-weight: 600; line-height: 1.25; }
-h3 { margin: 16px 0 8px 0; font-size: 1.125rem; font-weight: 600; line-height: 1.25; }
+h1 { margin: 24px 0 12px 0; font-size: 2rem; font-weight: 600; line-height: 1.25; font-family: inherit; }
+h2 { margin: 20px 0 10px 0; font-size: 1.5rem; font-weight: 600; line-height: 1.25; font-family: inherit; }
+h3 { margin: 16px 0 8px 0; font-size: 1.125rem; font-weight: 600; line-height: 1.25; font-family: inherit; }
 p, ul, .section { line-height: 1.5; margin: 0 0 12px 0; font-size: 0.95rem; }
 ul { padding-left: 20px; }
 
