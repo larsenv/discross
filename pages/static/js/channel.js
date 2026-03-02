@@ -67,6 +67,15 @@ window.onload = function () {
 
 var emojiShowing = false;
 
+function insertEmoji(code) {
+    var input = document.getElementById('message');
+    if (input.value === '') {
+        input.value = code;
+    } else {
+        input.value += ' ' + code;
+    }
+}
+
 function showEmoji() {
     var emojiDiv = document.getElementById("emoji");
     if (emojiShowing) {
