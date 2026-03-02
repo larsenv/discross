@@ -544,6 +544,51 @@ function buildReplyIndicator(replyData, replyText) {
 }
 
 // ---------------------------------------------------------------------------
+// Interaction (slash command) data resolution
+// ---------------------------------------------------------------------------
+
+async function resolveInteractionData(item, chnl, memberCache) {
+  try {
+    const interactionUser = item.interaction?.user;
+    if (!interactionUser) return null;
+
+    let interactionMember;
+    const cached = memberCache.get(interactionUser.id);
+    if (cached !== undefined) {
+      interactionMember = cached;
+    } else {
+      try {
+        interactionMember = await chnl.guild.members.fetch(interactionUser.id);
+        memberCache.set(interactionUser.id, interactionMember);
+      } catch { /* user left or not in guild */ }
+    }
+
+    return {
+      author: getDisplayName(interactionMember, interactionUser),
+      authorColor: getMemberColor(interactionMember),
+      commandName: item.interaction.commandName,
+    };
+  } catch (err) {
+    console.error('Could not process interaction data:', err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Interaction indicator HTML
+// ---------------------------------------------------------------------------
+
+function buildInteractionIndicator(interactionData, textColor) {
+  return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
+    '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
+    `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
+    `<font style="font-size:12px;font-weight:600;color:${interactionData.authorColor}" face="rodin,sans-serif">${escape(interactionData.author)}</font>` +
+    `<font style="font-size:12px;color:${textColor}" face="rodin,sans-serif"> used /${escape(interactionData.commandName)}</font>` +
+    `</td>` +
+    '</tr></table>';
+}
+
+// ---------------------------------------------------------------------------
 // Message group flushing
 // ---------------------------------------------------------------------------
 
@@ -551,6 +596,7 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
   const {
     currentmessage, isForwarded, forwardData,
     lastMentioned, lastReply, lastReplyData,
+    lastInteraction, lastInteractionData,
     lastauthor, lastmember, lastdate, messageid,
     isContinuationBlock,
   } = state;
@@ -582,7 +628,9 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
 
   const displayName  = getDisplayName(lastmember, lastauthor);
   const authorColor  = getMemberColor(lastmember, authorText);
-  const replyIndicator = lastReply ? buildReplyIndicator(lastReplyData, replyText) : '';
+  const replyIndicator = lastReply
+    ? buildReplyIndicator(lastReplyData, replyText)
+    : (lastInteraction ? buildInteractionIndicator(lastInteractionData, replyText) : '');
 
   html = html.replace('{$MESSAGE_AUTHOR}', escape(displayName));
   html = strReplace(html, '{$AUTHOR_COLOR}',    authorColor);
@@ -683,6 +731,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     lastMentioned: false,
     lastReply: false,
     lastReplyData: {},
+    lastInteraction: false,
+    lastInteractionData: {},
     isContinuationBlock: false,
     clientTimezone,
   };
@@ -700,7 +750,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     !isSameAuthor(state.lastmember, state.lastauthor, null, item.author) ||
     item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
     (item.reference && item.reference.type !== MessageReferenceType.Forward) ||
-    state.lastReply;
+    state.lastReply ||
+    state.lastInteraction;
 
   const processItem = async (item) => {
     // Flush the previous group when the author changes or this is the sentinel call
@@ -739,6 +790,13 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       if (data) { isReply = true; replyData = data; }
     }
 
+    let isInteraction = false;
+    let interactionData = {};
+    if (item.interaction) {
+      const data = await resolveInteractionData(item, chnl, memberCache);
+      if (data) { isInteraction = true; interactionData = data; }
+    }
+
     let messagetext = await renderMessageContent(item, context);
 
     const isMentioned = detectMention(item, member, discordID, isReply, replyData);
@@ -747,7 +805,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     const startsNewGroup = !state.lastauthor ||
       !isSameAuthor(state.lastmember, state.lastauthor, currentMember, item.author) ||
       item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
-      isReply;
+      isReply ||
+      isInteraction;
 
     messagetext = startsNewGroup
       ? templates.firstMessageContent.replace('{$MESSAGE_TEXT}', messagetext)
@@ -777,15 +836,17 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
 
     // Advance state
-    state.lastauthor    = item.author;
-    state.lastmember    = currentMember;
-    state.lastdate      = item.createdAt;
-    state.messageid     = item.id;
-    state.isForwarded   = isForwarded;
-    state.forwardData   = forwardData;
-    state.lastMentioned = isMentioned;
-    state.lastReply     = isReply;
-    state.lastReplyData = replyData;
+    state.lastauthor        = item.author;
+    state.lastmember        = currentMember;
+    state.lastdate          = item.createdAt;
+    state.messageid         = item.id;
+    state.isForwarded       = isForwarded;
+    state.forwardData       = forwardData;
+    state.lastMentioned     = isMentioned;
+    state.lastReply         = isReply;
+    state.lastReplyData     = replyData;
+    state.lastInteraction   = isInteraction;
+    state.lastInteractionData = interactionData;
     state.currentmessage += messagetext;
   };
 
