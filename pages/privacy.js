@@ -10,7 +10,7 @@ const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.ht
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
+}
 
 exports.processPrivacy = async function (bot, req, res, args) {
   const discordID = await auth.checkAuth(req, res, true);
