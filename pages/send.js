@@ -2,19 +2,10 @@ const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const { convertEmoji } = require('./emojiConvert');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
-
-async function clean(server, nodelete) {
-  (await server.fetchWebhooks()).forEach(async function (item) {
-    if ((item.owner.username.search("Discross") !== -1) && (item.id !== nodelete)) {
-      try {
-        await item.delete();
-      } catch (err) { }
-    }
-  });
 }
 
 async function getOrCreateWebhook(channel, guildID) {
@@ -103,7 +94,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
         const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-        let processedmessage = query.message;
+        let processedmessage = convertEmoji(query.message || '');
         const regex = /@([^#]{2,32}#\d{4})/g;
         let m;
         do {
@@ -128,6 +119,10 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
         if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
           try {
             let reply_message = await channel.messages.fetch(query.reply_message_id);
+            // Verify the reply message belongs to the channel to prevent reply spoofing
+            if (reply_message.channelId !== channel.id) {
+              throw new Error('Reply message does not belong to this channel');
+            }
             let reply_message_content = reply_message.content;
             if (reply_message_content.length > 30) {
               reply_message_content = reply_message_content.substring(0, 30) + "...";

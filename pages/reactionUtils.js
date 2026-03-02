@@ -6,12 +6,7 @@ function strReplace(string, needle, replacement) {
 }
 
 // Function to process and format reactions
-function processReactions(reactions, imagesCookie, reactions_template, reaction_template, animationsCookie) {
-  // Default animationsCookie to 1 if not provided
-  if (animationsCookie === undefined) {
-    animationsCookie = 1;
-  }
-  
+function processReactions(reactions, imagesCookie, reactions_template, reaction_template, animationsCookie = 1) {
   try {
     // In Discord.js v14, message.reactions is a ReactionManager with a cache property
     // that contains the Collection of MessageReaction objects. Handle both cases.

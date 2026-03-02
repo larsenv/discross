@@ -1,93 +1,11 @@
 var fs = require('fs');
-var escape = require('escape-html');
-var md = require('markdown-it')({ breaks: true, linkify: true });
-var he = require('he'); // Encodes HTML attributes
-const path = require('path');
-const sharp = require("sharp");
-const emojiRegex = require("./twemojiRegex").regex;
-const sanitizer = require("path-sanitizer");
 const { PermissionFlagsBits } = require('discord.js');
-const { channel } = require('diagnostics_channel');
-const fetch = require("sync-fetch");
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const channel_template = fs.readFileSync('pages/templates/draw.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
-const message_template = fs.readFileSync('pages/templates/message/message.html', 'utf-8');
-const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
-const merged_message_content_template = fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8');
-const mention_template = fs.readFileSync('pages/templates/message/mention.html', 'utf-8');
-
-const input_template = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
-const input_disabled_template = fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8');
-
-const no_message_history_template = fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8');
-
-const file_download_template = fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8');
-
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
-
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0.00 Bytes';
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const formattedSize = (bytes / Math.pow(1024, i)).toFixed(2);
-  return `${formattedSize} ${sizes[i]}`;
 }
-
-// Remove any existing anchors with id or name 'end' from HTML
-function removeExistingEndAnchors(html) {
-  // Remove anchors that have id="end" or name="end" (handles both single and double quotes)
-  return html.replace(/<a[^>]*(?:id=['"]end['"]|name=['"]end['"])[^>]*>[\s\S]*?<\/a>/gi, '');
-}
-
-// Get the display name following Discord's order: server nickname -> Discord username -> internal username
-function getDisplayName(member, author) {
-  if (member) {
-    // Server nickname (guild nickname) first
-    if (member.nickname) {
-      return member.nickname;
-    }
-    // Otherwise Discord username (from user object)
-    if (member.user && member.user.globalName) {
-      return member.user.globalName;
-    }
-    if (member.user && member.user.username) {
-      return member.user.username;
-    }
-    // Fallback to member display name
-    return member.displayName;
-  }
-  
-  // For webhooks or when no member data, use author data
-  if (author) {
-    if (author.globalName) {
-      return author.globalName;
-    }
-    return author.username;
-  }
-  
-  return "Unknown User";
-}
-
-// Get the member's highest role color or default to white
-function getMemberColor(member) {
-  if (!member || !member.roles) {
-    return "#ffffff"; // Default white color
-  }
-  
-  // member.roles.color returns the highest role that has a non-zero color set
-  const colorRole = member.roles.color;
-  if (!colorRole) {
-    return "#ffffff"; // No colored role found
-  }
-  
-  // Convert Discord color integer to hex
-  return `#${colorRole.color.toString(16).padStart(6, '0')}`;
-}
-
-// https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
@@ -109,35 +27,25 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
   // URL param takes priority over cookie
   const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
 
-  let boxColor;
+  let boxColor = "#40444b";
 
-  boxColor = "#40444b";
-    
   // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
+  // Note: amoled (theme 2) uses the same boxColor as dark (theme 0)
+  let template;
   if (theme === 1) {
     boxColor = "#ffffff";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-    template = strReplace(template, "{$COLOR}", boxColor);
   } else if (theme === 2) {
-    boxColor = "#40444b";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
-    template = strReplace(template, "{$COLOR}", boxColor);
   } else {
-    boxColor = "#40444b";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
-    template = strReplace(template, "{$COLOR}", boxColor);
   }
+  template = strReplace(template, "{$COLOR}", boxColor);
 
   try {
-    // 1. Setup Variables
-    let response = "";
     let chnl;
     let botMember;
     let member;
-    let user;
-    let final;
-
-    // 2. Fetch Channel & Member Data
     try {
       chnl = await bot.client.channels.fetch(args[2]);
     } catch (err) {
@@ -157,22 +65,13 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       }
 
       // 4. Load & Prepare the Drawing Template
-      // We load the "channel_template" which is your 'draw.html'
       template = strReplace(template, "{$SERVER_ID}", chnl.guild.id);
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
       template = strReplace(template, "{$CHANNEL_NAME}", (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
       template = strReplace(template, "{$SESSION_ID}", urlSessionID);
       template = strReplace(template, "{$SESSION_PARAM}", sessionParam);
 
-      // 6. Security: Check Send Permissions (Optional but good for UX)
-      // Even though we aren't displaying messages, we can check if they are allowed to send drawings.
-      // If your HTML has the form hardcoded, this block mostly just validates the bot's permissions.
-      if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
-         // Optionally handle error or disable form here if you were injecting it
-         // For now, we just pass through since your HTML handles the form
-      }
-
-      // 7. Send the Response
+      // Send the Response
       res.writeHead(200, { "Content-Type": "text/html" });
       res.write(template); 
       res.end();
