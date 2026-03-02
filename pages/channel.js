@@ -459,16 +459,16 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
         if (fwdChannel) {
           const timeDisplay = formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone);
           const jumpLink = `/channels/${fwdMsg.channelId}/${fwdMsg.id}`;
-          const chanLink = `<a href="${jumpLink}" style="color:#b5bac1;text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
+          const chanLink = `<a href="${jumpLink}" class="forwarded-label" style="text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
 
           if (fwdMsg.guildId === chnl.guild.id) {
-            originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${chanLink}</font>`;
+            originHtml = `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${chanLink}</font>`;
           } else {
             const otherGuild = bot.client.guilds.cache.get(fwdMsg.guildId);
             if (otherGuild) {
               try {
                 await otherGuild.members.fetch(discordID);
-                originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
+                originHtml = `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
               } catch { /* user not in that guild */ }
             }
           }
@@ -547,7 +547,7 @@ function buildReplyIndicator(replyData, replyText) {
     ? `<font style="font-size:12px;color:${replyText}" face="rodin,sans-serif"> ${replyData.content}</font>`
     : '';
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
+    '<td class="reply-arrow"></td>' +
     `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
     `<font style="font-size:12px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `${contentPart}</td>` +
