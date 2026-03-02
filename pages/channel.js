@@ -394,7 +394,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         urls.push(url);
       });
       urls.forEach(url => {
-        url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:auto;height:auto;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url);
+        url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url);
       });
     }
 
@@ -431,12 +431,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
             const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
             if (anchorRegex.test(messagetext)) {
-              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="Tenor GIF">`);
+              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="Tenor GIF">`);
               replaced = true;
             }
           }
           if (!replaced) {
-            messagetext += `<br><img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="Tenor GIF">`;
+            messagetext += `<br><img src="${gifUrl}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="Tenor GIF">`;
           }
         } else if (isGiphy && imagesCookie == 1) {
           const rawGifUrl = embed.image?.url || embed.thumbnail?.url;
@@ -447,12 +447,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
             const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
             if (anchorRegex.test(messagetext)) {
-              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="GIPHY GIF">`);
+              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="GIPHY GIF">`);
               replaced = true;
             }
           }
           if (!replaced && gifUrl) {
-            messagetext += `<br><img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="GIPHY GIF">`;
+            messagetext += `<br><img src="${gifUrl}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="GIPHY GIF">`;
           }
         } else if (isYouTube && imagesCookie == 1) {
           const rawThumbnailUrl = embed.thumbnail.url;
@@ -460,7 +460,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           const thumbnailUrl = `/imageProxy/external/${Buffer.from(rawThumbnailUrl).toString('base64')}`;
           const videoUrl = embed.url;
           if (rawThumbnailUrl) {
-            messagetext += `<br><a href="${videoUrl}" target="_blank"><img src="${thumbnailUrl}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
+            messagetext += `<br><a href="${videoUrl}" target="_blank"><img src="${thumbnailUrl}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="YouTube Video"></a>`;
           }
         } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
           if (imagesCookie == 1) {
@@ -473,12 +473,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
               const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
               const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
               if (anchorRegex.test(messagetext)) {
-                messagetext = messagetext.replace(anchorRegex, `<img src="${imageUrl}" style="max-width:256px;max-height:200px;" alt="Image">`);
+                messagetext = messagetext.replace(anchorRegex, `<img src="${imageUrl}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="Image">`);
                 replaced = true;
               }
             }
             if (!replaced) {
-              messagetext += `<br><img src="${imageUrl}" style="max-width:256px;max-height:200px;" alt="Image">`;
+              messagetext += `<br><img src="${imageUrl}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="Image">`;
             }
           }
         } else {
