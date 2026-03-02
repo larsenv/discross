@@ -339,6 +339,18 @@ function renderPollResultEmbed(embed) {
 // Mention resolution
 // ---------------------------------------------------------------------------
 
+function roleMentionPill(role, tmpl_mention) {
+  const name = escape('@' + normalizeWeirdUnicode(role.name));
+  if (role.color !== 0) {
+    const hex = role.hexColor;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `<span class="mention" style="color:${hex};background:rgba(${r},${g},${b},0.15);">${name}</span>`;
+  }
+  return tmpl_mention.replace('{$USERNAME}', name);
+}
+
 function renderKnownMentions(messagetext, item, tmpl_mention) {
   if (!item.mentions?.members) return messagetext;
 
@@ -351,8 +363,7 @@ function renderKnownMentions(messagetext, item, tmpl_mention) {
 
   item.mentions.roles?.forEach(role => {
     if (!role) return;
-    const pill = tmpl_mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(role.name)));
-    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, pill);
+    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, tmpl_mention));
   });
 
   return messagetext;
@@ -624,8 +635,7 @@ async function renderMessageContent(item, context) {
   // Role mentions (second pass — catches any remaining after the member pass)
   item.mentions?.roles?.forEach(role => {
     if (role) {
-      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`,
-        templates.mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(role.name))));
+      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, templates.mention));
     }
   });
 

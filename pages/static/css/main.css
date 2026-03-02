@@ -201,7 +201,7 @@ pre code { background: none; border: none; padding: 0; }
 }
 .message-date, .message-date-font {
     font-size: 12px;
-    color: #72767d;
+    color: #81828A;
     display: inline;
 }
 .message-link { text-decoration: none; color: inherit; display: block; }
@@ -216,9 +216,15 @@ pre code { background: none; border: none; padding: 0; }
 
 /* Message mentions */
 .message.mentioned {
-    border-left: 4px solid #faa61a;
-    background-color: rgba(250, 166, 26, 0.1);
+    border-left: 4px solid #DC8D01;
+    background-color: #30271F;
     padding-left: 12px;
+}
+
+/* Ping row (mentioned message table) */
+.ping-row {
+    border-left: 4px solid #DC8D01;
+    background: #30271F;
 }
 .mention {
     color: #A9BBFF;
@@ -582,8 +588,8 @@ body.light-theme,
 .light-theme .message:hover { background: #f2f3f5 !important; }
 .light-theme .message-author { color: #323339; }
 .light-theme .message-author-font { color: #323339 !important; }
-.light-theme .message-date { color: #5c5e66; }
-.light-theme .message-date-font { color: #5c5e66 !important; }
+.light-theme .message-date { color: #70718A; }
+.light-theme .message-date-font { color: #70718A !important; }
 .light-theme .messagecontent a { color: #0067e0; }
 .light-theme .message-form-container { background: #FBFBFB !important; border-top-color: #e3e5e8 !important; }
 .light-theme .message-input { color: #323339; background: #FFFFFF; }
@@ -598,6 +604,8 @@ body.light-theme,
 .light-theme #emoji a:hover { background: rgba(0, 0, 0, 0.08); }
 .light-theme .reaction { background: #EFEFF0; }
 .light-theme .mention { color: #2E3C88; background: #DCDEF9; }
+.light-theme .message.mentioned { border-left-color: #9E5A01; background-color: #FAF4EB; }
+.light-theme .ping-row { border-left-color: #9E5A01; background: #FAF4EB; }
 .light-theme a { color: #0067e0; }
 .light-theme .menu-button {
     background: none !important;
@@ -645,7 +653,8 @@ body.amoled-theme,
 .amoled-theme .messagecontent a { color: #5865f2; }
 .amoled-theme .message:hover { background: rgba(255, 255, 255, 0.05) !important; }
 .amoled-theme .message-author { color: #DCDCDF; }
-.amoled-theme .message-date { color: #a0a0a0; }
+.amoled-theme .message-date { color: #767780; }
+.amoled-theme .message-date-font { color: #767780 !important; }
 .amoled-theme .message-form-container { background: #09090A !important; border-top-color: #333333 !important; }
 .amoled-theme .message-input { color: #DCDCDF; background: #141416; }
 .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
@@ -656,6 +665,8 @@ body.amoled-theme,
 .amoled-theme .embed-content,
 .amoled-theme .forwarded-content-wrapper { background: #3B3C43; border-color: #222; }
 .amoled-theme .mention { color: #94A8FF; background: #1D204C; }
+.amoled-theme .message.mentioned { border-left-color: #C97E01; background-color: #20160A; }
+.amoled-theme .ping-row { border-left-color: #C97E01; background: #20160A; }
 .amoled-theme pre,
 .amoled-theme code { background: #0a0a0a; border-color: #222; color: #DCDCDF; }
 .amoled-theme a { color: #5865f2 !important; }
