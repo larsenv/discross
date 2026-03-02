@@ -568,6 +568,8 @@ br.nodisp { display: none; }
     padding-bottom: 0;
     cursor: pointer;
     border-radius: 3px;
+    border-spacing: 0;
+    overflow: hidden;
 }
 
 /* ================================================================
