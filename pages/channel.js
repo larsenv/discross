@@ -270,7 +270,7 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
     const isYouTube = (embed.provider?.name === 'YouTube' || urlMatchesDomain(embed.url, 'youtube.com') || urlMatchesDomain(embed.url, 'youtu.be')) && embed.thumbnail?.url;
 
     if (imagesCookie !== 1) {
-      if (!isTenor && !isGiphy && !isYouTube) richEmbeds.push(embed);
+      if (!isTenor && !isGiphy) richEmbeds.push(embed);
       return;
     }
 
@@ -284,8 +284,20 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
         messagetext = replaceOrAppendMedia(messagetext, embed.url, tag);
       }
     } else if (isYouTube) {
-      const { proxied } = buildProxiedImageTag(embed.thumbnail.url, 'YouTube Video');
-      messagetext += `<br><a href="${embed.url}" target="_blank"><img src="${proxied}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
+      // Render as a Discord-style rich embed with the thumbnail as the main image
+      richEmbeds.push({
+        color: embed.color,
+        author: embed.author,
+        title: embed.title,
+        url: embed.url,
+        description: embed.description,
+        fields: embed.fields,
+        image: embed.image ?? embed.thumbnail,
+        thumbnail: null,
+        footer: embed.footer,
+        timestamp: embed.timestamp,
+        data: embed.data,
+      });
     } else if (embed.data?.type === 'poll_result') {
       messagetext += renderPollResultEmbed(embed);
     } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
