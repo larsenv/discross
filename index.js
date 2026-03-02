@@ -46,7 +46,6 @@ auth.setHTTPS(usinghttps) // Determines whether cookies have the Secure; option
 
 var indexpage = require('./pages/index.js');
 var loginpage = require('./pages/login.js');
-//var guestpage = require('./pages/guest.js');
 var registerpage = require('./pages/register.js');
 var forgotpage = require('./pages/forgot.js');
 var channelpage = require('./pages/channel.js');
@@ -340,9 +339,7 @@ server.on('request', async (req, res) => {
       }
     } else if (args[1] === 'login.html') {
       await loginpage.processLogin(bot, req, res, args)
-    } /*else if (args[1] === 'guest.html') {
-      guestpage.processGuestLogin(bot, req, res, args)
-    }*/ else if (args[1] === 'register.html') {
+    } else if (args[1] === 'register.html') {
       await registerpage.processRegister(bot, req, res, args)
     } else if (args[1] === 'forgot.html') {
       await forgotpage.processForgot(bot, req, res, args)

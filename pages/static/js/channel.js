@@ -104,8 +104,6 @@ function show(el) {
 }
 
 // File upload handling - integrated with send button
-var selectedFile = null;
-
 function openFileUpload() {
     var channelId = document.getElementById('channel').value;
     var url = '/upload?channel=' + encodeURIComponent(channelId);
@@ -124,7 +122,6 @@ function handleFileSelect(input) {
         if (file.size > maxSize) {
             alert('File is too large. Maximum size is 249MB.');
             input.value = '';
-            selectedFile = null;
             return;
         }
         
@@ -184,7 +181,6 @@ function uploadFile(file) {
     })
     .finally(function() {
         document.getElementById('fileUpload').value = '';
-        selectedFile = null;
     });
 }
 
