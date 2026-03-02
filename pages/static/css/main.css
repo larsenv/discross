@@ -24,8 +24,8 @@ body,
 }
 
 body {
-    background: #36393f;
-    color: #dcddde;
+    background: #1A1A1E;
+    color: #EFEF31;
     overflow-x: hidden;
 }
 
@@ -206,7 +206,7 @@ pre code { background: none; border: none; padding: 0; }
 }
 .message-link { text-decoration: none; color: inherit; display: block; }
 .messagecontent, .messagecontent-font {
-    color: #dcddde;
+    color: #EFEF31;
     font-size: 16px;
     line-height: 20px;
     word-wrap: break-word;
@@ -221,8 +221,8 @@ pre code { background: none; border: none; padding: 0; }
     padding-left: 12px;
 }
 .mention {
-    color: #00aff4;
-    background: rgba(88, 101, 242, 0.3);
+    color: #A9BBFF;
+    background: #2B2E59;
     padding: 0 2px;
     border-radius: 3px;
 }
@@ -238,13 +238,13 @@ pre code { background: none; border: none; padding: 0; }
 }
 .embed-color-bar {
     width: 4px;
-    background-color: #202225;
+    background-color: #474851;
     border-radius: 4px 0 0 4px;
     flex-shrink: 0;
 }
 .embed-content {
-    background-color: #2f3136;
-    border: 1px solid #202225;
+    background-color: #474851;
+    border: 1px solid #474851;
     border-left: none;
     border-radius: 0 4px 4px 0;
     padding: 8px 12px;
@@ -258,13 +258,13 @@ pre code { background: none; border: none; padding: 0; }
 .reaction {
     display: inline-block;
     padding: 2px 6px;
-    background: #2f3136;
+    background: #26262B;
     border-radius: 4px;
     margin-right: 4px;
     margin-bottom: 4px;
 }
 .reaction img { width: 16px; height: 16px; vertical-align: middle; }
-.reaction-count { color: #dcddde; font-size: 12px; margin-left: 4px; }
+.reaction-count { color: #EFEF31; font-size: 12px; margin-left: 4px; }
 
 /* ================================================================
    10. FORWARDED MESSAGES
@@ -282,7 +282,7 @@ pre code { background: none; border: none; padding: 0; }
    ================================================================ */
 
 .message-form-container {
-    background: #36393f;
+    background: #1A1A1E;
     border-top: 1px solid #40444b;
     padding: 12px;
     width: 100%;
@@ -347,8 +347,8 @@ pre code { background: none; border: none; padding: 0; }
     height: 44px;
     padding: 0 12px;
     border: none;
-    background: #40444b;
-    color: #dcddde;
+    background: #222327;
+    color: #EFEF31;
     font-size: 16px;
     vertical-align: middle;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
@@ -568,36 +568,36 @@ br.nodisp { display: none; }
 
 body.light-theme,
 .light-theme body,
-.light-theme #wrapper { background: #f9f9f9 !important; color: #2e3338 !important; }
+.light-theme #wrapper { background: #FBFBFB !important; color: #323339 !important; }
 .light-theme .content-padding,
-.light-theme .scrollable-content { background: #f9f9f9; color: #060607; }
+.light-theme .scrollable-content { background: #FBFBFB; color: #323339; }
 .light-theme .header-title,
 .light-theme .header-menu,
-.light-theme .header-menu-link { color: #060607; }
+.light-theme .header-menu-link { color: #323339; }
 .light-theme .header-user-info { color: #4f5660; }
 .light-theme .message { border-color: #e3e5e8 !important; }
 .light-theme .message .content,
-.light-theme .messagecontent { color: #060607 !important; }
-.light-theme .messagecontent-font { color: #060607 !important; }
+.light-theme .messagecontent { color: #323339 !important; }
+.light-theme .messagecontent-font { color: #323339 !important; }
 .light-theme .message:hover { background: #f2f3f5 !important; }
-.light-theme .message-author { color: #060607; }
-.light-theme .message-author-font { color: #060607 !important; }
+.light-theme .message-author { color: #323339; }
+.light-theme .message-author-font { color: #323339 !important; }
 .light-theme .message-date { color: #5c5e66; }
 .light-theme .message-date-font { color: #5c5e66 !important; }
 .light-theme .messagecontent a { color: #0067e0; }
-.light-theme .message-form-container { background: #f9f9f9 !important; border-top-color: #e3e5e8 !important; }
-.light-theme .message-input { color: #060607; background: #ebedef; }
+.light-theme .message-form-container { background: #FBFBFB !important; border-top-color: #e3e5e8 !important; }
+.light-theme .message-input { color: #323339; background: #FFFFFF; }
 .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
-.light-theme .message-action-btn { background: #f9f9f9 !important; }
+.light-theme .message-action-btn { background: #FBFBFB !important; }
 .light-theme .message-action-btn:hover { background: rgba(0, 0, 0, 0.08); }
 .light-theme pre,
-.light-theme code { background: #f2f3f5; border-color: #e3e5e8; color: #2e3338; }
+.light-theme code { background: #f2f3f5; border-color: #e3e5e8; color: #323339; }
 .light-theme .embed-content,
-.light-theme .forwarded-content-wrapper { background: #f2f3f5; border-color: #e3e5e8; }
-.light-theme #emoji { background: #f9f9f9 !important; border-color: #e3e5e8; }
+.light-theme .forwarded-content-wrapper { background: #C5C6CA; border-color: #e3e5e8; }
+.light-theme #emoji { background: #FBFBFB !important; border-color: #e3e5e8; }
 .light-theme #emoji a:hover { background: rgba(0, 0, 0, 0.08); }
-.light-theme .reaction { background: #f2f3f5; }
-.light-theme .mention { color: #0c4a6e; background: rgba(88, 101, 242, 0.15); }
+.light-theme .reaction { background: #EFEFF0; }
+.light-theme .mention { color: #2E3C88; background: #DCDEF9; }
 .light-theme a { color: #0067e0; }
 .light-theme .menu-button {
     background: none !important;
@@ -611,7 +611,7 @@ body.light-theme,
 .light-theme input[type="text"],
 .light-theme input[type="password"],
 .light-theme input[type="email"],
-.light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #060607; }
+.light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #323339; }
 .light-theme input[type="text"]:focus,
 .light-theme input[type="password"]:focus,
 .light-theme input[type="email"]:focus,
@@ -633,30 +633,31 @@ body.light-theme,
 
 body.amoled-theme,
 .amoled-theme body,
-.amoled-theme #wrapper { background: #000000 !important; color: #ffffff !important; }
+.amoled-theme #wrapper { background: #09090A !important; color: #DCDCDF !important; }
 .amoled-theme .content-padding,
-.amoled-theme .scrollable-content { background: #000; color: #fff; }
+.amoled-theme .scrollable-content { background: #09090A; color: #DCDCDF; }
 .amoled-theme .header-title,
 .amoled-theme .header-menu,
-.amoled-theme .header-menu-link { color: #fff; }
-.amoled-theme .message { border-color: #333333 !important; background: #000000 !important; }
+.amoled-theme .header-menu-link { color: #DCDCDF; }
+.amoled-theme .message { border-color: #333333 !important; background: #09090A !important; }
 .amoled-theme .message .content,
-.amoled-theme .messagecontent { color: #ffffff !important; }
+.amoled-theme .messagecontent { color: #DCDCDF !important; }
 .amoled-theme .messagecontent a { color: #5865f2; }
 .amoled-theme .message:hover { background: rgba(255, 255, 255, 0.05) !important; }
-.amoled-theme .message-author { color: #fff; }
+.amoled-theme .message-author { color: #DCDCDF; }
 .amoled-theme .message-date { color: #a0a0a0; }
-.amoled-theme .message-form-container { background: #000000 !important; border-top-color: #333333 !important; }
-.amoled-theme .message-input { color: #fff; background: #0a0a0a; }
+.amoled-theme .message-form-container { background: #09090A !important; border-top-color: #333333 !important; }
+.amoled-theme .message-input { color: #DCDCDF; background: #141416; }
 .amoled-theme .icon-button:hover { background: rgba(255, 255, 255, 0.08) !important; }
 .amoled-theme .message-action-btn:hover { background: rgba(255, 255, 255, 0.08) !important; }
 .amoled-theme #emoji { background: #111111 !important; border-color: #333333 !important; }
 .amoled-theme #emoji a:hover { background: rgba(255, 255, 255, 0.08) !important; }
-.amoled-theme .reaction { background: #0a0a0a; border-color: #222; }
+.amoled-theme .reaction { background: #1D1D20; border-color: #222; }
 .amoled-theme .embed-content,
-.amoled-theme .forwarded-content-wrapper { background: #0a0a0a; border-color: #222; }
+.amoled-theme .forwarded-content-wrapper { background: #3B3C43; border-color: #222; }
+.amoled-theme .mention { color: #94A8FF; background: #1D204C; }
 .amoled-theme pre,
-.amoled-theme code { background: #0a0a0a; border-color: #222; color: #fff; }
+.amoled-theme code { background: #0a0a0a; border-color: #222; color: #DCDCDF; }
 .amoled-theme a { color: #5865f2 !important; }
 .amoled-theme .menu-button {
     background: none !important;
@@ -667,11 +668,11 @@ body.amoled-theme,
 .amoled-theme input[type="text"],
 .amoled-theme input[type="password"],
 .amoled-theme input[type="email"],
-.amoled-theme textarea { background: #0a0a0a; border-color: #333; color: #fff; }
+.amoled-theme textarea { background: #141416; border-color: #333; color: #DCDCDF; }
 .amoled-theme input[type="text"]:focus,
 .amoled-theme input[type="password"]:focus,
 .amoled-theme input[type="email"]:focus,
-.amoled-theme textarea:focus { border-color: #5865f2; background: #111; }
+.amoled-theme textarea:focus { border-color: #5865f2; background: #1A1A1E; }
 .amoled-theme .send-button,
 .amoled-theme .btn-send { background: #5865f2 !important; color: #ffffff !important; }
 .amoled-theme hr { border-color: #555555; }
@@ -737,7 +738,7 @@ html.page-channel-reply .light-theme #replying_to .reply-label {
 }
 html.light-theme.page-channel-reply #replying_to .reply-content-preview,
 html.page-channel-reply .light-theme #replying_to .reply-content-preview {
-    color: #2e3338;
+    color: #323339;
 }
 html.amoled-theme.page-channel-reply #replying_to,
 html.page-channel-reply .amoled-theme #replying_to {
@@ -762,7 +763,7 @@ html.page-draw body {
 
 /* Override themes.css which sets #wrapper to #303338; keep it matching body */
 html.page-draw #wrapper {
-    background: #36393f;
+    background: #1A1A1E;
 }
 
 /* Message form on draw page: fixed at bottom for modern browsers (viewport > 256px).
@@ -800,12 +801,12 @@ html.page-simple input[type="email"] {
 }
 
 html.page-simple .light-theme #wrapper {
-    background: #FFFFFF !important;
-    color: #000000 !important;
+    background: #FBFBFB !important;
+    color: #323339 !important;
 }
 html.page-simple .light-theme #wrapper * {
-    background: #FFFFFF !important;
-    color: #000000 !important;
+    background: #FBFBFB !important;
+    color: #323339 !important;
 }
 html.page-simple .light-theme #wrapper input[type="submit"] {
     background: #5865f2 !important;
@@ -818,7 +819,7 @@ html.page-simple .light-theme #wrapper input[type="text"],
 html.page-simple .light-theme #wrapper input[type="password"],
 html.page-simple .light-theme #wrapper input[type="email"] {
     background: #ebedef !important;
-    color: #060607 !important;
+    color: #323339 !important;
     border: none !important;
 }
 html.page-simple .light-theme #wrapper .discross-button {
@@ -830,24 +831,24 @@ html.page-simple .light-theme #wrapper .discross-button:hover {
 }
 
 html.page-simple .amoled-theme {
-    background: #000000 !important;
+    background: #09090A !important;
 }
 html.page-simple .amoled-theme #wrapper {
-    background: #000000 !important;
-    color: #ffffff !important;
+    background: #09090A !important;
+    color: #DCDCDF !important;
 }
 html.page-simple .amoled-theme #wrapper * {
-    background: #000000 !important;
-    color: #ffffff !important;
+    background: #09090A !important;
+    color: #DCDCDF !important;
 }
 html.page-simple .amoled-theme #wrapper table div {
-    background: #111111 !important;
+    background: #141416 !important;
 }
 html.page-simple .amoled-theme #wrapper input[type="text"],
 html.page-simple .amoled-theme #wrapper input[type="password"],
 html.page-simple .amoled-theme #wrapper input[type="email"] {
-    background: #111111 !important;
-    color: #ffffff !important;
+    background: #141416 !important;
+    color: #DCDCDF !important;
     border: none !important;
 }
 html.page-simple .amoled-theme #wrapper input[type="submit"] {
@@ -874,11 +875,11 @@ html.page-simple .amoled-theme #wrapper .discross-button.secondary:hover {
    ================================================================ */
 
 html.page-server .light-theme {
-    background: #FFFFFF !important;
-    color: #060607 !important;
+    background: #FBFBFB !important;
+    color: #323339 !important;
 }
 html.page-server .light-theme #wrapper * {
-    color: #060607 !important;
+    color: #323339 !important;
 }
 /* Preserve explicit white colors in warning boxes */
 html.page-server .light-theme #wrapper font[color="#ffffff"] {
@@ -886,6 +887,10 @@ html.page-server .light-theme #wrapper font[color="#ffffff"] {
 }
 html.page-server .light-theme #wrapper font[color="#ffffff"] * {
     color: #ffffff !important;
+}
+/* Channel color for light theme */
+html.page-server .light-theme #wrapper font[color="#dcddde"] {
+    color: #66676A !important;
 }
 html.page-server .light-theme a {
     color: #5865f2 !important;
@@ -912,12 +917,17 @@ html.page-server .light-theme hr {
 }
 
 html.page-server .amoled-theme {
-    background: #000000 !important;
-    color: #ffffff !important;
+    background: #09090A !important;
+    color: #DCDCDF !important;
 }
 html.page-server .amoled-theme #wrapper * {
-    background: #000000 !important;
-    color: #ffffff !important;
+    background: #09090A !important;
+    color: #DCDCDF !important;
+}
+/* Channel color for AMOLED theme */
+html.page-server .amoled-theme #wrapper font[color="#dcddde"] {
+    color: #7A7B83 !important;
+    background: transparent !important;
 }
 html.page-server .amoled-theme hr {
     border-color: #555555 !important;
@@ -951,6 +961,11 @@ html.page-server .amoled-theme #wrapper .warning-box img,
 html.page-server .amoled-theme #wrapper .warning-box font,
 html.page-server .amoled-theme #wrapper .warning-box b {
     background: #5865f2 !important;
+}
+
+/* Channel color for default dark theme */
+html.page-server font[color="#dcddde"] {
+    color: #81828A !important;
 }
 
 /* ================================================================
