@@ -581,11 +581,16 @@ function buildReplyIndicator(replyData, replyText) {
   const contentPart = replyData.content
     ? `<font style="font-size:12px;color:${replyText}" face="rodin,sans-serif"> ${replyData.content}</font>`
     : '';
+  // Two-row layout: left column is split in half (top half = vertical line only, bottom half = corner └).
+  // The content cell uses rowspan="2" so the row boundary falls exactly at 50% of the content height,
+  // placing the └ corner at the vertical midpoint of the quoted text.
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
-    `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap;text-overflow:ellipsis">` +
+    '<td style="width:12px;height:8px;border-left:2px solid #4e5058"></td>' +
+    `<td rowspan="2" style="padding-left:8px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
     `<font style="font-size:12px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `${contentPart}</td>` +
+    '</tr><tr>' +
+    '<td style="width:12px;height:8px;border-left:2px solid #4e5058;border-bottom:2px solid #4e5058;border-bottom-left-radius:4px"></td>' +
     '</tr></table>';
 }
 
