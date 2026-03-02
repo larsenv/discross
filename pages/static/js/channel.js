@@ -67,6 +67,15 @@ window.onload = function () {
 
 var emojiShowing = false;
 
+function insertEmoji(code) {
+    var input = document.getElementById('message');
+    if (input.value === '') {
+        input.value = code;
+    } else {
+        input.value += ' ' + code;
+    }
+}
+
 function showEmoji() {
     var emojiDiv = document.getElementById("emoji");
     if (emojiShowing) {
@@ -103,8 +112,18 @@ function show(el) {
     }
 }
 
-// File upload handling (#21) - integrated with send button
+// File upload handling - integrated with send button
 var selectedFile = null;
+
+function openFileUpload() {
+    var channelId = document.getElementById('channel').value;
+    var url = '/upload?channel=' + encodeURIComponent(channelId);
+    var sessionEl = document.getElementById('sessionID');
+    if (sessionEl && sessionEl.value) {
+        url += '&sessionID=' + encodeURIComponent(sessionEl.value);
+    }
+    window.location.href = url;
+}
 
 function handleFileSelect(input) {
     if (input.files && input.files[0]) {
@@ -118,41 +137,14 @@ function handleFileSelect(input) {
             return;
         }
         
-        // Check if browser supports fetch API (for older browsers like 3DS)
-        if (typeof fetch === 'undefined' || typeof FormData === 'undefined') {
-            // Use traditional form submission for older browsers
-            var uploadForm = document.getElementById('uploadFileForm');
-            var mainFileInput = document.getElementById('fileUpload');
-            
-            // Move the file input to the upload form temporarily
-            uploadForm.appendChild(mainFileInput);
-            mainFileInput.setAttribute('name', 'file');
-            
-            uploadFileTraditional();
-        } else {
-            // Upload file immediately using fetch for modern browsers
-            uploadFile(file);
-        }
+        // Upload file immediately using fetch
+        uploadFile(file);
     }
 }
 
 function sendMessageOrFile() {
     // Files are uploaded immediately on selection, so just allow normal form submission for text messages
     return true;
-}
-
-function uploadFileTraditional() {
-    // Traditional form submission for older browsers (3DS, etc.)
-    var uploadForm = document.getElementById('uploadFileForm');
-    if (uploadForm) {
-        // Show uploading indicator
-        var messageInput = document.getElementById('message');
-        if (messageInput) {
-            messageInput.disabled = true;
-            messageInput.value = 'Uploading file...';
-        }
-        uploadForm.submit();
-    }
 }
 
 function uploadFile(file) {

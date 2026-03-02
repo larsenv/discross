@@ -146,6 +146,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
           try {
             const channelId = Array.isArray(fields.channel) ? fields.channel[0] : fields.channel;
             const messageText = Array.isArray(fields.message) ? fields.message[0] : fields.message;
+            const rawSessionId = (Array.isArray(fields.sessionID) ? fields.sessionID[0] : fields.sessionID) || '';
+            // Validate sessionID to prevent open redirect; allow alphanumeric, hyphens, underscores (covers UUIDs and other session formats)
+            const sessionId = /^[a-zA-Z0-9_-]{1,128}$/.test(rawSessionId) ? rawSessionId : '';
             
             // Get the file object safely
             const fileObj = files.file || Object.values(files)[0]; // Fallback if input name isn't 'file'
@@ -218,7 +221,10 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             // Return response based on submission type
             if (isTraditionalSubmission) {
               // Redirect back to the channel for traditional submissions
-              res.writeHead(302, { "Location": `/channels/${channelId}` });
+              const redirectPath = sessionId
+                ? `/channels/${channelId}?sessionID=${encodeURIComponent(sessionId)}`
+                : `/channels/${channelId}`;
+              res.writeHead(302, { "Location": redirectPath });
               res.end();
             } else {
               res.writeHead(200, { "Content-Type": "application/json" });
