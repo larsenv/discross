@@ -480,10 +480,11 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
 // Reply data resolution
 // ---------------------------------------------------------------------------
 
-// Replaces <@userId>, <@!userId>, and <@&roleId> in raw Discord text with
-// plain @Name strings, using the known mentions on the message plus memberCache.
+// Replaces <@userId>, <@!userId>, <@&roleId>, and <#channelId> in raw Discord text
+// with plain @Name / #channel-name strings, using the known mentions on the message
+// plus memberCache. Unresolved member/channel IDs are fetched from the API.
 // This is run before truncation so mention tokens are never split mid-string.
-function resolveRawMentionsForPreview(text, msg, memberCache, chnl) {
+async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
   msg.mentions?.members?.forEach(member => {
     if (!member) return;
     const name = '@' + normalizeWeirdUnicode(getDisplayName(member, member.user));
@@ -494,16 +495,35 @@ function resolveRawMentionsForPreview(text, msg, memberCache, chnl) {
     if (!role) return;
     text = text.split(`<@&${role.id}>`).join('@' + normalizeWeirdUnicode(role.name));
   });
-  // Resolve any remaining unrecognized user IDs from memberCache
+  // Fetch any remaining unrecognized user IDs from the API
+  const unresolvedUserIds = [...text.matchAll(/<@!?(\d{17,19})>/g)]
+    .map(m => m[1])
+    .filter(id => !memberCache.has(id));
+  await Promise.allSettled(unresolvedUserIds.map(async id => {
+    try { memberCache.set(id, await chnl.guild.members.fetch(id)); }
+    catch { memberCache.set(id, null); }
+  }));
   text = text.replace(/<@!?(\d{17,19})>/g, (match, id) => {
     const cached = memberCache.get(id) ?? chnl.guild.members.cache.get(id);
     if (cached) return '@' + normalizeWeirdUnicode(getDisplayName(cached, cached.user));
     return match;
   });
+  // Fetch any unresolved channel IDs from the API
+  const unresolvedChannelIds = [...text.matchAll(/<#(\d{17,19})>/g)]
+    .map(m => m[1])
+    .filter(id => !bot.client.channels.cache.has(id));
+  await Promise.allSettled(unresolvedChannelIds.map(async id => {
+    try { await bot.client.channels.fetch(id); } catch { /* not accessible */ }
+  }));
+  text = text.replace(/<#(\d{17,19})>/g, (match, id) => {
+    const ch = bot.client.channels.cache.get(id);
+    if (ch) return '#' + normalizeWeirdUnicode(ch.name);
+    return match;
+  });
   return text;
 }
 
-async function resolveReplyData(item, chnl, memberCache) {
+async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie) {
   try {
     let replyUser = item.mentions?.repliedUser;
     let replyMember;
@@ -533,9 +553,10 @@ async function resolveReplyData(item, chnl, memberCache) {
     let replyContent = '';
     if (replyMessage?.content) {
       let flat = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
-      // Resolve mentions in raw text before truncation so they are never cut in half
-      flat = resolveRawMentionsForPreview(flat, replyMessage, memberCache, chnl);
+      // Resolve mentions/channels in raw text before truncation so they are never cut in half
+      flat = await resolveRawMentionsForPreview(flat, replyMessage, memberCache, chnl, bot);
       replyContent = renderDiscordMarkdown(truncateText(flat, REPLY_CONTENT_MAX_LENGTH));
+      replyContent = renderEmojis(replyContent, replyMessage, imagesCookie, animationsCookie);
     }
 
     return {
@@ -760,7 +781,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     let isReply = false;
     let replyData = {};
     if (item.reference && !isForwarded) {
-      const data = await resolveReplyData(item, chnl, memberCache);
+      const data = await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie);
       if (data) { isReply = true; replyData = data; }
     }
 
