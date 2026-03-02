@@ -175,6 +175,13 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     let serversDeleted = 0; // Track if servers were deleted due to sync issues
     const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
 
+    if (!clientIsReady) {
+      res.writeHead(503, { "Content-Type": "text/plain" });
+      res.write("The bot isn't connected, try again in a moment");
+      res.end();
+      return;
+    }
+
     const parsedUrl = new URL(req.url, 'http://localhost');
     const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
     const urlTheme = parsedUrl.searchParams.get('theme');
@@ -250,7 +257,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       const targetServer = bot.client.guilds.cache.get(args[2]);
       await lock.acquire(discordID, async () => {
         if (targetServer) {
-          response = response.replace("{$DISCORD_NAME}", '<b><font color="#999999" size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
+          response = response.replace("{$DISCORD_NAME}", '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
             response = processServerChannels(targetServer, member, response, sessionParam);

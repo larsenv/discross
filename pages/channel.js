@@ -298,6 +298,19 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           if (!replyMessage.author?.bot) {
             replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
           }
+        } else if (replyUser?.id) {
+          // Reply message is deleted/inaccessible — try to resolve member from cache or guild
+          const cacheKey = replyUser.id;
+          if (memberCache.has(cacheKey)) {
+            replyMember = memberCache.get(cacheKey);
+          } else {
+            try {
+              replyMember = await chnl.guild.members.fetch(replyUser.id);
+              memberCache.set(cacheKey, replyMember);
+            } catch (err) {
+              // User left the server or is otherwise unavailable
+            }
+          }
         }
 
         const replyAuthor = getDisplayName(replyMember, replyUser);
@@ -456,6 +469,21 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           if (rawThumbnailUrl) {
             messagetext += `<br><a href="${videoUrl}" target="_blank"><img src="${thumbnailUrl}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
           }
+        } else if (embed.data?.type === 'poll_result') {
+          // Poll result system embed — extract fields and format as human-readable HTML
+          const fieldMap = {};
+          if (embed.fields) embed.fields.forEach(f => { fieldMap[f.name] = f.value; });
+          const prQuestion = fieldMap['poll_question_text'] || '';
+          const prWinnerText = fieldMap['victor_answer_text'] || '';
+          const prWinnerEmoji = fieldMap['victor_answer_emoji_name'] || '';
+          const prWinnerVotes = fieldMap['victor_answer_votes'] || '0';
+          const prTotalVotes = fieldMap['total_votes'] || '0';
+          let prHtml = `<div style="font-size:14px;color:#b9bbbe;margin-top:4px;">`;
+          prHtml += `Poll ended: <b>${escape(prQuestion)}</b><br>`;
+          prHtml += `Winner: ${prWinnerEmoji ? escape(prWinnerEmoji) + ' ' : ''}<b>${escape(prWinnerText)}</b>`;
+          prHtml += ` (${escape(prWinnerVotes)}/${escape(prTotalVotes)} votes)`;
+          prHtml += `</div>`;
+          messagetext += prHtml;
         } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
           if (imagesCookie == 1) {
             const rawImageUrl = embed.thumbnail?.url || embed.image?.url;
@@ -619,12 +647,28 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         1: 'added a new member',
         2: 'left',
         3: 'boosted the server',
+        4: 'changed the channel name',
+        5: 'changed the channel icon',
+        6: 'pinned a message to this channel',
         7: 'welcomed a new member',
         8: 'boosted the server to level 1',
         9: 'boosted the server to level 2',
         10: 'boosted the server to level 3',
         11: 'followed this channel',
-        12: 'went live'
+        12: 'went live',
+        14: 'is no longer eligible for Server Discovery',
+        15: 'is eligible for Server Discovery again',
+        17: 'started a thread',
+        23: 'flagged a message with AutoMod',
+        24: 'purchased a role subscription',
+        26: 'started a stage',
+        27: 'ended the stage',
+        30: 'changed the stage topic',
+        36: 'enabled raid alert mode',
+        37: 'disabled raid alert mode',
+        38: 'reported a raid',
+        39: 'reported a false alarm',
+        46: 'Poll ended'
       };
 
       const systemText = systemMessages[item.type] || 'performed an action';
