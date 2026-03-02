@@ -118,6 +118,13 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             }
           );
           message = { id: rawMsg.id, channel: { id: channel.id } };
+          // Fetch the full discord.js Message object so the cache has all required fields
+          // (e.g. author, createdAt) that channel.js expects when rendering messages.
+          try {
+            message = await channel.messages.fetch(rawMsg.id);
+          } catch (err) {
+            console.error("Failed to fetch sent reply message:", err);
+          }
         } else {
           message = await webhook.send({
             content: processedmessage,
