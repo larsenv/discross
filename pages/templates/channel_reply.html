@@ -57,7 +57,7 @@
                         <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji" width="24" height="24"
                             style="width: 24px; height: 24px;">
                     </a>
-                    <button type="button" onclick="document.getElementById('fileUpload').click()" class="message-action-btn">
+                    <button type="button" onclick="openFileUpload()" class="message-action-btn">
                         <img src="/resources/twemoji/1f4e4.gif" alt="Upload file" width="24" height="24"
                             style="width: 24px; height: 24px;">
                     </button>
@@ -69,18 +69,14 @@
                     </a>
                 </div>
                 <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                <input type="hidden" name="sessionID" value="{$SESSION_ID}">
+                <input type="hidden" id="sessionID" name="sessionID" value="{$SESSION_ID}">
                 <input type="hidden" id="lite" name="lite" value="False">
                 <input type="hidden" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">
                 {$INPUT}
             </form>
             
-            <!-- Hidden form for traditional file upload (for older browsers like 3DS) -->
-            <form id="uploadFileForm" action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data" style="display:none;">
-                <input type="hidden" name="channel" id="channelUpload" value="{$CHANNEL_ID}">
-                <input type="hidden" name="message" value="">
-                <input type="file" id="fileUpload" name="file" aria-label="Upload file" onchange="handleFileSelect(this)">
-            </form>
+            <!-- Standalone hidden file input for AJAX upload (modern browsers) -->
+            <input type="file" id="fileUpload" style="display:none;" aria-label="Upload file" onchange="handleFileSelect(this)">
         </div>
         <a id="end" name="end"></a>
     </div>
