@@ -50,13 +50,43 @@ async function processServerChannels(server, member, response, sessionParam) {
   try {
     const discordID = member.id;
 
-    // Fetch active threads once so their member caches are populated
-    let activeThreadsResult = null;
+    // Fetch active threads for this server
+    let activeThreadsList = [];
     try {
-      activeThreadsResult = await server.channels.fetchActiveThreads();
+      const activeThreadsResult = await server.channels.fetchActiveThreads();
+      activeThreadsList = [...activeThreadsResult.threads.values()];
     } catch (err) {
       console.error("Failed to fetch active threads:", err);
     }
+
+    // For each active thread, check if this specific user is a member.
+    // fetchActiveThreads() only populates the bot's own membership in the cache,
+    // so we must call thread.members.fetch(userId) per thread to check the real user.
+    // We do all checks in parallel to minimise latency.
+    const userThreadIds = new Set();
+    if (activeThreadsList.length > 0) {
+      await Promise.allSettled(
+        activeThreadsList.map(async thread => {
+          try {
+            await thread.members.fetch(discordID);
+            userThreadIds.add(thread.id);
+          } catch {
+            // user is not a member of this thread — skip it
+          }
+        })
+      );
+    }
+
+    // Build threadsByParent using only threads the user is in
+    const threadsByParent = new Map();
+    activeThreadsList.forEach(thread => {
+      if (!thread.parentId) return;
+      if (!userThreadIds.has(thread.id)) return;
+      if (!threadsByParent.has(thread.parentId)) {
+        threadsByParent.set(thread.parentId, []);
+      }
+      threadsByParent.get(thread.parentId).push(thread);
+    });
 
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
@@ -74,29 +104,7 @@ async function processServerChannels(server, member, response, sessionParam) {
       );
     });
 
-    // Collect threads the user is a member of, from all parent channel types
-    // Use fetchActiveThreads result when available (member caches are populated),
-    // fall back to guild channel cache
-    const threadSource = activeThreadsResult
-      ? activeThreadsResult.threads
-      : server.channels.cache.filter(channel =>
-          channel.type == ChannelType.PublicThread ||
-          channel.type == ChannelType.PrivateThread ||
-          channel.type == ChannelType.AnnouncementThread
-        );
 
-    // Group by parent, keeping only threads the user is a member of
-    const threadsByParent = new Map();
-    threadSource.forEach(thread => {
-      if (!thread.parentId) return;
-      if (!thread.members.cache.has(discordID)) return;
-      if (!threadsByParent.has(thread.parentId)) {
-        threadsByParent.set(thread.parentId, []);
-      }
-      threadsByParent.get(thread.parentId).push(thread);
-    });
-
-    // Insert threads after their parent channels (any type) in reverse order to maintain positions
     for (let i = channelsSorted.length - 1; i >= 0; i--) {
       const channel = channelsSorted[i];
       if (threadsByParent.has(channel.id)) {
