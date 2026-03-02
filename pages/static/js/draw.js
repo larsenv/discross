@@ -238,9 +238,46 @@ if (isOld3DS) {
     canvas.onmouseout  = null;
     canvas.onmousemove = null; // document-level handler used instead
 
+    // Cached canvas bounding rect for coordinate calculation.
+    // getBoundingClientRect() is called once per drawing session (at draw start)
+    // so we don't force a layout reflow on every mousemove event.
+    var old3dsRect = null;
+
+    // Compute canvas-relative coordinates using clientX/clientY and
+    // getBoundingClientRect() — more reliable on NintendoBrowser 1.x WebKit
+    // than the offsetLeft/offsetTop traversal in getPos(), which may give
+    // wrong results depending on the browser's offsetParent implementation.
+    // Falls back to getPos() if getBoundingClientRect is not available.
+    function getOld3DSPos(e) {
+        var rect = old3dsRect;
+        if (rect && rect.width > 0) {
+            // clientX/clientY are viewport-relative, matching getBoundingClientRect().
+            // If clientX is not available, convert pageX to viewport-relative by
+            // subtracting the page scroll offset.
+            var sx = window.pageXOffset !== undefined ? window.pageXOffset
+                   : (document.documentElement ? document.documentElement.scrollLeft : 0) || 0;
+            var sy = window.pageYOffset !== undefined ? window.pageYOffset
+                   : (document.documentElement ? document.documentElement.scrollTop : 0) || 0;
+            var cx = e.clientX !== undefined ? e.clientX
+                   : (e.pageX !== undefined ? e.pageX - sx : null);
+            var cy = e.clientY !== undefined ? e.clientY
+                   : (e.pageY !== undefined ? e.pageY - sy : null);
+            if (cx !== null && cy !== null) {
+                return {
+                    x: (cx - rect.left) * (canvas.width / rect.width),
+                    y: (cy - rect.top) * (canvas.height / rect.height)
+                };
+            }
+        }
+        return getPos(e);
+    }
+
     canvas.onclick = function(e) {
         if (e.preventDefault) e.preventDefault();
-        var pos = getPos(e);
+        // Refresh cached canvas rect on every tap so layout changes (scroll,
+        // resize) are reflected.
+        old3dsRect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null;
+        var pos = getOld3DSPos(e);
         if (currTool === 'fill') {
             floodFill(pos.x, pos.y);
             return false;
@@ -268,7 +305,7 @@ if (isOld3DS) {
     // Draw each segment immediately — no queue, no setInterval dependency.
     document.onmousemove = function(e) {
         if (!isDrawing) return;
-        var pos = getPos(e);
+        var pos = getOld3DSPos(e);
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(pos.x, pos.y);
