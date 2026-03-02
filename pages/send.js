@@ -19,11 +19,13 @@ async function clean(server, nodelete) {
 
 async function getOrCreateWebhook(channel, guildID) {
   try {
-    const existingWebhooks = await channel.fetchWebhooks();
+    // Threads don't have their own webhooks — use the parent channel
+    const webhookChannel = channel.isThread() ? channel.parent : channel;
+    const existingWebhooks = await webhookChannel.fetchWebhooks();
     let webhook = existingWebhooks.find(w => w.owner.username === "discross beta" || w.owner.username === "Discross");
 
     if (!webhook) {
-      webhook = await channel.createWebhook({
+      webhook = await webhookChannel.createWebhook({
         name: "Discross",
         avatar: "pages/static/resources/logo.png",
         reason: "Discross uses webhooks to send messages",
@@ -139,12 +141,16 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
           }
         }
 
-        const message = await webhook.send({
+        const sendOptions = {
           content: processedmessage,
           username: normalizeWeirdUnicode(member.displayName || member.user.tag),
           avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
           disableEveryone: true,
-        });
+        };
+        if (channel.isThread()) {
+          sendOptions.threadId = channel.id;
+        }
+        const message = await webhook.send(sendOptions);
 
         bot.addToCache(message);
       }
