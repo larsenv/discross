@@ -89,6 +89,7 @@ const TEMPLATES = {
   reactions:            fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'),
   reaction:             fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'),
   dateSeparator:        fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8'),
+  messageContinuation:  fs.readFileSync('pages/templates/message/message_continuation.html', 'utf-8'),
 };
 
 // ---------------------------------------------------------------------------
@@ -503,6 +504,7 @@ async function resolveReplyData(item, chnl, memberCache) {
     return {
       author: getDisplayName(replyMember, replyUser),
       authorId: replyUser?.id,
+      authorColor: getMemberColor(replyMember),
       mentionsPing: item.mentions?.repliedUser != null,
       content: replyContent,
     };
@@ -517,11 +519,15 @@ async function resolveReplyData(item, chnl, memberCache) {
 // ---------------------------------------------------------------------------
 
 function buildReplyIndicator(replyData, replyText) {
-  const contentPart = replyData.content ? ' ' + replyData.content : '';
+  const atSign = replyData.mentionsPing ? '@' : '';
+  const contentPart = replyData.content
+    ? `<font style="font-size:12px;color:${replyText}" face="rodin,sans-serif"> ${replyData.content}</font>`
+    : '';
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-    `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;color:${replyText}" face="rodin,sans-serif">` +
-    `@${escape(replyData.author)}${contentPart}</font></td>` +
+    '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
+    `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
+    `<font style="font-size:12px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
+    `${contentPart}</td>` +
     '</tr></table>';
 }
 
@@ -534,12 +540,15 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
     currentmessage, isForwarded, forwardData,
     lastMentioned, lastReply, lastReplyData,
     lastauthor, lastmember, lastdate, messageid,
+    isContinuationBlock,
   } = state;
 
   let html = currentmessage;
 
   // Wrap in appropriate outer template
-  if (isForwarded && lastMentioned) {
+  if (isContinuationBlock && !isForwarded && !lastMentioned) {
+    html = templates.messageContinuation.replace('{$MESSAGE_CONTENT}', html);
+  } else if (isForwarded && lastMentioned) {
     html = templates.messageForwardedMentioned.replace('{$MESSAGE_CONTENT}', html);
   } else if (isForwarded) {
     html = templates.messageForwarded.replace('{$MESSAGE_CONTENT}', html);
@@ -636,6 +645,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     reactions:                 TEMPLATES.reactions,
     reaction:                  TEMPLATES.reaction,
     dateSeparator:             TEMPLATES.dateSeparator,
+    messageContinuation:       TEMPLATES.messageContinuation,
   };
 
   const messages = await bot.getHistoryCached(chnl);
@@ -661,6 +671,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     lastMentioned: false,
     lastReply: false,
     lastReplyData: {},
+    isContinuationBlock: false,
     clientTimezone,
   };
 
@@ -729,6 +740,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     messagetext = startsNewGroup
       ? templates.firstMessageContent.replace('{$MESSAGE_TEXT}', messagetext)
       : templates.mergedMessageContent.replace('{$MESSAGE_TEXT}', messagetext);
+
+    // Track whether this is the first message of a continuation block (same author,
+    // recent, no reply) — used by flushMessageGroup to omit the author header.
+    if (state.currentmessage === '') {
+      state.isContinuationBlock = !startsNewGroup;
+    }
 
     const reactionsHtml = processReactions(item.reactions, imagesCookie, templates.reactions, templates.reaction, animationsCookie);
     messagetext = strReplace(messagetext, '{$MESSAGE_REACTIONS}', reactionsHtml);
