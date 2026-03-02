@@ -57,6 +57,7 @@ var { imageProxy } = require('./pages/imageProxy.js')
 var { fileProxy } = require('./pages/fileProxy.js')
 var { toggleImages } = require('./pages/toggleImages.js')
 var { uploadFile } = require('./pages/uploadFile.js')
+var uploadpage = require('./pages/upload.js')
 var chanelreplypage = require('./pages/channel_reply.js')
 var replypage = require('./pages/reply.js')
 var drawpage = require('./pages/draw.js')
@@ -327,6 +328,11 @@ server.on('request', async (req, res) => {
       res.writeHead(302, { "Location": "http://careers.mcdonalds.com/" });
       res.end();
       return;
+    } else if (args[1] === 'upload') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await uploadpage.processUpload(bot, req, res, discordID)
+      }
     } else if (args[1] === 'draw'){
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
