@@ -136,12 +136,10 @@ exports.checkSession = async function (sessionID) {
 }
 
 exports.logout = async function (discordID) {
-  //if (typeof discordID == "object") return;
   queryRun('DELETE FROM sessions WHERE discordID=?', [discordID])
 }
 
 exports.getUsername = async function (discordID) {
-  if (typeof discordID === "object") return discordID[1]
   const match = querySingle('SELECT DISTINCT username FROM users WHERE discordID=?', [discordID])
   if (match) {
     return match.username
