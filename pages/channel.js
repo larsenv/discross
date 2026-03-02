@@ -185,9 +185,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
           if (lastReply) {
             // replyContent is already rendered HTML from renderDiscordMarkdown — do not escape() it
             const contentPart = lastReplyData.content ? '<font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif"> ' + lastReplyData.content + '</font>' : '';
+            const replyAtSign = lastReplyData.mentionsPing ? '@' : '';
             replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-              '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-              '<td style="padding-left:4px;vertical-align:top;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;font-weight:600;color:' + lastReplyData.authorColor + '" face="rodin,sans-serif">@' + escape(lastReplyData.author) + '</font>' + contentPart + '</td>' +
+              '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
+              '<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;font-weight:600;color:' + lastReplyData.authorColor + '" face="rodin,sans-serif">' + replyAtSign + escape(lastReplyData.author) + '</font>' + contentPart + '</td>' +
               '</tr></table>';
           }
           currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
