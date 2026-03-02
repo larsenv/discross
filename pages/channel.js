@@ -245,6 +245,25 @@ function renderStickers(messagetext, item, imagesCookie, animationsCookie) {
 // Embed rendering (inline media types handled here; rich embeds delegated)
 // ---------------------------------------------------------------------------
 
+function extractYouTubeVideoId(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'youtu.be') {
+      const id = parsed.pathname.slice(1).split('/')[0];
+      return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+    }
+    if (parsed.hostname === 'www.youtube.com' || parsed.hostname === 'youtube.com') {
+      const v = parsed.searchParams.get('v');
+      if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+      const m = parsed.pathname.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+      if (m) return m[1];
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;') {
   const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
   return { proxied, tag: `<img src="${proxied}" style="${style}" alt="${alt}">` };
@@ -284,8 +303,14 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
         messagetext = replaceOrAppendMedia(messagetext, embed.url, tag);
       }
     } else if (isYouTube) {
-      const { proxied } = buildProxiedImageTag(embed.thumbnail.url, 'YouTube Video');
-      messagetext += `<br><a href="${embed.url}" target="_blank"><img src="${proxied}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
+      const videoId = extractYouTubeVideoId(embed.url);
+      if (videoId) {
+        const title = embed.title ? escape(embed.title) : 'YouTube Video';
+        messagetext += `<br><iframe width="400" height="225" src="https://www.youtube.com/embed/${videoId}" style="border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen title="${title}"></iframe>`;
+      } else {
+        const { proxied } = buildProxiedImageTag(embed.thumbnail.url, 'YouTube Video');
+        messagetext += `<br><a href="${escape(embed.url)}" target="_blank"><img src="${proxied}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
+      }
     } else if (embed.data?.type === 'poll_result') {
       messagetext += renderPollResultEmbed(embed);
     } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
