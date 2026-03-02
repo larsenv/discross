@@ -34,13 +34,7 @@ const cachedMembers = {}; // TODO: Find a better way
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
-
-`
-i think str.replaceAll is a better option than str.split().join() because it's more readable and easier to understand
-but this also works
-so imma leave it as is :)
-`
+}
 
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
@@ -263,17 +257,14 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             serverList += serverHTML;
           }
         } else {
-          // NEW: Only delete the server from the DB if the bot client is ready.
-          // If the bot hasn't connected yet (client not ready), skip deletion so servers are preserved during boot.
-          const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-
+          // Only delete the server from the DB if the bot client is ready.
+          // If the bot hasn't connected yet, skip deletion so servers are preserved during boot.
           if (clientIsReady) {
             // bot is connected and the guild truly isn't in cache -> safe to delete
             auth.dbQueryRun("DELETE FROM servers WHERE serverID=?", [serverID]);
             serversDeleted++;
           } else {
             // bot not ready / not connected: do not delete the server row; treat as temporarily missing
-            // keep server in DB and do not increment serversDeleted
             console.log(`Skipping deletion of server ${serverID} because bot client is not ready.`);
             continue;
           }
@@ -291,7 +282,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       const targetServer = bot.client.guilds.cache.get(args[2]);
       await lock.acquire(discordID, async () => {
         if (targetServer) {
-          response = response.replace("{$DISCORD_NAME}", '<b><font color="#999999" size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
+          response = response.replace("{$DISCORD_NAME}", '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
             response = await processServerChannels(targetServer, member, response, sessionParam);
