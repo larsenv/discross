@@ -212,54 +212,11 @@ canvas.onmousemove = function(e) {
 };
 
 canvas.onmouseup = function() { flushDrawQueue(); isDrawing = false; };
-canvas.onmouseout = function() { flushDrawQueue(); isDrawing = false; };
-
-// --- OLD 3DS: CLICK-TO-DRAW MODE ---
-// On NintendoBrowser 1.x, the stylus drives a visible cursor. Moving the stylus
-// over the screen fires mousemove in cursor-tracking mode (no button held).
-// A tap fires mousedown → mouseup → click — but mousemove does NOT fire while
-// the button is held (cursor-mode drag behaviour is different from a PC drag).
-// This means the standard press-hold-drag model never works: mouseup fires
-// before any mousemove, so isDrawing is always false when cursor moves.
-//
-// Fix: click-to-draw. First click starts drawing (isDrawing = true); cursor
-// movement then draws lines via the existing onmousemove handler; second click
-// ends the stroke. The mouseout handler is also removed so that the cursor
-// briefly leaving the element's hit box doesn't break the stroke.
-if (isOld3DS) {
-    // Disable the press-hold model for old 3DS.
-    canvas.onmousedown = function(e) { if (e.preventDefault) e.preventDefault(); return false; };
-    canvas.onmouseup   = null;
-    canvas.onmouseout  = null;
-
-    // Click toggles draw mode on/off.
-    canvas.onclick = function(e) {
-        if (e.preventDefault) e.preventDefault();
-        var pos = getPos(e);
-        if (currTool === 'fill') {
-            floodFill(pos.x, pos.y);
-            return false;
-        }
-        if (!isDrawing) {
-            isDrawing = true;
-            lastX = pos.x;
-            lastY = pos.y;
-            lastDrawnX = pos.x;
-            lastDrawnY = pos.y;
-            pointQueue = [];
-            // Place a dot at the click point so single clicks are visible.
-            ctx.beginPath();
-            ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
-            ctx.fillStyle = currColor;
-            ctx.fill();
-            ctx.beginPath();
-        } else {
-            flushDrawQueue();
-            isDrawing = false;
-        }
-        return false;
-    };
-}
+// On old 3DS (NintendoBrowser 1.x), the cursor may cross the canvas edge while
+// the pen is still pressed. Don't reset isDrawing on mouseout so strokes aren't
+// interrupted mid-line. For all other browsers keep the normal stop-on-leave
+// behaviour so partially-off-canvas drags don't leave drawing stuck on.
+canvas.onmouseout = function() { flushDrawQueue(); if (!isOld3DS) { isDrawing = false; } };
 
 // --- TOUCH SUPPORT FOR MOBILE ---
 // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
