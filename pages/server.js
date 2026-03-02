@@ -257,7 +257,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       const targetServer = bot.client.guilds.cache.get(args[2]);
       await lock.acquire(discordID, async () => {
         if (targetServer) {
-          response = response.replace("{$DISCORD_NAME}", '<b><font color="#999999" size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
+          response = response.replace("{$DISCORD_NAME}", '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
             response = processServerChannels(targetServer, member, response, sessionParam);
