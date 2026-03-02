@@ -245,25 +245,6 @@ function renderStickers(messagetext, item, imagesCookie, animationsCookie) {
 // Embed rendering (inline media types handled here; rich embeds delegated)
 // ---------------------------------------------------------------------------
 
-function extractYouTubeVideoId(url) {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname === 'youtu.be') {
-      const id = parsed.pathname.slice(1).split('/')[0];
-      return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
-    }
-    if (parsed.hostname === 'www.youtube.com' || parsed.hostname === 'youtube.com') {
-      const v = parsed.searchParams.get('v');
-      if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
-      const m = parsed.pathname.match(/\/embed\/([A-Za-z0-9_-]{11})/);
-      if (m) return m[1];
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
 function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;') {
   const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
   return { proxied, tag: `<img src="${proxied}" style="${style}" alt="${alt}">` };
@@ -289,7 +270,7 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
     const isYouTube = (embed.provider?.name === 'YouTube' || urlMatchesDomain(embed.url, 'youtube.com') || urlMatchesDomain(embed.url, 'youtu.be')) && embed.thumbnail?.url;
 
     if (imagesCookie !== 1) {
-      if (!isTenor && !isGiphy && !isYouTube) richEmbeds.push(embed);
+      if (!isTenor && !isGiphy) richEmbeds.push(embed);
       return;
     }
 
@@ -303,14 +284,20 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
         messagetext = replaceOrAppendMedia(messagetext, embed.url, tag);
       }
     } else if (isYouTube) {
-      const videoId = extractYouTubeVideoId(embed.url);
-      if (videoId) {
-        const title = embed.title ? escape(embed.title) : 'YouTube Video';
-        messagetext += `<br><iframe width="400" height="225" src="https://www.youtube.com/embed/${videoId}" style="border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen title="${title}"></iframe>`;
-      } else {
-        const { proxied } = buildProxiedImageTag(embed.thumbnail.url, 'YouTube Video');
-        messagetext += `<br><a href="${escape(embed.url)}" target="_blank"><img src="${proxied}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
-      }
+      // Render as a Discord-style rich embed with the thumbnail as the main image
+      richEmbeds.push({
+        color: embed.color,
+        author: embed.author,
+        title: embed.title,
+        url: embed.url,
+        description: embed.description,
+        fields: embed.fields,
+        image: embed.image ?? embed.thumbnail,
+        thumbnail: null,
+        footer: embed.footer,
+        timestamp: embed.timestamp,
+        data: embed.data,
+      });
     } else if (embed.data?.type === 'poll_result') {
       messagetext += renderPollResultEmbed(embed);
     } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
