@@ -108,8 +108,9 @@ var selectedFile = null;
 
 function openFileUpload() {
     var channelId = document.getElementById('channel').value;
-    if (typeof fetch === 'undefined' || typeof FormData === 'undefined') {
-        // Older browser: navigate to dedicated upload page (visible form, no JS needed)
+    var isNintendo = /NintendoBrowser/.test(navigator.userAgent);
+    if (typeof fetch === 'undefined' || typeof FormData === 'undefined' || isNintendo) {
+        // Older browser or Nintendo 3DS: navigate to dedicated upload page (visible form, no JS needed)
         var url = '/upload?channel=' + encodeURIComponent(channelId);
         var sessionEl = document.getElementById('sessionID');
         if (sessionEl && sessionEl.value) {
