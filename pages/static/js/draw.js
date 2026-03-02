@@ -274,7 +274,22 @@ function floodFill(startX, startY) {
     startY = Math.round(startY);
     if (startX < 0 || startX >= canvas.width || startY < 0 || startY >= canvas.height) return;
 
-    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // getImageData/putImageData are not available in all browsers (e.g. DSi Opera 9.5).
+    // Fall back to filling the entire canvas with the selected color.
+    if (typeof ctx.getImageData !== 'function') {
+        ctx.fillStyle = currColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+
+    var imageData;
+    try {
+        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    } catch(e) {
+        ctx.fillStyle = currColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
     var data = imageData.data;
     var w = canvas.width;
     var h = canvas.height;
