@@ -774,6 +774,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         final = strReplace(final, "{$MESSAGES}", no_message_history_template);
+        final = strReplace(final, "{$CHANNEL_NAME}", (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
         final = strReplace(final, "{$SESSION_ID}", urlSessionID);
         final = strReplace(final, "{$SESSION_PARAM}", sessionParam);
 
@@ -822,7 +823,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
       final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
-      final = strReplace(final, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
+      final = strReplace(final, "{$CHANNEL_NAME}", (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
       final = strReplace(final, "{$MESSAGES}", response);
       final = strReplace(final, "{$SESSION_ID}", urlSessionID);
       final = strReplace(final, "{$SESSION_PARAM}", sessionParam);

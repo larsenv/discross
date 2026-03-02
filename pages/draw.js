@@ -160,7 +160,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       // We load the "channel_template" which is your 'draw.html'
       template = strReplace(template, "{$SERVER_ID}", chnl.guild.id);
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
-      template = strReplace(template, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
+      template = strReplace(template, "{$CHANNEL_NAME}", (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
       template = strReplace(template, "{$SESSION_ID}", urlSessionID);
       template = strReplace(template, "{$SESSION_PARAM}", sessionParam);
 
