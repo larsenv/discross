@@ -56,22 +56,12 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
 function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTimezone = null) {
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
 
-  let embedHead;
-  let embedText;
-  
-  embedHead = "#ffffff";
-  embedText = "#dcddde";
-    
-  // Apply theme class based on cookie value: 0=dark (default), 1=light, 2=amoled
+  // Apply theme colors: 1=light, otherwise dark/amoled
+  let embedHead = "#ffffff";
+  let embedText = "#dcddde";
   if (whiteThemeCookie == 1) {
     embedHead = "#000000";
     embedText = "#000000";
-  } else if (whiteThemeCookie == 2) {
-    embedHead = "#ffffff";
-    embedText = "#dcddde";
-  } else {
-    embedHead = "#ffffff";
-    embedText = "#dcddde";
   }
 
   if (!embeds || embeds.length === 0) {
