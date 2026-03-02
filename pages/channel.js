@@ -339,6 +339,17 @@ function renderPollResultEmbed(embed) {
 // Mention resolution
 // ---------------------------------------------------------------------------
 
+function buildRoleMentionPill(role) {
+  if (role.color !== 0) {
+    const r = (role.color >> 16) & 0xff;
+    const g = (role.color >> 8) & 0xff;
+    const b = role.color & 0xff;
+    const hex = `#${role.color.toString(16).padStart(6, '0')}`;
+    return `<span style="color:${hex};background:rgba(${r},${g},${b},0.3);padding:0 2px;border-radius:3px">@${escape(normalizeWeirdUnicode(role.name))}</span>`;
+  }
+  return `<span style="color:#94A8FF;background:#1D204C;padding:0 2px;border-radius:3px">@${escape(normalizeWeirdUnicode(role.name))}</span>`;
+}
+
 function renderKnownMentions(messagetext, item, tmpl_mention) {
   if (!item.mentions?.members) return messagetext;
 
@@ -351,8 +362,7 @@ function renderKnownMentions(messagetext, item, tmpl_mention) {
 
   item.mentions.roles?.forEach(role => {
     if (!role) return;
-    const pill = tmpl_mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(role.name)));
-    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, pill);
+    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, buildRoleMentionPill(role));
   });
 
   return messagetext;
@@ -394,7 +404,7 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
     const ch = bot.client.channels.cache.get(id);
     if (!ch) return match;
     return `<a href="/channels/${ch.id}" style="text-decoration:none;">` +
-      `<font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">` +
+      `<font style="background:#1D204C;color:#94A8FF;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">` +
       `#${escape(normalizeWeirdUnicode(ch.name))}</font></a>`;
   });
 }
@@ -672,8 +682,7 @@ async function renderMessageContent(item, context) {
   // Role mentions (second pass — catches any remaining after the member pass)
   item.mentions?.roles?.forEach(role => {
     if (role) {
-      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`,
-        templates.mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(role.name))));
+      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, buildRoleMentionPill(role));
     }
   });
 
