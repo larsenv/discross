@@ -1,4 +1,4 @@
-var md = require('markdown-it')({
+const md = require('markdown-it')({
   breaks: true,
   linkify: true,
   html: false
