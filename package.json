@@ -10,6 +10,7 @@
     "async-lock": "^1.4.1",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.4.1",
+    "discord-emoji-converter": "^1.2.10",
     "discord.js": "^14.14.1",
     "dotenv": "^17.2.3",
     "escape-html": "^1.0.3",
