@@ -90,6 +90,13 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         } while (m);
 
         let reply_message = await channel.messages.fetch(parsedurl.searchParams.get('reply_message_id'));
+        // Verify the reply message belongs to the channel to prevent reply spoofing
+        if (reply_message.channelId !== channel.id) {
+          res.writeHead(400, { "Content-Type": "text/plain" });
+          res.write("Reply message does not belong to this channel");
+          res.end();
+          return;
+        }
         let reply_message_content = reply_message.content;
         
         // #38: Escape mentions in reply content to prevent ping issues
