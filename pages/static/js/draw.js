@@ -212,11 +212,73 @@ canvas.onmousemove = function(e) {
 };
 
 canvas.onmouseup = function() { flushDrawQueue(); isDrawing = false; };
-// On old 3DS (NintendoBrowser 1.x), the cursor may cross the canvas edge while
-// the pen is still pressed. Don't reset isDrawing on mouseout so strokes aren't
-// interrupted mid-line. For all other browsers keep the normal stop-on-leave
-// behaviour so partially-off-canvas drags don't leave drawing stuck on.
-canvas.onmouseout = function() { flushDrawQueue(); if (!isOld3DS) { isDrawing = false; } };
+canvas.onmouseout = function() { flushDrawQueue(); isDrawing = false; };
+
+// --- OLD 3DS: CLICK-TO-DRAW MODE ---
+// NintendoBrowser 1.x cursor model: holding the stylus shows a cursor;
+// moving it fires mousemove events while hovering (button NOT held).
+// A tap fires mousedown → mouseup → click — mousemove does NOT fire while the
+// button is held. This means the standard press-hold-drag model never works
+// (mouseup fires before any mousemove, so isDrawing is false when cursor moves).
+//
+// Two additional quirks on old 3DS:
+//   1. cursor mousemove events may fire on document rather than on the canvas
+//      element, so canvas.onmousemove misses them.
+//   2. setInterval(fn, 30) may be unreliable on NintendoBrowser 1.x, so the
+//      canvas.onmousemove queue would never be flushed to the screen.
+//
+// Fix:
+//   - canvas.onclick toggles isDrawing on/off (first tap starts, second ends)
+//   - document.onmousemove draws each segment immediately (no queue needed)
+//   - canvas.onmousedown/onmouseup/onmouseout are disabled so they don't
+//     interfere with the click-toggle state
+if (isOld3DS) {
+    canvas.onmousedown = function(e) { if (e.preventDefault) e.preventDefault(); return false; };
+    canvas.onmouseup   = null;
+    canvas.onmouseout  = null;
+    canvas.onmousemove = null; // document-level handler used instead
+
+    canvas.onclick = function(e) {
+        if (e.preventDefault) e.preventDefault();
+        var pos = getPos(e);
+        if (currTool === 'fill') {
+            floodFill(pos.x, pos.y);
+            return false;
+        }
+        if (!isDrawing) {
+            isDrawing = true;
+            lastX = pos.x;
+            lastY = pos.y;
+            lastDrawnX = pos.x;
+            lastDrawnY = pos.y;
+            pointQueue = [];
+            // Draw a dot so single taps are visible.
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
+            ctx.fillStyle = currColor;
+            ctx.fill();
+            ctx.beginPath();
+        } else {
+            isDrawing = false;
+        }
+        return false;
+    };
+
+    // Capture cursor movement anywhere on the page (not just over the canvas).
+    // Draw each segment immediately — no queue, no setInterval dependency.
+    document.onmousemove = function(e) {
+        if (!isDrawing) return;
+        var pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        lastX = pos.x;
+        lastY = pos.y;
+        lastDrawnX = pos.x;
+        lastDrawnY = pos.y;
+    };
+}
 
 // --- TOUCH SUPPORT FOR MOBILE ---
 // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
