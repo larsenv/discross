@@ -18,6 +18,7 @@ const announcement_channel_template = fs.readFileSync('pages/templates/channelli
 const category_channel_template = fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8');
 const voice_channel_template = fs.readFileSync('pages/templates/channellist/voicechannel.html', 'utf-8');
 const thread_channel_template = fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8');
+const thread_section_header = '<font color="#dcddde" size="2" face="\'rodin\', Arial, Helvetica, sans-serif"><b>&nbsp;&nbsp;Threads</b></font><br>';
 const forum_channel_template = fs.readFileSync('pages/templates/channellist/forumchannel.html', 'utf-8');
 const locked_channel_template = fs.readFileSync('pages/templates/channellist/lockedchannel.html', 'utf-8');
 const rules_channel_template = fs.readFileSync('pages/templates/channellist/ruleschannel.html', 'utf-8');
@@ -91,8 +92,10 @@ function processServerChannels(server, member, response, sessionParam) {
 
     let channelList = "";
     let currentCategoryId = null;
+    let prevItemWasThread = false;
     
     channelsSorted.forEach((item, index) => {
+      const isThread = item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread;
       // Check if the member has permission to view the channel
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         const escapedName = escape(normalizeWeirdUnicode(item.name));
@@ -121,7 +124,10 @@ function processServerChannels(server, member, response, sessionParam) {
             // Voice channel with text capability (#14)
             channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           }
-        } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
+        } else if (isThread) {
+          if (!prevItemWasThread) {
+            channelList += thread_section_header;
+          }
           channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildStageVoice) {
           // Stage channels
@@ -146,6 +152,7 @@ function processServerChannels(server, member, response, sessionParam) {
           }
         }
       }
+      prevItemWasThread = isThread;
     });
     
     // Close the last category if exists
