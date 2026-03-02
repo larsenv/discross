@@ -130,20 +130,20 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     let fieldsHtml = '';
     if (embed.fields && embed.fields.length > 0)
     {
-      fieldsHtml = '<table width="100%" cellpadding="2" cellspacing="0" style="margin-bottom: 8px;">';
+      fieldsHtml = '<table width="100%" cellpadding="2" cellspacing="0" style="margin-bottom: 8px; table-layout: fixed;">';
       let rowOpen = false;
       let inlineCount = 0;
       embed.fields.forEach((field, i) => {
         if (!field.inline) {
           if (rowOpen) { fieldsHtml += '</tr>'; rowOpen = false; inlineCount = 0; }
-          fieldsHtml += '<tr><td colspan="3" style="padding-bottom: 4px;">';
+          fieldsHtml += '<tr><td colspan="3" style="padding-bottom: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
           fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
           const renderedValue = renderDiscordMarkdown(field.value);
           fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
           fieldsHtml += '</td></tr>';
         } else {
           if (!rowOpen) { fieldsHtml += '<tr>'; rowOpen = true; inlineCount = 0; }
-          fieldsHtml += '<td valign="top" style="padding-bottom: 4px; padding-right: 4px;">';
+          fieldsHtml += '<td valign="top" style="padding-bottom: 4px; padding-right: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
           fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
           const renderedValue = renderDiscordMarkdown(field.value);
           fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
