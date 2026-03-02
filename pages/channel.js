@@ -1,876 +1,949 @@
-var fs = require('fs');
-var escape = require('escape-html');
-var he = require('he');
-const path = require('path');
-const sharp = require("sharp");
-const emojiRegex = require("./twemojiRegex").regex;
-const sanitizer = require("path-sanitizer").default;
+'use strict';
+
+const fs = require('fs');
+const escape = require('escape-html');
+const he = require('he');
 const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
-const { channel } = require('diagnostics_channel');
-const fetch = require("sync-fetch");
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
-const { getClientIP, getTimezoneFromIP, formatDateWithTimezone, formatDateSeparator, areDifferentDays, formatForwardedTimestamp } = require('../timezoneUtils');
+const {
+  getClientIP, getTimezoneFromIP,
+  formatDateWithTimezone, formatDateSeparator,
+  areDifferentDays, formatForwardedTimestamp,
+} = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
-const { isEmojiOnlyMessage } = require('./messageUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
+const emojiRegex = require('./twemojiRegex').regex;
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const FORWARDED_CONTENT_MAX_LENGTH = 100;
+const REPLY_CONTENT_MAX_LENGTH = 50;
+const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
+
+const SYSTEM_MESSAGE_TEXT = {
+  1: 'added a new member',
+  2: 'left',
+  3: 'boosted the server',
+  4: 'changed the channel name',
+  5: 'changed the channel icon',
+  6: 'pinned a message to this channel',
+  7: 'welcomed a new member',
+  8: 'boosted the server to level 1',
+  9: 'boosted the server to level 2',
+  10: 'boosted the server to level 3',
+  11: 'followed this channel',
+  12: 'went live',
+  14: 'is no longer eligible for Server Discovery',
+  15: 'is eligible for Server Discovery again',
+  17: 'started a thread',
+  23: 'flagged a message with AutoMod',
+  24: 'purchased a role subscription',
+  26: 'started a stage',
+  27: 'ended the stage',
+  30: 'changed the stage topic',
+  36: 'enabled raid alert mode',
+  37: 'disabled raid alert mode',
+  38: 'reported a raid',
+  39: 'reported a false alarm',
+  46: 'Poll ended',
+};
+
+const THEME_CONFIG = {
+  0: { boxColor: '#40444b', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
+  1: { boxColor: '#ffffff', authorText: '#000000', replyText: '#000000', themeClass: 'class="light-theme"' },
+  2: { boxColor: '#40444b', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
+};
+
+const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
+
+// ---------------------------------------------------------------------------
+// Template loading
+// ---------------------------------------------------------------------------
 
 function readTemplate(filePath) {
-  let content = fs.readFileSync(filePath, 'utf-8');
-  // Remove #end if it appears right before a closing quote in an href
-  content = content.replace(/#end(?=["'])/g, ""); 
-  return content;
+  const content = fs.readFileSync(filePath, 'utf-8');
+  return content.replace(/#end(?=["'])/g, '');
 }
 
-const message_template = readTemplate('pages/templates/message/message.html');
-const message_forwarded_template = readTemplate('pages/templates/message/forwarded_message.html');
-const message_mentioned_template = readTemplate('pages/templates/message/message_mentioned.html');
-const message_forwarded_mentioned_template = readTemplate('pages/templates/message/forwarded_message_mentioned.html');
-const channel_template = fs.readFileSync('pages/templates/channel.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
-const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
-const merged_message_content_template = fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8');
-const mention_template = fs.readFileSync('pages/templates/message/mention.html', 'utf-8');
+const TEMPLATES = {
+  message:                   readTemplate('pages/templates/message/message.html'),
+  messageForwarded:          readTemplate('pages/templates/message/forwarded_message.html'),
+  messageMentioned:          readTemplate('pages/templates/message/message_mentioned.html'),
+  messageForwardedMentioned: readTemplate('pages/templates/message/forwarded_message_mentioned.html'),
+  channel: fs.readFileSync('pages/templates/channel.html', 'utf-8')
+              .split('{$COMMON_HEAD}')
+              .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8')),
+  firstMessageContent:  fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'),
+  mergedMessageContent: fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'),
+  mention:              fs.readFileSync('pages/templates/message/mention.html', 'utf-8'),
+  input:                fs.readFileSync('pages/templates/channel/input.html', 'utf-8'),
+  inputDisabled:        fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'),
+  noMessageHistory:     fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'),
+  fileDownload:         fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'),
+  reactions:            fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'),
+  reaction:             fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'),
+  dateSeparator:        fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8'),
+};
 
-const input_template = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
-const input_disabled_template = fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8');
-
-const no_message_history_template = fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8');
-
-const file_download_template = fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8');
-
-const reactions_template = fs.readFileSync('pages/templates/message/reactions.html', 'utf-8');
-const reaction_template = fs.readFileSync('pages/templates/message/reaction.html', 'utf-8');
-const date_separator_template = fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8');
-// Constants
-const FORWARDED_CONTENT_MAX_LENGTH = 100;
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
 
 function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-};
+  return string.split(needle).join(replacement ?? '');
+}
 
 function formatFileSize(bytes) {
   if (bytes === 0) return '0.00 Bytes';
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const formattedSize = (bytes / Math.pow(1024, i)).toFixed(2);
-  return `${formattedSize} ${sizes[i]}`;
+  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
 }
 
-// Remove any existing anchors with id or name 'end' from HTML
 function removeExistingEndAnchors(html) {
-  // Remove anchors that have id="end" or name="end" (handles both single and double quotes)
   return html.replace(/<a[^>]*(?:id=['"]end['"]|name=['"]end['"])[^>]*>[\s\S]*?<\/a>/gi, '');
 }
 
-// Check if a URL's hostname matches a given domain (or is a subdomain of it)
 function urlMatchesDomain(url, domain) {
   try {
-    const parsed = new URL(url);
-    return parsed.hostname === domain || parsed.hostname.endsWith('.' + domain);
+    const { hostname } = new URL(url);
+    return hostname === domain || hostname.endsWith('.' + domain);
   } catch {
     return false;
   }
 }
 
-// Member utility functions (getDisplayName, getMemberColor, ensureMemberData) 
-// are now imported from memberUtils.js to avoid duplication
+function truncateFileName(name) {
+  if (name.length <= 30) return name;
+  const ext = name.replace(/(.*\.)(.*)$/, '$2');
+  const base = name.replace(/(.*\.)(.*)$/, '$1').slice(0, 25);
+  return `${base}...${ext}`;
+}
 
-// https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
+function truncateText(text, maxLength) {
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+}
 
-/**
- * Build the HTML for all messages in a channel.
- * This shared function is used by both processChannel and processChannelReply.
- *
- * @param {Object} params
- * @returns {Promise<string>} Complete messages HTML including end anchor
- */
+function isSameAuthor(member1, author1, member2, author2) {
+  if (member1 && member2) return member1.user.id === member2.user.id;
+  return author1.id === author2.id && author1.username === author2.username;
+}
+
+function isNormalMessage(type) {
+  return type === 0 || type === 19;
+}
+
+// ---------------------------------------------------------------------------
+// Emoji rendering
+// ---------------------------------------------------------------------------
+
+function renderEmojis(messagetext, item, imagesCookie, animationsCookie) {
+  if (imagesCookie !== 1) return messagetext;
+
+  // Jumbo detection
+  const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
+  const customMatches = item.content.match(customEmojiRegex) ?? [];
+  const unicodeMatches = item.content.match(emojiRegex) ?? [];
+  const totalEmojis = customMatches.length + unicodeMatches.length;
+  const stripped = item.content.replace(customEmojiRegex, '').replace(emojiRegex, '').trim();
+  const isJumbo = stripped.length === 0 && totalEmojis > 0 && totalEmojis <= 29;
+
+  const size = isJumbo ? '2.75em' : '1.375em';
+  const px = isJumbo ? 44 : 22;
+  const imgStyle = `width: ${size}; height: ${size}; vertical-align: -0.2em;`;
+
+  // Unicode emoji
+  if (messagetext.match(emojiRegex)) {
+    [...messagetext.match(emojiRegex)].forEach(match => {
+      const code = unicodeToTwemojiCode(match);
+      messagetext = messagetext.replace(
+        match,
+        `<img src="/resources/twemoji/${code}.gif" width="${px}" height="${px}" style="${imgStyle}" alt="emoji" onerror="this.style.display='none'">`,
+      );
+    });
+  }
+
+  // Custom emoji
+  [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)].forEach(match => {
+    const animated = !!match[2];
+    const ext = animated && animationsCookie === 1 ? 'gif' : 'png';
+    cacheCustomEmoji(match[4], match[3], animated);
+    messagetext = messagetext.replace(
+      match[0],
+      `<img src="/imageProxy/emoji/${match[4]}.${ext}" width="${px}" height="${px}" style="${imgStyle}" alt="emoji" onerror="this.style.display='none'">`,
+    );
+  });
+
+  return messagetext;
+}
+
+// ---------------------------------------------------------------------------
+// Attachment rendering
+// ---------------------------------------------------------------------------
+
+function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) {
+  if (!item?.attachments?.size) return messagetext;
+
+  const IMAGE_EXT = /\.(jpg|gif|png|jpeg|avif|svg|webp|tif|tiff)$/i;
+  const VIDEO_EXT = /\.(mp4|webm|mov|avi|mkv)$/i;
+  const imageUrls = [];
+
+  item.attachments.forEach(attachment => {
+    const isImage = IMAGE_EXT.test(attachment.name);
+    const isVideo = VIDEO_EXT.test(attachment.name);
+    const proxyBase = isImage && imagesCookie === 1 ? '/imageProxy/' : '/fileProxy/';
+    const url = proxyBase + attachment.url.replace(/^(.*?)(\d+)/, '$2');
+
+    if (isImage && imagesCookie === 1) {
+      imageUrls.push(url);
+    } else {
+      // File download card
+      let card = tmpl_file_download;
+      card = card.replace('{$FILE_NAME}', truncateFileName(attachment.name));
+      card = card.replace('{$FILE_SIZE}', formatFileSize(attachment.size));
+      messagetext += card;
+      if (!isVideo || imagesCookie !== 1) {
+        messagetext = strReplace(messagetext, '{$FILE_LINK}', url);
+      }
+    }
+  });
+
+  imageUrls.forEach(url => {
+    messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:auto;height:auto;" alt="image"></a>`;
+  });
+
+  return messagetext;
+}
+
+// ---------------------------------------------------------------------------
+// Sticker rendering
+// ---------------------------------------------------------------------------
+
+function renderStickers(messagetext, item, imagesCookie, animationsCookie) {
+  if (!item.stickers?.size) return messagetext;
+
+  item.stickers.forEach(sticker => {
+    if (imagesCookie === 1) {
+      const ext = animationsCookie === 1 ? 'gif' : 'png';
+      messagetext += `<br><img src="/imageProxy/sticker/${sticker.id}.${ext}" style="width:100px;height:100px;" alt="sticker">`;
+    } else {
+      messagetext += `<br>[Sticker: ${sticker.name ?? 'Unknown'}]`;
+    }
+  });
+
+  return messagetext;
+}
+
+// ---------------------------------------------------------------------------
+// Embed rendering (inline media types handled here; rich embeds delegated)
+// ---------------------------------------------------------------------------
+
+function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;') {
+  const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
+  return { proxied, tag: `<img src="${proxied}" style="${style}" alt="${alt}">` };
+}
+
+function replaceOrAppendMedia(messagetext, embedUrl, imgHtml) {
+  if (embedUrl) {
+    const escaped = embedUrl.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const re = new RegExp(`<a href="${escaped}">.*?</a>`, 'i');
+    if (re.test(messagetext)) return messagetext.replace(re, imgHtml);
+  }
+  return messagetext + '<br>' + imgHtml;
+}
+
+function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, clientTimezone) {
+  if (!item?.embeds?.length) return messagetext;
+
+  const richEmbeds = [];
+
+  item.embeds.forEach(embed => {
+    const isTenor = (embed.provider?.name === 'Tenor' || urlMatchesDomain(embed.url, 'tenor.com')) && embed.thumbnail?.url;
+    const isGiphy = (embed.provider?.name === 'GIPHY' || urlMatchesDomain(embed.url, 'giphy.com')) && (embed.thumbnail?.url || embed.image?.url);
+    const isYouTube = (embed.provider?.name === 'YouTube' || urlMatchesDomain(embed.url, 'youtube.com') || urlMatchesDomain(embed.url, 'youtu.be')) && embed.thumbnail?.url;
+
+    if (imagesCookie !== 1) {
+      if (!isTenor && !isGiphy && !isYouTube) richEmbeds.push(embed);
+      return;
+    }
+
+    if (isTenor) {
+      const { tag } = buildProxiedImageTag(embed.thumbnail.url, 'Tenor GIF');
+      messagetext = replaceOrAppendMedia(messagetext, embed.url, tag);
+    } else if (isGiphy) {
+      const rawUrl = embed.image?.url ?? embed.thumbnail?.url;
+      if (rawUrl) {
+        const { tag } = buildProxiedImageTag(rawUrl, 'GIPHY GIF');
+        messagetext = replaceOrAppendMedia(messagetext, embed.url, tag);
+      }
+    } else if (isYouTube) {
+      const { proxied } = buildProxiedImageTag(embed.thumbnail.url, 'YouTube Video');
+      messagetext += `<br><a href="${embed.url}" target="_blank"><img src="${proxied}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
+    } else if (embed.data?.type === 'poll_result') {
+      messagetext += renderPollResultEmbed(embed);
+    } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
+      const rawUrl = embed.thumbnail?.url ?? embed.image?.url;
+      if (rawUrl) {
+        const { tag } = buildProxiedImageTag(rawUrl, 'Image');
+        messagetext = replaceOrAppendMedia(messagetext, embed.url, tag);
+      }
+    } else {
+      richEmbeds.push(embed);
+    }
+  });
+
+  if (richEmbeds.length > 0) {
+    messagetext += processEmbeds(req, richEmbeds, imagesCookie, animationsCookie, clientTimezone);
+  }
+
+  return messagetext;
+}
+
+function renderPollResultEmbed(embed) {
+  const fieldMap = {};
+  (embed.fields ?? []).forEach(f => { fieldMap[f.name] = f.value; });
+
+  const question    = fieldMap['poll_question_text']    ?? '';
+  const winnerText  = fieldMap['victor_answer_text']    ?? '';
+  const winnerEmoji = fieldMap['victor_answer_emoji_name'] ?? '';
+  const winnerVotes = fieldMap['victor_answer_votes']   ?? '0';
+  const totalVotes  = fieldMap['total_votes']            ?? '0';
+  const emojiPart   = winnerEmoji ? escape(winnerEmoji) + ' ' : '';
+
+  return `<div style="font-size:14px;color:#b9bbbe;margin-top:4px;">` +
+    `Poll ended: <b>${escape(question)}</b><br>` +
+    `Winner: ${emojiPart}<b>${escape(winnerText)}</b> (${escape(winnerVotes)}/${escape(totalVotes)} votes)` +
+    `</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Mention resolution
+// ---------------------------------------------------------------------------
+
+function renderKnownMentions(messagetext, item, tmpl_mention) {
+  if (!item.mentions?.members) return messagetext;
+
+  item.mentions.members.forEach(user => {
+    if (!user) return;
+    const pill = tmpl_mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(user.displayName)));
+    messagetext = strReplace(messagetext, `&lt;@${user.id}&gt;`, pill);
+    messagetext = strReplace(messagetext, `&lt;@!${user.id}&gt;`, pill);
+  });
+
+  item.mentions.roles?.forEach(role => {
+    if (!role) return;
+    const pill = tmpl_mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(role.name)));
+    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, pill);
+  });
+
+  return messagetext;
+}
+
+async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_mention) {
+  // Fetch any member IDs not yet in cache
+  const unresolvedIds = [...messagetext.matchAll(/&lt;@!?(\d{17,19})&gt;/g)]
+    .map(m => m[1])
+    .filter(id => !memberCache.has(id));
+
+  await Promise.allSettled(unresolvedIds.map(async id => {
+    try {
+      memberCache.set(id, await chnl.guild.members.fetch(id));
+    } catch {
+      memberCache.set(id, null);
+    }
+  }));
+
+  return messagetext.replace(/&lt;@!?(\d{17,19})&gt;/g, (match, userId) => {
+    const resolved = memberCache.get(userId) ?? chnl.guild.members.cache.get(userId);
+    if (resolved) {
+      return tmpl_mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(getDisplayName(resolved, resolved.user))));
+    }
+    return tmpl_mention.replace('{$USERNAME}', '@unknown-user');
+  });
+}
+
+async function resolveChannelMentions(messagetext, bot, chnl) {
+  const unresolvedIds = [...messagetext.matchAll(/&lt;#(\d{17,19})&gt;/g)]
+    .map(m => m[1])
+    .filter(id => !bot.client.channels.cache.has(id));
+
+  await Promise.allSettled(unresolvedIds.map(async id => {
+    try { await bot.client.channels.fetch(id); } catch { /* not accessible */ }
+  }));
+
+  return messagetext.replace(/&lt;#(\d{17,19})&gt;/g, (match, id) => {
+    const ch = bot.client.channels.cache.get(id);
+    if (!ch) return match;
+    return `<a href="/channels/${ch.id}" style="text-decoration:none;">` +
+      `<font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">` +
+      `#${escape(normalizeWeirdUnicode(ch.name))}</font></a>`;
+  });
+}
+
+function renderEveryoneMentions(messagetext, item, tmpl_mention) {
+  if (!item.mentions?.everyone) return messagetext;
+  if (messagetext.includes('@everyone')) {
+    messagetext = strReplace(messagetext, '@everyone', tmpl_mention.replace('{$USERNAME}', '@everyone'));
+  }
+  if (messagetext.includes('@here')) {
+    messagetext = strReplace(messagetext, '@here', tmpl_mention.replace('{$USERNAME}', '@here'));
+  }
+  return messagetext;
+}
+
+// ---------------------------------------------------------------------------
+// isMentioned detection
+// ---------------------------------------------------------------------------
+
+function detectMention(item, member, discordID, isReply, replyData) {
+  if (item.mentions?.members?.has(discordID)) return true;
+  if (isReply && replyData.mentionsPing && replyData.authorId === discordID) return true;
+  if (item.mentions?.everyone) return true;
+  if (item.mentions?.roles) {
+    for (const role of item.mentions.roles.values()) {
+      if (member.roles.cache.has(role.id)) return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Forward data resolution
+// ---------------------------------------------------------------------------
+
+async function resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone) {
+  try {
+    const fwdMsg = await item.fetchReference();
+    let fwdMember = null;
+    if (!fwdMsg.author?.bot) {
+      fwdMember = await ensureMemberData(fwdMsg, chnl.guild, memberCache);
+    }
+
+    const content = truncateText(fwdMsg.content, FORWARDED_CONTENT_MAX_LENGTH);
+    let originHtml = '';
+
+    try {
+      const snowflakeRe = /^\d{17,19}$/;
+      if (fwdMsg.guildId && snowflakeRe.test(fwdMsg.channelId) && snowflakeRe.test(fwdMsg.id)) {
+        const fwdChannel = fwdMsg.channel ?? bot.client.channels.cache.get(fwdMsg.channelId);
+        if (fwdChannel) {
+          const timeDisplay = formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone);
+          const jumpLink = `/channels/${fwdMsg.channelId}/${fwdMsg.id}`;
+          const chanLink = `<a href="${jumpLink}" style="color:#b5bac1;text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
+
+          if (fwdMsg.guildId === chnl.guild.id) {
+            originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${chanLink}</font>`;
+          } else {
+            const otherGuild = bot.client.guilds.cache.get(fwdMsg.guildId);
+            if (otherGuild) {
+              try {
+                await otherGuild.members.fetch(discordID);
+                originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
+              } catch { /* user not in that guild */ }
+            }
+          }
+        }
+      }
+    } catch { originHtml = ''; }
+
+    return {
+      author: getDisplayName(fwdMember, fwdMsg.author),
+      content: renderDiscordMarkdown(content),
+      date: formatDateWithTimezone(fwdMsg.createdAt, clientTimezone),
+      origin: originHtml,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Reply data resolution
+// ---------------------------------------------------------------------------
+
+async function resolveReplyData(item, chnl, memberCache) {
+  try {
+    let replyUser = item.mentions?.repliedUser;
+    let replyMember;
+    let replyMessage;
+
+    try {
+      replyMessage = await item.fetchReference();
+      replyUser = replyMessage.author;
+    } catch { /* deleted or inaccessible */ }
+
+    if (replyMessage) {
+      if (!replyMessage.author?.bot) {
+        replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
+      }
+    } else if (replyUser?.id) {
+      const cached = memberCache.get(replyUser.id);
+      if (cached !== undefined) {
+        replyMember = cached;
+      } else {
+        try {
+          replyMember = await chnl.guild.members.fetch(replyUser.id);
+          memberCache.set(replyUser.id, replyMember);
+        } catch { /* left the server */ }
+      }
+    }
+
+    let replyContent = '';
+    if (replyMessage?.content) {
+      const flat = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
+      replyContent = renderDiscordMarkdown(truncateText(flat, REPLY_CONTENT_MAX_LENGTH));
+    }
+
+    return {
+      author: getDisplayName(replyMember, replyUser),
+      authorId: replyUser?.id,
+      mentionsPing: item.mentions?.repliedUser != null,
+      content: replyContent,
+    };
+  } catch (err) {
+    console.error('Could not process reply data:', err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Reply indicator HTML
+// ---------------------------------------------------------------------------
+
+function buildReplyIndicator(replyData, replyText) {
+  const contentPart = replyData.content ? ' ' + replyData.content : '';
+  return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
+    '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
+    `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;color:${replyText}" face="rodin,sans-serif">` +
+    `@${escape(replyData.author)}${contentPart}</font></td>` +
+    '</tr></table>';
+}
+
+// ---------------------------------------------------------------------------
+// Message group flushing
+// ---------------------------------------------------------------------------
+
+function flushMessageGroup(state, templates, authorText, replyText, channelId) {
+  const {
+    currentmessage, isForwarded, forwardData,
+    lastMentioned, lastReply, lastReplyData,
+    lastauthor, lastmember, lastdate, messageid,
+  } = state;
+
+  let html = currentmessage;
+
+  // Wrap in appropriate outer template
+  if (isForwarded && lastMentioned) {
+    html = templates.messageForwardedMentioned.replace('{$MESSAGE_CONTENT}', html);
+  } else if (isForwarded) {
+    html = templates.messageForwarded.replace('{$MESSAGE_CONTENT}', html);
+  } else if (lastMentioned) {
+    html = templates.messageMentioned.replace('{$MESSAGE_CONTENT}', html);
+    if (channelId) html = html.replace('{$MESSAGE_REPLY_LINK}', `/channels/${channelId}/${messageid}`);
+  } else {
+    html = templates.message.replace('{$MESSAGE_CONTENT}', html);
+    if (channelId) html = html.replace('{$MESSAGE_REPLY_LINK}', `/channels/${channelId}/${messageid}`);
+  }
+
+  // Forwarded metadata
+  if (isForwarded) {
+    html = html.replace('{$FORWARDED_AUTHOR}',  escape(forwardData.author));
+    html = html.replace('{$FORWARDED_CONTENT}', forwardData.content);
+    html = html.replace('{$FORWARDED_DATE}',    forwardData.date);
+    html = html.replace('{$FORWARDED_ORIGIN}',  forwardData.origin ?? '');
+  }
+
+  const displayName  = getDisplayName(lastmember, lastauthor);
+  const authorColor  = getMemberColor(lastmember, authorText);
+  const replyIndicator = lastReply ? buildReplyIndicator(lastReplyData, replyText) : '';
+
+  html = html.replace('{$MESSAGE_AUTHOR}', escape(displayName));
+  html = strReplace(html, '{$AUTHOR_COLOR}',    authorColor);
+  html = strReplace(html, '{$REPLY_INDICATOR}', replyIndicator);
+  html = strReplace(html, '{$PING_INDICATOR}',  '');
+  html = strReplace(html, '{$MESSAGE_DATE}',    formatDateWithTimezone(lastdate, state.clientTimezone));
+  html = strReplace(html, '{$TAG}',             he.encode(JSON.stringify(`<@${lastauthor.id}>`)));
+
+  return html;
+}
+
+// ---------------------------------------------------------------------------
+// Core message rendering
+// ---------------------------------------------------------------------------
+
+async function renderMessageContent(item, context) {
+  const {
+    bot, chnl, member, discordID, req,
+    imagesCookie, animationsCookie, clientTimezone,
+    memberCache, templates,
+  } = context;
+
+  let messagetext = renderDiscordMarkdown(item.content);
+
+  messagetext = renderEmojis(messagetext, item, imagesCookie, animationsCookie);
+  messagetext = renderAttachments(messagetext, item, imagesCookie, templates.fileDownload);
+  messagetext = renderStickers(messagetext, item, imagesCookie, animationsCookie);
+  messagetext = renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, clientTimezone);
+
+  if (item?.poll) {
+    messagetext += processPoll(item.poll, imagesCookie);
+  }
+
+  messagetext = renderKnownMentions(messagetext, item, templates.mention);
+  messagetext = await resolveRemainingMentions(messagetext, chnl, memberCache, templates.mention);
+  messagetext = await resolveChannelMentions(messagetext, bot, chnl);
+  messagetext = renderEveryoneMentions(messagetext, item, templates.mention);
+
+  // Role mentions (second pass — catches any remaining after the member pass)
+  item.mentions?.roles?.forEach(role => {
+    if (role) {
+      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`,
+        templates.mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(role.name))));
+    }
+  });
+
+  return messagetext;
+}
+
+// ---------------------------------------------------------------------------
+// buildMessagesHtml — public API
+// ---------------------------------------------------------------------------
+
 exports.buildMessagesHtml = async function buildMessagesHtml(params) {
   const {
     bot, chnl, member, discordID, req,
     imagesCookie, animationsCookie = 1,
     authorText, replyText, clientTimezone,
-    channelId, // for {$MESSAGE_REPLY_LINK}; pass null to skip
-    templates: {
-      message: tmpl_message,
-      message_forwarded: tmpl_message_forwarded,
-      message_mentioned: tmpl_message_mentioned,
-      message_forwarded_mentioned: tmpl_message_forwarded_mentioned,
-      first_message_content: tmpl_first_message_content,
-      merged_message_content: tmpl_merged_message_content,
-      mention: tmpl_mention,
-      file_download: tmpl_file_download,
-      reactions: tmpl_reactions,
-      reaction: tmpl_reaction,
-      date_separator: tmpl_date_separator,
-    }
+    channelId,
   } = params;
 
-  let response = "";
-  const messages = await bot.getHistoryCached(chnl);
-
-  // Build a set of message IDs that are referenced by replies within this page.
-  // Those original messages will be suppressed since their content is already
-  // shown in the reply indicator of the referencing message.
-  const referencedMessageIds = new Set();
-  for (const msg of messages) {
-    if (msg.reference && msg.reference.type !== MessageReferenceType.Forward && msg.reference.messageId) {
-      referencedMessageIds.add(msg.reference.messageId);
-    }
-  }
-
-  let lastauthor = undefined;
-  let lastmember = undefined;
-  let lastdate = new Date('1995-12-17T03:24:00');
-  let lastmessagedate = null;
-  let currentmessage = "";
-  let islastmessage = false;
-  let messageid = 0;
-  let isForwarded = false;
-  let forwardData = {};
-  let isMentioned = false;
-  let isReply = false;
-  let replyData = {};
-  let lastMentioned = false;
-  let lastReply = false;
-  let lastReplyData = {};
-
-  const memberCache = new Map();
-
-  const isSameUser = (member1, author1, member2, author2) => {
-    if (member1 && member2) {
-      return member1.user.id === member2.user.id;
-    }
-    return author1.id === author2.id && author1.username === author2.username;
+  // Unify template references under camelCase
+  const templates = {
+    message:                   TEMPLATES.message,
+    messageForwarded:          TEMPLATES.messageForwarded,
+    messageMentioned:          TEMPLATES.messageMentioned,
+    messageForwardedMentioned: TEMPLATES.messageForwardedMentioned,
+    firstMessageContent:       TEMPLATES.firstMessageContent,
+    mergedMessageContent:      TEMPLATES.mergedMessageContent,
+    mention:                   TEMPLATES.mention,
+    fileDownload:              TEMPLATES.fileDownload,
+    reactions:                 TEMPLATES.reactions,
+    reaction:                  TEMPLATES.reaction,
+    dateSeparator:             TEMPLATES.dateSeparator,
   };
 
-  const handlemessage = async function (item) {
-    if (lastauthor) {
-      if (islastmessage || (item && (!isSameUser(lastmember, lastauthor, null, item.author) || item.createdAt - lastdate > 420000 || (item.reference && item.reference.type !== MessageReferenceType.Forward) || lastReply))) {
+  const messages = await bot.getHistoryCached(chnl);
+  const memberCache = new Map();
 
-        if (isForwarded && lastMentioned) {
-          currentmessage = tmpl_message_forwarded_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
-          currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
-          currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
-          currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
-          currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
-        } else if (isForwarded) {
-          currentmessage = tmpl_message_forwarded.replace("{$MESSAGE_CONTENT}", currentmessage);
-          currentmessage = currentmessage.replace("{$FORWARDED_AUTHOR}", escape(forwardData.author));
-          currentmessage = currentmessage.replace("{$FORWARDED_CONTENT}", forwardData.content);
-          currentmessage = currentmessage.replace("{$FORWARDED_DATE}", forwardData.date);
-          currentmessage = currentmessage.replace("{$FORWARDED_ORIGIN}", forwardData.origin || '');
-        } else if (lastMentioned) {
-          currentmessage = tmpl_message_mentioned.replace("{$MESSAGE_CONTENT}", currentmessage);
-          if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
-        } else {
-          currentmessage = tmpl_message.replace("{$MESSAGE_CONTENT}", currentmessage);
-          if (channelId) currentmessage = currentmessage.replace("{$MESSAGE_REPLY_LINK}", "/channels/" + channelId + "/" + messageid);
-        }
+  // IDs of messages that are the target of a reply — suppress standalone rendering
+  const referencedMessageIds = new Set(
+    messages
+      .filter(m => m.reference?.type !== MessageReferenceType.Forward && m.reference?.messageId)
+      .map(m => m.reference.messageId),
+  );
 
-        const displayName = getDisplayName(lastmember, lastauthor);
-        const authorColor = getMemberColor(lastmember, authorText);
+  // Mutable rendering state
+  const state = {
+    lastauthor: undefined,
+    lastmember: undefined,
+    lastdate: new Date('1995-12-17T03:24:00'),
+    lastmessagedate: null,
+    currentmessage: '',
+    messageid: 0,
+    isForwarded: false,
+    forwardData: {},
+    lastMentioned: false,
+    lastReply: false,
+    lastReplyData: {},
+    clientTimezone,
+  };
 
-        currentmessage = currentmessage.replace("{$MESSAGE_AUTHOR}", escape(displayName));
-        currentmessage = strReplace(currentmessage, "{$AUTHOR_COLOR}", authorColor);
+  let response = '';
 
-        let replyIndicator = '';
-        if (lastReply) {
-          // replyContent is already rendered HTML from renderDiscordMarkdown — do not escape() it
-          const contentPart = lastReplyData.content ? ' ' + lastReplyData.content : '';
-          replyIndicator = '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-            '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-            '<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap"><font style="font-size:12px;color:'+replyText+'" face="rodin,sans-serif">@' + escape(lastReplyData.author) + contentPart + '</font></td>' +
-            '</tr></table>';
-        }
-        currentmessage = strReplace(currentmessage, "{$REPLY_INDICATOR}", replyIndicator);
-        currentmessage = strReplace(currentmessage, "{$PING_INDICATOR}", '');
+  const context = {
+    bot, chnl, member, discordID, req,
+    imagesCookie, animationsCookie, clientTimezone,
+    memberCache, templates,
+  };
 
-        currentmessage = strReplace(currentmessage, "{$MESSAGE_DATE}", formatDateWithTimezone(lastdate, clientTimezone));
-        currentmessage = strReplace(currentmessage, "{$TAG}", he.encode(JSON.stringify("<@" + lastauthor.id + ">")));
-        response += currentmessage;
-        currentmessage = "";
+  const shouldStartNewGroup = (item) =>
+    !state.lastauthor ||
+    !isSameAuthor(state.lastmember, state.lastauthor, null, item.author) ||
+    item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
+    (item.reference && item.reference.type !== MessageReferenceType.Forward) ||
+    state.lastReply;
+
+  const processItem = async (item) => {
+    // Flush the previous group when the author changes or this is the sentinel call
+    if (state.lastauthor) {
+      const flushNow = !item || shouldStartNewGroup(item);
+      if (flushNow) {
+        response += flushMessageGroup(state, templates, authorText, replyText, channelId);
+        state.currentmessage = '';
       }
     }
 
-    if (!item) {
-      return;
-    }
-
-    // Skip messages that are referenced by a reply on this page — they will be
-    // visible via the reply indicator and don't need a standalone block.
-    if (referencedMessageIds.has(item.id)) {
-      return;
-    }
+    if (!item) return;
+    if (referencedMessageIds.has(item.id)) return;
 
     const currentMember = await ensureMemberData(item, chnl.guild, memberCache);
 
-    if (clientTimezone && areDifferentDays(item.createdAt, lastmessagedate, clientTimezone)) {
-      const separatorText = formatDateSeparator(item.createdAt, clientTimezone);
-      const separator = tmpl_date_separator.replace("{$DATE_SEPARATOR}", separatorText);
-      response += separator;
+    // Date separator
+    if (clientTimezone && areDifferentDays(item.createdAt, state.lastmessagedate, clientTimezone)) {
+      const sep = templates.dateSeparator.replace('{$DATE_SEPARATOR}', formatDateSeparator(item.createdAt, clientTimezone));
+      response += sep;
     }
+    state.lastmessagedate = item.createdAt;
 
-    lastmessagedate = item.createdAt;
-
-    isForwarded = false;
-    forwardData = {};
+    // Resolve forward / reply metadata
+    let isForwarded = false;
+    let forwardData = {};
     if (item.reference?.type === MessageReferenceType.Forward) {
-      try {
-        const forwardedMessage = await item.fetchReference();
-        let forwardedMember = null;
-        if (!forwardedMessage.author?.bot) {
-          forwardedMember = await ensureMemberData(forwardedMessage, chnl.guild, memberCache);
-        }
-        const forwardedAuthor = getDisplayName(forwardedMember, forwardedMessage.author);
-        const forwardedContent = forwardedMessage.content.length > FORWARDED_CONTENT_MAX_LENGTH
-          ? forwardedMessage.content.substring(0, FORWARDED_CONTENT_MAX_LENGTH) + "..."
-          : forwardedMessage.content;
-        const forwardedDate = formatDateWithTimezone(forwardedMessage.createdAt, clientTimezone);
-
-        // Compute origin HTML (channel + time shown below forwarded content)
-        let originHtml = '';
-        try {
-          const fwdChannelId = forwardedMessage.channelId;
-          const fwdGuildId = forwardedMessage.guildId;
-          const snowflakeRe = /^\d{17,19}$/;
-          if (fwdGuildId && snowflakeRe.test(fwdChannelId) && snowflakeRe.test(forwardedMessage.id)) {
-            const fwdChannel = forwardedMessage.channel || bot.client.channels.cache.get(fwdChannelId);
-            if (fwdChannel) {
-              const timeDisplay = formatForwardedTimestamp(forwardedMessage.createdAt, clientTimezone);
-              const jumpLink = `/channels/${fwdChannelId}/${forwardedMessage.id}`;
-              const chanLink = `<a href="${jumpLink}" style="color:#b5bac1;text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
-              if (fwdGuildId === chnl.guild.id) {
-                originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${chanLink}</font>`;
-              } else {
-                const otherGuild = bot.client.guilds.cache.get(fwdGuildId);
-                if (otherGuild) {
-                  try {
-                    await otherGuild.members.fetch(discordID);
-                    originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
-                  } catch (e) {
-                    // User not in that guild — show nothing
-                  }
-                }
-              }
-            }
-          }
-        } catch (e) {
-          originHtml = '';
-        }
-
-        isForwarded = true;
-        forwardData = {
-          author: forwardedAuthor,
-          content: renderDiscordMarkdown(forwardedContent),
-          date: forwardedDate,
-          origin: originHtml
-        };
-      } catch (err) {
-        isForwarded = false;
-      }
+      const data = await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone);
+      if (data) { isForwarded = true; forwardData = data; }
     }
 
-    isReply = false;
-    replyData = {};
+    let isReply = false;
+    let replyData = {};
     if (item.reference && !isForwarded) {
-      try {
-        let replyUser = item.mentions?.repliedUser;
-        let replyMember = undefined;
-        let replyMessage = undefined;
-
-        try {
-          replyMessage = await item.fetchReference();
-          replyUser = replyMessage.author;
-        } catch (err) {
-          // Message was likely deleted or is inaccessible.
-        }
-
-        if (replyMessage) {
-          if (!replyMessage.author?.bot) {
-            replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
-          }
-        } else if (replyUser?.id) {
-          // Reply message is deleted/inaccessible — try to resolve member from cache or guild
-          const cacheKey = replyUser.id;
-          if (memberCache.has(cacheKey)) {
-            replyMember = memberCache.get(cacheKey);
-          } else {
-            try {
-              replyMember = await chnl.guild.members.fetch(replyUser.id);
-              memberCache.set(cacheKey, replyMember);
-            } catch (err) {
-              // User left the server or is otherwise unavailable
-            }
-          }
-        }
-
-        const replyAuthor = getDisplayName(replyMember, replyUser);
-        const mentionsRepliedUser = item.mentions?.repliedUser != null;
-
-        let replyContent = '';
-        if (replyMessage && replyMessage.content) {
-          const maxLength = 50;
-          // Collapse newlines to spaces so multiline messages appear on one line,
-          // then truncate the raw text before rendering markdown to avoid cutting HTML tags.
-          const flatContent = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
-          const truncated = flatContent.length > maxLength
-            ? flatContent.substring(0, maxLength) + '...'
-            : flatContent;
-          replyContent = renderDiscordMarkdown(truncated);
-        }
-
-        isReply = true;
-        replyData = {
-          author: replyAuthor,
-          authorId: replyUser?.id,
-          mentionsPing: mentionsRepliedUser,
-          content: replyContent
-        };
-      } catch (err) {
-        console.error("Could not process reply data:", err);
-        isReply = false;
-      }
+      const data = await resolveReplyData(item, chnl, memberCache);
+      if (data) { isReply = true; replyData = data; }
     }
 
-    let messagetext = renderDiscordMarkdown(item.content);
+    let messagetext = await renderMessageContent(item, context);
 
-    let isJumbo = false;
-    if (imagesCookie === 1) {
-      const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
-      const customMatches = item.content.match(customEmojiRegex) || [];
-      const unicodeMatches = item.content.match(emojiRegex) || [];
-      const totalEmojis = customMatches.length + unicodeMatches.length;
-      const strippedContent = item.content.replace(customEmojiRegex, '').replace(emojiRegex, '').trim();
-      if (strippedContent.length === 0 && totalEmojis > 0 && totalEmojis <= 29) {
-        isJumbo = true;
-      }
+    const isMentioned = detectMention(item, member, discordID, isReply, replyData);
+
+    // Wrap in first-message or merged template
+    const startsNewGroup = !state.lastauthor ||
+      !isSameAuthor(state.lastmember, state.lastauthor, currentMember, item.author) ||
+      item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
+      isReply;
+
+    messagetext = startsNewGroup
+      ? templates.firstMessageContent.replace('{$MESSAGE_TEXT}', messagetext)
+      : templates.mergedMessageContent.replace('{$MESSAGE_TEXT}', messagetext);
+
+    const reactionsHtml = processReactions(item.reactions, imagesCookie, templates.reactions, templates.reaction, animationsCookie);
+    messagetext = strReplace(messagetext, '{$MESSAGE_REACTIONS}', reactionsHtml);
+
+    // System message handling
+    const isSystem = !isNormalMessage(item.type);
+    const visibleText = messagetext.replace(/<img\b[^>]*>/gi, 'x').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+    if (!isSystem && visibleText.length === 0 &&
+        !item.attachments?.size && !item.embeds?.length && !item.stickers?.size) {
+      return; // nothing to show
     }
 
-    const emojiSize = isJumbo ? "2.75em" : "1.375em";
-    const emojiPxSize = isJumbo ? 44 : 22;
-
-    if (imagesCookie === 1) {
-      if (messagetext.match(emojiRegex)) {
-        const unicode_emoji_matches = [...messagetext.match(emojiRegex)];
-        unicode_emoji_matches.forEach(match => {
-          const output = unicodeToTwemojiCode(match);
-          messagetext = messagetext.replace(match, `<img src="/resources/twemoji/${output}.gif" width="${emojiPxSize}" height="${emojiPxSize}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
-        });
-      }
-
-      const custom_emoji_matches = [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];
-      if (custom_emoji_matches.length > 0) {
-        custom_emoji_matches.forEach(match => {
-          const animated = !!match[2];
-          const emojiExt = (animated && animationsCookie === 1) ? 'gif' : 'png';
-          cacheCustomEmoji(match[4], match[3], animated);
-          messagetext = messagetext.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${emojiExt}" width="${emojiPxSize}" height="${emojiPxSize}" style="width: ${emojiSize}; height: ${emojiSize}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
-        });
-      }
+    if (isSystem && visibleText.length === 0) {
+      const systemText = SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action';
+      messagetext = `<font style="font-size:14px;color:${authorText};font-style:italic;" face="rodin,sans-serif">${systemText}</font>`;
     }
 
-    if (item?.attachments) {
-      let urls = new Array();
-      item.attachments.forEach(attachment => {
-        let url;
-        if (attachment.name.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))$/) && imagesCookie == 1) {
-          url = "/imageProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'));
-        } else if (attachment.name.match?.(/(?:\.(mp4|webm|mov|avi|mkv))$/) && imagesCookie == 1) {
-          url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'));
-          messagetext = messagetext.concat(tmpl_file_download);
-          messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name);
-          messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size));
-          urls.push(url);
-          return;
-        } else {
-          url = "/fileProxy/".concat(attachment.url.replace(/^(.*?)(\d+)/, '$2'));
-          messagetext = messagetext.concat(tmpl_file_download);
-          messagetext = messagetext.replace('{$FILE_NAME}', attachment.name.length > 30 ? attachment.name.replace(/(.*\.)(.*)$/, "$1").slice(0, 25) + "..." + attachment.name.replace(/(.*\.)(.*)$/, "$2") : attachment.name);
-          messagetext = messagetext.replace('{$FILE_SIZE}', formatFileSize(attachment.size));
-        }
-        urls.push(url);
-      });
-      urls.forEach(url => {
-        url.match?.(/(?:\.(jpg|gif|png|jpeg|avif|gif|svg|webp|tif|tiff))/) && imagesCookie == 1 ? messagetext = messagetext.concat(`<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:auto;height:auto;" alt="image"></a>`) : messagetext = messagetext.replace('{$FILE_LINK}', url);
-      });
-    }
-
-    if (item.stickers && item.stickers.size > 0) {
-      if (imagesCookie == 1) {
-        item.stickers.forEach(sticker => {
-          const stickerExt = animationsCookie === 1 ? 'gif' : 'png';
-          const stickerURL = `/imageProxy/sticker/${sticker.id}.${stickerExt}`;
-          messagetext += `<br><img src="${stickerURL}" style="width: 100px; height: 100px;" alt="sticker">`;
-        });
-      } else {
-        item.stickers.forEach(sticker => {
-          messagetext += `<br>[Sticker: ${sticker.name || 'Unknown'}]`;
-        });
-      }
-    }
-
-    isMentioned = false;
-
-    if (item?.embeds && item.embeds.length > 0) {
-      const embedsToProcess = [];
-      item.embeds.forEach(embed => {
-        const isTenor = (embed.provider?.name === 'Tenor' || urlMatchesDomain(embed.url, 'tenor.com')) && embed.thumbnail?.url;
-        const isGiphy = (embed.provider?.name === 'GIPHY' || urlMatchesDomain(embed.url, 'giphy.com')) && (embed.thumbnail?.url || embed.image?.url);
-        const isYouTube = (embed.provider?.name === 'YouTube' || urlMatchesDomain(embed.url, 'youtube.com') || urlMatchesDomain(embed.url, 'youtu.be')) && embed.thumbnail?.url;
-
-        if (isTenor && imagesCookie == 1) {
-          const rawGifUrl = embed.thumbnail.url;
-          if (!rawGifUrl) { embedsToProcess.push(embed); return; }
-          const gifUrl = `/imageProxy/external/${Buffer.from(rawGifUrl).toString('base64')}`;
-          const urlToFind = embed.url;
-          let replaced = false;
-          if (urlToFind) {
-            const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
-            if (anchorRegex.test(messagetext)) {
-              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="Tenor GIF">`);
-              replaced = true;
-            }
-          }
-          if (!replaced) {
-            messagetext += `<br><img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="Tenor GIF">`;
-          }
-        } else if (isGiphy && imagesCookie == 1) {
-          const rawGifUrl = embed.image?.url || embed.thumbnail?.url;
-          const gifUrl = rawGifUrl ? `/imageProxy/external/${Buffer.from(rawGifUrl).toString('base64')}` : null;
-          const urlToFind = embed.url;
-          let replaced = false;
-          if (urlToFind && gifUrl) {
-            const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
-            if (anchorRegex.test(messagetext)) {
-              messagetext = messagetext.replace(anchorRegex, `<img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="GIPHY GIF">`);
-              replaced = true;
-            }
-          }
-          if (!replaced && gifUrl) {
-            messagetext += `<br><img src="${gifUrl}" style="max-width:256px;max-height:200px;" alt="GIPHY GIF">`;
-          }
-        } else if (isYouTube && imagesCookie == 1) {
-          const rawThumbnailUrl = embed.thumbnail.url;
-          if (!rawThumbnailUrl) { embedsToProcess.push(embed); return; }
-          const thumbnailUrl = `/imageProxy/external/${Buffer.from(rawThumbnailUrl).toString('base64')}`;
-          const videoUrl = embed.url;
-          if (rawThumbnailUrl) {
-            messagetext += `<br><a href="${videoUrl}" target="_blank"><img src="${thumbnailUrl}" style="max-width:256px;max-height:200px;" alt="YouTube Video"></a>`;
-          }
-        } else if (embed.data?.type === 'poll_result') {
-          // Poll result system embed — extract fields and format as human-readable HTML
-          const fieldMap = {};
-          if (embed.fields) embed.fields.forEach(f => { fieldMap[f.name] = f.value; });
-          const prQuestion = fieldMap['poll_question_text'] || '';
-          const prWinnerText = fieldMap['victor_answer_text'] || '';
-          const prWinnerEmoji = fieldMap['victor_answer_emoji_name'] || '';
-          const prWinnerVotes = fieldMap['victor_answer_votes'] || '0';
-          const prTotalVotes = fieldMap['total_votes'] || '0';
-          let prHtml = `<div style="font-size:14px;color:#b9bbbe;margin-top:4px;">`;
-          prHtml += `Poll ended: <b>${escape(prQuestion)}</b><br>`;
-          prHtml += `Winner: ${prWinnerEmoji ? escape(prWinnerEmoji) + ' ' : ''}<b>${escape(prWinnerText)}</b>`;
-          prHtml += ` (${escape(prWinnerVotes)}/${escape(prTotalVotes)} votes)`;
-          prHtml += `</div>`;
-          messagetext += prHtml;
-        } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
-          if (imagesCookie == 1) {
-            const rawImageUrl = embed.thumbnail?.url || embed.image?.url;
-            if (!rawImageUrl) { return; }
-            const imageUrl = `/imageProxy/external/${Buffer.from(rawImageUrl).toString('base64')}`;
-            const urlToFind = embed.url;
-            let replaced = false;
-            if (urlToFind) {
-              const escapedUrl = urlToFind.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-              const anchorRegex = new RegExp(`<a href="${escapedUrl}">.*?</a>`, 'i');
-              if (anchorRegex.test(messagetext)) {
-                messagetext = messagetext.replace(anchorRegex, `<img src="${imageUrl}" style="max-width:256px;max-height:200px;" alt="Image">`);
-                replaced = true;
-              }
-            }
-            if (!replaced) {
-              messagetext += `<br><img src="${imageUrl}" style="max-width:256px;max-height:200px;" alt="Image">`;
-            }
-          }
-        } else {
-          embedsToProcess.push(embed);
-        }
-      });
-
-      if (embedsToProcess.length > 0) {
-        messagetext += processEmbeds(req, embedsToProcess, imagesCookie, animationsCookie, clientTimezone);
-      }
-    }
-
-    if (item?.poll) {
-      messagetext += processPoll(item.poll, imagesCookie);
-    }
-
-    if (item.mentions && item.mentions.members) {
-      isMentioned = item.mentions.members.has(discordID);
-    }
-
-    if (!isMentioned && isReply && replyData.mentionsPing && replyData.authorId === discordID) {
-      isMentioned = true;
-    }
-
-    if (!isMentioned && item.mentions && item.mentions.everyone) {
-      isMentioned = true;
-    }
-
-    if (!isMentioned && item.mentions && item.mentions.roles) {
-      item.mentions.roles.forEach(function (role) {
-        if (member.roles.cache.has(role.id)) {
-          isMentioned = true;
-        }
-      });
-    }
-
-    if (item.mentions && item.mentions.members) {
-      item.mentions.members.forEach(function (user) {
-        if (user) {
-          messagetext = strReplace(messagetext, "&lt;@" + user.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(user.displayName))));
-          messagetext = strReplace(messagetext, "&lt;@!" + user.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(user.displayName))));
-        }
-      });
-
-      if (item.mentions.roles) {
-        item.mentions.roles.forEach(function (role) {
-          if (role) {
-            messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id.toString() + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(role.name))));
-          }
-        });
-      }
-    }
-
-    // Collect any remaining unresolved mention IDs and fetch missing members
-    const unresolvedMentionIds = new Set(
-      [...messagetext.matchAll(/&lt;@!?(\d{17,19})&gt;/g)].map(m => m[1])
-    );
-    const idsToFetch = [...unresolvedMentionIds].filter(userId => !memberCache.has(userId));
-    await Promise.allSettled(idsToFetch.map(async (userId) => {
-      try {
-        const fetchedMember = await chnl.guild.members.fetch(userId);
-        memberCache.set(userId, fetchedMember);
-      } catch (err) {
-        memberCache.set(userId, null);
-      }
-    }));
-
-    messagetext = messagetext.replace(/&lt;@!?(\d{17,19})&gt;/g, function(match, userId) {
-      try {
-        const resolvedMember = memberCache.get(userId) || chnl.guild.members.cache.get(userId);
-        if (resolvedMember) {
-          return tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(getDisplayName(resolvedMember, resolvedMember.user))));
-        }
-      } catch (err) {
-        // Ignore errors
-      }
-      return tmpl_mention.replace("{$USERNAME}", "@unknown-user");
-    });
-
-    // Collect any remaining unresolved channel IDs and fetch missing channels
-    const unresolvedChannelIds = new Set(
-      [...messagetext.matchAll(/&lt;#(\d{17,19})&gt;/g)].map(m => m[1])
-    );
-    const channelIdsToFetch = [...unresolvedChannelIds].filter(id => !bot.client.channels.cache.has(id));
-    await Promise.allSettled(channelIdsToFetch.map(async (id) => {
-      try {
-        await bot.client.channels.fetch(id);
-      } catch (err) {
-        // Channel not accessible; leave absent from cache
-      }
-    }));
-
-    messagetext = messagetext.replace(/&lt;#(\d{17,19})&gt;/g, function(match, channelId) {
-      const channel = bot.client.channels.cache.get(channelId);
-      if (channel) {
-        const channelLink = `/channels/${channel.id}`;
-        return `<a href="${channelLink}" style="text-decoration:none;"><font style="background:rgba(88,101,242,0.15);color:#00b0f4;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">#${escape(normalizeWeirdUnicode(channel.name))}</font></a>`;
-      }
-      return match;
-    });
-
-    if (item.mentions && item.mentions.everyone) {
-      if (messagetext.includes("@everyone")) {
-        messagetext = strReplace(messagetext, "@everyone", tmpl_mention.replace("{$USERNAME}", "@everyone"));
-      }
-      if (messagetext.includes("@here")) {
-        messagetext = strReplace(messagetext, "@here", tmpl_mention.replace("{$USERNAME}", "@here"));
-      }
-    }
-
-    if (item.mentions && item.mentions.roles) {
-      item.mentions.roles.forEach(function (role) {
-        if (role) {
-          messagetext = strReplace(messagetext, "&lt;@&amp;" + role.id + "&gt;", tmpl_mention.replace("{$USERNAME}", escape("@" + normalizeWeirdUnicode(role.name))));
-        }
-      });
-    }
-
-    if (!lastauthor || !isSameUser(lastmember, lastauthor, currentMember, item.author) || item.createdAt - lastdate > 420000 || isReply) {
-      messagetext = tmpl_first_message_content.replace("{$MESSAGE_TEXT}", messagetext);
-    } else {
-      messagetext = tmpl_merged_message_content.replace("{$MESSAGE_TEXT}", messagetext);
-    }
-
-    const reactionsHtml = processReactions(item.reactions, imagesCookie, tmpl_reactions, tmpl_reaction, animationsCookie);
-    messagetext = strReplace(messagetext, "{$MESSAGE_REACTIONS}", reactionsHtml);
-
-    const isSystemMessage = item.type !== 0 && item.type !== 19;
-    // Replace <img> tags with a placeholder before stripping HTML so that
-    // emoji-only messages (where every character was replaced by an <img>)
-    // are not treated as empty and silently skipped.
-    const tempDiv = messagetext.replace(/<img\b[^>]*>/gi, 'x').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-
-    if (!isSystemMessage && tempDiv.length === 0 && (!item.attachments || item.attachments.size === 0) && (!item.embeds || item.embeds.length === 0) && (!item.stickers || item.stickers.size === 0)) {
-      return;
-    }
-
-    if (isSystemMessage && tempDiv.length === 0) {
-      const systemMessages = {
-        1: 'added a new member',
-        2: 'left',
-        3: 'boosted the server',
-        4: 'changed the channel name',
-        5: 'changed the channel icon',
-        6: 'pinned a message to this channel',
-        7: 'welcomed a new member',
-        8: 'boosted the server to level 1',
-        9: 'boosted the server to level 2',
-        10: 'boosted the server to level 3',
-        11: 'followed this channel',
-        12: 'went live',
-        14: 'is no longer eligible for Server Discovery',
-        15: 'is eligible for Server Discovery again',
-        17: 'started a thread',
-        23: 'flagged a message with AutoMod',
-        24: 'purchased a role subscription',
-        26: 'started a stage',
-        27: 'ended the stage',
-        30: 'changed the stage topic',
-        36: 'enabled raid alert mode',
-        37: 'disabled raid alert mode',
-        38: 'reported a raid',
-        39: 'reported a false alarm',
-        46: 'Poll ended'
-      };
-
-      const systemText = systemMessages[item.type] || 'performed an action';
-      messagetext = `<font style="font-size:14px;color:`+authorText+`;font-style:italic;" face="rodin,sans-serif">${systemText}</font>`;
-    }
-
-    lastauthor = item.author;
-    lastmember = currentMember;
-    lastdate = item.createdAt;
-    currentmessage += messagetext;
-    messageid = item.id;
-
-    lastMentioned = isMentioned;
-    lastReply = isReply;
-    lastReplyData = replyData;
+    // Advance state
+    state.lastauthor    = item.author;
+    state.lastmember    = currentMember;
+    state.lastdate      = item.createdAt;
+    state.messageid     = item.id;
+    state.isForwarded   = isForwarded;
+    state.forwardData   = forwardData;
+    state.lastMentioned = isMentioned;
+    state.lastReply     = isReply;
+    state.lastReplyData = replyData;
+    state.currentmessage += messagetext;
   };
 
   for (const item of messages) {
-    await handlemessage(item);
+    await processItem(item);
   }
-
-  islastmessage = true;
-  await handlemessage();
+  await processItem(null); // flush final group
 
   response = removeExistingEndAnchors(response);
   response += '<a id="end" name="end"></a>';
   return response;
 };
 
-exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
+// ---------------------------------------------------------------------------
+// Theme helpers
+// ---------------------------------------------------------------------------
+
+function resolveTheme(req) {
   const parsedUrl = new URL(req.url, 'http://localhost');
-  const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const urlImages = parsedUrl.searchParams.get('images');
+  const urlTheme  = parsedUrl.searchParams.get('theme');
+  const cookieTheme = req.headers.cookie?.split('; ')
+    ?.find(c => c.startsWith('whiteThemeCookie='))
+    ?.split('=')[1];
 
-  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+  const themeValue = urlTheme !== null
+    ? parseInt(urlTheme, 10)
+    : (cookieTheme !== undefined ? parseInt(cookieTheme, 10) : 0);
 
-  // Build combined URL params for links — only include preference params when the
-  // corresponding cookie is absent (i.e. the browser doesn't support cookies)
+  return THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
+}
+
+function resolvePreferences(req) {
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') ?? '';
+  const urlTheme     = parsedUrl.searchParams.get('theme');
+  const urlImages    = parsedUrl.searchParams.get('images');
+
+  const cookieImages = req.headers.cookie?.split('; ')
+    ?.find(c => c.startsWith('images='))
+    ?.split('=')[1];
+  const cookieTheme = req.headers.cookie?.split('; ')
+    ?.find(c => c.startsWith('whiteThemeCookie='))
+    ?.split('=')[1];
+
+  const imagesCookie = urlImages !== null
+    ? parseInt(urlImages, 10)
+    : (cookieImages !== undefined ? parseInt(cookieImages, 10) : 1);
+
   const linkParamParts = [];
   if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && whiteThemeCookie === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && imagesCookieValue === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  if (urlTheme !== null && cookieTheme === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && cookieImages === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
   const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
-  // URL param takes priority over cookie
-  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
+  return { urlSessionID, imagesCookie, sessionParam };
+}
 
-  let boxColor;
-  let authorText;
-  let replyText;
-  let template;
-  
-  boxColor = "#ffffff";
-  authorText = "#72767d";
-  replyText = "#b5bac1";
-    
-  // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
-  if (theme === 1) {
-    boxColor = "#ffffff";
-    authorText = "#000000";
-    replyText = "#000000";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-  } else if (theme === 2) {
-    boxColor = "#40444b";
-    authorText = "#72767d";
-    replyText = "#b5bac1";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
-  } else {
-    boxColor = "#40444b";
-    authorText = "#72767d";
-    replyText = "#b5bac1";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
+// ---------------------------------------------------------------------------
+// Input template selection
+// ---------------------------------------------------------------------------
+
+function buildInputHtml(botMember, member, chnl, boxColor) {
+  const canWebhook = botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true);
+  const canSend    = member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
+
+  if (!canWebhook) {
+    let html = strReplace(TEMPLATES.inputDisabled, '{$COLOR}', boxColor);
+    html = strReplace(html, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
+    return html;
   }
+  if (canSend) {
+    return strReplace(TEMPLATES.input, '{$COLOR}', boxColor);
+  }
+  return strReplace(TEMPLATES.inputDisabled, '{$COLOR}', boxColor);
+}
 
-  const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-  
-  if (!clientIsReady) {
-    res.writeHead(503, { "Content-Type": "text/plain" });
-    res.write("The bot isn't connected, try again in a moment");
-    res.end();
+// ---------------------------------------------------------------------------
+// processChannel — public API
+// ---------------------------------------------------------------------------
+
+exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
+  const { urlSessionID, imagesCookie, sessionParam } = resolvePreferences(req);
+  const theme = resolveTheme(req);
+
+  const template = strReplace(TEMPLATES.channel, '{$WHITE_THEME_ENABLED}', theme.themeClass);
+  const { authorText, replyText, boxColor } = theme;
+
+  const isReady = bot?.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+  if (!isReady) {
+    res.writeHead(503, { 'Content-Type': 'text/plain' });
+    res.end("The bot isn't connected, try again in a moment");
     return;
   }
-  
-  const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);  // Default to 1 (on)
-    
-  // Get client's timezone from IP
-  const clientIP = getClientIP(req);
-  const clientTimezone = getTimezoneFromIP(clientIP);
-    
+
+  const clientTimezone = getTimezoneFromIP(getClientIP(req));
+
+  let chnl;
   try {
-    let chnl;
-    try {
-      chnl = await bot.client.channels.fetch(args[2]);
-    } catch (err) {
-      chnl = undefined;
-    }
-
-    if (chnl) {
-      let botMember, member;
-      try {
-        botMember = await chnl.guild.members.fetch(bot.client.user.id);
-      } catch (err) {
-        res.write("The bot is not in this server!");
-        res.end();
-        return;
-      }
-      
-      try {
-        member = await chnl.guild.members.fetch(discordID);
-      } catch (err) {
-        res.write("You are not in this server! Please join the server to view this channel.");
-        res.end();
-        return;
-      }
-      
-      const user = member.user;
-      let username = user.tag;
-      if (member.displayName != user.username) {
-        username = member.displayName + " (@" + user.tag + ")";
-      }
-
-      if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) || !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) {
-        res.write("You (or the bot) don't have permission to do that!");
-        res.end();
-        return;
-      }
-
-      if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
-        template = strReplace(template, "{$SERVER_ID}", chnl.guild.id)
-        template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
-
-        let final;
-        if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
-          final = strReplace(template, "{$INPUT}", input_disabled_template);
-          final = strReplace(final, "{$COLOR}", boxColor);
-          final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
-        } else if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
-          final = strReplace(template, "{$INPUT}", input_template);
-          final = strReplace(final, "{$COLOR}", boxColor);
-        } else {
-          final = strReplace(template, "{$INPUT}", input_disabled_template);
-          final = strReplace(final, "{$COLOR}", boxColor);
-        }
-
-        final = strReplace(final, "{$MESSAGES}", no_message_history_template);
-        final = strReplace(final, "{$SESSION_ID}", urlSessionID);
-        final = strReplace(final, "{$SESSION_PARAM}", sessionParam);
-
-        res.write(final); //write a response to the client
-        res.end(); //end the response
-        return;
-      }
-
-      console.log("Processed valid channel request");
-      const response = await exports.buildMessagesHtml({
-        bot, chnl, member, discordID, req,
-        imagesCookie,
-        authorText, replyText, clientTimezone,
-        channelId: args[2],
-        templates: {
-          message: message_template,
-          message_forwarded: message_forwarded_template,
-          message_mentioned: message_mentioned_template,
-          message_forwarded_mentioned: message_forwarded_mentioned_template,
-          first_message_content: first_message_content_template,
-          merged_message_content: merged_message_content_template,
-          mention: mention_template,
-          file_download: file_download_template,
-          reactions: reactions_template,
-          reaction: reaction_template,
-          date_separator: date_separator_template,
-        }
-      });
-
-      template = strReplace(template, "{$SERVER_ID}", chnl.guild.id)
-      template = strReplace(template, "{$CHANNEL_ID}", chnl.id)
-      template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : ''))
-
-      let final;
-      if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
-        const input_template1 = strReplace(input_disabled_template, "{$COLOR}", boxColor);
-        final = strReplace(template, "{$INPUT}", input_template1);
-        final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
-      } else if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
-        const input_template1 = strReplace(input_template, "{$COLOR}", boxColor);
-        final = strReplace(template, "{$INPUT}", input_template1);
-      } else {
-        const input_template1 = strReplace(input_disabled_template, "{$COLOR}", boxColor);
-        final = strReplace(template, "{$INPUT}", input_template1);
-      }
-
-      const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
-      final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
-      final = strReplace(final, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
-      final = strReplace(final, "{$MESSAGES}", response);
-      final = strReplace(final, "{$SESSION_ID}", urlSessionID);
-      final = strReplace(final, "{$SESSION_PARAM}", sessionParam);
-      res.writeHead(200, { "Content-Type": "text/html" });
-      res.write(final); //write a response to the client
-      res.end(); //end the response
-    } else {
-      res.writeHead(404, { "Content-Type": "text/html" });
-      res.write("Invalid channel!"); //write a response to the client
-      res.end(); //end the response
-    }
-  } catch (error) {
-    console.log(error)
-    // res.writeHead(302, { "Location": "/server/" });
-    res.writeHead(500, { "Content-Type": "text/html" });
-    res.write("An error occurred! Please try again later.<br>"); //write a response to the client
-    // res.write(error.toString());
-    res.end();
+    chnl = await bot.client.channels.fetch(args[2]);
+  } catch {
+    chnl = undefined;
   }
-}
+
+  if (!chnl) {
+    res.writeHead(404, { 'Content-Type': 'text/html' });
+    res.end('Invalid channel!');
+    return;
+  }
+
+  try {
+    let botMember, member;
+
+    try {
+      botMember = await chnl.guild.members.fetch(bot.client.user.id);
+    } catch {
+      res.end('The bot is not in this server!');
+      return;
+    }
+
+    try {
+      member = await chnl.guild.members.fetch(discordID);
+    } catch {
+      res.end('You are not in this server! Please join the server to view this channel.');
+      return;
+    }
+
+    const canView = member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)
+                 && botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true);
+
+    if (!canView) {
+      res.end("You (or the bot) don't have permission to do that!");
+      return;
+    }
+
+    const baseTemplate = strReplace(strReplace(template, '{$SERVER_ID}', chnl.guild.id), '{$CHANNEL_ID}', chnl.id);
+    const inputHtml = buildInputHtml(botMember, member, chnl, boxColor);
+
+    // No message history permission
+    if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
+      let final = strReplace(baseTemplate, '{$INPUT}', inputHtml);
+      final = strReplace(final, '{$MESSAGES}', TEMPLATES.noMessageHistory);
+      final = strReplace(final, '{$SESSION_ID}', urlSessionID);
+      final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
+      res.write(final);
+      res.end();
+      return;
+    }
+
+    console.log('Processed valid channel request');
+
+    const messagesHtml = await exports.buildMessagesHtml({
+      bot, chnl, member, discordID, req,
+      imagesCookie, animationsCookie: 1,
+      authorText, replyText, clientTimezone,
+      channelId: args[2],
+      // Templates are now sourced internally; kept for backward-compat signature
+      templates: {
+        message: TEMPLATES.message,
+        message_forwarded: TEMPLATES.messageForwarded,
+        message_mentioned: TEMPLATES.messageMentioned,
+        message_forwarded_mentioned: TEMPLATES.messageForwardedMentioned,
+        first_message_content: TEMPLATES.firstMessageContent,
+        merged_message_content: TEMPLATES.mergedMessageContent,
+        mention: TEMPLATES.mention,
+        file_download: TEMPLATES.fileDownload,
+        reactions: TEMPLATES.reactions,
+        reaction: TEMPLATES.reaction,
+        date_separator: TEMPLATES.dateSeparator,
+      },
+    });
+
+    const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
+    const refreshUrl = chnl.id + '?random=' + Math.random() + (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
+
+    let final = strReplace(baseTemplate, '{$REFRESH_URL}', refreshUrl);
+    final = strReplace(final, '{$INPUT}',        inputHtml);
+    final = strReplace(final, '{$RANDOM_EMOJI}', randomEmoji);
+    final = strReplace(final, '{$CHANNEL_NAME}', normalizeWeirdUnicode(chnl.name));
+    final = strReplace(final, '{$MESSAGES}',     messagesHtml);
+    final = strReplace(final, '{$SESSION_ID}',   urlSessionID);
+    final = strReplace(final, '{$SESSION_PARAM}',sessionParam);
+
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(final);
+  } catch (err) {
+    console.error(err);
+    res.writeHead(500, { 'Content-Type': 'text/html' });
+    res.end('An error occurred! Please try again later.');
+  }
+};
