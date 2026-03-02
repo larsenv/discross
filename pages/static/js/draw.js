@@ -1,6 +1,17 @@
 var canvas = document.getElementById('sketchpad');
 var ctx = canvas.getContext('2d');
 
+// Detect old Nintendo 3DS (hardware model released 2011, not "New Nintendo 3DS").
+// Old 3DS has a slow CPU and only 64MB RAM vs New 3DS's 256MB. On old 3DS:
+//   1. canvas.toDataURL() on a 600×350 (210,000-pixel) canvas may produce a
+//      corrupt or truncated PNG due to memory pressure — Discord then shows
+//      "cannot load this image".
+//   2. e.offsetX/offsetY in NintendoBrowser 1.x may return page-relative
+//      coordinates instead of element-relative ones, causing drawing to be
+//      misaligned ("cannot draw straight lines").
+var ua = (navigator.userAgent || '');
+var isOld3DS = ua.indexOf('Nintendo 3DS') >= 0 && ua.indexOf('New Nintendo 3DS') < 0;
+
 // On very small screens (DSi: 256px wide), shrink the canvas backing buffer
 // before any drawing. The internal canvas is 600×350 = 210,000 pixels; even
 // a single ctx.stroke() forces Opera 9.5 to repaint all of them which is
@@ -10,6 +21,12 @@ var ctx = canvas.getContext('2d');
 if (screen.width && screen.width <= 256) {
     canvas.width = 240;
     canvas.height = 140;
+} else if (isOld3DS) {
+    // 300×175 keeps the same 12:7 aspect ratio as 600×350 but uses only
+    // ~52,500 pixels (1/4 as many), keeping toDataURL() within old 3DS
+    // memory limits and making stroke repaints fast enough to draw with.
+    canvas.width = 300;
+    canvas.height = 175;
 }
 
 var isDrawing = false;
@@ -112,7 +129,10 @@ function getScrollOffset() {
 function getPos(e) {
     // e.offsetX/offsetY: element-relative CSS pixels. Available in Opera 9+.
     // Works correctly regardless of page scroll or element position.
-    if (e.offsetX !== undefined) {
+    // Skip on old Nintendo 3DS (NintendoBrowser 1.x) where offsetX/offsetY
+    // may be page-relative instead of element-relative, causing misaligned
+    // drawing coordinates ("cannot draw straight lines").
+    if (e.offsetX !== undefined && !isOld3DS) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
             y: e.offsetY * (canvas.height / canvasDisplayH)
