@@ -480,6 +480,29 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
 // Reply data resolution
 // ---------------------------------------------------------------------------
 
+// Replaces <@userId>, <@!userId>, and <@&roleId> in raw Discord text with
+// plain @Name strings, using the known mentions on the message plus memberCache.
+// This is run before truncation so mention tokens are never split mid-string.
+function resolveRawMentionsForPreview(text, msg, memberCache, chnl) {
+  msg.mentions?.members?.forEach(member => {
+    if (!member) return;
+    const name = '@' + normalizeWeirdUnicode(getDisplayName(member, member.user));
+    text = text.split(`<@${member.id}>`).join(name);
+    text = text.split(`<@!${member.id}>`).join(name);
+  });
+  msg.mentions?.roles?.forEach(role => {
+    if (!role) return;
+    text = text.split(`<@&${role.id}>`).join('@' + normalizeWeirdUnicode(role.name));
+  });
+  // Resolve any remaining unrecognized user IDs from memberCache
+  text = text.replace(/<@!?(\d{17,19})>/g, (match, id) => {
+    const cached = memberCache.get(id) ?? chnl.guild.members.cache.get(id);
+    if (cached) return '@' + normalizeWeirdUnicode(getDisplayName(cached, cached.user));
+    return match;
+  });
+  return text;
+}
+
 async function resolveReplyData(item, chnl, memberCache) {
   try {
     let replyUser = item.mentions?.repliedUser;
@@ -509,7 +532,9 @@ async function resolveReplyData(item, chnl, memberCache) {
 
     let replyContent = '';
     if (replyMessage?.content) {
-      const flat = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
+      let flat = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
+      // Resolve mentions in raw text before truncation so they are never cut in half
+      flat = resolveRawMentionsForPreview(flat, replyMessage, memberCache, chnl);
       replyContent = renderDiscordMarkdown(truncateText(flat, REPLY_CONTENT_MAX_LENGTH));
     }
 
@@ -537,7 +562,7 @@ function buildReplyIndicator(replyData, replyText) {
     : '';
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
     '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
-    `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
+    `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap;text-overflow:ellipsis">` +
     `<font style="font-size:12px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `${contentPart}</td>` +
     '</tr></table>';
