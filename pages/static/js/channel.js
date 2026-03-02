@@ -108,19 +108,12 @@ var selectedFile = null;
 
 function openFileUpload() {
     var channelId = document.getElementById('channel').value;
-    var isNintendo = /NintendoBrowser/.test(navigator.userAgent);
-    if (typeof fetch === 'undefined' || typeof FormData === 'undefined' || isNintendo) {
-        // Older browser or Nintendo 3DS: navigate to dedicated upload page (visible form, no JS needed)
-        var url = '/upload?channel=' + encodeURIComponent(channelId);
-        var sessionEl = document.getElementById('sessionID');
-        if (sessionEl && sessionEl.value) {
-            url += '&sessionID=' + encodeURIComponent(sessionEl.value);
-        }
-        window.location.href = url;
-    } else {
-        // Modern browser: open file picker for AJAX upload
-        document.getElementById('fileUpload').click();
+    var url = '/upload?channel=' + encodeURIComponent(channelId);
+    var sessionEl = document.getElementById('sessionID');
+    if (sessionEl && sessionEl.value) {
+        url += '&sessionID=' + encodeURIComponent(sessionEl.value);
     }
+    window.location.href = url;
 }
 
 function handleFileSelect(input) {
