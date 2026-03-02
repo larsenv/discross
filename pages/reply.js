@@ -98,41 +98,38 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
           }
         } while (m);
 
-        const reply_message_id = parsedurl.searchParams.get('reply_message_id');
-        const isValidReplyId = reply_message_id && /^[0-9]{16,20}$/.test(reply_message_id);
-
-        let message;
-        if (isValidReplyId) {
-          // Use REST directly to include message_reference (native reply), since
-          // discord.js's WebhookMessageCreateOptions does not expose the reply option.
-          const rawMsg = await bot.client.rest.post(
-            `/webhooks/${webhook.id}/${webhook.token}?wait=true`,
-            {
-              body: {
-                content: processedmessage,
-                username: member.displayName || member.user.tag,
-                avatar_url: member.user.avatarURL() || member.user.defaultAvatarURL,
-                message_reference: { message_id: reply_message_id, fail_if_not_exists: false },
-                allowed_mentions: { parse: ['users', 'roles'] },
-              },
-            }
-          );
-          message = { id: rawMsg.id, channel: { id: channel.id } };
-          // Fetch the full discord.js Message object so the cache has all required fields
-          // (e.g. author, createdAt) that channel.js expects when rendering messages.
-          try {
-            message = await channel.messages.fetch(rawMsg.id);
-          } catch (err) {
-            console.error("Failed to fetch sent reply message:", err);
-          }
-        } else {
-          message = await webhook.send({
-            content: processedmessage,
-            username: member.displayName || member.user.tag,
-            avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-            disableEveryone: true,
-          });
+        let reply_message = await channel.messages.fetch(parsedurl.searchParams.get('reply_message_id'));
+        let reply_message_content = reply_message.content;
+        
+        // #38: Escape mentions in reply content to prevent ping issues
+        reply_message_content = reply_message_content.replace(/<@!?(\d+)>/g, '@user');
+        reply_message_content = reply_message_content.replace(/<@&(\d+)>/g, '@role');
+        reply_message_content = reply_message_content.replace(/<#(\d+)>/g, '#channel');
+        
+        if (reply_message_content.length > 30) {
+          reply_message_content = reply_message_content.substring(0, 30) + "...";
         }
+        
+        // #39: Get proper member name for reply
+        let author_name = reply_message.author.username;
+        try {
+          const author_member = await channel.guild.members.fetch(reply_message.author.id);
+          author_name = author_member.displayName || author_member.user.username;
+        } catch (err) {
+          // Use username if member fetch fails
+        }
+        
+        let author_id = reply_message.author.id;
+        let author_mention = "<@" + author_id + ">";
+
+        processedmessage = "> Replying to " + reply_message_content + " from " + author_name + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
+        
+        const message = await webhook.send({
+          content: processedmessage,
+          username: member.displayName || member.user.tag,
+          avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
+          disableEveryone: true,
+        });
 
         bot.addToCache(message);
       }
