@@ -6,10 +6,6 @@ const discord = require('discord.js');
 const { Buffer } = require('buffer');
 const { formidable } = require('formidable');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-};
-
 // Upload file to transfer.notkiska.pw and return the URL
 async function uploadToTransfer(filePath, filename) {
   return new Promise((resolve, reject) => {

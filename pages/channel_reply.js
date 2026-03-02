@@ -50,28 +50,19 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   // URL param takes priority over cookie
   const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
 
-  let boxColor;
-  let authorText;
-  let replyText;
-  let template;
-
-  boxColor = "#40444b";
-  authorText = "#72767d";
-  replyText = "#b5bac1";
+  // Colors default to dark/amoled theme; light theme overrides them
+  let boxColor = "#40444b";
+  let authorText = "#72767d";
+  let replyText = "#b5bac1";
 
   if (theme === 1) {
     boxColor = "#ffffff";
     authorText = "#000000";
     replyText = "#000000";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-  } else if (theme === 2) {
-    boxColor = "#40444b";
-    authorText = "#72767d";
-    replyText = "#b5bac1";
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
-  } else {
-    template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
   }
+
+  const themeAttr = theme === 1 ? "class=\"light-theme\"" : theme === 2 ? "class=\"amoled-theme\"" : "";
+  let template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", themeAttr);
 
   const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);
 
@@ -139,7 +130,6 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         return;
       }
 
-      console.log("Processed valid channel reply request");
       const response = await buildMessagesHtml({
         bot, chnl, member, discordID, req,
         imagesCookie,

@@ -9,17 +9,17 @@ const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.ht
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
+}
 
 exports.processLogin = async function (bot, req, res, args) {
-  discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
+  const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
   if (discordID) {
     // res.writeHead(200, {'Content-Type': 'text/html'});
     res.writeHead(301, { "Location": "/server/", "Content-Type": "text/html" });
     res.write('Logged in! Click <a href="/server/">here</a> to continue.');
   } else {
     const parsedurl = new URL(req.url, 'http://localhost');
-    response = login_template;
+    let response = login_template;
     response = strReplace(response, "{$MENU_OPTIONS}", logged_out_template);
     if (parsedurl.searchParams.get('redirect')) {
       response = strReplace(response, "{$REDIRECT_URL}", strReplace(parsedurl.searchParams.get('redirect'), '"', "%22"));

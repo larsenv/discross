@@ -10,7 +10,7 @@ const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
+}
 
 function applyTheme(response, req) {
   const parsedUrl = new URL(req.url, 'http://localhost');

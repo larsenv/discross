@@ -136,12 +136,10 @@ exports.checkSession = async function (sessionID) {
 }
 
 exports.logout = async function (discordID) {
-  //if (typeof discordID == "object") return;
   queryRun('DELETE FROM sessions WHERE discordID=?', [discordID])
 }
 
 exports.getUsername = async function (discordID) {
-  if (typeof discordID === "object") return discordID[1]
   const match = querySingle('SELECT DISTINCT username FROM users WHERE discordID=?', [discordID])
   if (match) {
     return match.username
@@ -338,9 +336,6 @@ exports.checkAuth = async function (req, res, noRedirect) {
   const sessionIDToCheck = cookiedict.sessionID || parsedUrl.searchParams.get('sessionID')
 
   if (sessionIDToCheck) {
-    /*if (cookiedict.sessionID === 'guest') {
-      return ['guest', cookiedict.guestUsername]
-    } else {*/
     const session = await exports.checkSession(sessionIDToCheck)
     if (session) {
       return session
@@ -351,7 +346,6 @@ exports.checkAuth = async function (req, res, noRedirect) {
       }
       return false
     }
-    //}
   } else {
     if (!noRedirect) {
       res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
@@ -384,17 +378,7 @@ exports.handleLoginRegister = async function (req, res, body) {
         res.end()
       }
     }
-  } /*else if (req.url === '/guest') {
-    const params = parse(body)
-    if (params.username !== '') {
-      res.writeHead(303, { 'Set-Cookie': ['guestUsername=' + encodeURIComponent(params.username), 'sessionID=guest; SameSite=Strict; ' + (https ? 'Secure;' : '')], Location: '/server/', 'Content-Type': 'text/html' })
-      res.write('Logged as a guest! Click <a href="/server/">here</a> to continue.')
-    } else {
-      res.writeHead(303, { Location: '/guest.html?errortext=Please+input+a+username', 'Content-Type': 'text/html' })
-      res.write('Please input a username')
-      res.end()
-    }
-  } */else if (req.url === '/register') {
+  } else if (req.url === '/register') {
     const params = parse(body)
     if (params.username && params.password && params.confirm && params.token) {
       if (params.confirm !== params.password) {

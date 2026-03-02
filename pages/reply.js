@@ -5,16 +5,6 @@ const { convertEmoji } = require('./emojiConvert');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
-
-async function clean(server, nodelete) {
-  (await server.fetchWebhooks()).forEach(async function (item) {
-    if ((item.owner.username.search("Discross") !== -1) && (item.id !== nodelete)) {
-      try {
-        await item.delete();
-      } catch (err) { }
-    }
-  });
 }
 
 async function getOrCreateWebhook(channel, guildID) {
@@ -119,9 +109,6 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         } catch (err) {
           // Use username if member fetch fails
         }
-        
-        let author_id = reply_message.author.id;
-        let author_mention = "<@" + author_id + ">";
 
         processedmessage = "> Replying to " + reply_message_content + " from " + author_name + ": [jump](https://discord.com/channels/"+channel.guild.id+"/"+channel.id+"/"+reply_message.id+")\n" + processedmessage;
         

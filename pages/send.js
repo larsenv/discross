@@ -6,16 +6,6 @@ const { convertEmoji } = require('./emojiConvert');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
-
-async function clean(server, nodelete) {
-  (await server.fetchWebhooks()).forEach(async function (item) {
-    if ((item.owner.username.search("Discross") !== -1) && (item.id !== nodelete)) {
-      try {
-        await item.delete();
-      } catch (err) { }
-    }
-  });
 }
 
 async function getOrCreateWebhook(channel, guildID) {
