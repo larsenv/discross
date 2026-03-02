@@ -18,6 +18,7 @@ const announcement_channel_template = fs.readFileSync('pages/templates/channelli
 const category_channel_template = fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8');
 const voice_channel_template = fs.readFileSync('pages/templates/channellist/voicechannel.html', 'utf-8');
 const thread_channel_template = fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8');
+const thread_group_header_template = fs.readFileSync('pages/templates/channellist/threadgroupheader.html', 'utf-8');
 const forum_channel_template = fs.readFileSync('pages/templates/channellist/forumchannel.html', 'utf-8');
 const locked_channel_template = fs.readFileSync('pages/templates/channellist/lockedchannel.html', 'utf-8');
 const rules_channel_template = fs.readFileSync('pages/templates/channellist/ruleschannel.html', 'utf-8');
@@ -91,8 +92,13 @@ async function processServerChannels(server, member, response, sessionParam) {
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
-    // Start with lone text channels (no category) and voice channels
-    let channelsSorted = [...server.channels.cache.filter(channel => (channel.isTextBased() || channel.type == ChannelType.GuildVoice) && !channel.parent).values()];
+    // Start with lone text channels (no category), voice channels, and forum/media channels
+    let channelsSorted = [...server.channels.cache.filter(channel =>
+      (channel.isTextBased() ||
+       channel.type == ChannelType.GuildVoice ||
+       channel.type == ChannelType.GuildForum ||
+       channel.type == ChannelType.GuildMedia) &&
+      !channel.parent).values()];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
     categoriesSorted.forEach(category => {
@@ -100,19 +106,13 @@ async function processServerChannels(server, member, response, sessionParam) {
       channelsSorted = channelsSorted.concat(
         [...category.children.cache.sort((a, b) => a.position - b.position)
           .values()]
-          .filter(channel => channel.isTextBased() || channel.type == ChannelType.GuildVoice)
+          .filter(channel =>
+            channel.isTextBased() ||
+            channel.type == ChannelType.GuildVoice ||
+            channel.type == ChannelType.GuildForum ||
+            channel.type == ChannelType.GuildMedia)
       );
     });
-
-
-    for (let i = channelsSorted.length - 1; i >= 0; i--) {
-      const channel = channelsSorted[i];
-      if (threadsByParent.has(channel.id)) {
-        const threads = threadsByParent.get(channel.id)
-          .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-        channelsSorted.splice(i + 1, 0, ...threads);
-      }
-    }
 
 
     let channelList = "";
@@ -131,8 +131,8 @@ async function processServerChannels(server, member, response, sessionParam) {
           channelList += category_channel_template
             .replace("{$CHANNEL_NAME}", escapedName)
             .replace("{$CATEGORY_ID}", item.id);
-        } else if (item.type == ChannelType.GuildForum) {
-          // Forum channels (#16)
+        } else if (item.type == ChannelType.GuildForum || item.type == ChannelType.GuildMedia) {
+          // Forum / media channels
           channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildAnnouncement || item.type == ChannelType.GuildNews) {
           // Use announcement template for announcement/news channels
@@ -147,12 +147,6 @@ async function processServerChannels(server, member, response, sessionParam) {
             // Voice channel with text capability (#14)
             channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           }
-        } else if (
-          item.type == ChannelType.PublicThread ||
-          item.type == ChannelType.PrivateThread ||
-          item.type == ChannelType.AnnouncementThread
-        ) {
-          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildStageVoice) {
           // Stage channels
           channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
@@ -173,6 +167,22 @@ async function processServerChannels(server, member, response, sessionParam) {
             channelList += text_channel_template
               .replace("{$CHANNEL_NAME}", escapedName)
               .replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
+          }
+        }
+
+        // After rendering each non-category channel, add its collapsible thread group if it has threads
+        if (item.type !== ChannelType.GuildCategory && threadsByParent.has(item.id)) {
+          const channelThreads = threadsByParent.get(item.id)
+            .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
+          if (channelThreads.length > 0) {
+            channelList += thread_group_header_template.replace('{$CHANNEL_ID}', item.id);
+            channelThreads.forEach(thread => {
+              const threadEscapedName = escape(normalizeWeirdUnicode(thread.name));
+              channelList += thread_channel_template
+                .replace('{$CHANNEL_NAME}', threadEscapedName)
+                .replace('{$CHANNEL_LINK}', `../channels/${thread.id}${sessionParam}`);
+            });
+            channelList += '</div>';
           }
         }
       }
