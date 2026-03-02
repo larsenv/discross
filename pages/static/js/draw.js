@@ -12,6 +12,12 @@ var ctx = canvas.getContext('2d');
 var ua = (navigator.userAgent || '');
 var isOld3DS = ua.indexOf('Nintendo 3DS') >= 0 && ua.indexOf('New Nintendo 3DS') < 0;
 
+// Add class to <html> element so CSS can target old 3DS without media queries
+// (old NintendoBrowser may not parse all media queries correctly).
+if (isOld3DS) {
+    document.documentElement.className += ' old-3ds';
+}
+
 // On very small screens (DSi: 256px wide), shrink the canvas backing buffer
 // before any drawing. The internal canvas is 600×350 = 210,000 pixels; even
 // a single ctx.stroke() forces Opera 9.5 to repaint all of them which is
@@ -361,8 +367,19 @@ function wipe() {
 function prepareAndSend() {
     var inputField = document.getElementById('drawinginput');
     var form = document.getElementById('sendform');
-    var btn = document.getElementById('btn-send');
-    var data = canvas.toDataURL("image/png");
+    var data;
+    if (isOld3DS) {
+        // Old NintendoBrowser (1.x) does not support PNG encoding in toDataURL —
+        // the spec says unsupported formats return "data:,". JPEG is more widely
+        // supported in old WebKit and produces smaller output (less memory pressure).
+        data = canvas.toDataURL("image/jpeg", 0.7);
+        // If JPEG also fails, try PNG as a last resort
+        if (data === 'data:,') {
+            data = canvas.toDataURL("image/png");
+        }
+    } else {
+        data = canvas.toDataURL("image/png");
+    }
     inputField.value = data;
     form.submit();
 }

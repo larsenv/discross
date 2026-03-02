@@ -114,7 +114,10 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       return;
     }
 
-    // Remove the data URL prefix
+    // Remove the data URL prefix and detect format for correct filename
+    const mimeMatch = base64Data.match(/^data:([^;]+);base64,/);
+    const mime = (mimeMatch && mimeMatch[1]) ? mimeMatch[1] : 'image/png';
+    const ext = (mime === 'image/jpeg') ? 'jpg' : 'png';
     const base64Image = base64Data.split(';base64,').pop();
     
     // Validate the base64 string is not empty
@@ -144,7 +147,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
       avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
       files: [{
         attachment: imageBuffer,
-        name: "drawing.png"
+        name: 'drawing.' + ext
       }]
     };
     

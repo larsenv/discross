@@ -780,6 +780,16 @@ html.page-draw #wrapper {
     html.page-draw body { padding-bottom: 100px; }
 }
 
+/* Old Nintendo 3DS: NintendoBrowser 1.x may not render position:fixed correctly.
+   The JS in draw.js adds the .old-3ds class to <html> when detected, so this
+   rule (which requires no media query) overrides the fixed positioning above. */
+html.page-draw.old-3ds .message-form-container {
+    position: static;
+}
+html.page-draw.old-3ds body {
+    padding-bottom: 0;
+}
+
 /* ================================================================
    23. PAGE-SIMPLE: Blanket theme overrides for login/register/forgot/index
        (must not apply to channel/server pages — would override specific styles)
