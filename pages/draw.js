@@ -27,15 +27,15 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
   // URL param takes priority over cookie
   const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
 
-  let boxColor = "#40444b";
+  let boxColor = "#222327";
 
   // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
-  // Note: amoled (theme 2) uses the same boxColor as dark (theme 0)
   let template;
   if (theme === 1) {
     boxColor = "#ffffff";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
   } else if (theme === 2) {
+    boxColor = "#141416";
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
   } else {
     template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", "");
@@ -67,7 +67,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       // 4. Load & Prepare the Drawing Template
       template = strReplace(template, "{$SERVER_ID}", chnl.guild.id);
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
-      template = strReplace(template, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
+      template = strReplace(template, "{$CHANNEL_NAME}", (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
       template = strReplace(template, "{$SESSION_ID}", urlSessionID);
       template = strReplace(template, "{$SESSION_PARAM}", sessionParam);
 

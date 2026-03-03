@@ -91,24 +91,43 @@ function showEmoji() {
 // Spoiler reveal function for Wii compatibility
 function show(el) {
     try {
-        el.style.background = "none";
-        // Navigate the DOM structure: table -> tbody -> tr -> td -> font
+        // Add revealed class (CSS handles per-theme revealed background)
+        if (el.className.indexOf('spoiler-revealed') === -1) {
+            el.className = el.className + ' spoiler-revealed';
+        }
+        // Also set inline background for older browsers that don't support class-based CSS
+        var revealedBg;
+        if (document.body.className.indexOf('light-theme') !== -1) {
+            revealedBg = '#efeff0';
+        } else if (document.body.className.indexOf('amoled-theme') !== -1) {
+            revealedBg = '#1d1d20';
+        } else {
+            revealedBg = '#26262b';
+        }
+        el.style.background = revealedBg;
+        // Navigate the DOM structure: table -> tbody -> tr -> td -> span
         var tbody = el.childNodes[0];
         if (tbody && tbody.childNodes && tbody.childNodes[0]) {
             var tr = tbody.childNodes[0];
             if (tr && tr.childNodes && tr.childNodes[0]) {
                 var td = tr.childNodes[0];
                 if (td && td.childNodes && td.childNodes[0]) {
-                    var font = td.childNodes[0];
-                    if (font && font.style) {
-                        font.style.visibility = "visible";
+                    var span = td.childNodes[0];
+                    if (span && span.style) {
+                        span.style.visibility = 'visible';
                     }
                 }
             }
         }
     } catch (e) {
-        // Fallback: just remove background if structure is unexpected
-        el.style.background = "none";
+        // Fallback: set revealed background even if structure is unexpected
+        if (document.body.className.indexOf('light-theme') !== -1) {
+            el.style.background = '#efeff0';
+        } else if (document.body.className.indexOf('amoled-theme') !== -1) {
+            el.style.background = '#1d1d20';
+        } else {
+            el.style.background = '#26262b';
+        }
     }
 }
 
