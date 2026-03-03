@@ -347,7 +347,7 @@ function buildRoleMentionPill(role) {
     const hex = `#${role.color.toString(16).padStart(6, '0')}`;
     return `<span style="color:${hex};background:rgba(${r},${g},${b},0.3);padding:0 2px;border-radius:3px">@${escape(normalizeWeirdUnicode(role.name))}</span>`;
   }
-  return `<span style="color:#94A8FF;background:#1D204C;padding:0 2px;border-radius:3px">@${escape(normalizeWeirdUnicode(role.name))}</span>`;
+  return `<span class="mention">@${escape(normalizeWeirdUnicode(role.name))}</span>`;
 }
 
 function renderKnownMentions(messagetext, item, tmpl_mention) {
@@ -403,9 +403,7 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
   return messagetext.replace(/&lt;#(\d{17,19})&gt;/g, (match, id) => {
     const ch = bot.client.channels.cache.get(id);
     if (!ch) return match;
-    return `<a href="/channels/${ch.id}" style="text-decoration:none;">` +
-      `<font style="background:#1D204C;color:#94A8FF;padding:0 2px;border-radius:3px;font-weight:500" face="rodin,sans-serif">` +
-      `#${escape(normalizeWeirdUnicode(ch.name))}</font></a>`;
+    return `<a href="/channels/${ch.id}" style="text-decoration:none;"><span class="mention">#${escape(normalizeWeirdUnicode(ch.name))}</span></a>`;
   });
 }
 
