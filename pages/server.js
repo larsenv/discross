@@ -18,6 +18,7 @@ const announcement_channel_template = fs.readFileSync('pages/templates/channelli
 const category_channel_template = fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8');
 const voice_channel_template = fs.readFileSync('pages/templates/channellist/voicechannel.html', 'utf-8');
 const thread_channel_template = fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8');
+const thread_group_header_template = fs.readFileSync('pages/templates/channellist/threadgroupheader.html', 'utf-8');
 const forum_channel_template = fs.readFileSync('pages/templates/channellist/forumchannel.html', 'utf-8');
 const locked_channel_template = fs.readFileSync('pages/templates/channellist/lockedchannel.html', 'utf-8');
 const rules_channel_template = fs.readFileSync('pages/templates/channellist/ruleschannel.html', 'utf-8');
@@ -40,13 +41,58 @@ function strReplace(string, needle, replacement) {
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 
-function processServerChannels(server, member, response, sessionParam) {
+async function processServerChannels(server, member, response, sessionParam) {
   try {
+    const discordID = member.id;
+
+    // Fetch active threads for this server
+    let activeThreadsList = [];
+    try {
+      const activeThreadsResult = await server.channels.fetchActiveThreads();
+      activeThreadsList = [...activeThreadsResult.threads.values()];
+    } catch (err) {
+      console.error("Failed to fetch active threads:", err);
+    }
+
+    // For each active thread, check if this specific user is a member.
+    // fetchActiveThreads() only populates the bot's own membership in the cache,
+    // so we must call thread.members.fetch(userId) per thread to check the real user.
+    // We do all checks in parallel to minimise latency.
+    const userThreadIds = new Set();
+    if (activeThreadsList.length > 0) {
+      await Promise.allSettled(
+        activeThreadsList.map(async thread => {
+          try {
+            await thread.members.fetch(discordID);
+            userThreadIds.add(thread.id);
+          } catch {
+            // user is not a member of this thread — skip it
+          }
+        })
+      );
+    }
+
+    // Build threadsByParent using only threads the user is in
+    const threadsByParent = new Map();
+    activeThreadsList.forEach(thread => {
+      if (!thread.parentId) return;
+      if (!userThreadIds.has(thread.id)) return;
+      if (!threadsByParent.has(thread.parentId)) {
+        threadsByParent.set(thread.parentId, []);
+      }
+      threadsByParent.get(thread.parentId).push(thread);
+    });
+
     const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
-    // Start with lone text channels (no category) and voice channels
-    let channelsSorted = [...server.channels.cache.filter(channel => (channel.isTextBased() || channel.type == ChannelType.GuildVoice) && !channel.parent).values()];
+    // Start with lone text channels (no category), voice channels, and forum/media channels
+    let channelsSorted = [...server.channels.cache.filter(channel =>
+      (channel.isTextBased() ||
+       channel.type == ChannelType.GuildVoice ||
+       channel.type == ChannelType.GuildForum ||
+       channel.type == ChannelType.GuildMedia) &&
+      !channel.parent).values()];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
     categoriesSorted.forEach(category => {
@@ -54,45 +100,21 @@ function processServerChannels(server, member, response, sessionParam) {
       channelsSorted = channelsSorted.concat(
         [...category.children.cache.sort((a, b) => a.position - b.position)
           .values()]
-          .filter(channel => channel.isTextBased() || channel.type == ChannelType.GuildVoice)
+          .filter(channel =>
+            channel.isTextBased() ||
+            channel.type == ChannelType.GuildVoice ||
+            channel.type == ChannelType.GuildForum ||
+            channel.type == ChannelType.GuildMedia)
       );
     });
-
-    // Add threads from voice channels (voice channel threads)
-    // Threads are in the guild's channels cache with parentId pointing to voice channels
-    const allThreads = server.channels.cache.filter(channel => 
-      channel.type == ChannelType.PublicThread || channel.type == ChannelType.PrivateThread
-    );
-    
-    // Group threads by their parent voice channel for efficient insertion
-    const threadsByParent = new Map();
-    allThreads.forEach(thread => {
-      if (thread.parentId) {
-        const parent = server.channels.cache.get(thread.parentId);
-        // Only collect threads whose parent is a voice channel
-        if (parent && parent.type == ChannelType.GuildVoice) {
-          if (!threadsByParent.has(thread.parentId)) {
-            threadsByParent.set(thread.parentId, []);
-          }
-          threadsByParent.get(thread.parentId).push(thread);
-        }
-      }
-    });
-    
-    // Insert threads after their parent voice channels in reverse order to maintain positions
-    for (let i = channelsSorted.length - 1; i >= 0; i--) {
-      const channel = channelsSorted[i];
-      if (channel.type == ChannelType.GuildVoice && threadsByParent.has(channel.id)) {
-        const threads = threadsByParent.get(channel.id).sort((a, b) => a.position - b.position);
-        channelsSorted.splice(i + 1, 0, ...threads);
-      }
-    }
 
 
     let channelList = "";
     let currentCategoryId = null;
+    let prevItemWasThread = false;
     
     channelsSorted.forEach((item, index) => {
+      const isThread = item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread;
       // Check if the member has permission to view the channel
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         const escapedName = escape(normalizeWeirdUnicode(item.name));
@@ -105,8 +127,8 @@ function processServerChannels(server, member, response, sessionParam) {
           channelList += category_channel_template
             .replace("{$CHANNEL_NAME}", escapedName)
             .replace("{$CATEGORY_ID}", item.id);
-        } else if (item.type == ChannelType.GuildForum) {
-          // Forum channels (#16)
+        } else if (item.type == ChannelType.GuildForum || item.type == ChannelType.GuildMedia) {
+          // Forum / media channels
           channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildAnnouncement || item.type == ChannelType.GuildNews) {
           // Use announcement template for announcement/news channels
@@ -121,7 +143,10 @@ function processServerChannels(server, member, response, sessionParam) {
             // Voice channel with text capability (#14)
             channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           }
-        } else if (item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread) {
+        } else if (isThread) {
+          if (!prevItemWasThread) {
+            channelList += thread_section_header;
+          }
           channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildStageVoice) {
           // Stage channels
@@ -145,7 +170,24 @@ function processServerChannels(server, member, response, sessionParam) {
               .replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           }
         }
+
+        // After rendering each non-category channel, add its collapsible thread group if it has threads
+        if (item.type !== ChannelType.GuildCategory && threadsByParent.has(item.id)) {
+          const channelThreads = threadsByParent.get(item.id)
+            .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
+          if (channelThreads.length > 0) {
+            channelList += thread_group_header_template.replace('{$CHANNEL_ID}', item.id);
+            channelThreads.forEach(thread => {
+              const threadEscapedName = escape(normalizeWeirdUnicode(thread.name));
+              channelList += thread_channel_template
+                .replace('{$CHANNEL_NAME}', threadEscapedName)
+                .replace('{$CHANNEL_LINK}', `../channels/${thread.id}${sessionParam}`);
+            });
+            channelList += '</div>';
+          }
+        }
       }
+      prevItemWasThread = isThread;
     });
     
     // Close the last category if exists
@@ -251,7 +293,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           response = response.replace("{$DISCORD_NAME}", '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
-            response = processServerChannels(targetServer, member, response, sessionParam);
+            response = await processServerChannels(targetServer, member, response, sessionParam);
           } else {
             response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
           }

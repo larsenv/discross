@@ -55,9 +55,9 @@ const SYSTEM_MESSAGE_TEXT = {
 };
 
 const THEME_CONFIG = {
-  0: { boxColor: '#40444b', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
+  0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
   1: { boxColor: '#ffffff', authorText: '#000000', replyText: '#000000', themeClass: 'class="light-theme"' },
-  2: { boxColor: '#40444b', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
+  2: { boxColor: '#141416', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
 };
 
 const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
@@ -216,7 +216,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
   });
 
   imageUrls.forEach(url => {
-    messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:auto;height:auto;" alt="image"></a>`;
+    messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="image"></a>`;
   });
 
   return messagetext;
@@ -245,7 +245,7 @@ function renderStickers(messagetext, item, imagesCookie, animationsCookie) {
 // Embed rendering (inline media types handled here; rich embeds delegated)
 // ---------------------------------------------------------------------------
 
-function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;') {
+function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;width:100%;height:auto;') {
   const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
   return { proxied, tag: `<img src="${proxied}" style="${style}" alt="${alt}">` };
 }
@@ -339,15 +339,16 @@ function renderPollResultEmbed(embed) {
 // Mention resolution
 // ---------------------------------------------------------------------------
 
-function buildRoleMentionPill(role) {
+function roleMentionPill(role, tmpl_mention) {
+  const name = escape('@' + normalizeWeirdUnicode(role.name));
   if (role.color !== 0) {
-    const r = (role.color >> 16) & 0xff;
-    const g = (role.color >> 8) & 0xff;
-    const b = role.color & 0xff;
-    const hex = `#${role.color.toString(16).padStart(6, '0')}`;
-    return `<span style="color:${hex};background:rgba(${r},${g},${b},0.3);padding:0 2px;border-radius:3px">@${escape(normalizeWeirdUnicode(role.name))}</span>`;
+    const hex = role.hexColor;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `<span class="mention" style="color:${hex};background:rgba(${r},${g},${b},0.15);">${name}</span>`;
   }
-  return `<span class="mention">@${escape(normalizeWeirdUnicode(role.name))}</span>`;
+  return `<span class="mention-default">${name}</span>`;
 }
 
 function renderKnownMentions(messagetext, item, tmpl_mention) {
@@ -362,11 +363,7 @@ function renderKnownMentions(messagetext, item, tmpl_mention) {
 
   item.mentions.roles?.forEach(role => {
     if (!role) return;
-    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, buildRoleMentionPill(role));
-  });
-
-  return messagetext;
-}
+    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, tmpl_mention));
 
 async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_mention) {
   // Fetch any member IDs not yet in cache
@@ -456,16 +453,16 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
         if (fwdChannel) {
           const timeDisplay = formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone);
           const jumpLink = `/channels/${fwdMsg.channelId}/${fwdMsg.id}`;
-          const chanLink = `<a href="${jumpLink}" style="color:#b5bac1;text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
+          const chanLink = `<a href="${jumpLink}" class="forwarded-label" style="text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
 
           if (fwdMsg.guildId === chnl.guild.id) {
-            originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${chanLink}</font>`;
+            originHtml = `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${chanLink}</font>`;
           } else {
             const otherGuild = bot.client.guilds.cache.get(fwdMsg.guildId);
             if (otherGuild) {
               try {
                 await otherGuild.members.fetch(discordID);
-                originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
+                originHtml = `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
               } catch { /* user not in that guild */ }
             }
           }
@@ -544,7 +541,7 @@ function buildReplyIndicator(replyData, replyText) {
     ? `<font style="font-size:12px;color:${replyText}" face="rodin,sans-serif"> ${replyData.content}</font>`
     : '';
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
+    '<td class="reply-arrow"></td>' +
     `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
     `<font style="font-size:12px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `${contentPart}</td>` +
@@ -680,7 +677,7 @@ async function renderMessageContent(item, context) {
   // Role mentions (second pass — catches any remaining after the member pass)
   item.mentions?.roles?.forEach(role => {
     if (role) {
-      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, buildRoleMentionPill(role));
+      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, templates.mention));
     }
   });
 
@@ -717,13 +714,6 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
   const messages = await bot.getHistoryCached(chnl);
   const memberCache = new Map();
-
-  // IDs of messages that are the target of a reply — suppress standalone rendering
-  const referencedMessageIds = new Set(
-    messages
-      .filter(m => m.reference?.type !== MessageReferenceType.Forward && m.reference?.messageId)
-      .map(m => m.reference.messageId),
-  );
 
   // Mutable rendering state
   const state = {
@@ -771,7 +761,6 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
 
     if (!item) return;
-    if (referencedMessageIds.has(item.id)) return;
 
     const currentMember = await ensureMemberData(item, chnl.guild, memberCache);
 
@@ -813,7 +802,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       !isSameAuthor(state.lastmember, state.lastauthor, currentMember, item.author) ||
       item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
       isReply ||
-      isInteraction;
+      isInteraction ||
+      state.lastReply;
 
     messagetext = startsNewGroup
       ? templates.firstMessageContent.replace('{$MESSAGE_TEXT}', messagetext)
@@ -995,6 +985,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
       let final = strReplace(baseTemplate, '{$INPUT}', inputHtml);
       final = strReplace(final, '{$MESSAGES}', TEMPLATES.noMessageHistory);
+      final = strReplace(final, '{$CHANNEL_NAME}', (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
       final = strReplace(final, '{$SESSION_ID}', urlSessionID);
       final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
       res.write(final);
@@ -1031,7 +1022,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     let final = strReplace(baseTemplate, '{$REFRESH_URL}', refreshUrl);
     final = strReplace(final, '{$INPUT}',        inputHtml);
     final = strReplace(final, '{$RANDOM_EMOJI}', randomEmoji);
-    final = strReplace(final, '{$CHANNEL_NAME}', normalizeWeirdUnicode(chnl.name));
+    final = strReplace(final, '{$CHANNEL_NAME}', (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
     final = strReplace(final, '{$MESSAGES}',     messagesHtml);
     final = strReplace(final, '{$SESSION_ID}',   urlSessionID);
     final = strReplace(final, '{$SESSION_PARAM}',sessionParam);
