@@ -212,7 +212,7 @@ function renderDiscordMarkdown(text) {
           // The show() function in the template files reveals the spoiler by removing background and showing text
           return '<table cellpadding="0" cellspacing="0" class="spoiler-box" style="display:inline-table;vertical-align:text-top;border-spacing:0" onclick="show(this);event.stopPropagation();return false">' +
                  '<tr><td style="line-height:1;padding:1px 4px">' +
-                 '<font style="visibility:hidden">' + rendered + '</font>' +
+                 '<span style="visibility:hidden">' + rendered + '</span>' +
                  '</td></tr></table>';
       });
 
