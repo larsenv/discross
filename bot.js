@@ -44,8 +44,12 @@ client.on('messageCreate', async function (msg) {
     if (msg.webhookId) {
       msg.reply("You're already using Discross!")
     } else {
-      msg.author.send('Verification code:\n`' + (await auth.createVerificationCode(msg.author.id)) + '`')
-      msg.reply('You have been sent a direct message with your verification code.')
+      try {
+        await msg.author.send('Verification code:\n`' + (await auth.createVerificationCode(msg.author.id)) + '`')
+        await msg.reply('You have been sent a direct message with your verification code.')
+      } catch (e) {
+        await msg.reply('Your verification code could not be sent. Please make sure you have direct messages enabled and try again.')
+      }
     }
   }
 
