@@ -343,7 +343,7 @@ function roleMentionPill(role, tmpl_mention) {
     const b = parseInt(hex.slice(5, 7), 16);
     return `<span class="mention" style="color:${hex};background:rgba(${r},${g},${b},0.15);">${name}</span>`;
   }
-  return `<span class="mention-default">${name}</span>`;
+  return `<span class="mention">${name}</span>`;
 }
 
 function renderKnownMentions(messagetext, item, tmpl_mention) {
@@ -559,6 +559,9 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
       let flat = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
       // Resolve mentions/channels in raw text before truncation so they are never cut in half
       flat = await resolveRawMentionsForPreview(flat, replyMessage, memberCache, chnl, bot);
+      // Strip block-level quote markers (>>> and >) so they don't render as
+      // full blockquote embeds inside the reply preview — show them as plain > text
+      flat = flat.replace(/^(>>?>?\s*)+/, '');
       replyContent = renderDiscordMarkdown(truncateText(flat, REPLY_CONTENT_MAX_LENGTH));
       replyContent = renderEmojis(replyContent, replyMessage, imagesCookie, animationsCookie);
     }
