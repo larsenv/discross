@@ -489,7 +489,50 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
 // Reply data resolution
 // ---------------------------------------------------------------------------
 
-async function resolveReplyData(item, chnl, memberCache) {
+// Replaces <@userId>, <@!userId>, <@&roleId>, and <#channelId> in raw Discord text
+// with plain @Name / #channel-name strings, using the known mentions on the message
+// plus memberCache. Unresolved member/channel IDs are fetched from the API.
+// This is run before truncation so mention tokens are never split mid-string.
+async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
+  msg.mentions?.members?.forEach(member => {
+    if (!member) return;
+    const name = '@' + normalizeWeirdUnicode(getDisplayName(member, member.user));
+    text = text.split(`<@${member.id}>`).join(name);
+    text = text.split(`<@!${member.id}>`).join(name);
+  });
+  msg.mentions?.roles?.forEach(role => {
+    if (!role) return;
+    text = text.split(`<@&${role.id}>`).join('@' + normalizeWeirdUnicode(role.name));
+  });
+  // Fetch any remaining unrecognized user IDs from the API
+  const unresolvedUserIds = [...text.matchAll(/<@!?(\d{17,19})>/g)]
+    .map(m => m[1])
+    .filter(id => !memberCache.has(id));
+  await Promise.allSettled(unresolvedUserIds.map(async id => {
+    try { memberCache.set(id, await chnl.guild.members.fetch(id)); }
+    catch { memberCache.set(id, null); }
+  }));
+  text = text.replace(/<@!?(\d{17,19})>/g, (match, id) => {
+    const cached = memberCache.get(id) ?? chnl.guild.members.cache.get(id);
+    if (cached) return '@' + normalizeWeirdUnicode(getDisplayName(cached, cached.user));
+    return match;
+  });
+  // Fetch any unresolved channel IDs from the API
+  const unresolvedChannelIds = [...text.matchAll(/<#(\d{17,19})>/g)]
+    .map(m => m[1])
+    .filter(id => !bot.client.channels.cache.has(id));
+  await Promise.allSettled(unresolvedChannelIds.map(async id => {
+    try { await bot.client.channels.fetch(id); } catch { /* not accessible */ }
+  }));
+  text = text.replace(/<#(\d{17,19})>/g, (match, id) => {
+    const ch = bot.client.channels.cache.get(id);
+    if (ch) return '#' + normalizeWeirdUnicode(ch.name);
+    return match;
+  });
+  return text;
+}
+
+async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie) {
   try {
     let replyUser = item.mentions?.repliedUser;
     let replyMember;
@@ -518,8 +561,11 @@ async function resolveReplyData(item, chnl, memberCache) {
 
     let replyContent = '';
     if (replyMessage?.content) {
-      const flat = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
+      let flat = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
+      // Resolve mentions/channels in raw text before truncation so they are never cut in half
+      flat = await resolveRawMentionsForPreview(flat, replyMessage, memberCache, chnl, bot);
       replyContent = renderDiscordMarkdown(truncateText(flat, REPLY_CONTENT_MAX_LENGTH));
+      replyContent = renderEmojis(replyContent, replyMessage, imagesCookie, animationsCookie);
     }
 
     return {
@@ -541,14 +587,24 @@ async function resolveReplyData(item, chnl, memberCache) {
 
 function buildReplyIndicator(replyData, replyText) {
   const atSign = replyData.mentionsPing ? '@' : '';
-  const contentPart = replyData.content
-    ? `<font style="font-size:12px;color:${replyText}" face="rodin,sans-serif"> ${replyData.content}</font>`
+  // Two-row layout: row 1 is an empty connector spacer; row 2 draws the ┌ corner
+  // (border-top + border-left + border-top-left-radius) inline so no CSS class is needed.
+  // The author and content cells each span both rows (rowspan="2") so the row boundary is exactly
+  // at 50% of the content height, placing the ┌ corner at the vertical center of the quoted text.
+  // Content is in its own cell so its white-space:nowrap doesn't interact with the author width.
+  // JS truncateText already limits the raw text to REPLY_CONTENT_MAX_LENGTH chars + "...",
+  // so no CSS overflow clipping is needed on the content cell.
+  const contentTd = replyData.content
+    ? `<td rowspan="2" style="padding-left:4px;vertical-align:middle;white-space:nowrap">` +
+      `<font style="font-size:12px;color:${replyText}" face="rodin,sans-serif">${replyData.content}</font></td>`
     : '';
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td class="reply-arrow"></td>' +
-    `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
+    '<td style="width:12px;height:8px"></td>' +
+    `<td rowspan="2" style="padding-left:8px;vertical-align:middle;white-space:nowrap">` +
     `<font style="font-size:12px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
-    `${contentPart}</td>` +
+    `</td>${contentTd}` +
+    '</tr><tr>' +
+    '<td style="width:12px;height:8px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
     '</tr></table>';
 }
 
@@ -786,7 +842,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     let isReply = false;
     let replyData = {};
     if (item.reference && !isForwarded) {
-      const data = await resolveReplyData(item, chnl, memberCache);
+      const data = await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie);
       if (data) { isReply = true; replyData = data; }
     }
 
