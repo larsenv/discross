@@ -435,9 +435,9 @@ input[type="text"],
 input[type="password"],
 input[type="email"],
 textarea {
-    background: #40444b;
-    border: 1px solid #40444b;
-    color: #dcddde;
+    background: #222327;
+    border: 1px solid #222327;
+    color: #EFEF31;
     padding: 10px 12px;
     font-size: 16px;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
@@ -451,7 +451,7 @@ input[type="password"]:focus,
 input[type="email"]:focus,
 textarea:focus {
     border-color: #5865f2;
-    background: #383a40;
+    background: #222327;
 }
 label {
     display: block;
@@ -648,11 +648,11 @@ body.light-theme,
 .light-theme input[type="text"],
 .light-theme input[type="password"],
 .light-theme input[type="email"],
-.light-theme textarea { background: #ebedef; border-color: #e3e5e8; color: #323339; }
+.light-theme textarea { background: #FFFFFF; border-color: #e3e5e8; color: #323339; }
 .light-theme input[type="text"]:focus,
 .light-theme input[type="password"]:focus,
 .light-theme input[type="email"]:focus,
-.light-theme textarea:focus { border-color: #5865f2; background: #e3e5e8; }
+.light-theme textarea:focus { border-color: #5865f2; background: #FFFFFF; }
 .light-theme .send-button,
 .light-theme .btn-send { background: #5865f2 !important; color: #ffffff !important; }
 .light-theme button,
@@ -858,12 +858,12 @@ html.page-simple .light-theme #wrapper input[type="submit"] {
     color: #ffffff !important;
 }
 html.page-simple .light-theme #wrapper table div {
-    background: #ebedef !important;
+    background: #FFFFFF !important;
 }
 html.page-simple .light-theme #wrapper input[type="text"],
 html.page-simple .light-theme #wrapper input[type="password"],
 html.page-simple .light-theme #wrapper input[type="email"] {
-    background: #ebedef !important;
+    background: #FFFFFF !important;
     color: #323339 !important;
     border: none !important;
 }
