@@ -78,16 +78,20 @@ async function ensureMemberData(message, guild, cache = null) {
     return null;
   }
 
-  // Check cache first if provided (use webhook:username for webhook messages)
-  const cacheKey = message.webhookId ? `webhook:${message.author.username}` : message.author.id;
+  // Application webhooks (slash command bot responses) have applicationId === webhookId.
+  // For those, we can fetch the bot member by author ID to get role colors.
+  const isAppWebhook = message.webhookId && message.applicationId && message.webhookId === message.applicationId;
+
+  // Check cache first if provided (use webhook:username for plain webhook messages)
+  const cacheKey = (message.webhookId && !isAppWebhook) ? `webhook:${message.author.username}` : message.author.id;
   if (cache && cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
 
-  // For regular (non-webhook) messages, fetch from guild to get a fully-resolved
-  // member object with all roles populated (Discord.js serves this from its own
-  // member cache when available, so repeated calls are cheap).
-  if (!message.webhookId) {
+  // For regular (non-webhook) messages and application webhook messages, fetch from
+  // guild to get a fully-resolved member object with all roles populated (Discord.js
+  // serves this from its own member cache when available, so repeated calls are cheap).
+  if (!message.webhookId || isAppWebhook) {
     try {
       const member = await guild.members.fetch(message.author.id);
       if (cache) {
@@ -105,7 +109,7 @@ async function ensureMemberData(message, guild, cache = null) {
     }
   }
 
-  // For webhook messages, message.member will be null; return it as-is
+  // For plain webhook messages, message.member will be null; return it as-is
   const result = message.member || null;
   if (cache) {
     cache.set(cacheKey, result);
