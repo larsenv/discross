@@ -83,6 +83,11 @@ function strReplace(string, needle, replacement) {
 const server = http.createServer(options)
 connectionHandler.startWsServer(server)
 
+// In-memory cache for static files served via servePage()
+const staticFileCache = new Map();
+const STATIC_CACHE_MAX_FILES = 2000;    // max distinct files to cache (FIFO eviction)
+const STATIC_CACHE_MAX_BYTES = 1024 * 1024; // skip caching individual files larger than 1 MB
+
 async function servePage(filename, res, type, textToReplace, replacement) { // textToReplace and replacement allow for dynamic pages (not used anymore as far as I know)
   if (!type) {
     type = mime(filename)
@@ -90,6 +95,15 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
   if (filename.endsWith('/')) {
     filename += 'index.html'
   }
+
+  // Serve from in-memory cache for plain (non-templated) requests
+  if (!textToReplace && staticFileCache.has(filename)) {
+    const data = staticFileCache.get(filename)
+    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' })
+    res.write(data)
+    return res.end()
+  }
+
   fs.readFile(filename, function (err, data) {
     if (err) {
       //try to find something
@@ -105,6 +119,12 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
     if (textToReplace && replacement) {
       res.write(data.toString().replace(textToReplace, replacement))
     } else {
+      if (data.length <= STATIC_CACHE_MAX_BYTES) {
+        if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
+          staticFileCache.delete(staticFileCache.keys().next().value)
+        }
+        staticFileCache.set(filename, data)
+      }
       res.write(data)
     }
     return res.end()
