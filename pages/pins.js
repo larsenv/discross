@@ -85,9 +85,9 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
       return;
     }
 
-    // Fetch pinned messages; fetchPinned returns newest-pinned-first — reverse for chronological display
+    // Fetch pinned messages; fetchPinned returns newest-pinned-first
     const pinnedCollection = await chnl.messages.fetchPinned();
-    const pinnedMessages = Array.from(pinnedCollection.values()).reverse();
+    const pinnedMessages = Array.from(pinnedCollection.values());
 
     let messagesHtml;
     if (pinnedMessages.length === 0) {
