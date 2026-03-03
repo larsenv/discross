@@ -62,6 +62,7 @@ const replypage = require('./pages/reply.js')
 const drawpage = require('./pages/draw.js')
 const senddrawing = require('./pages/senddrawing.js')
 const { handleServerIcon } = require('./pages/serverIconHandler.js')
+const pinspage = require('./pages/pins.js')
 const changepasswordpage = require('./pages/changepassword.js')
 const setup2fapage = require('./pages/setup2fa.js')
 const privacypage = require('./pages/privacy.js')
@@ -340,6 +341,11 @@ server.on('request', async (req, res) => {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
         await uploadpage.processUpload(bot, req, res, discordID)
+      }
+    } else if (args[1] === 'pins') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await pinspage.processPins(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'draw'){
       const discordID = await auth.checkAuth(req, res)
