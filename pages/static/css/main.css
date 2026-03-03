@@ -265,6 +265,7 @@ pre code { background: none; border: none; padding: 0; }
     display: inline-block;
     padding: 2px 6px;
     background: #26262B;
+    border: 1px solid rgba(79, 84, 92, 0.3);
     border-radius: 4px;
     margin-right: 4px;
     margin-bottom: 4px;
@@ -623,7 +624,7 @@ body.light-theme,
 .light-theme .forwarded-label { color: #6C6D76; }
 .light-theme #emoji { background: #FBFBFB !important; border-color: #e3e5e8; }
 .light-theme #emoji a:hover { background: rgba(0, 0, 0, 0.08); }
-.light-theme .reaction { background: #EFEFF0; }
+.light-theme .reaction { background: #EFEFF0; border-color: rgba(79, 84, 92, 0.15); }
 .light-theme .mention { color: #2E3C88; background: #DCDEF9; }
 .light-theme .message.mentioned { border-left-color: #9E5A01; background-color: #FAF4EB; }
 .light-theme .ping-row { border-left-color: #9E5A01; background: #FAF4EB; }
