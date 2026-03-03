@@ -499,6 +499,9 @@ button:focus, input:focus, textarea:focus {
 .category-channels { display: block; }
 .category-channels.collapsed { display: none; }
 .category-arrow { display: inline-block; vertical-align: middle; }
+.thread-channels { display: block; }
+.thread-channels.collapsed { display: none; }
+.thread-arrow { display: inline-block; vertical-align: middle; }
 
 /* ================================================================
    16. DRAWING / CANVAS

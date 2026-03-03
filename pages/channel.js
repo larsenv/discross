@@ -920,6 +920,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
       let final = strReplace(baseTemplate, '{$INPUT}', inputHtml);
       final = strReplace(final, '{$MESSAGES}', TEMPLATES.noMessageHistory);
+      final = strReplace(final, '{$CHANNEL_NAME}', (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
       final = strReplace(final, '{$SESSION_ID}', urlSessionID);
       final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
       res.write(final);
@@ -956,7 +957,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     let final = strReplace(baseTemplate, '{$REFRESH_URL}', refreshUrl);
     final = strReplace(final, '{$INPUT}',        inputHtml);
     final = strReplace(final, '{$RANDOM_EMOJI}', randomEmoji);
-    final = strReplace(final, '{$CHANNEL_NAME}', normalizeWeirdUnicode(chnl.name));
+    final = strReplace(final, '{$CHANNEL_NAME}', (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
     final = strReplace(final, '{$MESSAGES}',     messagesHtml);
     final = strReplace(final, '{$SESSION_ID}',   urlSessionID);
     final = strReplace(final, '{$SESSION_PARAM}',sessionParam);
