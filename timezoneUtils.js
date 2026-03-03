@@ -3,6 +3,11 @@ const geoip = require('geoip-lite');
 // Constants for date/time calculations
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
+// Cache Intl.DateTimeFormat instances by timezone — construction is expensive in V8
+// (ICU data initialization). Reusing the same formatter for a given timezone is much
+// faster and safe since formatters are stateless.
+const _dateFormatterCache = new Map();
+
 /**
  * Get client's IP address from request, handling proxies
  * @param {Object} req - HTTP request object
@@ -81,12 +86,16 @@ function getTimezoneFromIP(ip) {
  * @returns {Object} - Object with year, month (1-indexed), and day
  */
 function getDateComponentsInTimezone(date, timezone) {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric'
-  });
+  let formatter = _dateFormatterCache.get(timezone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
+    _dateFormatterCache.set(timezone, formatter);
+  }
   const parts = formatter.formatToParts(date);
   const year = parseInt(parts.find(p => p.type === 'year').value);
   const month = parseInt(parts.find(p => p.type === 'month').value); // 1-indexed (1-12)
