@@ -212,6 +212,7 @@ pre code { background: none; border: none; padding: 0; }
     word-wrap: break-word;
 }
 .messagecontent a { color: #00b0f4; }
+.messagecontent .message-link { color: inherit; }
 .firstmessage { margin: 0; }
 
 /* Message mentions */
@@ -237,6 +238,10 @@ pre code { background: none; border: none; padding: 0; }
     background: #2B2E59;
     padding: 0 2px;
     border-radius: 3px;
+}
+.amoled-theme .mention {
+    color: #94A8FF;
+    background: #1D204C;
 }
 
 /* ================================================================
@@ -632,6 +637,7 @@ body.light-theme,
 .light-theme .message-date { color: #70718A; }
 .light-theme .message-date-font { color: #70718A !important; }
 .light-theme .messagecontent a { color: #0067e0; }
+.light-theme .messagecontent .message-link { color: inherit; }
 .light-theme .message-form-container { background: #FBFBFB !important; border-top-color: #e3e5e8 !important; }
 .light-theme .message-input { color: #323339; background: #FFFFFF; }
 .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
@@ -699,6 +705,7 @@ body.amoled-theme,
 .amoled-theme .message .content,
 .amoled-theme .messagecontent { color: #DCDCDF !important; }
 .amoled-theme .messagecontent a { color: #5865f2; }
+.amoled-theme .messagecontent .message-link { color: inherit; }
 .amoled-theme .message:hover { background: rgba(255, 255, 255, 0.05) !important; }
 .amoled-theme .message-author { color: #DCDCDF; }
 .amoled-theme .message-date { color: #767780; }
