@@ -364,6 +364,10 @@ function renderKnownMentions(messagetext, item, tmpl_mention) {
   item.mentions.roles?.forEach(role => {
     if (!role) return;
     messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, tmpl_mention));
+  });
+
+  return messagetext;
+}
 
 async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_mention) {
   // Fetch any member IDs not yet in cache
