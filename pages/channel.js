@@ -55,9 +55,9 @@ const SYSTEM_MESSAGE_TEXT = {
 };
 
 const THEME_CONFIG = {
-  0: { boxColor: '#40444b', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
+  0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
   1: { boxColor: '#ffffff', authorText: '#000000', replyText: '#000000', themeClass: 'class="light-theme"' },
-  2: { boxColor: '#40444b', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
+  2: { boxColor: '#141416', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
 };
 
 const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
@@ -339,6 +339,18 @@ function renderPollResultEmbed(embed) {
 // Mention resolution
 // ---------------------------------------------------------------------------
 
+function roleMentionPill(role, tmpl_mention) {
+  const name = escape('@' + normalizeWeirdUnicode(role.name));
+  if (role.color !== 0) {
+    const hex = role.hexColor;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `<span class="mention" style="color:${hex};background:rgba(${r},${g},${b},0.15);">${name}</span>`;
+  }
+  return `<span class="mention-default">${name}</span>`;
+}
+
 function renderKnownMentions(messagetext, item, tmpl_mention) {
   if (!item.mentions?.members) return messagetext;
 
@@ -351,8 +363,7 @@ function renderKnownMentions(messagetext, item, tmpl_mention) {
 
   item.mentions.roles?.forEach(role => {
     if (!role) return;
-    const pill = tmpl_mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(role.name)));
-    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, pill);
+    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, tmpl_mention));
   });
 
   return messagetext;
@@ -448,16 +459,16 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
         if (fwdChannel) {
           const timeDisplay = formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone);
           const jumpLink = `/channels/${fwdMsg.channelId}/${fwdMsg.id}`;
-          const chanLink = `<a href="${jumpLink}" style="color:#b5bac1;text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
+          const chanLink = `<a href="${jumpLink}" class="forwarded-label" style="text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
 
           if (fwdMsg.guildId === chnl.guild.id) {
-            originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${chanLink}</font>`;
+            originHtml = `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${chanLink}</font>`;
           } else {
             const otherGuild = bot.client.guilds.cache.get(fwdMsg.guildId);
             if (otherGuild) {
               try {
                 await otherGuild.members.fetch(discordID);
-                originHtml = `<font style="font-size:12px;color:#b5bac1" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
+                originHtml = `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
               } catch { /* user not in that guild */ }
             }
           }
@@ -536,7 +547,7 @@ function buildReplyIndicator(replyData, replyText) {
     ? `<font style="font-size:12px;color:${replyText}" face="rodin,sans-serif"> ${replyData.content}</font>`
     : '';
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
+    '<td class="reply-arrow"></td>' +
     `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
     `<font style="font-size:12px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `${contentPart}</td>` +
@@ -624,8 +635,7 @@ async function renderMessageContent(item, context) {
   // Role mentions (second pass — catches any remaining after the member pass)
   item.mentions?.roles?.forEach(role => {
     if (role) {
-      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`,
-        templates.mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(role.name))));
+      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, templates.mention));
     }
   });
 
