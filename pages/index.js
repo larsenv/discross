@@ -10,18 +10,18 @@ const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.ht
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
+}
 
 exports.processIndex = async function (bot, req, res, args) {
-  discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
+  const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
+  let response;
   if (discordID) {
     response = strReplace(index_template, "{$MENU_OPTIONS}",
       strReplace(logged_in_template, "{$USER}", escape(await auth.getUsername(discordID)))
     );
   } else {
     response = strReplace(index_template, "{$MENU_OPTIONS}", logged_out_template);
-  }
-  const parsedurl = new URL(req.url, 'http://localhost');
+  }  const parsedurl = new URL(req.url, 'http://localhost');
   const urlTheme = parsedurl.searchParams.get('theme');
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
   

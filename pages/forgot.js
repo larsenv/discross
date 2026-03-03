@@ -9,11 +9,11 @@ const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.ht
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
+}
 
 exports.processForgot = async function (bot, req, res, args) {
-  parsedurl = new URL(req.url, 'http://localhost');
-  response = forgot_template;
+  const parsedurl = new URL(req.url, 'http://localhost');
+  let response = forgot_template;
   response = strReplace(response, "{$MENU_OPTIONS}", logged_out_template);
   if (parsedurl.searchParams.get('errortext')) {
     response = strReplace(response, "{$ERROR}", strReplace(error_template, "{$ERROR_MESSAGE}", strReplace(escape(parsedurl.searchParams.get('errortext')), "\n", "<br>")));

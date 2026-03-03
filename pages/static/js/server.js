@@ -33,7 +33,39 @@ function toggleCategory(element) {
     }
 }
 
-// Restore category states on page load
+// Thread group collapse/expand functionality
+function toggleThreads(element) {
+    var arrow = element.querySelector('.thread-arrow');
+    var threadDiv = null;
+    var sibling = element.nextElementSibling;
+
+    while (sibling) {
+        if (sibling.classList && sibling.classList.contains('thread-channels')) {
+            threadDiv = sibling;
+            break;
+        }
+        sibling = sibling.nextElementSibling;
+    }
+
+    if (threadDiv) {
+        var isCollapsed = threadDiv.classList.toggle('collapsed');
+        if (arrow) {
+            arrow.src = isCollapsed ? '/resources/twemoji/25b6.gif' : '/resources/twemoji/1f53d.gif';
+            arrow.alt = isCollapsed ? '>' : 'v';
+        }
+
+        try {
+            var id = threadDiv.id;
+            if (id) {
+                localStorage.setItem(id, isCollapsed ? 'collapsed' : 'expanded');
+            }
+        } catch (e) {
+            // localStorage might not be available
+        }
+    }
+}
+
+// Restore category and thread group states on page load
 window.onload = function() {
     try {
         var categories = document.querySelectorAll('.category-channels');
@@ -55,6 +87,28 @@ window.onload = function() {
                         }
                     }
                     prevSibling = prevSibling.previousElementSibling;
+                }
+            }
+        }
+
+        var threadGroups = document.querySelectorAll('.thread-channels');
+        for (var tgIndex = 0; tgIndex < threadGroups.length; tgIndex++) {
+            var tg = threadGroups[tgIndex];
+            var tgState = localStorage.getItem(tg.id);
+            if (tgState === 'collapsed') {
+                tg.classList.add('collapsed');
+
+                var prevElement = tg.previousElementSibling;
+                while (prevElement) {
+                    if (prevElement.tagName === 'A' && prevElement.onclick) {
+                        var tArrow = prevElement.querySelector('.thread-arrow');
+                        if (tArrow) {
+                            tArrow.src = '/resources/twemoji/25b6.gif';
+                            tArrow.alt = '>';
+                            break;
+                        }
+                    }
+                    prevElement = prevElement.previousElementSibling;
                 }
             }
         }

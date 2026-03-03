@@ -26,32 +26,19 @@ exports.imageProxy = async function imageProxy(res, URL) {
         });
         proxyRes.on('end', async () => {
             const buffer = Buffer.concat(chunks);
-            let gifbuffer = buffer
+            let gifbuffer = buffer;
             try {
                 // Resize options: cap all images at 256x256 to keep transfers small for Wii Internet Channel
                 const resizeOptions = { width: 256, height: 256, fit: 'inside', withoutEnlargement: true };
-                if (buffer.length > 200000) { // If the buffer is way too big the server crashes. I don't know the exact threshold but it's around 200000
-                    try {
-                        gifbuffer = await sharp(buffer, { animated: true })
-                            .resize(resizeOptions)
-                            .toFormat('gif', { colors: 256 })                 // Hopefully this will be enough to avoid crashes.
-                            .toBuffer();
-                    } catch (err) {
-                        // If conversion fails, just send original
-                        console.log('Could not convert large image, sending original');
-                        gifbuffer = buffer;
-                    }
-                } else {
-                    try {
-                        gifbuffer = await sharp(buffer, { animated: true })
-                            .resize(resizeOptions)
-                            .toFormat('gif', { colors: 256 })
-                            .toBuffer();
-                    } catch (err) {
-                        // If conversion fails, just send original
-                        console.log('Could not convert image format, sending original');
-                        gifbuffer = buffer;
-                    }
+                try {
+                    gifbuffer = await sharp(buffer, { animated: true })
+                        .resize(resizeOptions)
+                        .toFormat('gif', { colors: 256 })
+                        .toBuffer();
+                } catch (err) {
+                    // If conversion fails, just send original
+                    console.log('Could not convert image, sending original');
+                    gifbuffer = buffer;
                 }
                 res.writeHead(200, {
                     'Content-Type': 'image/gif',
