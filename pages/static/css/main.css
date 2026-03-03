@@ -261,6 +261,9 @@ pre code { background: none; border: none; padding: 0; }
     border-radius: 0 4px 4px 0;
     padding: 8px 12px;
     flex-grow: 1;
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 /* ================================================================

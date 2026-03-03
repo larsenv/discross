@@ -216,7 +216,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
   });
 
   imageUrls.forEach(url => {
-    messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:auto;height:auto;" alt="image"></a>`;
+    messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="image"></a>`;
   });
 
   return messagetext;
@@ -245,7 +245,7 @@ function renderStickers(messagetext, item, imagesCookie, animationsCookie) {
 // Embed rendering (inline media types handled here; rich embeds delegated)
 // ---------------------------------------------------------------------------
 
-function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;') {
+function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;width:100%;height:auto;') {
   const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
   return { proxied, tag: `<img src="${proxied}" style="${style}" alt="${alt}">` };
 }
