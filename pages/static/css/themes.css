@@ -99,7 +99,7 @@ body.light-theme,
 
 .light-theme .forwarded-text,
 .light-theme .reaction-count {
-    color: #4f5660 !important;
+    color: #62636D !important;
 }
 
 /* Emojis & Reactions */
@@ -112,6 +112,9 @@ body.light-theme,
 .light-theme .reaction {
     background: #f2f3f5 !important;
     border: 1px solid transparent;
+}
+.light-theme .embed-reactions .reaction {
+    background: #EFE9E3 !important;
 }
 .light-theme .reaction:hover {
     border-color: #e3e5e8 !important;
