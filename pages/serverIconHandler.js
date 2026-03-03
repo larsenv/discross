@@ -23,7 +23,7 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
     // Serve the existing icon
     try {
       const iconData = await fs.promises.readFile(iconPath);
-      res.writeHead(200, { 'Content-Type': 'image/gif' });
+      res.writeHead(200, { 'Content-Type': 'image/gif', 'Cache-Control': 'public, max-age=86400' });
       res.write(iconData);
       res.end();
       return;
@@ -62,7 +62,7 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
       await fs.promises.writeFile(iconPath, gifBuffer);
       
       // Serve the icon
-      res.writeHead(200, { 'Content-Type': 'image/gif' });
+      res.writeHead(200, { 'Content-Type': 'image/gif', 'Cache-Control': 'public, max-age=86400' });
       res.write(gifBuffer);
       res.end();
       return;
@@ -89,7 +89,7 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
     await fs.promises.writeFile(iconPath, placeholderBuffer);
     
     // Serve the placeholder
-    res.writeHead(200, { 'Content-Type': 'image/gif' });
+    res.writeHead(200, { 'Content-Type': 'image/gif', 'Cache-Control': 'public, max-age=86400' });
     res.write(placeholderBuffer);
     res.end();
   } catch (err) {

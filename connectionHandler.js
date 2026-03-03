@@ -6,6 +6,7 @@ const sockets = []
 const listenChannels = []
 
 const messages = []
+const MAX_MESSAGES = 1000
 let latestMessageID = 0
 
 function sleep(ms) {
@@ -34,6 +35,10 @@ function processMessage(connectionType, isAuthed, listenChannel, message) {
       sendToAll('<circuit10> ' + params)
       messages.push(params)
       latestMessageID += 1
+      // Keep messages array bounded so it doesn't grow forever
+      if (messages.length > MAX_MESSAGES) {
+        messages.shift()
+      }
     } else {
       sendToAll('Please log in')
     }
@@ -92,6 +97,7 @@ exports.startWsServer = function (server) {
       const index = sockets.indexOf(ws)
       if (index > -1) {
         sockets.splice(index, 1)
+        listenChannels.splice(index, 1)
       }
       console.log(sockets.length + ' clients are now connected.')
     })

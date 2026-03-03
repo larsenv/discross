@@ -3,31 +3,10 @@ const bot = require('../bot.js');
 const discord = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
+const { getOrCreateWebhook } = require('./webhookCache');
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-}
-
-async function getOrCreateWebhook(channel, guildID) {
-  try {
-    // Threads don't have their own webhooks — use the parent channel
-    const webhookChannel = channel.isThread() ? channel.parent : channel;
-    const existingWebhooks = await webhookChannel.fetchWebhooks();
-    let webhook = existingWebhooks.find(w => w.owner.username === "discross beta" || w.owner.username === "Discross");
-
-    if (!webhook) {
-      webhook = await webhookChannel.createWebhook({
-        name: "Discross",
-        avatar: "pages/static/resources/logo.png",
-        reason: "Discross uses webhooks to send messages",
-      });
-      auth.dbQueryRun("INSERT INTO webhooks VALUES (?,?,?)", [guildID, webhook.id, webhook.token]);
-    }
-    return webhook;
-  } catch (err) {
-    console.error("Error fetching/creating webhook:", err);
-    throw err;
-  }
 }
 
 function isValidSnowflake(id) {

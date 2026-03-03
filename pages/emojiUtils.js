@@ -11,6 +11,12 @@ const _getCode = db.prepare('SELECT twemoji_code FROM emoji_cache WHERE emoji_ke
 const _insertCode = db.prepare('INSERT OR IGNORE INTO emoji_cache (emoji_key, twemoji_code) VALUES (?,?)');
 const _insertCustom = db.prepare('INSERT OR IGNORE INTO custom_emoji_cache (emoji_id, emoji_name, animated) VALUES (?,?,?)');
 
+// In-memory caches to avoid repeated DB round-trips within the same process lifetime.
+// unicodeToTwemojiCode: emoji string → codepoint string (e.g. "1f600")
+const _emojiCodeCache = new Map();
+// cacheCustomEmoji: set of emoji IDs already written to the DB this session
+const _cachedCustomEmojiIds = new Set();
+
 /**
  * Convert a unicode emoji string to its twemoji codepoint string.
  * Results are cached in the database to avoid recomputation.
@@ -18,8 +24,15 @@ const _insertCustom = db.prepare('INSERT OR IGNORE INTO custom_emoji_cache (emoj
  * @returns {string} Twemoji codepoint string (e.g. "1f600" or "1f1fa-1f1f8")
  */
 function unicodeToTwemojiCode(emojiStr) {
-  const cached = _getCode.get(emojiStr);
-  if (cached) return cached.twemoji_code;
+  // Fast path: in-memory cache hit (avoids SQLite round-trip entirely)
+  const memCached = _emojiCodeCache.get(emojiStr);
+  if (memCached !== undefined) return memCached;
+
+  const dbCached = _getCode.get(emojiStr);
+  if (dbCached) {
+    _emojiCodeCache.set(emojiStr, dbCached.twemoji_code);
+    return dbCached.twemoji_code;
+  }
 
   // Strip U+FE0F (variation selector-16) unless the emoji contains U+200D (ZWJ).
   // This matches the official twemoji algorithm: keycap sequences like #️⃣ are
@@ -44,6 +57,7 @@ function unicodeToTwemojiCode(emojiStr) {
     }
   }
   const code = points.join('-');
+  _emojiCodeCache.set(emojiStr, code);
   try { _insertCode.run(emojiStr, code); } catch (err) {
     if (err.code !== 'SQLITE_CONSTRAINT_PRIMARYKEY' && err.code !== 'SQLITE_CONSTRAINT') {
       console.error('emoji_cache write error:', err);
@@ -59,6 +73,9 @@ function unicodeToTwemojiCode(emojiStr) {
  * @param {boolean|number} animated - Whether the emoji is animated
  */
 function cacheCustomEmoji(emojiId, emojiName, animated) {
+  // Skip the DB write if we already recorded this emoji in the current process lifetime
+  if (_cachedCustomEmojiIds.has(emojiId)) return;
+  _cachedCustomEmojiIds.add(emojiId);
   try { _insertCustom.run(emojiId, emojiName, animated ? 1 : 0); } catch (err) {
     if (err.code !== 'SQLITE_CONSTRAINT_PRIMARYKEY' && err.code !== 'SQLITE_CONSTRAINT') {
       console.error('custom_emoji_cache write error:', err);
@@ -75,13 +92,10 @@ function cacheCustomEmoji(emojiId, emojiName, animated) {
  * @returns {string} Text with unicode emojis replaced by img tags
  */
 function processUnicodeEmojiInText(text, sizePx, sizeEm) {
-  if (!text.match(emojiRegex)) return text;
-  const matches = [...text.match(emojiRegex)];
-  matches.forEach(match => {
+  return text.replace(emojiRegex, match => {
     const code = unicodeToTwemojiCode(match);
-    text = text.replace(match, `<img src="/resources/twemoji/${code}.gif" width="${sizePx}" height="${sizePx}" style="width: ${sizeEm}; height: ${sizeEm}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+    return `<img src="/resources/twemoji/${code}.gif" width="${sizePx}" height="${sizePx}" style="width: ${sizeEm}; height: ${sizeEm}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`;
   });
-  return text;
 }
 
 module.exports = { unicodeToTwemojiCode, cacheCustomEmoji, processUnicodeEmojiInText };
