@@ -564,13 +564,14 @@ br.nodisp { display: none; }
 
 /* Spoiler blocks */
 .spoiler-box {
-    background: #2a2a2e;
+    background: #666770;
     padding-bottom: 0;
     cursor: pointer;
     border-radius: 3px;
     border-spacing: 0;
     overflow: hidden;
 }
+.spoiler-box.spoiler-revealed { background: #26262b; }
 
 /* ================================================================
    18. LIGHT THEME - channel-style specific overrides
@@ -636,7 +637,8 @@ body.light-theme,
     border-color: #4752c4 !important;
 }
 .light-theme hr { border-color: #e3e5e8; }
-.light-theme .spoiler-box { background: #d7d8da; }
+.light-theme .spoiler-box { background: #8f9097; }
+.light-theme .spoiler-box.spoiler-revealed { background: #efeff0; color: #060607; }
 
 /* ================================================================
    19. AMOLED THEME - channel-style specific overrides
@@ -686,7 +688,8 @@ body.amoled-theme,
 .amoled-theme .send-button,
 .amoled-theme .btn-send { background: #5865f2 !important; color: #ffffff !important; }
 .amoled-theme hr { border-color: #555555; }
-.amoled-theme .spoiler-box { background: #2c2c2c; }
+.amoled-theme .spoiler-box { background: #5c5d66; }
+.amoled-theme .spoiler-box.spoiler-revealed { background: #1d1d20; }
 
 /* ================================================================
    20. PAGE-CHANNEL: channel.html needs height:auto on body
