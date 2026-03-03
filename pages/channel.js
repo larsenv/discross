@@ -589,14 +589,15 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
 
 function buildReplyIndicator(replyData, replyText) {
   const atSign = replyData.mentionsPing ? '@' : '';
-  // Two-row layout: row 1 is an empty connector spacer; row 2 has class="reply-arrow" which draws
-  // the ┌ corner (border-top + border-left) at the top of row 2 = vertical midpoint of the content.
+  // Two-row layout: row 1 is an empty connector spacer; row 2 draws the ┌ corner
+  // (border-top + border-left + border-top-left-radius) inline so no CSS class is needed.
   // The author and content cells each span both rows (rowspan="2") so the row boundary is exactly
-  // at 50% of the content height, placing the corner at the vertical center of the quoted text.
-  // Author and content are in separate cells so the content cell's own max-width independently
-  // constrains the truncated text (ensuring the JS-appended "..." is always visible).
+  // at 50% of the content height, placing the ┌ corner at the vertical center of the quoted text.
+  // Content is in its own cell so its white-space:nowrap doesn't interact with the author width.
+  // JS truncateText already limits the raw text to REPLY_CONTENT_MAX_LENGTH chars + "...",
+  // so no CSS overflow clipping is needed on the content cell.
   const contentTd = replyData.content
-    ? `<td rowspan="2" style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
+    ? `<td rowspan="2" style="padding-left:4px;vertical-align:middle;white-space:nowrap">` +
       `<font style="font-size:12px;color:${replyText}" face="rodin,sans-serif">${replyData.content}</font></td>`
     : '';
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
@@ -605,7 +606,7 @@ function buildReplyIndicator(replyData, replyText) {
     `<font style="font-size:12px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `</td>${contentTd}` +
     '</tr><tr>' +
-    '<td class="reply-arrow" style="height:8px"></td>' +
+    '<td style="width:12px;height:8px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
     '</tr></table>';
 }
 
