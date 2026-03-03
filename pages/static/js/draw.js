@@ -274,9 +274,10 @@ function floodFill(startX, startY) {
     startY = Math.round(startY);
     if (startX < 0 || startX >= canvas.width || startY < 0 || startY >= canvas.height) return;
 
-    // getImageData/putImageData are not available in all browsers (e.g. DSi Opera 9.5).
-    // Fall back to filling the entire canvas with the selected color.
-    if (typeof ctx.getImageData !== 'function') {
+    // DSi Opera 9.5 (screen.width ≤ 256): the flood fill stack iterates up to 33,600
+    // pixels and exceeds Opera's script timeout on the DSi's slow CPU.
+    // Browsers without getImageData/putImageData also need the full-canvas fallback.
+    if ((screen.width && screen.width <= 256) || typeof ctx.getImageData !== 'function') {
         ctx.fillStyle = currColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         return;
