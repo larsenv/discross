@@ -5,7 +5,35 @@ const sharp = require('sharp');
 // Smallest valid 1x1 transparent GIF, used as a fallback when an upstream image fails to load
 const EMPTY_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
+// In-memory cache for converted GIF buffers.
+// Bounded to MAX_CACHE_SIZE entries; oldest entry is evicted when full.
+const MAX_CACHE_SIZE = 512;
+const imageCache = new Map();
+
+// Browser-side cache lifetime for proxied images (24 hours)
+const CACHE_CONTROL = 'public, max-age=86400';
+
+function cacheSet(key, value) {
+    if (imageCache.size >= MAX_CACHE_SIZE) {
+        // Delete the oldest (first-inserted) entry
+        imageCache.delete(imageCache.keys().next().value);
+    }
+    imageCache.set(key, value);
+}
+
 exports.imageProxy = async function imageProxy(res, URL) {
+    // Serve from in-memory cache if available
+    if (imageCache.has(URL)) {
+        const cached = imageCache.get(URL);
+        res.writeHead(200, {
+            'Content-Type': 'image/gif',
+            'Content-Length': cached.length,
+            'Cache-Control': CACHE_CONTROL,
+        });
+        res.end(cached);
+        return;
+    }
+
     // Choose the appropriate protocol handler
     const protocol = URL.startsWith('https:') ? https : http;
     
@@ -40,9 +68,11 @@ exports.imageProxy = async function imageProxy(res, URL) {
                     console.log('Could not convert image, sending original');
                     gifbuffer = buffer;
                 }
+                cacheSet(URL, gifbuffer);
                 res.writeHead(200, {
                     'Content-Type': 'image/gif',
                     'Content-Length': gifbuffer.length,
+                    'Cache-Control': CACHE_CONTROL,
                 });
                 res.end(gifbuffer);
             } catch (error) {
