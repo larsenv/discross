@@ -34,8 +34,9 @@ client.on('messageCreate', async function (msg) {
   if (msghistory[msg.channel.id] && !(msghistory[msg.channel.id].get(msg.id))) {
     msghistory[msg.channel.id].set(msg.id, msg)
 
-    if (msghistory[msg.channel.id].length > cachelength) {
-      msghistory[msg.channel.id] = msghistory[msg.channel.id].slice(msghistory[msg.channel.id].length - (cachelength + 1), msghistory[msg.channel.id].length) // Limit the length of the cache to 50 messages
+    if (msghistory[msg.channel.id].size > cachelength) {
+      // Delete the oldest entry (Maps preserve insertion order)
+      msghistory[msg.channel.id].delete(msghistory[msg.channel.id].keys().next().value)
     }
   }
 
