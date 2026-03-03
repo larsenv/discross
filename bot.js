@@ -28,7 +28,6 @@ const client = new Discord.Client({
 
 client.on('clientReady', () => {
   console.log(`Logged in as ${client.user.tag}!`)
-  // console.log(client.channels.array());
 })
 
 client.on('messageCreate', async function (msg) {
@@ -40,7 +39,6 @@ client.on('messageCreate', async function (msg) {
     }
   }
 
-  // console.log(msghistory[msg.channel.id.toString()].length);
   if (msg.content === '^connect') {
     if (msg.webhookId) {
       msg.reply("You're already using Discross!")
@@ -68,8 +66,6 @@ if (guildMembersIntentEnabled) {
     auth.dbQueryRun('DELETE FROM servers WHERE serverID=? AND discordID=?', [member.guild.id, member.user.id]);
   });
 }
-
-// client.on('messageDelete
 
 exports.startBot = async function () {
   if (process.env.TOKEN) {

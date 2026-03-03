@@ -41,31 +41,31 @@ try { // Use HTTPS if keys are available
 const usinghttps = !!options.key
 const http = usinghttps ? require('https') : require('http')
 
-var auth = require('./authentication.js')
+const auth = require('./authentication.js')
 auth.setHTTPS(usinghttps) // Determines whether cookies have the Secure; option
 
-var indexpage = require('./pages/index.js');
-var loginpage = require('./pages/login.js');
-//var guestpage = require('./pages/guest.js');
-var registerpage = require('./pages/register.js');
-var forgotpage = require('./pages/forgot.js');
-var channelpage = require('./pages/channel.js');
-var serverpage = require('./pages/server.js');
-var sendpage = require('./pages/send.js');
-var { toggleTheme } = require('./pages/themeToggle.js')
-var { imageProxy } = require('./pages/imageProxy.js')
-var { fileProxy } = require('./pages/fileProxy.js')
-var { toggleImages } = require('./pages/toggleImages.js')
-var { uploadFile } = require('./pages/uploadFile.js')
-var chanelreplypage = require('./pages/channel_reply.js')
-var replypage = require('./pages/reply.js')
-var drawpage = require('./pages/draw.js')
-var senddrawing = require('./pages/senddrawing.js')
-var { handleServerIcon } = require('./pages/serverIconHandler.js')
-var changepasswordpage = require('./pages/changepassword.js')
-var setup2fapage = require('./pages/setup2fa.js')
-var privacypage = require('./pages/privacy.js')
-var termspage = require('./pages/terms.js')
+const indexpage = require('./pages/index.js');
+const loginpage = require('./pages/login.js');
+const registerpage = require('./pages/register.js');
+const forgotpage = require('./pages/forgot.js');
+const channelpage = require('./pages/channel.js');
+const serverpage = require('./pages/server.js');
+const sendpage = require('./pages/send.js');
+const { toggleTheme } = require('./pages/themeToggle.js')
+const { imageProxy } = require('./pages/imageProxy.js')
+const { fileProxy } = require('./pages/fileProxy.js')
+const { toggleImages } = require('./pages/toggleImages.js')
+const { uploadFile } = require('./pages/uploadFile.js')
+const uploadpage = require('./pages/upload.js')
+const chanelreplypage = require('./pages/channel_reply.js')
+const replypage = require('./pages/reply.js')
+const drawpage = require('./pages/draw.js')
+const senddrawing = require('./pages/senddrawing.js')
+const { handleServerIcon } = require('./pages/serverIconHandler.js')
+const changepasswordpage = require('./pages/changepassword.js')
+const setup2fapage = require('./pages/setup2fa.js')
+const privacypage = require('./pages/privacy.js')
+const termspage = require('./pages/terms.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -76,7 +76,7 @@ bot.startBot();
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || '')
-};
+}
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
 
 // create a server object:
@@ -112,9 +112,7 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
 }
 
 async function senddrawingAsync(req, res, body) {
-  console.log(`[senddrawing] body received, length=${body.length}`);
   const discordID = await auth.checkAuth(req, res)
-  console.log(`[senddrawing] auth result discordID=${discordID}`);
   
   // Validate body is not empty
   if (!body || body.trim() === '') {
@@ -126,7 +124,6 @@ async function senddrawingAsync(req, res, body) {
   
   // Use querystring module to handle large base64 data
   const urlQuery = querystring.parse(body);
-  console.log(`[senddrawing] parsed query keys=${Object.keys(urlQuery).join(',')}, drawinginput_len=${urlQuery.drawinginput ? urlQuery.drawinginput.length : 0}`);
   
   if (!urlQuery || !urlQuery.drawinginput) {
     console.error('Error: senddrawingAsync - drawinginput not found in parsed URL query');
@@ -270,30 +267,22 @@ server.on('request', async (req, res) => {
       if (discordID) {
         await sendpage.sendMessage(bot, req, res, args, discordID)
       }
-    } else if (args[1] === 'senddrawing') {}
-    
-    else if (args[1] === 'reply') {
+    } else if (args[1] === 'reply') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
         await replypage.replyMessage(bot, req, res, args, discordID)
       }
-    }
-    else if (args[1] === 'switchtheme') {
+    } else if (args[1] === 'switchtheme') {
       toggleTheme(req, res)
     } else if (args[1] === 'toggleImages') {
       toggleImages(req, res)
-    }
-    else if (args[1] === 'logout') {
+    } else if (args[1] === 'logout') {
       const discordID = await auth.checkAuth(req, res, true) // True = no redirect to login page
       if (discordID) {
-        /*if (typeof discordID !== "object")*/ auth.logout(discordID)
+        auth.logout(discordID)
       }
-      res.writeHead(302, { Location: '/'/*, 'Set-Cookie': 'sessionID=' + "-" + '; SameSite=Strict; ' + (usinghttps ? 'Secure;' : '') + ' Expires=' + new Date() */ })
+      res.writeHead(302, { Location: '/' })
       res.end()
-    } else if (parsedurl.pathname === '/switchtheme') {
-      toggleTheme(req, res)
-    } else if (parsedurl.pathname === '/toggleImages') {
-      toggleImages(req, res)
     } else if (parsedurl.pathname === '/toggleAnimations') {
       toggleAnimations(req, res)
     } else if (args[1] === 'server') {
@@ -327,6 +316,11 @@ server.on('request', async (req, res) => {
       res.writeHead(302, { "Location": "http://careers.mcdonalds.com/" });
       res.end();
       return;
+    } else if (args[1] === 'upload') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await uploadpage.processUpload(bot, req, res, discordID)
+      }
     } else if (args[1] === 'draw'){
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
@@ -334,9 +328,7 @@ server.on('request', async (req, res) => {
       }
     } else if (args[1] === 'login.html') {
       await loginpage.processLogin(bot, req, res, args)
-    } /*else if (args[1] === 'guest.html') {
-      guestpage.processGuestLogin(bot, req, res, args)
-    }*/ else if (args[1] === 'register.html') {
+    } else if (args[1] === 'register.html') {
       await registerpage.processRegister(bot, req, res, args)
     } else if (args[1] === 'forgot.html') {
       await forgotpage.processForgot(bot, req, res, args)

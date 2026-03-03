@@ -9,16 +9,16 @@ const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.ht
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
-};
+}
 
 exports.processRegister = async function (bot, req, res, args) {
-  discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
+  const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
   if (discordID) {
     res.writeHead(302, { "Location": "/server/" });
     res.write('Logged in! Click <a href="/server/">here</a> to continue.');
   } else {
-    parsedurl = new URL(req.url, 'http://localhost');
-    response = register_template;
+    const parsedurl = new URL(req.url, 'http://localhost');
+    let response = register_template;
     response = strReplace(response, "{$MENU_OPTIONS}", logged_out_template);
     if (parsedurl.searchParams.get('errortext')) {
       response = strReplace(response, "{$ERROR}", strReplace(error_template, "{$ERROR_MESSAGE}", strReplace(escape(parsedurl.searchParams.get('errortext')), "\n", "<br>")));
