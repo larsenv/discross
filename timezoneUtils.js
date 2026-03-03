@@ -8,6 +8,10 @@ const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 // faster and safe since formatters are stateless.
 const _dateFormatterCache = new Map();
 
+// Cache the system's default timezone at module load — avoids constructing a new
+// Intl.DateTimeFormat() instance on every formatDateWithTimezone/areDifferentDays call.
+const _systemTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 /**
  * Get client's IP address from request, handling proxies
  * @param {Object} req - HTTP request object
@@ -111,7 +115,7 @@ function getDateComponentsInTimezone(date, timezone) {
  */
 function formatDateWithTimezone(date, timezone) {
   try {
-    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const userTimezone = timezone || _systemTimezone;
     
     // Get current date/time
     const now = new Date();
@@ -170,7 +174,7 @@ function formatDateWithTimezone(date, timezone) {
  */
 function formatDateSeparator(date, timezone) {
   try {
-    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const userTimezone = timezone || _systemTimezone;
     
     const options = {
       timeZone: userTimezone,
@@ -199,7 +203,7 @@ function areDifferentDays(date1, date2, timezone) {
   }
   
   try {
-    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const userTimezone = timezone || _systemTimezone;
     
     // Extract date components for both dates
     const comp1 = getDateComponentsInTimezone(date1, userTimezone);
@@ -223,7 +227,7 @@ function areDifferentDays(date1, date2, timezone) {
  */
 function formatForwardedTimestamp(date, timezone) {
   try {
-    const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const userTimezone = timezone || _systemTimezone;
 
     const now = new Date();
     const messageComps = getDateComponentsInTimezone(date, userTimezone);
