@@ -212,6 +212,7 @@ pre code { background: none; border: none; padding: 0; }
     word-wrap: break-word;
 }
 .messagecontent a { color: #00b0f4; }
+.messagecontent .message-link { color: inherit; }
 .firstmessage { margin: 0; }
 
 /* Message mentions */
@@ -589,6 +590,7 @@ body.light-theme,
 .light-theme .message-date { color: #5c5e66; }
 .light-theme .message-date-font { color: #5c5e66 !important; }
 .light-theme .messagecontent a { color: #0067e0; }
+.light-theme .messagecontent .message-link { color: inherit; }
 .light-theme .message-form-container { background: #f9f9f9 !important; border-top-color: #e3e5e8 !important; }
 .light-theme .message-input { color: #060607; background: #ebedef; }
 .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
@@ -647,6 +649,7 @@ body.amoled-theme,
 .amoled-theme .message .content,
 .amoled-theme .messagecontent { color: #ffffff !important; }
 .amoled-theme .messagecontent a { color: #5865f2; }
+.amoled-theme .messagecontent .message-link { color: inherit; }
 .amoled-theme .message:hover { background: rgba(255, 255, 255, 0.05) !important; }
 .amoled-theme .message-author { color: #fff; }
 .amoled-theme .message-date { color: #a0a0a0; }
