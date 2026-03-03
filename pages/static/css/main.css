@@ -910,8 +910,11 @@ html.page-server .light-theme #wrapper .warning-box .discross-button {
     background: #ffffff !important;
     color: #5865f2 !important;
 }
+html.page-server hr {
+    border-color: #262628;
+}
 html.page-server .light-theme hr {
-    border-color: #e3e5e8 !important;
+    border-color: #DADADD !important;
 }
 
 html.page-server .amoled-theme {
@@ -923,7 +926,7 @@ html.page-server .amoled-theme #wrapper * {
     color: #ffffff !important;
 }
 html.page-server .amoled-theme hr {
-    border-color: #555555 !important;
+    border-color: #1E1E21 !important;
 }
 html.page-server .amoled-theme a {
     color: #5865f2 !important;

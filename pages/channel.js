@@ -663,13 +663,6 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
   const messages = await bot.getHistoryCached(chnl);
   const memberCache = new Map();
 
-  // IDs of messages that are the target of a reply — suppress standalone rendering
-  const referencedMessageIds = new Set(
-    messages
-      .filter(m => m.reference?.type !== MessageReferenceType.Forward && m.reference?.messageId)
-      .map(m => m.reference.messageId),
-  );
-
   // Mutable rendering state
   const state = {
     lastauthor: undefined,
@@ -713,7 +706,6 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
 
     if (!item) return;
-    if (referencedMessageIds.has(item.id)) return;
 
     const currentMember = await ensureMemberData(item, chnl.guild, memberCache);
 
@@ -747,7 +739,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     const startsNewGroup = !state.lastauthor ||
       !isSameAuthor(state.lastmember, state.lastauthor, currentMember, item.author) ||
       item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
-      isReply;
+      isReply ||
+      state.lastReply;
 
     messagetext = startsNewGroup
       ? templates.firstMessageContent.replace('{$MESSAGE_TEXT}', messagetext)

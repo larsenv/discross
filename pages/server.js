@@ -111,8 +111,10 @@ async function processServerChannels(server, member, response, sessionParam) {
 
     let channelList = "";
     let currentCategoryId = null;
+    let prevItemWasThread = false;
     
     channelsSorted.forEach((item, index) => {
+      const isThread = item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread;
       // Check if the member has permission to view the channel
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         const escapedName = escape(normalizeWeirdUnicode(item.name));
@@ -141,6 +143,11 @@ async function processServerChannels(server, member, response, sessionParam) {
             // Voice channel with text capability (#14)
             channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           }
+        } else if (isThread) {
+          if (!prevItemWasThread) {
+            channelList += thread_section_header;
+          }
+          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
         } else if (item.type == ChannelType.GuildStageVoice) {
           // Stage channels
           channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
@@ -180,6 +187,7 @@ async function processServerChannels(server, member, response, sessionParam) {
           }
         }
       }
+      prevItemWasThread = isThread;
     });
     
     // Close the last category if exists
