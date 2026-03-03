@@ -122,17 +122,13 @@ exports.login = async function (username, password, totpToken) {
 
 exports.checkSession = async function (sessionID) {
   const time = unixTime()
-  queryRun('DELETE FROM sessions WHERE NOT expires > ?', [time]) // Clean the database (not awaited because it's not urgent)
-  const match = querySingle('SELECT DISTINCT * FROM sessions WHERE sessionID=? AND expires > ?', [sessionID, time])
-  if (!match) {
-    return false
-  } else {
-    if (exports.getUsername(match.discordID)) { // Check if user exists
-      return match.discordID
-    } else {
-      return false
-    }
+  // Throttle cleanup: only delete expired sessions once per minute
+  if (time - _lastSessionCleanup >= 60) {
+    _lastSessionCleanup = time
+    _stmtDeleteExpiredSessions.run(time)
   }
+  const match = _stmtGetSessionWithUser.get(sessionID, time)
+  return match ? match.discordID : false
 }
 
 exports.logout = async function (discordID) {
@@ -196,6 +192,13 @@ function setup() {
 }
 
 setup();
+
+// Pre-compiled statements for the hot path (checkSession is called on every request)
+const _stmtDeleteExpiredSessions = db.prepare('DELETE FROM sessions WHERE expires <= ?');
+const _stmtGetSessionWithUser = db.prepare(
+  'SELECT s.discordID FROM sessions s INNER JOIN users u ON u.discordID = s.discordID WHERE s.sessionID = ? AND s.expires > ?'
+);
+let _lastSessionCleanup = 0;
 
 // --- 2FA / TOTP helpers ---
 
