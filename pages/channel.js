@@ -348,7 +348,7 @@ function roleMentionPill(role, tmpl_mention) {
     const b = parseInt(hex.slice(5, 7), 16);
     return `<span class="mention" style="color:${hex};background:rgba(${r},${g},${b},0.15);">${name}</span>`;
   }
-  return tmpl_mention.replace('{$USERNAME}', name);
+  return `<span class="mention-default">${name}</span>`;
 }
 
 function renderKnownMentions(messagetext, item, tmpl_mention) {
