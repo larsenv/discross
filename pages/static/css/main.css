@@ -389,7 +389,7 @@ pre code { background: none; border: none; padding: 0; }
     padding: 0 12px;
     border: none;
     background: #222327;
-    color: #EFEF31;
+    color: #6C6D76;
     font-size: 16px;
     vertical-align: middle;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
@@ -448,7 +448,7 @@ input[type="email"],
 textarea {
     background: #222327;
     border: 1px solid #222327;
-    color: #EFEF31;
+    color: #6C6D76;
     padding: 10px 12px;
     font-size: 16px;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
