@@ -8,6 +8,8 @@ const { processUnicodeEmojiInText, cacheCustomEmoji } = require('./emojiUtils');
 
 const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
 
+const MAX_EMBED_DESCRIPTION_LENGTH = 200;
+
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
 }
@@ -110,7 +112,14 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     // Process embed description with emoji support (#11)
     let descriptionHtml = '';
     if (embed.description) {
-      const renderedMarkdown = renderDiscordMarkdown(embed.description);
+      let truncated = embed.description;
+      if (truncated.length > MAX_EMBED_DESCRIPTION_LENGTH) {
+        truncated = truncated.substring(0, MAX_EMBED_DESCRIPTION_LENGTH);
+        const lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 0) truncated = truncated.substring(0, lastSpace);
+        truncated += '…';
+      }
+      const renderedMarkdown = renderDiscordMarkdown(truncated);
       const withEmoji = processEmojiInHTML(renderedMarkdown, imagesCookie, animationsCookie);
       descriptionHtml = `<div style="font-size: 14px; color: #${embedText}; margin-bottom: 8px; white-space: pre-wrap;">${withEmoji}</div>`;
     }
@@ -159,7 +168,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
       // Route through imageProxy to convert to GIF format
       const encodedImageUrl = Buffer.from(imageUrl).toString('base64');
       const proxyUrl = `/imageProxy/external/${encodedImageUrl}`;
-      imageHtml = `<div style="margin-top: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 100%; max-height: 200px; border-radius: 4px; height: auto;" alt="Embed image"></div>`;
+      imageHtml = `<div style="margin-top: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 100%; max-height: 150px; border-radius: 4px; height: auto;" alt="Embed image"></div>`;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
     
