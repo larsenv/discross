@@ -675,10 +675,10 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
     html = templates.messageForwarded.replace('{$MESSAGE_CONTENT}', html);
   } else if (lastMentioned) {
     html = templates.messageMentioned.replace('{$MESSAGE_CONTENT}', html);
-    if (channelId) html = html.replace('{$MESSAGE_REPLY_LINK}', `/channels/${channelId}/${messageid}`);
+    html = html.replace('{$MESSAGE_REPLY_LINK}', channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)');
   } else {
     html = templates.message.replace('{$MESSAGE_CONTENT}', html);
-    if (channelId) html = html.replace('{$MESSAGE_REPLY_LINK}', `/channels/${channelId}/${messageid}`);
+    html = html.replace('{$MESSAGE_REPLY_LINK}', channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)');
   }
 
   // Forwarded metadata
