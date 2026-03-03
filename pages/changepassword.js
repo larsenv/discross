@@ -36,13 +36,29 @@ exports.processChangePassword = async function (bot, req, res, args) {
 
   const username = await auth.getUsername(discordID);
 
+  // Send 6-digit action code via Discord DM (only on fresh page load, not on error redirects)
+  let dmErrorText = '';
+  if (!parsedUrl.searchParams.get('errortext') && !parsedUrl.searchParams.get('success')) {
+    const code = auth.createActionCode(discordID, 'changepassword');
+    const dmResult = await bot.sendDM(discordID, 'Your Discross verification code to change your password: **' + code + '**\nThis code expires in 10 minutes.');
+    if (!dmResult.success) {
+      dmErrorText = 'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.';
+    }
+  }
+
   let response = changepassword_template;
   response = strReplace(response, "{$MENU_OPTIONS}",
     strReplace(logged_in_template, "{$USER}", escape(username || ''))
   );
   response = strReplace(response, "{$SESSION_PARAM}", sessionParam);
 
-  if (parsedUrl.searchParams.get('errortext')) {
+  if (dmErrorText) {
+    response = strReplace(response, "{$ERROR}",
+      strReplace(error_template, "{$ERROR_MESSAGE}",
+        strReplace(escape(dmErrorText), "\n", "<br>")
+      )
+    );
+  } else if (parsedUrl.searchParams.get('errortext')) {
     response = strReplace(response, "{$ERROR}",
       strReplace(error_template, "{$ERROR_MESSAGE}",
         strReplace(escape(parsedUrl.searchParams.get('errortext')), "\n", "<br>")
@@ -65,20 +81,24 @@ exports.processChangePassword = async function (bot, req, res, args) {
 exports.handleChangePassword = async function (bot, req, res, body, discordID) {
   const params = parse(body);
 
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
+  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
+
   if (!params.current_password || !params.new_password || !params.confirm_password) {
-    const parsedUrl = new URL(req.url, 'http://localhost');
-    const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
-    const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
     res.writeHead(302, { Location: '/changepassword.html' + sessionParam + (sessionParam ? '&' : '?') + 'errortext=' + encodeURIComponent('Please fill in all fields.') });
     res.end();
     return;
   }
 
   if (params.new_password !== params.confirm_password) {
-    const parsedUrl = new URL(req.url, 'http://localhost');
-    const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
-    const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
     res.writeHead(302, { Location: '/changepassword.html' + sessionParam + (sessionParam ? '&' : '?') + 'errortext=' + encodeURIComponent("New password confirmation doesn't match.") });
+    res.end();
+    return;
+  }
+
+  if (!auth.verifyAndConsumeActionCode(discordID, 'changepassword', params.discord_code)) {
+    res.writeHead(302, { Location: '/changepassword.html' + sessionParam + (sessionParam ? '&' : '?') + 'errortext=' + encodeURIComponent('Invalid or expired Discord verification code.') });
     res.end();
     return;
   }
@@ -90,9 +110,6 @@ exports.handleChangePassword = async function (bot, req, res, body, discordID) {
     res.writeHead(302, { Location: '/login.html?errortext=' + encodeURIComponent('Password changed. Please log in with your new password.') });
     res.end();
   } else {
-    const parsedUrl = new URL(req.url, 'http://localhost');
-    const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
-    const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
     res.writeHead(302, { Location: '/changepassword.html' + sessionParam + (sessionParam ? '&' : '?') + 'errortext=' + encodeURIComponent(result.reason) });
     res.end();
   }
