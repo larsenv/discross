@@ -101,7 +101,7 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
         return
       }
     }
-    res.writeHead(200, { 'Content-Type': type })
+    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' })
     if (textToReplace && replacement) {
       res.write(data.toString().replace(textToReplace, replacement))
     } else {
