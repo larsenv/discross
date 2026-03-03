@@ -274,10 +274,7 @@ function floodFill(startX, startY) {
     startY = Math.round(startY);
     if (startX < 0 || startX >= canvas.width || startY < 0 || startY >= canvas.height) return;
 
-    // DSi Opera 9.5 (screen.width ≤ 256): the flood fill stack iterates up to 33,600
-    // pixels and exceeds Opera's script timeout on the DSi's slow CPU.
-    // Browsers without getImageData/putImageData also need the full-canvas fallback.
-    if ((screen.width && screen.width <= 256) || typeof ctx.getImageData !== 'function') {
+    if (typeof ctx.getImageData !== 'function' || typeof ctx.putImageData !== 'function') {
         ctx.fillStyle = currColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         return;
@@ -310,31 +307,89 @@ function floodFill(startX, startY) {
     // Tolerance of 32 (squared: 1024) catches anti-aliased edge pixels that are
     // blended near-target colors, preventing the stray-pixel halo left by exact fill.
     var tolSq = 32 * 32;
-    var visited = [];
-    var stack = [startX + startY * w];
-    while (stack.length > 0) {
-        var pos = stack.pop();
-        if (visited[pos]) continue;
-        visited[pos] = 1;
-        var x = pos % w;
-        var y = (pos - x) / w;
-        var i = pos * 4;
-        var dr = data[i] - targetR;
-        var dg = data[i + 1] - targetG;
-        var db = data[i + 2] - targetB;
-        var da = data[i + 3] - targetA;
-        if (dr*dr + dg*dg + db*db + da*da > tolSq) continue;
-        data[i] = fillR;
-        data[i + 1] = fillG;
-        data[i + 2] = fillB;
-        data[i + 3] = 255;
-        if (x > 0) stack.push(pos - 1);
-        if (x < w - 1) stack.push(pos + 1);
-        if (y > 0) stack.push(pos - w);
-        if (y < h - 1) stack.push(pos + w);
+
+    // Scanline (span) flood fill. The stack holds row-spans [pL, pR, y, dy]
+    // instead of individual pixels, so the maximum stack depth is O(height)
+    // rather than O(width * height). This uses far less memory and executes
+    // far fewer push/pop operations — critical on slow CPUs like DSi Opera 9.5.
+    var dr, dg, db, da, i, x, spanL, spanR, sx, ny, S, pL, pR, y, dy;
+
+    // Paint the seed pixel and find the full extent of the starting row span.
+    data[idx] = fillR; data[idx + 1] = fillG; data[idx + 2] = fillB; data[idx + 3] = 255;
+    var seedL = startX, seedR = startX;
+    while (seedL > 0) {
+        i = (startY * w + seedL - 1) * 4;
+        dr = data[i]-targetR; dg = data[i+1]-targetG; db = data[i+2]-targetB; da = data[i+3]-targetA;
+        if (dr*dr+dg*dg+db*db+da*da > tolSq) break;
+        seedL--; data[i]=fillR; data[i+1]=fillG; data[i+2]=fillB; data[i+3]=255;
     }
-    ctx.putImageData(imageData, 0, 0);
-}
+    while (seedR < w - 1) {
+        i = (startY * w + seedR + 1) * 4;
+        dr = data[i]-targetR; dg = data[i+1]-targetG; db = data[i+2]-targetB; da = data[i+3]-targetA;
+        if (dr*dr+dg*dg+db*db+da*da > tolSq) break;
+        seedR++; data[i]=fillR; data[i+1]=fillG; data[i+2]=fillB; data[i+3]=255;
+    }
+    var stack = [];
+    if (startY > 0) stack.push([seedL, seedR, startY - 1, -1]);
+    if (startY < h - 1) stack.push([seedL, seedR, startY + 1, 1]);
+
+    while (stack.length > 0) {
+        S = stack.pop();
+        pL = S[0]; pR = S[1]; y = S[2]; dy = S[3];
+        if (y < 0 || y >= h) continue;
+
+        x = pL;
+        while (x <= pR) {
+            // Advance past non-matching pixels within parent span.
+            while (x <= pR) {
+                i = (y * w + x) * 4;
+                dr = data[i]-targetR; dg = data[i+1]-targetG; db = data[i+2]-targetB; da = data[i+3]-targetA;
+                if (dr*dr+dg*dg+db*db+da*da <= tolSq) break;
+                x++;
+            }
+            if (x > pR) break;
+
+            // Extend span left and right to full connected extent.
+            spanL = x;
+            while (spanL > 0) {
+                i = (y * w + spanL - 1) * 4;
+                dr = data[i]-targetR; dg = data[i+1]-targetG; db = data[i+2]-targetB; da = data[i+3]-targetA;
+                if (dr*dr+dg*dg+db*db+da*da > tolSq) break;
+                spanL--;
+            }
+            spanR = x;
+            while (spanR < w - 1) {
+                i = (y * w + spanR + 1) * 4;
+                dr = data[i]-targetR; dg = data[i+1]-targetG; db = data[i+2]-targetB; da = data[i+3]-targetA;
+                if (dr*dr+dg*dg+db*db+da*da > tolSq) break;
+                spanR++;
+            }
+
+            // Fill the span.
+            for (sx = spanL; sx <= spanR; sx++) {
+                i = (y * w + sx) * 4;
+                data[i]=fillR; data[i+1]=fillG; data[i+2]=fillB; data[i+3]=255;
+            }
+
+            // Push next row in propagation direction.
+            ny = y + dy;
+            if (ny >= 0 && ny < h) stack.push([spanL, spanR, ny, dy]);
+            // If span extended outside the parent range, also push opposite direction.
+            if (spanL < pL || spanR > pR) {
+                ny = y - dy;
+                if (ny >= 0 && ny < h) stack.push([spanL, spanR, ny, -dy]);
+            }
+
+            x = spanR + 1;
+        }
+    }
+
+    try {
+        ctx.putImageData(imageData, 0, 0);
+    } catch(e) {
+        // putImageData may be unavailable or throw on some embedded browsers;
+        // in that case the fill silently does nothing rather than crashing.
+    }}
 
 function setSize(s, id) {
     currSize = s;
