@@ -752,6 +752,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     imagesCookie, animationsCookie = 1,
     authorText, replyText, clientTimezone,
     channelId,
+    messages: overrideMessages,
   } = params;
 
   // Unify template references under camelCase
@@ -770,7 +771,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     messageContinuation:       TEMPLATES.messageContinuation,
   };
 
-  const messages = await bot.getHistoryCached(chnl);
+  const messages = overrideMessages ?? await bot.getHistoryCached(chnl);
   const memberCache = new Map();
 
   // Mutable rendering state
