@@ -31,6 +31,14 @@ const no_images_warning_template = fs.readFileSync('pages/templates/server/no_im
 const images_enabled_template = fs.readFileSync('pages/templates/server/images_enabled.html', 'utf-8');
 
 const cachedMembers = {}; // TODO: Find a better way
+const MAX_CACHED_MEMBERS = 250; // evict oldest user's data when the cap is hit
+
+function evictOldestCachedMember() {
+  const keys = Object.keys(cachedMembers);
+  if (keys.length >= MAX_CACHED_MEMBERS) {
+    delete cachedMembers[keys[0]];
+  }
+}
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || "");
@@ -248,6 +256,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           if (clientIsReady && !member) {
             try {
               member = await server.members.fetch(discordID);
+              if (!cachedMembers[discordID]) evictOldestCachedMember();
               cachedMembers[discordID] = { ...cachedMembers[discordID], [server.id]: member };
             } catch (err) {
               // Delete from database if member isn't found
@@ -358,6 +367,7 @@ async function fetchAndCacheMember(server, discordID) {
   }
   try {
     const member = await server.members.fetch(discordID);
+    if (!cachedMembers[discordID]) evictOldestCachedMember();
     cachedMembers[discordID] = { ...cachedMembers[discordID], [server.id]: member };
     return member;
   } catch {
