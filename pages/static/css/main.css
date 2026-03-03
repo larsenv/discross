@@ -232,6 +232,12 @@ pre code { background: none; border: none; padding: 0; }
     padding: 0 2px;
     border-radius: 3px;
 }
+.mention-default {
+    color: #FBFBFB;
+    background: #2B2E59;
+    padding: 0 2px;
+    border-radius: 3px;
+}
 
 /* ================================================================
    8. EMBEDS
@@ -626,6 +632,7 @@ body.light-theme,
 .light-theme #emoji a:hover { background: rgba(0, 0, 0, 0.08); }
 .light-theme .reaction { background: #EFEFF0; border-color: rgba(79, 84, 92, 0.15); }
 .light-theme .mention { color: #2E3C88; background: #DCDEF9; }
+.light-theme .mention-default { color: #303035; background: #DCDEF9; }
 .light-theme .message.mentioned { border-left-color: #9E5A01; background-color: #FAF4EB; }
 .light-theme .ping-row { border-left-color: #9E5A01; background: #FAF4EB; }
 .light-theme a { color: #0067e0; }
@@ -691,6 +698,7 @@ body.amoled-theme,
 .amoled-theme .reply-arrow { border-left-color: #3B3C43; border-top-color: #3B3C43; }
 .amoled-theme .forwarded-label { color: #888990; }
 .amoled-theme .mention { color: #94A8FF; background: #1D204C; }
+.amoled-theme .mention-default { color: #E4E4E6; background: #1D204C; }
 .amoled-theme .message.mentioned { border-left-color: #C97E01; background-color: #20160A; }
 .amoled-theme .ping-row { border-left-color: #C97E01; background: #20160A; }
 .amoled-theme pre,
@@ -709,7 +717,7 @@ body.amoled-theme,
 .amoled-theme input[type="text"]:focus,
 .amoled-theme input[type="password"]:focus,
 .amoled-theme input[type="email"]:focus,
-.amoled-theme textarea:focus { border-color: #5865f2; background: #1A1A1E; }
+.amoled-theme textarea:focus { border-color: #5865f2; background: #141416; }
 .amoled-theme .send-button,
 .amoled-theme .btn-send { background: #5865f2 !important; color: #ffffff !important; }
 .amoled-theme hr { border-color: #555555; }
