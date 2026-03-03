@@ -92,13 +92,10 @@ function cacheCustomEmoji(emojiId, emojiName, animated) {
  * @returns {string} Text with unicode emojis replaced by img tags
  */
 function processUnicodeEmojiInText(text, sizePx, sizeEm) {
-  if (!text.match(emojiRegex)) return text;
-  const matches = [...text.match(emojiRegex)];
-  matches.forEach(match => {
+  return text.replace(emojiRegex, match => {
     const code = unicodeToTwemojiCode(match);
-    text = text.replace(match, `<img src="/resources/twemoji/${code}.gif" width="${sizePx}" height="${sizePx}" style="width: ${sizeEm}; height: ${sizeEm}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`);
+    return `<img src="/resources/twemoji/${code}.gif" width="${sizePx}" height="${sizePx}" style="width: ${sizeEm}; height: ${sizeEm}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`;
   });
-  return text;
 }
 
 module.exports = { unicodeToTwemojiCode, cacheCustomEmoji, processUnicodeEmojiInText };

@@ -159,16 +159,11 @@ function renderEmojis(messagetext, item, imagesCookie, animationsCookie) {
   const px = isJumbo ? 44 : 22;
   const imgStyle = `width: ${size}; height: ${size}; vertical-align: -0.2em;`;
 
-  // Unicode emoji
-  if (messagetext.match(emojiRegex)) {
-    [...messagetext.match(emojiRegex)].forEach(match => {
-      const code = unicodeToTwemojiCode(match);
-      messagetext = messagetext.replace(
-        match,
-        `<img src="/resources/twemoji/${code}.gif" width="${px}" height="${px}" style="${imgStyle}" alt="emoji" onerror="this.style.display='none'">`,
-      );
-    });
-  }
+  // Unicode emoji — single-pass replacement (avoids O(n×m) per-emoji string scans)
+  messagetext = messagetext.replace(emojiRegex, match => {
+    const code = unicodeToTwemojiCode(match);
+    return `<img src="/resources/twemoji/${code}.gif" width="${px}" height="${px}" style="${imgStyle}" alt="emoji" onerror="this.style.display='none'">`;
+  });
 
   // Custom emoji
   [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)].forEach(match => {
