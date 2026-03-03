@@ -820,7 +820,11 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
 
     const reactionsHtml = processReactions(item.reactions, imagesCookie, templates.reactions, templates.reaction, animationsCookie);
-    messagetext = strReplace(messagetext, '{$MESSAGE_REACTIONS}', reactionsHtml);
+    const hasEmbeds = item.embeds && item.embeds.length > 0;
+    const finalReactionsHtml = (hasEmbeds && reactionsHtml)
+      ? reactionsHtml.replace('class="reactions"', 'class="reactions embed-reactions"')
+      : reactionsHtml;
+    messagetext = strReplace(messagetext, '{$MESSAGE_REACTIONS}', finalReactionsHtml);
 
     // System message handling
     const isSystem = !isNormalMessage(item.type);
