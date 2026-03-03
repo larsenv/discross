@@ -35,21 +35,21 @@
               1. Scan the QR code below with an authenticator app (e.g. Authy, Google Authenticator).<br><br>
               <img src="{$QR_CODE}" alt="QR Code" style="width: 200px; height: 200px;"><br><br>
               Or enter this secret manually:<br><br>
-              <code style="background: #393c40; padding: 8px; font-size: 14px;">{$SECRET}</code><br><br>
+              <code style="background: #222327; padding: 8px; font-size: 14px;">{$SECRET}</code><br><br>
               2. Enter the 6-digit code from your authenticator app to confirm setup:<br><br>
               <form action="/setup2fa{$SESSION_PARAM}" method="post">
                 Your current password:
                 <br><br>
-                <div style="padding: 16px;background: #393c40;width: 300px;"><input type="password"
+                <div style="padding: 16px;background: #222327;width: 300px;"><input type="password"
                     name="password" id="password" value=""
-                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
+                    style="color: #dddddd;background: #222327;border: none;width: 100%;outline: none;"
                     placeholder="Current password" autocomplete="current-password"></div>
                 <br>
                 6-digit code from authenticator app:
                 <br><br>
-                <div style="padding: 16px;background: #393c40;width: 300px;"><input type="text"
+                <div style="padding: 16px;background: #222327;width: 300px;"><input type="text"
                     name="totp_code" id="totp_code" value=""
-                    style="color: #dddddd;background: #393c40;border: none;width: 100%;outline: none;"
+                    style="color: #dddddd;background: #222327;border: none;width: 100%;outline: none;"
                     placeholder="6-digit code" maxlength="6" autocomplete="off"></div>
                 {$ERROR}<br>
                 <input type="submit"

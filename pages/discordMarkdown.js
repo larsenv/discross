@@ -210,9 +210,9 @@ function renderDiscordMarkdown(text) {
           const rendered = md.renderInline(content); 
           // Use table-based spoiler for Wii Internet Channel compatibility
           // The show() function in the template files reveals the spoiler by removing background and showing text
-          return '<table cellpadding="0" cellspacing="0" style="display:inline-table;background:black;vertical-align:bottom" onclick="show(this);event.stopPropagation();return false">' +
-                 '<tr><td>' +
-                 '<font face="sans-serif" style="visibility:hidden">' + rendered + '</font>' +
+          return '<table cellpadding="0" cellspacing="0" class="spoiler-box" style="display:inline-table;vertical-align:text-top;border-spacing:0" onclick="show(this);event.stopPropagation();return false">' +
+                 '<tr><td style="line-height:1;padding:1px 4px">' +
+                 '<span style="visibility:hidden">' + rendered + '</span>' +
                  '</td></tr></table>';
       });
 
