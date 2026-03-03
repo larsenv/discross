@@ -55,9 +55,9 @@ const SYSTEM_MESSAGE_TEXT = {
 };
 
 const THEME_CONFIG = {
-  0: { boxColor: '#40444b', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
+  0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
   1: { boxColor: '#ffffff', authorText: '#000000', replyText: '#000000', themeClass: 'class="light-theme"' },
-  2: { boxColor: '#40444b', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
+  2: { boxColor: '#141416', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
 };
 
 const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
