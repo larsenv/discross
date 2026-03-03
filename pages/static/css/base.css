@@ -1,7 +1,9 @@
 /* Base CSS - Common styles used across all pages */
 
 /* Global reset and box sizing */
-*, *::before, *::after {
+/* Note: *::before and *::after omitted — the CSS3 double-colon syntax
+   can trigger Opera 9.x (DSi) to attempt schema validation at xml.opera.com. */
+* {
   box-sizing: border-box;
 }
 
