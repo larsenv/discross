@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html class="page-simple">
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Verify Order</title>
+</head>
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
+            <a href="/food/checkout" style="color:#dddddd">&#8592; Back to Checkout</a>
+          </font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <div class="food-container">
+      <div class="food-card food-verify-card">
+        <div class="food-verify-icon">🍕</div>
+        <h1 class="food-title">Verify Your Order</h1>
+        <p style="color:#b5bac1;margin-bottom:24px">Check your Discord DMs for a 6-digit verification code. Enter it below to confirm your pizza order.</p>
+        {$ERROR}
+        <form method="POST" action="/food/place-order">
+          <div class="food-form-group">
+            <label class="food-label">Verification Code</label>
+            <input type="text" name="code" class="food-input food-code-input" required maxlength="6" pattern="\d{6}" placeholder="123456" autocomplete="one-time-code">
+          </div>
+          <div style="margin-top:20px">
+            <button type="submit" class="food-btn food-btn-large food-btn-success">Place Order 🍕</button>
+          </div>
+        </form>
+        <div style="margin-top:16px">
+          <a href="/food/checkout" style="color:#b5bac1;font-size:0.9rem">Didn't receive the code? Go back and re-submit to resend.</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

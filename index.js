@@ -67,6 +67,7 @@ const changepasswordpage = require('./pages/changepassword.js')
 const setup2fapage = require('./pages/setup2fa.js')
 const privacypage = require('./pages/privacy.js')
 const termspage = require('./pages/terms.js')
+const foodpage = require('./pages/food.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -274,6 +275,19 @@ server.on('request', async (req, res) => {
           res.writeHead(500, { 'Content-Type': 'text/plain' })
           res.end('Internal Server Error')
         })
+      } else if (parsedurl.startsWith('/food/')) {
+        (async () => {
+          const discordID = await auth.checkAuth(req, res)
+          if (discordID) {
+            await foodpage.handlePost(bot, req, res, discordID, body)
+          }
+        })().catch((err) => {
+          console.error(err)
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' })
+            res.end('Internal Server Error')
+          }
+        })
       } else {
         auth.handleLoginRegister(req, res, body)
       }
@@ -337,6 +351,16 @@ server.on('request', async (req, res) => {
       res.writeHead(302, { "Location": "http://careers.mcdonalds.com/" });
       res.end();
       return;
+    } else if (args[1] === 'food') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await foodpage.handleGet(bot, req, res, discordID)
+      }
+    } else if (args[1] === 'foodProxy') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await foodpage.foodProxy(req, res)
+      }
     } else if (args[1] === 'upload') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {

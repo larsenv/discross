@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html class="page-simple">
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Checkout</title>
+</head>
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
+            <a href="/food/cart" style="color:#dddddd">&#8592; Back to Cart</a>
+          </font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <div class="food-container">
+      <h1 class="food-title">🍕 Checkout</h1>
+      {$ERROR}
+      <div class="food-checkout-grid">
+        <div class="food-card">
+          <h2 class="food-section-title">Order Summary</h2>
+          <div id="order-summary">{$ORDER_SUMMARY}</div>
+          <div class="food-summary-total">
+            <span>Total:</span>
+            <span>$<strong>{$ORDER_TOTAL}</strong></span>
+          </div>
+        </div>
+        <div>
+          <form method="POST" action="/food/request-verify" id="checkout-form">
+            <div class="food-card">
+              <h2 class="food-section-title">Delivery Info</h2>
+              <div class="food-form-row">
+                <div class="food-form-group">
+                  <label class="food-label">First Name</label>
+                  <input type="text" name="firstName" class="food-input" required maxlength="50" autocomplete="given-name">
+                </div>
+                <div class="food-form-group">
+                  <label class="food-label">Last Name</label>
+                  <input type="text" name="lastName" class="food-input" required maxlength="50" autocomplete="family-name">
+                </div>
+              </div>
+              <div class="food-form-group">
+                <label class="food-label">Street Address</label>
+                <input type="text" name="street" class="food-input" required maxlength="100" autocomplete="street-address">
+              </div>
+              <div class="food-form-row">
+                <div class="food-form-group">
+                  <label class="food-label">City</label>
+                  <input type="text" name="city" class="food-input" required maxlength="50" autocomplete="address-level2">
+                </div>
+                <div class="food-form-group food-form-group-sm">
+                  <label class="food-label">State</label>
+                  <input type="text" name="region" class="food-input" required maxlength="2" placeholder="IL" autocomplete="address-level1">
+                </div>
+                <div class="food-form-group food-form-group-sm">
+                  <label class="food-label">Zip Code</label>
+                  <input type="text" name="postalCode" class="food-input" required maxlength="5" pattern="\d{5}" autocomplete="postal-code">
+                </div>
+              </div>
+              <div class="food-form-row">
+                <div class="food-form-group">
+                  <label class="food-label">Phone</label>
+                  <input type="tel" name="phone" class="food-input" required maxlength="10" pattern="\d{10}" placeholder="5551234567" autocomplete="tel">
+                </div>
+                <div class="food-form-group">
+                  <label class="food-label">Email</label>
+                  <input type="email" name="email" class="food-input" required maxlength="100" autocomplete="email">
+                </div>
+              </div>
+            </div>
+            <div class="food-card" style="margin-top:16px">
+              <h2 class="food-section-title">Payment</h2>
+              <div class="food-form-group">
+                <label class="food-label">Card Number</label>
+                <input type="text" name="cardNumber" class="food-input" required maxlength="16" pattern="\d{16}" placeholder="4111111111111111" autocomplete="cc-number">
+              </div>
+              <div class="food-form-row">
+                <div class="food-form-group">
+                  <label class="food-label">Expiration (MMYY)</label>
+                  <input type="text" name="cardExpiration" class="food-input" required maxlength="4" pattern="\d{4}" placeholder="0130" autocomplete="cc-exp">
+                </div>
+                <div class="food-form-group food-form-group-sm">
+                  <label class="food-label">CVV</label>
+                  <input type="text" name="cardSecurityCode" class="food-input" required maxlength="4" pattern="\d{3,4}" autocomplete="cc-csc">
+                </div>
+                <div class="food-form-group food-form-group-sm">
+                  <label class="food-label">Billing Zip</label>
+                  <input type="text" name="cardPostalCode" class="food-input" required maxlength="5" pattern="\d{5}" autocomplete="postal-code">
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:16px;padding:12px;background:#2a2d31;border-radius:8px;color:#b5bac1;font-size:0.9rem">
+              🔒 A 6-digit verification code will be sent to your Discord DMs to confirm your order.
+            </div>
+            <div style="margin-top:16px">
+              <button type="submit" class="food-btn food-btn-large">Send Verification Code &#8594;</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

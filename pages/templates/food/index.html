@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html class="page-simple">
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Order Pizza</title>
+</head>
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
+            <a href="/food/cart" style="color:#dddddd">🛒 Cart</a>&#160;&#160;
+            <a href="/food/receipts" style="color:#dddddd">📋 Orders</a>&#160;&#160;
+            <a href="/food/track" style="color:#dddddd">🍕 Track</a>
+          </font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <div class="food-container">
+      <h1 class="food-title">🍕 Order Domino's Pizza</h1>
+      <p style="color:#b5bac1">Enter your address or zip code to find nearby Domino's stores.</p>
+      <div class="food-card">
+        <form id="store-search-form" onsubmit="searchStores(event)">
+          <label class="food-label">Delivery Address or Zip Code</label>
+          <div class="food-input-row">
+            <input type="text" id="address-input" class="food-input" placeholder="e.g. 62701 or 123 Main St, Springfield, IL" required>
+            <button type="submit" class="food-btn">Find Stores</button>
+          </div>
+        </form>
+      </div>
+      <div id="store-results" class="food-store-results" style="display:none"></div>
+      <div id="store-error" class="food-error" style="display:none"></div>
+    </div>
+  </div>
+  <script>
+  function searchStores(e) {
+    e.preventDefault();
+    var address = document.getElementById('address-input').value;
+    var resultsDiv = document.getElementById('store-results');
+    var errorDiv = document.getElementById('store-error');
+    resultsDiv.style.display = 'none';
+    errorDiv.style.display = 'none';
+    resultsDiv.innerHTML = '<p style="color:#b5bac1">Searching...</p>';
+    resultsDiv.style.display = 'block';
+    fetch('/food/store-search?address=' + encodeURIComponent(address))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data || !data.Stores || data.Stores.length === 0) {
+          resultsDiv.style.display = 'none';
+          errorDiv.innerHTML = 'No stores found near that address. Try a different zip code.';
+          errorDiv.style.display = 'block';
+          return;
+        }
+        var html = '<h2 class="food-section-title">Nearby Stores</h2>';
+        for (var i = 0; i < Math.min(data.Stores.length, 5); i++) {
+          var s = data.Stores[i];
+          var addr = (s.AddressDescription || '').replace(/\n/g, ', ');
+          var city = s.City || '';
+          var phone = s.Phone || '';
+          var wait = s.ServiceMethodEstimatedWaitMinutes && s.ServiceMethodEstimatedWaitMinutes.Delivery ? s.ServiceMethodEstimatedWaitMinutes.Delivery.Min + '-' + s.ServiceMethodEstimatedWaitMinutes.Delivery.Max + ' min' : '';
+          html += '<div class="food-store-card">' +
+            '<div class="food-store-name">Store #' + escHtml(String(s.StoreID || '')) + ' &mdash; ' + escHtml(city) + '</div>' +
+            '<div class="food-store-addr">' + escHtml(addr) + '</div>' +
+            (phone ? '<div class="food-store-phone">' + escHtml(phone) + '</div>' : '') +
+            (wait ? '<div class="food-store-wait">Est. delivery: ' + escHtml(wait) + '</div>' : '') +
+            '<a href="/food/menu?store=' + encodeURIComponent(s.StoreID || '') + '" class="food-btn" style="display:inline-block;margin-top:8px">View Menu</a>' +
+            '</div>';
+        }
+        resultsDiv.innerHTML = html;
+        resultsDiv.style.display = 'block';
+      })
+      .catch(function() {
+        resultsDiv.style.display = 'none';
+        errorDiv.innerHTML = 'Error searching for stores. Please try again.';
+        errorDiv.style.display = 'block';
+      });
+  }
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  </script>
+</body>
+</html>

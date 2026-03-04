@@ -1123,3 +1123,483 @@ html.page-server font[color="#dcddde"] {
          url('https://mariocube.com/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
     font-weight: 700;
 }
+
+/* ================================================================
+   27. PIZZA ORDERING (/food/)
+   ================================================================ */
+
+.food-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 48px 24px;
+}
+
+.food-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #dddddd;
+    margin: 0 0 16px 0;
+}
+
+.food-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #dddddd;
+    margin: 0 0 12px 0;
+}
+
+.food-card {
+    background: #222327;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.food-label {
+    display: block;
+    color: #b5bac1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+}
+
+.food-input {
+    background: #2a2d31;
+    border: 1px solid #3a3d42;
+    border-radius: 6px;
+    color: #dddddd;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    width: 100%;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.food-input:focus {
+    border-color: #5865f2;
+}
+
+.food-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.food-input-row .food-input {
+    flex: 1;
+}
+
+.food-btn {
+    display: inline-block;
+    background: #5865f2;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.food-btn:hover {
+    background: #4752c4;
+    text-decoration: none;
+    color: #ffffff;
+}
+
+.food-btn-large {
+    padding: 12px 28px;
+    font-size: 1rem;
+}
+
+.food-btn-secondary {
+    background: #3a3d42;
+    color: #dddddd;
+}
+
+.food-btn-secondary:hover {
+    background: #4a4d52;
+    color: #dddddd;
+}
+
+.food-btn-danger {
+    background: #da373c;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+.food-btn-danger:hover {
+    background: #b22127;
+}
+
+.food-btn-success {
+    background: #248046;
+}
+
+.food-btn-success:hover {
+    background: #1a6334;
+}
+
+.food-btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+.food-error {
+    background: #da373c22;
+    border: 1px solid #da373c;
+    border-radius: 6px;
+    color: #f28b8c;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+}
+
+/* Store results */
+.food-store-results { margin-top: 20px; }
+
+.food-store-card {
+    background: #222327;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+}
+
+.food-store-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #dddddd;
+    margin-bottom: 4px;
+}
+
+.food-store-addr, .food-store-phone {
+    font-size: 0.9rem;
+    color: #b5bac1;
+    margin-bottom: 2px;
+}
+
+.food-store-wait {
+    font-size: 0.85rem;
+    color: #5865f2;
+    margin-top: 4px;
+}
+
+/* Menu tabs */
+.food-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.food-tab {
+    display: inline-block;
+    background: #2a2d31;
+    color: #b5bac1;
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+
+.food-tab:hover {
+    background: #3a3d42;
+    color: #dddddd;
+    text-decoration: none;
+}
+
+.food-tab-active {
+    background: #5865f2;
+    color: #ffffff;
+    border-color: #5865f2;
+}
+
+.food-tab-active:hover {
+    background: #4752c4;
+    color: #ffffff;
+}
+
+/* Menu items grid */
+.food-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.food-item-card {
+    background: #222327;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.food-item-img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    background: #2a2d31;
+}
+
+.food-item-info {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 6px;
+}
+
+.food-item-name {
+    font-weight: 600;
+    color: #dddddd;
+    font-size: 0.95rem;
+}
+
+.food-item-desc {
+    font-size: 0.82rem;
+    color: #b5bac1;
+    flex: 1;
+}
+
+.food-item-price {
+    font-size: 0.95rem;
+    color: #5865f2;
+    font-weight: 600;
+}
+
+/* Cart */
+.food-cart-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.food-cart-th {
+    text-align: left;
+    color: #b5bac1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 8px;
+    border-bottom: 1px solid #3a3d42;
+}
+
+.food-cart-name {
+    padding: 10px 8px;
+    color: #dddddd;
+}
+
+.food-cart-qty {
+    padding: 10px 8px;
+    color: #b5bac1;
+    text-align: center;
+}
+
+.food-cart-price {
+    padding: 10px 8px;
+    color: #dddddd;
+    text-align: right;
+}
+
+/* Checkout */
+.food-checkout-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.food-form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.food-form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.food-form-group-sm {
+    flex: 0 0 100px;
+}
+
+.food-summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #3a3d42;
+    font-size: 0.9rem;
+    color: #dddddd;
+}
+
+.food-summary-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0 0 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #dddddd;
+}
+
+/* Verify */
+.food-verify-card {
+    max-width: 420px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.food-verify-icon {
+    font-size: 3rem;
+    margin-bottom: 8px;
+}
+
+.food-code-input {
+    font-size: 1.5rem;
+    text-align: center;
+    letter-spacing: 0.2em;
+}
+
+/* Tracker */
+.food-tracker-bar {
+    display: flex;
+    gap: 0;
+}
+
+.food-tracker-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    padding-bottom: 8px;
+}
+
+.food-tracker-step::before {
+    content: '';
+    display: block;
+    height: 3px;
+    background: #3a3d42;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    right: -50%;
+    z-index: 0;
+}
+
+.food-tracker-step:last-child::before { display: none; }
+
+.food-tracker-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #3a3d42;
+    margin: 0 auto 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.food-tracker-step-done .food-tracker-dot { background: #248046; }
+.food-tracker-step-active .food-tracker-dot { background: #5865f2; }
+.food-tracker-step-done::before { background: #248046; }
+
+.food-tracker-label {
+    font-size: 0.78rem;
+    color: #b5bac1;
+}
+
+.food-tracker-step-active .food-tracker-label { color: #dddddd; font-weight: 600; }
+
+/* Receipts */
+.food-receipt-card {
+    background: #222327;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+}
+
+.food-receipt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
+.food-receipt-store {
+    font-weight: 600;
+    color: #dddddd;
+    font-size: 1rem;
+}
+
+.food-receipt-date {
+    font-size: 0.82rem;
+    color: #b5bac1;
+}
+
+.food-receipt-items {
+    font-size: 0.9rem;
+    color: #b5bac1;
+    margin-bottom: 10px;
+}
+
+.food-receipt-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.food-receipt-total {
+    font-weight: 600;
+    color: #dddddd;
+}
+
+/* Back nav row */
+.food-back-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.food-back-link {
+    color: #b5bac1;
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.food-back-link:hover {
+    color: #dddddd;
+    text-decoration: underline;
+}
+
+.food-store-label {
+    color: #b5bac1;
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+    .food-checkout-grid {
+        grid-template-columns: 1fr;
+    }
+    .food-form-row {
+        flex-direction: column;
+    }
+    .food-form-group-sm {
+        flex: 1;
+    }
+    .food-items-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    .food-tracker-bar {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .food-tracker-step::before { display: none; }
+}
