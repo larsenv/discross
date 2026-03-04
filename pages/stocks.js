@@ -31,6 +31,38 @@ function strReplace(string, needle, replacement) {
 }
 
 /**
+ * Make an HTTPS GET request, following up to maxRedirects redirects.
+ * Resolves with { statusCode, body } on success.
+ */
+function httpsGet(options, maxRedirects) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      const status = res.statusCode;
+      if (status >= 300 && status < 400 && res.headers.location && maxRedirects > 0) {
+        res.resume(); // Discard body
+        let newOptions;
+        try {
+          const loc = new URL(res.headers.location);
+          newOptions = Object.assign({}, options, {
+            hostname: loc.hostname,
+            path: loc.pathname + loc.search,
+          });
+        } catch (e) {
+          // Relative redirect
+          newOptions = Object.assign({}, options, { path: res.headers.location });
+        }
+        return httpsGet(newOptions, maxRedirects - 1).then(resolve).catch(reject);
+      }
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ statusCode: status, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+/**
  * Fetch daily historical data from stooq.com for a single symbol.
  * Returns a Promise resolving to a quote object (latest completed day) or null.
  *
@@ -38,40 +70,33 @@ function strReplace(string, needle, replacement) {
  * Format: Date,Open,High,Low,Close,Volume (ascending date order)
  */
 function fetchStooqHistory(symbol) {
-  return new Promise((resolve, reject) => {
-    // Index symbols use ^ prefix; regular stock tickers need .us suffix for US stocks
-    const stooqSymbol = (!symbol.startsWith('^') && !symbol.includes('.'))
-      ? symbol + '.us'
-      : symbol;
-    const s = encodeURIComponent(stooqSymbol);
-    // i=d: daily bars; returns last ~5 years ascending by date
-    const path = `/q/d/l/?s=${s}&i=d`;
-    const options = {
-      hostname: 'stooq.com',
-      path,
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/csv,text/plain,*/*',
-      },
-    };
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        if (res.statusCode !== 200) {
-          return reject(new Error(`Stooq returned HTTP ${res.statusCode} for ${symbol}`));
-        }
-        try {
-          // Pass original display symbol (without .us suffix) to the parser
-          resolve(parseStooqHistory(symbol, data));
-        } catch (e) {
-          reject(new Error(`Failed to parse Stooq response for ${symbol}: ${e.message}`));
-        }
-      });
-    });
-    req.on('error', reject);
-    req.end();
+  // Index symbols use ^ prefix; regular stock tickers need .us suffix for US stocks
+  const stooqSymbol = (!symbol.startsWith('^') && !symbol.includes('.'))
+    ? symbol + '.us'
+    : symbol;
+  const s = encodeURIComponent(stooqSymbol);
+  // i=d: daily bars; returns last ~5 years ascending by date
+  const options = {
+    hostname: 'stooq.com',
+    path: `/q/d/l/?s=${s}&i=d`,
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': 'text/csv,text/plain,*/*',
+      'Accept-Encoding': 'identity',
+      'Referer': 'https://stooq.com/',
+    },
+  };
+  return httpsGet(options, 3).then(({ statusCode, body }) => {
+    if (statusCode !== 200) {
+      throw new Error(`Stooq returned HTTP ${statusCode} for ${symbol}`);
+    }
+    // If stooq returned an HTML error page instead of CSV, treat as no data
+    if (body.trimStart().startsWith('<')) {
+      return null;
+    }
+    // Pass original display symbol (without .us suffix) to the parser
+    return parseStooqHistory(symbol, body);
   });
 }
 
