@@ -58,15 +58,17 @@ exports.processSetup2FA = async function (bot, req, res, args) {
 
   const action = totpEnabled ? 'disable2fa' : 'setup2fa';
 
-  // Send 6-digit action code via Discord DM on fresh page load (not on error redirects)
+  // Send 6-digit action code via Discord DM on fresh page load (not on error/codesent redirects)
   let dmErrorText = '';
-  if (!parsedUrl.searchParams.get('errortext')) {
+  if (!parsedUrl.searchParams.get('errortext') && !parsedUrl.searchParams.get('codesent')) {
     const code = auth.createActionCode(discordID, action);
     const dmResult = await bot.sendDM(discordID, 'Your Discross verification code to ' + (totpEnabled ? 'disable' : 'set up') + ' two-factor authentication: **' + code + '**\nThis code expires in 10 minutes.');
     if (!dmResult.success) {
       dmErrorText = 'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.';
     }
   }
+
+  const sendCodeUrl = '/sendactioncode?action=' + action + (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
 
   let response;
   if (totpEnabled) {
@@ -84,6 +86,7 @@ exports.processSetup2FA = async function (bot, req, res, args) {
     strReplace(logged_in_template, "{$USER}", escape(username || ''))
   );
   response = strReplace(response, "{$SESSION_PARAM}", sessionParam);
+  response = strReplace(response, "{$SEND_CODE_URL}", sendCodeUrl);
 
   if (dmErrorText) {
     response = strReplace(response, "{$ERROR}",
@@ -96,6 +99,10 @@ exports.processSetup2FA = async function (bot, req, res, args) {
       strReplace(error_template, "{$ERROR_MESSAGE}",
         strReplace(escape(parsedUrl.searchParams.get('errortext')), "\n", "<br>")
       )
+    );
+  } else if (parsedUrl.searchParams.get('codesent')) {
+    response = strReplace(response, "{$ERROR}",
+      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>'
     );
   } else {
     response = strReplace(response, "{$ERROR}", "");
