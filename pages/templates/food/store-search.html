@@ -2,7 +2,7 @@
 <html class="page-simple">
 <head>
   {$COMMON_HEAD}
-  <title>Discross - Order Pizza</title>
+  <title>Discross - Store Search Results</title>
 </head>
 <body style="margin: 0;" {$WHITE_THEME_ENABLED}>
   <div id="wrapper">
@@ -27,24 +27,20 @@
     <hr style="margin: 0;">
     <br>
     <div class="food-container">
-      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Order Pizza</b></font><br><br>
-      <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">
-        <b>This is a real pizza ordering feature.</b> Orders placed here are sent directly to Domino's Pizza and you will be charged for them. Please use this feature seriously.<br><br>
-        Payment is by cash upon delivery.<br><br>
-        This service is only available in the <b>United States</b> and <b>Canada</b>.<br><br>
-        For your security, we recommend using HTTPS to access this page. Make sure the address bar shows <b>https://</b> before placing an order.<br><br>
-        Pizza ordering courtesy of <a href="https://wiilink.ca/" style="color:#00aff4;">WiiLink</a>.
-      </font><br><br>
+      <div class="food-back-row">
+        <a href="/food/" class="food-back-link">&#8592; Back</a>
+      </div>
       <div class="food-card">
         <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Find a Store</b></font><br><br>
         <form method="GET" action="/food/store-search">
           <label class="food-label">Delivery Address or Zip Code</label>
           <div class="food-input-row">
-            <input type="text" name="address" class="food-input" placeholder="e.g. 62701 or 123 Main St, Springfield, IL" required>
+            <input type="text" name="address" class="food-input" value="{$SEARCH_ADDRESS}" placeholder="e.g. 62701 or 123 Main St, Springfield, IL" required>
             <button type="submit" class="food-btn">Find Stores</button>
           </div>
         </form>
       </div>
+      {$STORE_RESULTS}
     </div>
   </div>
 </body>
