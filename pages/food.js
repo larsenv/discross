@@ -2,6 +2,7 @@ const fs = require('fs')
 const https = require('https')
 const escape = require('escape-html')
 const querystring = require('querystring')
+const crypto = require('crypto')
 
 const auth = require('../authentication.js')
 
@@ -62,6 +63,7 @@ function getCart(req) {
     if (!cart.items) cart.items = []
     return cart
   } catch (e) {
+    console.error('getCart: failed to parse cart cookie:', e.message)
     return { storeId: null, items: [] }
   }
 }
@@ -465,7 +467,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const code = (params.code || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50)
     const name = (params.name || '').slice(0, 100)
     const price = parseFloat(params.price) || 0
-    const redirect = (params.redirect || '/food/cart').replace(/[^\w\s/?=&%:._-]/g, '').slice(0, 300)
+    // Only allow relative /food/ redirects to prevent open redirect
+    const rawRedirect = params.redirect || ''
+    const redirect = /^\/food\//.test(rawRedirect) ? rawRedirect.slice(0, 300) : '/food/cart'
 
     if (!code) {
       res.writeHead(302, { Location: redirect })
@@ -514,10 +518,18 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return res.end()
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000))
+    // Use crypto.randomInt for cryptographically secure 6-digit code
+    const code = String(crypto.randomInt(100000, 999999))
     const expires = unixTime() + 10 * 60 // 10 minutes
 
-    // Persist checkout form data alongside cart for later order placement
+    // Only store the verification code + expiry in DB — no PII
+    auth.dbQueryRun(
+      'INSERT OR REPLACE INTO pizza_verifications (discordID, code, cart_json, expires) VALUES (?,?,?,?)',
+      [discordID, code, '', expires]
+    )
+
+    // Store checkout form data (including payment) in a short-lived HttpOnly cookie.
+    // This keeps all PII and payment data client-side; the server never persists it.
     const checkoutData = {
       cart,
       firstName: (params.firstName || '').slice(0, 50),
@@ -533,11 +545,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       cardSecurityCode: (params.cardSecurityCode || '').replace(/[^0-9]/g, '').slice(0, 4),
       cardPostalCode: (params.cardPostalCode || '').replace(/[^0-9]/g, '').slice(0, 5),
     }
-
-    auth.dbQueryRun(
-      'INSERT OR REPLACE INTO pizza_verifications (discordID, code, cart_json, expires) VALUES (?,?,?,?)',
-      [discordID, code, JSON.stringify(checkoutData), expires]
-    )
+    const checkoutCookie = Buffer.from(JSON.stringify(checkoutData)).toString('base64')
+    const checkoutCookieHeader = `pizzaCheckout=${encodeURIComponent(checkoutCookie)}; path=/food; HttpOnly${secure ? '; Secure' : ''}; Max-Age=600`
 
     const sent = await bot.sendPizzaVerification(discordID, code)
     if (!sent) {
@@ -547,7 +556,10 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return res.end()
     }
 
-    res.writeHead(302, { Location: '/food/verify' })
+    res.writeHead(302, {
+      Location: '/food/verify',
+      'Set-Cookie': checkoutCookieHeader,
+    })
     return res.end()
   }
 
@@ -569,10 +581,21 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return res.end()
     }
 
+    // Read checkout data from the client-side cookie (no PII was stored in DB)
     let checkoutData = null
-    try { checkoutData = JSON.parse(verification.cart_json) } catch (e) {}
+    try {
+      const cookie = req.headers.cookie || ''
+      const checkoutCookie = cookie.split('; ').find(c => c.startsWith('pizzaCheckout='))
+      if (checkoutCookie) {
+        const val = checkoutCookie.split('=').slice(1).join('=')
+        checkoutData = JSON.parse(Buffer.from(decodeURIComponent(val), 'base64').toString('utf-8'))
+      }
+    } catch (e) {
+      console.error('place-order: failed to parse checkout cookie:', e.message)
+    }
+
     if (!checkoutData || !checkoutData.cart || !checkoutData.cart.items || checkoutData.cart.items.length === 0) {
-      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Cart data lost. Please try again.') })
+      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Checkout session expired. Please fill out the form again.') })
       return res.end()
     }
 
@@ -671,10 +694,13 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Clean up verification record
     auth.dbQueryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID])
 
-    // Clear cart cookie and redirect to receipts
+    // Clear cart and checkout cookies, redirect to receipts
     res.writeHead(302, {
       Location: '/food/receipts',
-      'Set-Cookie': clearCartCookieHeader(),
+      'Set-Cookie': [
+        clearCartCookieHeader(),
+        'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT',
+      ],
     })
     return res.end()
   }
