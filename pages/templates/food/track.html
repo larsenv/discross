@@ -14,8 +14,8 @@
         </td>
         <td width="100%" align="right">
           <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a href="/food/" style="color:#dddddd">🏠 Order More</a>&#160;&#160;
-            <a href="/food/receipts" style="color:#dddddd">📋 Orders</a>
+            <a href="/food/" style="color:#dddddd">Order More</a>&#160;&#160;
+            <a href="/food/receipts" style="color:#dddddd">Orders</a>
           </font>
         </td>
         <td valign="middle">
@@ -26,7 +26,7 @@
     <hr style="margin: 0;">
     <br>
     <div class="food-container">
-      <h1 class="food-title">🍕 Pizza Tracker</h1>
+      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Pizza Tracker</b></font><br><br>
       <div class="food-card">
         <form id="track-form" onsubmit="startTracking(event)">
           <label class="food-label">Phone Number (used on your order)</label>
@@ -39,7 +39,7 @@
       <div id="tracker-status" style="display:none">
         <div class="food-card" style="margin-top:16px">
           <div class="food-tracker-steps" id="tracker-steps"></div>
-          <div id="tracker-details" style="margin-top:16px;color:#b5bac1;font-size:0.9rem"></div>
+          <div id="tracker-details" style="margin-top:16px;color:#b5bac1;font-size:0.9rem;font-family:'rodin',Arial,Helvetica,sans-serif"></div>
         </div>
       </div>
       <div id="tracker-error" class="food-error" style="display:none"></div>
@@ -84,11 +84,11 @@
         statusEl.style.display = 'block';
         var order = data.Orders[0];
         var steps = [
-          { key: 'Prep', label: '🍕 Prep', icon: '🍕' },
-          { key: 'Bake', label: '🔥 Bake', icon: '🔥' },
-          { key: 'Quality', label: '✅ Quality Check', icon: '✅' },
-          { key: 'Delivery', label: '🚗 Out for Delivery', icon: '🚗' },
-          { key: 'Complete', label: '🏠 Delivered', icon: '🏠' }
+          { key: 'Prep', label: 'Prep' },
+          { key: 'Bake', label: 'Bake' },
+          { key: 'Quality', label: 'Quality Check' },
+          { key: 'Delivery', label: 'Out for Delivery' },
+          { key: 'Complete', label: 'Delivered' }
         ];
         var currentStep = order.Status || '';
         var html = '<div class="food-tracker-bar">';

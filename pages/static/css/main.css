@@ -1139,6 +1139,7 @@ html.page-server font[color="#dcddde"] {
     font-weight: 700;
     color: #dddddd;
     margin: 0 0 16px 0;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-section-title {
@@ -1146,6 +1147,16 @@ html.page-server font[color="#dcddde"] {
     font-weight: 600;
     color: #dddddd;
     margin: 0 0 12px 0;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+
+.food-warning-box {
+    background: #3a2a00;
+    border: 1px solid #7a5500;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-card {
@@ -1163,6 +1174,7 @@ html.page-server font[color="#dcddde"] {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-bottom: 6px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-input {
@@ -1172,7 +1184,7 @@ html.page-server font[color="#dcddde"] {
     color: #dddddd;
     padding: 10px 14px;
     font-size: 0.95rem;
-    font-family: inherit;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
     width: 100%;
     outline: none;
     box-sizing: border-box;
@@ -1200,7 +1212,7 @@ html.page-server font[color="#dcddde"] {
     border-radius: 6px;
     padding: 10px 18px;
     font-size: 0.95rem;
-    font-family: inherit;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
     font-weight: 500;
     cursor: pointer;
     text-decoration: none;
@@ -1259,6 +1271,7 @@ html.page-server font[color="#dcddde"] {
     padding: 12px 16px;
     margin-bottom: 16px;
     font-size: 0.95rem;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 /* Store results */
@@ -1276,18 +1289,21 @@ html.page-server font[color="#dcddde"] {
     font-weight: 600;
     color: #dddddd;
     margin-bottom: 4px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-store-addr, .food-store-phone {
     font-size: 0.9rem;
     color: #b5bac1;
     margin-bottom: 2px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-store-wait {
     font-size: 0.85rem;
     color: #5865f2;
     margin-top: 4px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 /* Menu tabs */
@@ -1307,6 +1323,7 @@ html.page-server font[color="#dcddde"] {
     font-size: 0.9rem;
     text-decoration: none;
     border: 1px solid transparent;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-tab:hover {
@@ -1360,18 +1377,21 @@ html.page-server font[color="#dcddde"] {
     font-weight: 600;
     color: #dddddd;
     font-size: 0.95rem;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-item-desc {
     font-size: 0.82rem;
     color: #b5bac1;
     flex: 1;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-item-price {
     font-size: 0.95rem;
     color: #5865f2;
     font-weight: 600;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 /* Cart */
@@ -1389,23 +1409,27 @@ html.page-server font[color="#dcddde"] {
     letter-spacing: 0.04em;
     padding: 8px;
     border-bottom: 1px solid #3a3d42;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-cart-name {
     padding: 10px 8px;
     color: #dddddd;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-cart-qty {
     padding: 10px 8px;
     color: #b5bac1;
     text-align: center;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-cart-price {
     padding: 10px 8px;
     color: #dddddd;
     text-align: right;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 /* Checkout */
@@ -1439,6 +1463,7 @@ html.page-server font[color="#dcddde"] {
     border-bottom: 1px solid #3a3d42;
     font-size: 0.9rem;
     color: #dddddd;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-summary-total {
@@ -1448,6 +1473,7 @@ html.page-server font[color="#dcddde"] {
     font-size: 1rem;
     font-weight: 600;
     color: #dddddd;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 /* Verify */
@@ -1512,6 +1538,7 @@ html.page-server font[color="#dcddde"] {
 .food-tracker-label {
     font-size: 0.78rem;
     color: #b5bac1;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-tracker-step-active .food-tracker-label { color: #dddddd; font-weight: 600; }
@@ -1535,17 +1562,20 @@ html.page-server font[color="#dcddde"] {
     font-weight: 600;
     color: #dddddd;
     font-size: 1rem;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-receipt-date {
     font-size: 0.82rem;
     color: #b5bac1;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-receipt-items {
     font-size: 0.9rem;
     color: #b5bac1;
     margin-bottom: 10px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-receipt-footer {
@@ -1557,6 +1587,7 @@ html.page-server font[color="#dcddde"] {
 .food-receipt-total {
     font-weight: 600;
     color: #dddddd;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 /* Back nav row */
@@ -1571,6 +1602,7 @@ html.page-server font[color="#dcddde"] {
     color: #b5bac1;
     font-size: 0.9rem;
     text-decoration: none;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 .food-back-link:hover {
@@ -1581,6 +1613,7 @@ html.page-server font[color="#dcddde"] {
 .food-store-label {
     color: #b5bac1;
     font-size: 0.9rem;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
 /* Responsive */

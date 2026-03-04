@@ -14,9 +14,9 @@
         </td>
         <td width="100%" align="right">
           <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a href="/food/cart" style="color:#dddddd">🛒 Cart</a>&#160;&#160;
-            <a href="/food/receipts" style="color:#dddddd">📋 Orders</a>&#160;&#160;
-            <a href="/food/track" style="color:#dddddd">🍕 Track</a>
+            <a href="/food/cart" style="color:#dddddd">Cart</a>&#160;&#160;
+            <a href="/food/receipts" style="color:#dddddd">Orders</a>&#160;&#160;
+            <a href="/food/track" style="color:#dddddd">Track Order</a>
           </font>
         </td>
         <td valign="middle">
@@ -27,9 +27,16 @@
     <hr style="margin: 0;">
     <br>
     <div class="food-container">
-      <h1 class="food-title">🍕 Order Domino's Pizza</h1>
-      <p style="color:#b5bac1">Enter your address or zip code to find nearby Domino's stores.</p>
+      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Order Pizza</b></font><br><br>
+      <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">
+        <b>This is a real pizza ordering feature.</b> Orders placed here are sent directly to Domino's Pizza and you will be charged for them. Please use this feature seriously.<br><br>
+        Payment is by cash upon delivery.<br><br>
+        This service is only available in the <b>United States</b> and <b>Canada</b>.<br><br>
+        For your security, we recommend using HTTPS to access this page. Make sure the address bar shows <b>https://</b> before placing an order.<br><br>
+        Pizza ordering is powered by <a href="https://wiilink24.com/" style="color:#00aff4;">WiiLink</a>.
+      </font><br><br>
       <div class="food-card">
+        <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Find a Store</b></font><br><br>
         <form id="store-search-form" onsubmit="searchStores(event)">
           <label class="food-label">Delivery Address or Zip Code</label>
           <div class="food-input-row">
@@ -50,7 +57,7 @@
     var errorDiv = document.getElementById('store-error');
     resultsDiv.style.display = 'none';
     errorDiv.style.display = 'none';
-    resultsDiv.innerHTML = '<p style="color:#b5bac1">Searching...</p>';
+    resultsDiv.innerHTML = '<font face="\'rodin\', Arial, Helvetica, sans-serif" color="#b5bac1">Searching...</font>';
     resultsDiv.style.display = 'block';
     fetch('/food/store-search?address=' + encodeURIComponent(address))
       .then(function(r) { return r.json(); })
@@ -61,7 +68,7 @@
           errorDiv.style.display = 'block';
           return;
         }
-        var html = '<h2 class="food-section-title">Nearby Stores</h2>';
+        var html = '<font size="4" face="\'rodin\', Arial, Helvetica, sans-serif" color="#dddddd"><b>Nearby Stores</b></font><br><br>';
         for (var i = 0; i < Math.min(data.Stores.length, 5); i++) {
           var s = data.Stores[i];
           var addr = (s.AddressDescription || '').replace(/\n/g, ', ');
