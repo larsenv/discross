@@ -34,6 +34,7 @@ function getTemplates() {
       verify: loadTemplate('verify.html'),
       track: loadTemplate('track.html'),
       receipts: loadTemplate('receipts.html'),
+      customize: loadTemplate('customize.html'),
     }
   }
   return _templates
@@ -194,15 +195,15 @@ exports.handleGet = async function (bot, req, res, discordID) {
       if (stores.length > 0) {
         storesHtml += `<br><font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Nearby Stores</b></font><br><br>`
         for (const s of stores.slice(0, 5)) {
-          const addr = escape((s.AddressDescription || '').replace(/\n/g, ', '))
           const city = escape(s.City || '')
           const storeId = escape(String(s.StoreID || ''))
           const wait = (s.ServiceMethodEstimatedWaitMinutes && s.ServiceMethodEstimatedWaitMinutes.Delivery)
             ? escape(s.ServiceMethodEstimatedWaitMinutes.Delivery.Min + '-' + s.ServiceMethodEstimatedWaitMinutes.Delivery.Max + ' min')
             : ''
+          const addrLines = (s.AddressDescription || '').split('\n').map(l => escape(l)).join('<br>')
           storesHtml += `<div class="food-store-card">
   <div class="food-store-name">Store #${storeId} &mdash; ${city}</div>
-  <div class="food-store-addr">${addr}</div>
+  <div class="food-store-addr">${addrLines}</div>
   ${wait ? `<div class="food-store-wait">Est. delivery: ${wait}</div>` : ''}
   <a href="/food/menu?store=${encodeURIComponent(s.StoreID || '')}&amp;country=${country}" class="food-btn" style="display:inline-block;margin-top:8px">View Menu</a>
 </div>`
@@ -302,7 +303,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         cartQtyByCode[item.code] = (cartQtyByCode[item.code] || 0) + (item.qty || 1)
       }
 
-      for (const code of productCodes.slice(0, 50)) {
+      for (const code of productCodes) {
         const p = products[code]
         if (!p) continue
         const name = escape(p.Name || code)
@@ -310,6 +311,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
         // Pick lowest-price variant
         let price = ''
+        const hasMultipleVariants = p.Variants && p.Variants.length > 1
         if (p.Variants && p.Variants.length) {
           const prices = p.Variants
             .map(v => parseFloat((variants[v] || {}).Price || 0))
@@ -325,15 +327,16 @@ exports.handleGet = async function (bot, req, res, discordID) {
         const safeStoreId = escape(storeId)
         const safeRedirect = escape(req.url)
         const inCart = cartQtyByCode[code] || 0
-        const btnLabel = inCart > 0 ? `Add to Cart (${inCart} in cart)` : 'Add to Cart'
 
-        itemsHtml += `<div class="food-item-card">
-  <img src="${imgUrl}" alt="${name}" class="food-item-img" onerror="this.style.display='none'">
-  <div class="food-item-info">
-    <div class="food-item-name">${name}</div>
-    <div class="food-item-desc">${desc}</div>
-    <div class="food-item-price">${escape(price)}</div>
-    <form method="POST" action="/food/cart/add">
+        // Items with multiple size variants get a "Customize" button linking to the size picker
+        let actionHtml
+        if (hasMultipleVariants) {
+          const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(code)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(req.url)}`
+          const btnLabel = inCart > 0 ? `Customize (${inCart} in cart)` : 'Customize / Add'
+          actionHtml = `<a href="${customizeUrl}" class="food-btn">${escape(btnLabel)}</a>`
+        } else {
+          const btnLabel = inCart > 0 ? `Add to Cart (${inCart} in cart)` : 'Add to Cart'
+          actionHtml = `<form method="POST" action="/food/cart/add">
       <input type="hidden" name="storeId" value="${safeStoreId}">
       <input type="hidden" name="country" value="${escape(country)}">
       <input type="hidden" name="code" value="${safeCode}">
@@ -341,7 +344,16 @@ exports.handleGet = async function (bot, req, res, discordID) {
       <input type="hidden" name="price" value="${safePrice}">
       <input type="hidden" name="redirect" value="${safeRedirect}">
       <button type="submit" class="food-btn">${escape(btnLabel)}</button>
-    </form>
+    </form>`
+        }
+
+        itemsHtml += `<div class="food-item-card">
+  <img src="${imgUrl}" alt="${name}" class="food-item-img" onerror="this.style.display='none'">
+  <div class="food-item-info">
+    <div class="food-item-name">${name}</div>
+    <div class="food-item-desc">${desc}</div>
+    <div class="food-item-price">${escape(price)}</div>
+    ${actionHtml}
   </div>
 </div>`
       }
@@ -469,7 +481,10 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
   // --- Tracker page ---
   if (subpath === 'track') {
+    const trackCart = getCart(req)
+    const trackCartCount = (trackCart.items || []).reduce((s, i) => s + (i.qty || 1), 0)
     let html = strReplace(templates.track, '{$WHITE_THEME_ENABLED}', theme)
+    html = strReplace(html, '{$CART_COUNT}', String(trackCartCount))
     // Show the user's most recent order key so they can track on dominos.com
     const lastOrder = auth.dbQuerySingle(
       'SELECT order_key, store_name, timestamp FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC LIMIT 1',
@@ -492,11 +507,14 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
   // --- Receipts / order history ---
   if (subpath === 'receipts') {
+    const receiptCart = getCart(req)
+    const receiptCartCount = (receiptCart.items || []).reduce((s, i) => s + (i.qty || 1), 0)
     const orders = auth.dbQueryAll(
       'SELECT * FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC',
       [discordID]
     )
     let html = strReplace(templates.receipts, '{$WHITE_THEME_ENABLED}', theme)
+    html = strReplace(html, '{$CART_COUNT}', String(receiptCartCount))
 
     const justPlaced = parsedurl.searchParams.get('placed') === '1'
     const noticeHtml = justPlaced
@@ -541,6 +559,130 @@ exports.handleGet = async function (bot, req, res, discordID) {
       'Set-Cookie': 'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT',
     })
     return res.end()
+  }
+
+  // --- Customize item (size/variant picker) ---
+  if (subpath === 'customize') {
+    const storeId = (parsedurl.searchParams.get('store') || '').replace(/[^0-9]/g, '')
+    const productCode = (parsedurl.searchParams.get('code') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50)
+    const country = parsedurl.searchParams.get('country') === 'ca' ? 'ca' : 'us'
+    const backUrl = (() => {
+      const raw = parsedurl.searchParams.get('back') || ''
+      return /^\/food\//.test(raw) ? raw.slice(0, 300) : `/food/menu?store=${encodeURIComponent(storeId)}&country=${country}`
+    })()
+
+    if (!storeId || !productCode) {
+      res.writeHead(302, { Location: '/food/' })
+      return res.end()
+    }
+
+    const dominosHost = country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
+    let menuData = null
+    try {
+      const result = await dominosRequest({
+        hostname: dominosHost,
+        path: `/power/store/${encodeURIComponent(storeId)}/menu?lang=en&structured=true`,
+        method: 'GET',
+      })
+      if (result.status === 200) menuData = result.data
+    } catch (e) {
+      console.error('Dominos menu fetch error (customize):', e)
+    }
+
+    const custCart = getCart(req)
+    const custCartCount = (custCart.items || []).reduce((s, i) => s + (i.qty || 1), 0)
+    let html = strReplace(templates.customize, '{$WHITE_THEME_ENABLED}', theme)
+    html = strReplace(html, '{$CART_COUNT}', String(custCartCount))
+    html = strReplace(html, '{$STORE_ID}', escape(storeId))
+    html = strReplace(html, '{$COUNTRY}', escape(country))
+    html = strReplace(html, '{$BACK_URL}', escape(backUrl))
+
+    if (menuData) {
+      const products = menuData.Products || {}
+      const variants = menuData.Variants || {}
+      const product = products[productCode]
+      if (!product) {
+        res.writeHead(302, { Location: backUrl })
+        return res.end()
+      }
+
+      const pName = escape(product.Name || productCode)
+      const pDesc = escape((product.Description || '').slice(0, 200))
+      const imgCode = (product.ImageCode || productCode).replace(/[^a-zA-Z0-9_-]/g, '')
+      const imgUrl = `/foodProxy/${encodeURIComponent(imgCode)}.jpg`
+
+      html = strReplace(html, '{$PRODUCT_NAME}', pName)
+      html = strReplace(html, '{$PRODUCT_DESC}', pDesc)
+      html = strReplace(html, '{$PRODUCT_IMG}',
+        `<img src="${imgUrl}" alt="${pName}" class="food-customize-img" onerror="this.style.display='none'">`)
+
+      // Build size options — each variant is a separate no-JS-compatible form button
+      const productVariants = product.Variants || []
+      let sizeOptionsHtml = ''
+      if (productVariants.length > 1) {
+        sizeOptionsHtml = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Choose a size to add to cart:</b></font><br><br>`
+        for (const vCode of productVariants) {
+          const v = variants[vCode]
+          if (!v) continue
+          const vPrice = parseFloat(v.Price || 0)
+          const vSizeName = escape(v.Name || vCode)
+          const vFullName = escape(`${v.Name || vCode} ${product.Name || productCode}`.trim())
+          const safeVCode = escape(vCode)
+          const safeVPrice = vPrice.toFixed(2)
+          sizeOptionsHtml += `<form method="POST" action="/food/cart/add" style="display:inline-block;margin-bottom:8px;width:100%">
+  <input type="hidden" name="storeId" value="${escape(storeId)}">
+  <input type="hidden" name="country" value="${escape(country)}">
+  <input type="hidden" name="code" value="${safeVCode}">
+  <input type="hidden" name="name" value="${vFullName}">
+  <input type="hidden" name="price" value="${safeVPrice}">
+  <input type="hidden" name="redirect" value="${escape(backUrl)}">
+  <div class="food-size-option">
+    ${vSizeName}${vPrice > 0 ? `<span class="food-size-price">$${safeVPrice}</span>` : ''}
+    <button type="submit" class="food-btn food-btn-sm" style="margin-left:16px">Add to Cart</button>
+  </div>
+</form>`
+        }
+      } else if (productVariants.length === 1) {
+        // Single size — just show a direct add form
+        const v = variants[productVariants[0]] || {}
+        const vPrice = parseFloat(v.Price || 0)
+        const vFullName = escape(`${v.Name || ''} ${product.Name || productCode}`.trim())
+        sizeOptionsHtml = `<form method="POST" action="/food/cart/add">
+  <input type="hidden" name="storeId" value="${escape(storeId)}">
+  <input type="hidden" name="country" value="${escape(country)}">
+  <input type="hidden" name="code" value="${escape(productVariants[0])}">
+  <input type="hidden" name="name" value="${vFullName}">
+  <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
+  <input type="hidden" name="redirect" value="${escape(backUrl)}">
+  <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : ''}</button>
+  &#160;&#160;
+  <a href="${escape(backUrl)}" class="food-btn food-btn-secondary">Cancel</a>
+</form>`
+      } else {
+        // No variant data — add by product code
+        sizeOptionsHtml = `<form method="POST" action="/food/cart/add">
+  <input type="hidden" name="storeId" value="${escape(storeId)}">
+  <input type="hidden" name="country" value="${escape(country)}">
+  <input type="hidden" name="code" value="${escape(productCode)}">
+  <input type="hidden" name="name" value="${pName}">
+  <input type="hidden" name="price" value="0">
+  <input type="hidden" name="redirect" value="${escape(backUrl)}">
+  <button type="submit" class="food-btn food-btn-large">Add to Cart</button>
+  &#160;&#160;
+  <a href="${escape(backUrl)}" class="food-btn food-btn-secondary">Cancel</a>
+</form>`
+      }
+      html = strReplace(html, '{$SIZE_OPTIONS}', sizeOptionsHtml)
+    } else {
+      html = strReplace(html, '{$PRODUCT_NAME}', escape(productCode))
+      html = strReplace(html, '{$PRODUCT_DESC}', '')
+      html = strReplace(html, '{$PRODUCT_IMG}', '')
+      html = strReplace(html, '{$SIZE_OPTIONS}',
+        `<div class="food-error">Could not load menu. Please go back and try again.</div>`)
+    }
+
+    res.writeHead(200, { 'Content-Type': 'text/html' })
+    return res.end(html)
   }
 
   // 404
@@ -643,6 +785,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       city: (params.city || '').slice(0, 50),
       region: (params.region || '').slice(0, 2).toUpperCase(),
       postalCode: (params.postalCode || '').replace(/[^a-zA-Z0-9 -]/g, '').slice(0, 10),
+      tip: Math.min(parseFloat(params.tip) || 0, 100),
     }
     const checkoutCookie = Buffer.from(JSON.stringify(checkoutData)).toString('base64')
     const checkoutCookieHeader = `pizzaCheckout=${encodeURIComponent(checkoutCookie)}; path=/food; HttpOnly${secure ? '; Secure' : ''}; Max-Age=600`
@@ -698,13 +841,14 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return res.end()
     }
 
-    const { cart, firstName, lastName, email, street, city, region, postalCode } = checkoutData
+    const { cart, firstName, lastName, email, street, city, region, postalCode, tip } = checkoutData
 
     if (!firstName || !lastName || !email || !street || !city || !region || !postalCode) {
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Missing order details. Please fill out the form again.') })
       return res.end()
     }
 
+    const gratuityAmt = parseFloat(tip) || 0
     const products = cart.items.map(item => ({
       Code: item.code,
       Qty: item.qty || 1,
@@ -737,6 +881,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         FirstName: firstName,
         LastName: lastName,
         Email: email,
+        GratuityAmt: gratuityAmt,
       },
     }
 
