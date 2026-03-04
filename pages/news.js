@@ -284,45 +284,43 @@ function parseArticlePage(html, showImages) {
   // Extract article body — ONLY what's inside div.RichTextStoryBody
   const body = extractStoryBody(html);
   let contentHtml = '';
+  let leadImageHtml = '';
 
   if (body) {
-    // Walk <p> and <img> tags in document order.
-    // Looking for <img> directly (rather than <figure> or <div>) handles any
-    // wrapping structure AP News uses (figure, div.Figure, bare img, etc.).
-    const tagRe = /<(p|img)(\s|>)/gi;
-    let match;
-    let count = 0;
-    const seenImages = new Set();
-
-    while ((match = tagRe.exec(body)) !== null && count < MAX_ARTICLE_ELEMENTS) {
-      const tagName = match[1].toLowerCase();
-
-      if (tagName === 'p') {
-        const end = body.indexOf('</p>', match.index);
-        if (end === -1) continue;
-        tagRe.lastIndex = end + 4;
-        const el = body.slice(match.index, end + 4);
-        const text = stripHtml(el).trim();
-        if (text.length > 10 && !isCTAParagraph(text)) {
-          contentHtml += `<p class="news-article-paragraph">${escape(text)}</p>\n`;
-          count++;
-        }
-      } else if (tagName === 'img' && showImages) {
-        const tagEnd = body.indexOf('>', match.index);
-        if (tagEnd === -1) continue;
-        tagRe.lastIndex = tagEnd + 1;
-        const el = body.slice(match.index, tagEnd + 1);
-        // Only proxy AP News CDN images (dims/assets.apnews.com)
+    // Extract the first AP News CDN image as the single lead/hero image.
+    // We look for the first <img> tag with an AP News CDN src anywhere in the body.
+    if (showImages) {
+      const imgTagRe = /<img(\s[^>]*)>/gi;
+      let imgMatch;
+      while ((imgMatch = imgTagRe.exec(body)) !== null) {
+        const el = imgMatch[0];
         const srcMatch = el.match(AP_IMG_SRC_RE);
-        if (!srcMatch || seenImages.has(srcMatch[1])) continue;
-        seenImages.add(srcMatch[1]);
+        if (!srcMatch) continue;
         const imgUrl = srcMatch[1];
         const proxied = proxyImageUrl(imgUrl);
-        // Look for figcaption in the next ~1500 chars after this img tag
-        const nearby = body.slice(tagEnd + 1, tagEnd + 1500);
+        // Look for figcaption in the next ~2000 chars after this img tag
+        const tagEnd = imgMatch.index + imgMatch[0].length;
+        const nearby = body.slice(tagEnd, tagEnd + 2000);
         const captionMatch = nearby.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
         const caption = captionMatch ? escape(stripHtml(captionMatch[1])) : '';
-        contentHtml += `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
+        leadImageHtml = `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
+        break;
+      }
+    }
+
+    // Walk <p> tags only — body text without any inline images.
+    const pRe = /<p(\s|>)/gi;
+    let match;
+    let count = 0;
+
+    while ((match = pRe.exec(body)) !== null && count < MAX_ARTICLE_ELEMENTS) {
+      const end = body.indexOf('</p>', match.index);
+      if (end === -1) continue;
+      pRe.lastIndex = end + 4;
+      const el = body.slice(match.index, end + 4);
+      const text = stripHtml(el).trim();
+      if (text.length > 10 && !isCTAParagraph(text)) {
+        contentHtml += `<p class="news-article-paragraph">${escape(text)}</p>\n`;
         count++;
       }
     }
@@ -332,7 +330,7 @@ function parseArticlePage(html, showImages) {
     contentHtml = '<p class="news-article-paragraph news-empty">Article text could not be extracted.</p>';
   }
 
-  return { headline, bylines, date, contentHtml };
+  return { headline, bylines, date, leadImageHtml, contentHtml };
 }
 
 exports.processNews = async function processNews(req, res, args, discordID) {
@@ -395,7 +393,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
 
   try {
     const html = await fetchHtml(articleUrl);
-    const { headline, bylines, date, contentHtml } = parseArticlePage(html, imagesCookie !== 0);
+    const { headline, bylines, date, leadImageHtml, contentHtml } = parseArticlePage(html, imagesCookie !== 0);
 
     const headlineEscaped = escape(headline || 'Untitled');
     const bylinesEscaped = bylines ? `${escape(bylines)} - ` : '';
@@ -406,6 +404,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     final = strReplace(final, '{$BYLINE}', bylinesEscaped);
     final = strReplace(final, '{$DATE}', dateStr);
     final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
+    final = strReplace(final, '{$LEAD_IMAGE}', leadImageHtml);
     final = strReplace(final, '{$ARTICLE_CONTENT}', contentHtml);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
