@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const https = require('https');
+const zlib = require('zlib');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
@@ -72,16 +73,31 @@ function fetchJson(hostname, path) {
       hostname,
       path,
       method: 'GET',
-      headers: { 'Accept': 'application/json', 'Accept-Encoding': 'identity' },
+      headers: { 'Accept': 'application/json' },
     };
     const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
+      const chunks = [];
+      res.on('data', (chunk) => { chunks.push(chunk); });
       res.on('end', () => {
-        try {
-          resolve({ status: res.statusCode, data: JSON.parse(data) });
-        } catch (e) {
-          reject(new Error(`Failed to parse response (HTTP ${res.statusCode}): ${e.message}`));
+        const buf = Buffer.concat(chunks);
+        const encoding = res.headers['content-encoding'];
+        const decompress = encoding === 'gzip' ? zlib.gunzip
+          : encoding === 'deflate' ? zlib.inflate
+          : null;
+        const parse = (raw) => {
+          try {
+            resolve({ status: res.statusCode, data: JSON.parse(raw.toString('utf8')) });
+          } catch (e) {
+            reject(new Error(`Failed to parse response (HTTP ${res.statusCode}): ${e.message}`));
+          }
+        };
+        if (decompress) {
+          decompress(buf, (err, decoded) => {
+            if (err) return reject(new Error(`Failed to decompress response: ${err.message}`));
+            parse(decoded);
+          });
+        } else {
+          parse(buf);
         }
       });
     });
