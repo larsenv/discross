@@ -1192,8 +1192,10 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
     console.log('[place-order] products:', JSON.stringify(products))
 
-    // Normalize address via store-locator to get StreetName and StreetNumber (per WiiLink's AddressLookup).
-    // Without these, Dominos returns ServiceMethodNotAllowed because it can't validate the delivery address.
+    // Normalize address via store-locator to get Street, StreetName, and StreetNumber
+    // (per WiiLink's AddressLookup). Without these Dominos returns ServiceMethodNotAllowed.
+    // WiiLink uses the normalized Street from the API response (not the raw user input) in the payload.
+    let normalizedStreet = street
     let streetName = ''
     let streetNumber = ''
     // Helper: parse StreetNumber and StreetName from raw street string (e.g. "123 Main St" → "123" / "Main St")
@@ -1210,12 +1212,13 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       const addrObj = addrResult && addrResult.data && addrResult.data.Address
       console.log('[place-order] store-locator HTTP=%s | Address=%s', addrResult && addrResult.status, JSON.stringify(addrObj))
       if (addrObj && (addrObj.StreetName || addrObj.StreetNumber)) {
+        // Use the API-normalized values (WiiLink uses addrObj.Street for the Street field too)
+        if (addrObj.Street) normalizedStreet = addrObj.Street
         streetName = addrObj.StreetName || ''
         streetNumber = addrObj.StreetNumber || ''
-        console.log('[place-order] address normalized via API: StreetName=%s StreetNumber=%s', streetName, streetNumber)
+        console.log('[place-order] address normalized via API: Street=%s StreetName=%s StreetNumber=%s', normalizedStreet, streetName, streetNumber)
       } else {
         // Fallback: parse StreetNumber and StreetName from the raw street string.
-        // Dominos requires these fields for delivery validation.
         const parsed = parseStreetParts(street)
         if (parsed) {
           streetNumber = parsed.number
@@ -1241,7 +1244,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Includes normalized StreetName and StreetNumber per WiiLink's AddressLookup
     const validatePayload = {
       Order: {
-        Address: { Street: street, City: city, Region: region, PostalCode: postalCode, Type: 'House', StreetName: streetName, StreetNumber: streetNumber },
+        Address: { Street: normalizedStreet, City: city, Region: region, PostalCode: postalCode, Type: 'House', StreetName: streetName, StreetNumber: streetNumber },
         Coupons: [],
         CustomerID: '',
         Email: '',
@@ -1350,7 +1353,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       Status: 0,
       Order: {
         Address: {
-          Street: street,
+          Street: normalizedStreet,
           City: city,
           Region: region,
           PostalCode: postalCode,
@@ -1399,7 +1402,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
     // Step 4: Place the priced order.
     console.log('[place-order] placing order: storeId=%s orderId=%s street=%s streetName=%s streetNumber=%s',
-      cart.storeId, orderId, street, streetName, streetNumber)
+      cart.storeId, orderId, normalizedStreet, streetName, streetNumber)
     let orderResult = null
     try {
       orderResult = await dominosRequest({
