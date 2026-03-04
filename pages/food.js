@@ -156,71 +156,81 @@ function isSecure(req) {
 }
 
 // --- Parse topping options from a POST request params ---
-// Expects params like topping_P=1, topping_C=1, sauce=X
+// Expects params like topping_P=1 (amount: 0=none, 0.5=light, 1=normal, 1.5=extra), sauce=X
 function parseOptions(params) {
   const options = {}
   for (const key of Object.keys(params)) {
     if (key.startsWith('topping_')) {
       const code = key.slice('topping_'.length).replace(/[^a-zA-Z0-9]/g, '')
-      if (code && params[key] === '1') {
-        options[code] = { '1/1': '1' }
+      const amount = params[key]
+      // Accept numeric amounts; skip 0 (none = not included)
+      if (code && amount && amount !== '0' && /^[0-9.]+$/.test(amount)) {
+        options[code] = { '1/1': amount }
       }
     }
   }
-  // Sauce is a radio — value is the sauce code
+  // Sauce is a radio — value is the sauce code; fixed normal amount
   if (params.sauce && /^[a-zA-Z0-9]{1,6}$/.test(params.sauce)) {
     options[params.sauce] = { '1/1': '1' }
   }
   return options
 }
 
-// --- Build a flat topping code→entry dict from menuData ---
-// The Dominos API (with structured=true) returns Toppings nested by ProductType,
-// e.g. { Pizza: {C: {...}, P: {...}, X: {...}}, Wings: {...} }.
-// Accepts an optional productType to scope to just that category; otherwise flattens all.
+// --- Build a topping code→entry dict from menuData ---
+// The Dominos API returns Toppings nested by ProductType: { Pizza: {C: {...}, X: {...}}, Wings: {...} }.
+// Per WiiLink/Demae-Dominos: use ONLY the exact productType category.
+// Returns empty dict if productType has no matching Toppings category.
 function buildToppingDict(menuData, productType) {
   const rawToppings = menuData.Toppings || {}
-  // If we know the product type and it exists, use it directly
   if (productType && rawToppings[productType] && typeof rawToppings[productType] === 'object') {
     return rawToppings[productType]
   }
-  // Otherwise flatten all categories into one dict (fallback)
-  const flat = {}
-  for (const key of Object.keys(rawToppings)) {
-    const val = rawToppings[key]
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      // A topping entry has Code or Name; a category grouping has neither at the top level
-      if ('Code' in val || 'Name' in val) {
-        flat[key] = val
-      } else {
-        // Nested grouping — flatten one level
-        for (const innerKey of Object.keys(val)) {
-          const innerVal = val[innerKey]
-          if (innerVal && typeof innerVal === 'object') {
-            flat[innerKey] = innerVal
-          }
-        }
+  return {}
+}
+
+// --- Parse AvailableToppings string into code set and per-code portion options ---
+// AvailableToppings = "X=0:0.5:1:1.5,Xm=0:0.5:1:1.5,C=0:0.5:1:1.5,P=1/1"
+// Returns { codeSet: Set<string>, portions: Map<string, string[]> }
+function parseAvailableToppings(rawAvailToppings) {
+  const codeSet = new Set()
+  const portions = new Map()
+  const entries = Array.isArray(rawAvailToppings)
+    ? rawAvailToppings.map(String)
+    : (rawAvailToppings ? String(rawAvailToppings).split(',') : [])
+  for (const entry of entries) {
+    const eqIdx = entry.indexOf('=')
+    const code = (eqIdx === -1 ? entry : entry.slice(0, eqIdx)).trim()
+    if (!code) continue
+    codeSet.add(code)
+    if (eqIdx !== -1) {
+      const portionStr = entry.slice(eqIdx + 1)
+      // Support "0:0.5:1:1.5" (colon-separated) or "1/1" (legacy fixed)
+      const portionList = portionStr.indexOf(':') !== -1
+        ? portionStr.split(':').map(p => p.trim()).filter(Boolean)
+        : [portionStr.split('/')[0].trim()].filter(Boolean)
+      if (portionList.length > 0) {
+        portions.set(code, portionList)
       }
     }
   }
-  return flat
+  return { codeSet, portions }
 }
 
-// --- Classify toppings from menu data ---
+// --- Classify toppings from a toppingDict, filtered by available code set ---
+// Per WiiLink: iterate over toppingDict, skip codes not in availableCodes.
+// Sauce = Tags.Sauce only (WiiLink approach, avoids wrong classification for non-pizza items).
 // Returns { sauces: [{code, name}], toppings: [{code, name}] }
-function classifyToppings(toppingDict, availableCodes) {
+function classifyToppings(toppingDict, codeSet) {
   const sauces = []
   const toppings = []
-  for (const code of availableCodes) {
-    // Use the dict entry if available; don't skip if missing — fall back to code as name
-    const t = toppingDict[code] !== undefined ? toppingDict[code] : {}
-    const name = t.Name || code
+  for (const code of Object.keys(toppingDict)) {
+    if (!codeSet.has(code)) continue
+    const t = toppingDict[code]
+    if (!t || typeof t !== 'object') continue
+    const name = (t.Name && String(t.Name).trim()) || code
     const tags = t.Tags || {}
-    // Classify as sauce if Tags contains a Sauce-like marker or code matches known sauce codes
-    const isSauce = !!(tags.Sauce || tags.DefaultSauce || tags.Alfredo ||
-      tags.BBQ || tags.HotSauce || tags.GarlicParmesan || tags.Ranch ||
-      SAUCE_CODES.includes(code) ||
-      (t.Type && t.Type.toLowerCase().indexOf('sauce') !== -1))
+    // WiiLink: only classify as sauce if Tags.Sauce is set
+    const isSauce = !!(tags.Sauce)
     if (isSauce) {
       sauces.push({ code, name })
     } else {
@@ -778,37 +788,29 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
         // Build toppings/sauce form
         // Get the product type for scoped topping lookup (e.g. "Pizza", "Wings")
-        // Per WiiLink/Demae-Dominos: Toppings is nested by ProductType in the Dominos API
+        // Per WiiLink/Demae-Dominos: only use the exact Toppings[productType] category
         const productType = product.ProductType || ''
         const toppingDict = buildToppingDict(menuData, productType)
 
-        // Get available toppings for this product
-        // AvailableToppings can be a comma-separated string with optional "=portion" modifiers
-        // (e.g. "X=1/1,Xm=1/1,C=1/1") — strip the "=..." part to get just the code
-        const rawAvailToppings = product.AvailableToppings
-        let availableCodes = []
-        if (Array.isArray(rawAvailToppings)) {
-          availableCodes = rawAvailToppings.map(s => String(s).split('=')[0].trim()).filter(Boolean)
-        } else if (rawAvailToppings) {
-          availableCodes = String(rawAvailToppings).split(',').map(s => s.split('=')[0].trim()).filter(Boolean)
-        }
+        // Parse AvailableToppings — returns code set and per-code portion options
+        // e.g. "X=0:0.5:1:1.5,C=0:0.5:1:1.5,P=1/1" → codeSet=Set{X,C,P}, portions=Map{X:["0","0.5","1","1.5"]}
+        const { codeSet, portions } = parseAvailableToppings(product.AvailableToppings)
 
-        // Get default options from the variant
+        // If AvailableToppings is empty, show ALL toppings for this productType (specialty pizzas
+        // omit AvailableToppings but still support customization). If the toppingDict is also empty
+        // (productType not in Toppings), no customization section is shown.
+        const finalCodeSet = codeSet.size > 0 ? codeSet : new Set(Object.keys(toppingDict))
+
+        // Get default options from the variant (e.g. {X: {"1/1": "1"}, C: {"1/1": "1"}})
         const defaultOptions = v.Options || {}
 
-        // Fallback: if product has no AvailableToppings listed, use all toppings from the
-        // product's type category (specialty pizzas often omit AvailableToppings)
-        if (availableCodes.length === 0) {
-          availableCodes = Object.keys(toppingDict)
-        }
-        // Final fallback: at minimum show what's already on the variant (from its Options)
-        if (availableCodes.length === 0) {
-          availableCodes = Object.keys(defaultOptions)
-        }
+        const PORTION_LABELS = { '0': 'None', '0.5': 'Light', '1': 'Normal', '1.5': 'Extra' }
+        // Used when a topping code exists in toppingDict but has no portion info in AvailableToppings
+        const DEFAULT_PORTIONS = ['0', '1']
 
         let toppingsSection = ''
-        if (availableCodes.length > 0) {
-          const { sauces, toppings: toppingList } = classifyToppings(toppingDict, availableCodes)
+        if (finalCodeSet.size > 0 && Object.keys(toppingDict).length > 0) {
+          const { sauces, toppings: toppingList } = classifyToppings(toppingDict, finalCodeSet)
 
           toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
@@ -838,12 +840,30 @@ exports.handleGet = async function (bot, req, res, discordID) {
           if (toppingList.length > 0) {
             toppingsSection += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Toppings</b></font><br><br>`
             for (const t of toppingList) {
-              // Check if topping is in default options (any portion)
-              const isDefault = !!(defaultOptions[t.code])
-              const checked = isDefault ? ' checked' : ''
-              toppingsSection += `<label style="display:block;padding:6px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd;cursor:pointer">
-  <input type="checkbox" name="topping_${escape(t.code)}" value="1"${checked}> ${escape(t.name)}
-</label>`
+              // Get the default amount from Options (e.g. {X: {"1/1": "1"}} → "1")
+              const defaultEntry = defaultOptions[t.code]
+              const defaultAmt = defaultEntry
+                ? (defaultEntry['1/1'] || '1')
+                : '0'
+              // Get allowed portion values for this topping; DEFAULT_PORTIONS used when no
+              // portion info was present in AvailableToppings for this code
+              const rawPortions = portions.get(t.code) || DEFAULT_PORTIONS
+              // Ensure the default amount is present in the list; insert at correct numeric position
+              const portionSet = new Set(rawPortions)
+              if (defaultAmt !== '0') portionSet.add(defaultAmt)
+              const portionList = Array.from(portionSet).sort((a, b) => parseFloat(a) - parseFloat(b))
+              // Build select options with labels
+              let optHtml = ''
+              for (const p of portionList) {
+                const label = PORTION_LABELS[p] || p
+                const sel = p === defaultAmt ? ' selected' : ''
+                optHtml += `<option value="${escape(p)}"${sel}>${escape(label)}</option>`
+              }
+              toppingsSection += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
+  ${escape(t.name)}: <select name="topping_${escape(t.code)}" style="background:#222327;color:#dddddd;border:none;border-radius:4px;padding:2px 4px">
+${optHtml}
+  </select>
+</div>`
             }
             toppingsSection += '<br>'
           }
