@@ -27,6 +27,7 @@ function getTemplates() {
   if (!_templates) {
     _templates = {
       index: loadTemplate('index.html'),
+      storeSearch: loadTemplate('store-search.html'),
       menu: loadTemplate('menu.html'),
       cart: loadTemplate('cart.html'),
       checkout: loadTemplate('checkout.html'),
@@ -154,26 +155,54 @@ exports.handleGet = async function (bot, req, res, discordID) {
     return res.end(html)
   }
 
-  // --- Store search API (JSON) ---
+  // --- Store search (server-rendered HTML) ---
   if (subpath === 'store-search') {
     const address = parsedurl.searchParams.get('address') || ''
+    let html = strReplace(templates.storeSearch, '{$WHITE_THEME_ENABLED}', theme)
+    html = strReplace(html, '{$SEARCH_ADDRESS}', escape(address))
+
     if (!address) {
-      res.writeHead(400, { 'Content-Type': 'application/json' })
-      return res.end(JSON.stringify({ error: 'Address required' }))
+      html = strReplace(html, '{$STORE_RESULTS}', '')
+      res.writeHead(200, { 'Content-Type': 'text/html' })
+      return res.end(html)
     }
+
+    let storesHtml = ''
     try {
       const result = await dominosRequest({
         hostname: 'order.dominos.com',
         path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(address)}&s=&a=`,
         method: 'GET',
       })
-      res.writeHead(200, { 'Content-Type': 'application/json' })
-      return res.end(JSON.stringify(result.data))
+      const data = result.data
+      if (result.status === 200 && data && data.Stores && data.Stores.length > 0) {
+        storesHtml += `<br><font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Nearby Stores</b></font><br><br>`
+        const stores = data.Stores.slice(0, 5)
+        for (const s of stores) {
+          const addr = escape((s.AddressDescription || '').replace(/\n/g, ', '))
+          const city = escape(s.City || '')
+          const storeId = escape(String(s.StoreID || ''))
+          const wait = (s.ServiceMethodEstimatedWaitMinutes && s.ServiceMethodEstimatedWaitMinutes.Delivery)
+            ? escape(s.ServiceMethodEstimatedWaitMinutes.Delivery.Min + '-' + s.ServiceMethodEstimatedWaitMinutes.Delivery.Max + ' min')
+            : ''
+          storesHtml += `<div class="food-store-card">
+  <div class="food-store-name">Store #${storeId} &mdash; ${city}</div>
+  <div class="food-store-addr">${addr}</div>
+  ${wait ? `<div class="food-store-wait">Est. delivery: ${wait}</div>` : ''}
+  <a href="/food/menu?store=${encodeURIComponent(s.StoreID || '')}" class="food-btn" style="display:inline-block;margin-top:8px">View Menu</a>
+</div>`
+        }
+      } else {
+        storesHtml = '<div class="food-error">No stores found near that address. Try a different zip code or city name.</div>'
+      }
     } catch (e) {
       console.error('Dominos store-search error:', e)
-      res.writeHead(500, { 'Content-Type': 'application/json' })
-      return res.end(JSON.stringify({ error: 'Failed to find stores' }))
+      storesHtml = '<div class="food-error">Error searching for stores. Please try again.</div>'
     }
+
+    html = strReplace(html, '{$STORE_RESULTS}', storesHtml)
+    res.writeHead(200, { 'Content-Type': 'text/html' })
+    return res.end(html)
   }
 
   // --- Menu ---
