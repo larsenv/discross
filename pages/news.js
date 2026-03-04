@@ -19,14 +19,10 @@ const THEME_CONFIG = {
   2: { themeClass: 'class="amoled-theme"' },
 };
 
-// AP News GraphQL API (mobile client persisted query)
-const GRAPHQL_URL = 'https://apnews.com/graphql/delivery/ap/v1';
-const GRAPHQL_HASH = '3bc305abbf62e9e632403a74cc86dc1cba51156d2313f09b3779efec51fc3acb';
 const AP_BASE = 'https://apnews.com';
 const DEFAULT_TOPIC = 'apf-topnews';
 
-// Limits for article body parsing
-const MAX_ARTICLE_BODY_BYTES = 200000;
+// Max article body elements to extract (prevents runaway on malformed HTML)
 const MAX_ARTICLE_ELEMENTS = 150;
 
 // Browser-like User-Agent for AP News requests
@@ -40,17 +36,19 @@ function proxyImageUrl(url) {
   return '/imageProxy/external/' + Buffer.from(url).toString('base64');
 }
 
-// Extract plain text from HTML for display.
-// Replaces angle brackets with spaces (destroying tag structure) so
-// no incomplete-sanitization issues arise; output is always passed to escape().
+// Strip all HTML tags from a string, preserving text content only.
+// Block-level elements become newlines; all tag markup is removed entirely.
+// Output is always passed through escape-html before rendering.
 function stripHtml(html) {
   if (!html) return '';
-  const withNewlines = html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n');
-  // Destroy all angle-bracket structures by replacing < and > with spaces
-  const noAngles = withNewlines.replace(/</g, ' ').replace(/>/g, ' ');
-  return he.decode(noAngles).trim();
+  return he.decode(
+    html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<[^>]*>/g, '')  // Remove all HTML tags and their attributes
+      .replace(/</g, '')        // Remove any stray '<' left by malformed attribute values
+  ).trim();
 }
 
 function resolvePrefs(req) {
@@ -75,21 +73,6 @@ function resolvePrefs(req) {
   return { urlSessionID, sessionParam, theme, themeValue, imagesCookie, parsedUrl };
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': BROWSER_UA,
-      'Accept': 'application/json',
-    },
-  });
-  if (!response.ok) {
-    const err = new Error(`HTTP ${response.status} fetching ${url}`);
-    err.statusCode = response.status;
-    throw err;
-  }
-  return response.json();
-}
-
 async function fetchHtml(url) {
   const response = await fetch(url, {
     headers: {
@@ -105,56 +88,109 @@ async function fetchHtml(url) {
   return response.text();
 }
 
-// Fetch AP News feed via GraphQL persisted query
-async function fetchFeed(topic) {
-  const params = new URLSearchParams({
-    operationName: 'ContentPageQuery',
-    variables: JSON.stringify({ path: `/hub/${topic}` }),
-    extensions: JSON.stringify({
-      persistedQuery: { version: 1, sha256Hash: GRAPHQL_HASH },
-    }),
-  });
-  return fetchJson(`${GRAPHQL_URL}?${params}`);
+// AP News image src regex: matches src="https://dims.apnews.com/..." or assets.apnews.com
+// Uses negative lookahead (?!set) to avoid matching srcset attributes.
+const AP_IMG_SRC_RE = /\bsrc(?!set)="(https?:\/\/(?:dims|assets)\.apnews\.com\/[^"]+)"/i;
+
+// Extract the inner content of a <div> block starting at contentStart
+// (i.e., just after the opening tag), bounded by tracking div nesting depth.
+function extractDivContent(html, contentStart) {
+  let depth = 1;
+  let i = contentStart;
+
+  while (i < html.length && depth > 0) {
+    // Use indexOf('<div', i) then verify the next char is whitespace or '>'
+    // so we don't count <divider> or other elements starting with 'div'.
+    let nextOpen = -1;
+    let pos = i;
+    while (pos < html.length) {
+      const candidate = html.indexOf('<div', pos);
+      if (candidate === -1) break;
+      const c = html[candidate + 4];
+      if (c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '>') {
+        nextOpen = candidate;
+        break;
+      }
+      pos = candidate + 1;
+    }
+
+    const nextClose = html.indexOf('</div>', i);
+
+    if (nextClose === -1) break;
+
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      depth++;
+      i = nextOpen + 4;
+    } else {
+      depth--;
+      if (depth === 0) return html.slice(contentStart, nextClose);
+      i = nextClose + 6;
+    }
+  }
+
+  return html.slice(contentStart, i);
 }
 
-// Walk the GraphQL Screen response and collect all PagePromo/VideoPlaylistItem entries
-function parseFeedItems(res) {
-  const screen = res?.data?.Screen;
-  if (!screen?.main) return [];
-
-  const modules = [];
-  for (const item of screen.main) {
-    if (item.__typename === 'ColumnContainer') {
-      for (const col of item.columns || []) {
-        modules.push(col);
-      }
-    } else {
-      modules.push(item);
-    }
-  }
-
+// Scrape the AP News hub HTML page for feed items.
+// Mirrors the approach used by RSSHub topics.ts but also extracts images.
+function parseHubHtml(html) {
   const items = [];
-  for (const mod of modules) {
-    if (mod?.__typename === 'PageListModule') {
-      items.push(...(mod.items || []));
-    } else if (mod?.__typename === 'VideoPlaylistModule') {
-      items.push(...(mod.playlist || []));
-    }
+  const seen = new Set();
+
+  // Each article on the hub page is a div.PagePromo
+  const PROMO_OPEN_RE = /<div[^>]+class="[^"]*\bPagePromo\b[^"]*"[^>]*>/gi;
+  let m;
+
+  while ((m = PROMO_OPEN_RE.exec(html)) !== null) {
+    const contentStart = m.index + m[0].length;
+
+    // Timestamp lives as a data attribute on the PagePromo div itself
+    const tsMatch = m[0].match(/data-posted-date-timestamp="(\d+)"/);
+    const timestamp = tsMatch ? parseInt(tsMatch[1], 10) : 0;
+
+    const block = extractDivContent(html, contentStart);
+
+    // Skip nested PagePromos by jumping past this block
+    PROMO_OPEN_RE.lastIndex = contentStart + block.length;
+
+    // Article URL — prefer /article/ links to skip live-blog/hub links
+    const urlMatch = block.match(/href="((?:https:\/\/apnews\.com)?\/article\/[^"#]+)"/i);
+    if (!urlMatch) continue;
+
+    // Headline text from the PagePromoContentIcons-text span
+    const titleMatch = block.match(/<span[^>]+class="[^"]*PagePromoContentIcons-text[^"]*"[^>]*>([\s\S]*?)<\/span>/i);
+    if (!titleMatch) continue;
+
+    const url = urlMatch[1].startsWith('http') ? urlMatch[1] : `${AP_BASE}${urlMatch[1]}`;
+    const title = stripHtml(titleMatch[1]).trim();
+    if (!title || !url || seen.has(url)) continue;
+    seen.add(url);
+
+    // Lead image: src from an img tag at dims/assets.apnews.com (not srcset)
+    const imgMatch = block.match(AP_IMG_SRC_RE);
+    const altMatch = block.match(/<img[^>]+alt="([^"]*)"[^>]*>/i);
+    const captionMatch = block.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
+
+    items.push({
+      url,
+      title,
+      publishDateStamp: timestamp,
+      imageUrl: imgMatch ? imgMatch[1] : null,
+      imageAlt: altMatch ? altMatch[1] : title,
+      imageCaption: captionMatch ? stripHtml(captionMatch[1]) : '',
+    });
   }
-  return items.filter(Boolean);
+
+  return items;
 }
 
 // Extract the article slug from an AP News article URL
-// e.g. "https://apnews.com/article/some-headline-hash" -> "some-headline-hash"
 function articleUrlToSlug(url) {
   if (!url) return null;
   try {
     const parsed = new URL(url, AP_BASE);
-    if (parsed.hostname !== 'apnews.com' && parsed.hostname !== 'www.apnews.com') return null;
     const parts = parsed.pathname.split('/').filter(Boolean);
-    if (parts[0] === 'article' && parts[1]) {
-      return parts[1];
-    }
+    if (parts[0] === 'article' && parts[1]) return parts[1];
     return null;
   } catch {
     return null;
@@ -163,49 +199,46 @@ function articleUrlToSlug(url) {
 
 function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
   if (!item) return '';
-
-  const title = item.title || '';
-  const url = item.url || '';
+  const { url, title, publishDateStamp, imageUrl, imageAlt, imageCaption } = item;
   if (!title || !url) return '';
 
   const slug = articleUrlToSlug(url);
-  if (!slug) return ''; // Skip non-article items (live blogs, hub pages, etc.)
+  if (!slug) return '';
 
   const headline = escape(title);
-  const summary = escape(stripHtml(item.description || ''));
-  const category = escape(item.category || '');
-  const date = item.publishDateStamp ? new Date(item.publishDateStamp) : null;
+  const date = publishDateStamp ? new Date(publishDateStamp) : null;
   const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
   const articleUrl = `/news/${encodeURIComponent(slug)}${sessionParam}`;
 
-  // AP News GraphQL may include image fields under various names
   let imageHtml = '';
-  if (showImages) {
-    const imgUrl = item.leadPhoto?.url || item.image?.url ||
-                   (typeof item.image === 'string' ? item.image : null) ||
-                   item.photo?.url;
-    if (imgUrl) {
-      const proxied = proxyImageUrl(imgUrl);
-      const caption = escape(item.leadPhoto?.caption || item.image?.caption || '');
-      imageHtml = `<div class="news-card-image-wrap"><img src="${proxied}" alt="${headline}" class="news-card-image">${caption ? `<br><span class="news-card-caption">${caption}</span>` : ''}</div>`;
-    }
+  if (showImages && imageUrl) {
+    const proxied = proxyImageUrl(imageUrl);
+    const alt = escape(imageAlt || title);
+    const caption = escape(imageCaption || '');
+    imageHtml = `<div class="news-card-image-wrap"><img src="${proxied}" alt="${alt}" class="news-card-image">${caption ? `<br><span class="news-card-caption">${caption}</span>` : ''}</div>`;
   }
 
   return `<div class="news-card">
   ${imageHtml}
   <div class="news-card-body">
     <b class="news-card-title"><font face="'rodin', Arial, Helvetica, sans-serif" size="4">${headline}</font></b><br>
-    <span class="news-card-meta">${category ? category + ' &middot; ' : ''}${dateStr}</span><br>
-    ${summary ? `<span class="news-card-summary">${summary}</span><br>` : ''}
+    ${dateStr ? `<span class="news-card-meta">${dateStr}</span><br>` : ''}
     <a href="${articleUrl}" class="discross-button news-read-btn">Read Article</a>
   </div>
 </div>`;
 }
 
-// Parse an AP News article HTML page:
-// - Extracts headline, author, date from JSON-LD (<script id="link-ld-json">)
-//   or the GTM dataLayer meta tag (fallback)
-// - Extracts paragraphs and images from div.RichTextStoryBody
+// Extract the inner content of div.RichTextStoryBody, tightly bounded by div
+// depth tracking so we never leak into the related-articles section below.
+function extractStoryBody(html) {
+  const m = html.match(/<div[^>]+class="[^"]*RichTextStoryBody[^"]*"[^>]*>/i);
+  if (!m) return '';
+  return extractDivContent(html, m.index + m[0].length);
+}
+
+// Parse an AP News article HTML page.
+// Extracts headline/author/date from JSON-LD, with a GTM dataLayer fallback.
+// Body text and inline images come from div.RichTextStoryBody only.
 function parseArticlePage(html, showImages) {
   let headline = '', bylines = '', date = null;
 
@@ -221,16 +254,11 @@ function parseArticlePage(html, showImages) {
         headline = article.headline || '';
         if (article.author) {
           const authors = Array.isArray(article.author) ? article.author : [article.author];
-          bylines = authors
-            .map(a => a.name || (typeof a === 'string' ? a : ''))
-            .filter(Boolean)
-            .join(', ');
+          bylines = authors.map(a => a.name || (typeof a === 'string' ? a : '')).filter(Boolean).join(', ');
         }
-        if (article.datePublished) {
-          date = new Date(article.datePublished);
-        }
+        if (article.datePublished) date = new Date(article.datePublished);
       }
-    } catch { /* ignore parse errors */ }
+    } catch { /* ignore */ }
   }
 
   // Fallback: GTM dataLayer meta tag
@@ -241,43 +269,39 @@ function parseArticlePage(html, showImages) {
         const gtm = JSON.parse(gtmMatch[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
         headline = gtm.headline || '';
         bylines = gtm.author || '';
-        if (gtm.publication_date) {
-          date = new Date(gtm.publication_date);
-        }
+        if (gtm.publication_date) date = new Date(gtm.publication_date);
       } catch { /* ignore */ }
     }
   }
 
-  // Extract article body starting from RichTextStoryBody
+  // Extract article body — ONLY what's inside div.RichTextStoryBody
+  const body = extractStoryBody(html);
   let contentHtml = '';
-  const bodyIdx = html.indexOf('RichTextStoryBody');
-  if (bodyIdx !== -1) {
-    // Take up to 200 KB of content after the marker
-    const body = html.slice(bodyIdx, bodyIdx + MAX_ARTICLE_BODY_BYTES);
 
-    // Match <p> and <figure> elements in document order
+  if (body) {
+    // Walk <p> and <figure> elements in document order
     const elRegex = /(<p[^>]*>[\s\S]*?<\/p>|<figure[^>]*>[\s\S]*?<\/figure>)/gi;
     let match;
     let count = 0;
 
     while ((match = elRegex.exec(body)) !== null && count < MAX_ARTICLE_ELEMENTS) {
       const el = match[1];
-      if (el.startsWith('<p') || el.startsWith('<P')) {
+      if (/^<p[\s>]/i.test(el)) {
         const text = stripHtml(el).trim();
         if (text.length > 10) {
           contentHtml += `<p class="news-article-paragraph">${escape(text)}</p>\n`;
           count++;
         }
-      } else if (showImages && (el.startsWith('<figure') || el.startsWith('<FIGURE'))) {
-        const imgMatch = el.match(/<img[^>]+src="([^"]+)"[^>]*/i);
+      } else if (showImages && /^<figure[\s>]/i.test(el)) {
+        // Use the shared src regex (not srcset) to get the proxied image URL
+        const imgMatch = el.match(AP_IMG_SRC_RE) ||
+                         el.match(/\bsrc(?!set)="(https?:\/\/[^"]+)"/i);
         const captionMatch = el.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
         if (imgMatch) {
           const imgUrl = imgMatch[1];
-          if (imgUrl && (imgUrl.startsWith('http://') || imgUrl.startsWith('https://'))) {
-            const proxied = proxyImageUrl(imgUrl);
-            const caption = captionMatch ? escape(stripHtml(captionMatch[1])) : '';
-            contentHtml += `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
-          }
+          const proxied = proxyImageUrl(imgUrl);
+          const caption = captionMatch ? escape(stripHtml(captionMatch[1])) : '';
+          contentHtml += `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
         }
       }
     }
@@ -301,10 +325,11 @@ exports.processNews = async function processNews(req, res, args, discordID) {
   const tagInputValue = escape(tag === DEFAULT_TOPIC ? '' : tag);
 
   try {
-    const data = await fetchFeed(tag);
-    const rawItems = parseFeedItems(data);
+    // Scrape the hub HTML page — gives us titles, dates, URLs, and lead images
+    const html = await fetchHtml(`${AP_BASE}/hub/${tag}`);
+    const feedItems = parseHubHtml(html);
 
-    const cards = rawItems
+    const cards = feedItems
       .map(item => buildNewsCardHtml(item, timezone, sessionParam, imagesCookie !== 0))
       .filter(Boolean);
 
@@ -312,7 +337,6 @@ exports.processNews = async function processNews(req, res, args, discordID) {
       ? cards.join('\n')
       : '<p class="news-empty">No articles found for this category.</p>';
 
-    // Hidden fields carry session/theme through the search form POST
     let sessionHidden = '';
     if (urlSessionID) sessionHidden += `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">`;
     if (themeValue !== 0) sessionHidden += `<input type="hidden" name="theme" value="${escape(String(themeValue))}">`;
@@ -338,8 +362,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
   const { sessionParam, theme, imagesCookie } = resolvePrefs(req);
   const timezone = getTimezoneFromIP(getClientIP(req));
 
-  // args[2] is the article slug, e.g. "trump-trade-tariffs-abc123def456"
-  // AP News article slugs contain only letters, digits, and hyphens
+  // args[2] is the article slug (letters, digits, hyphens only)
   const articleSlug = args[2] || '';
   if (!articleSlug || /[^a-zA-Z0-9-]/.test(articleSlug)) {
     res.writeHead(400, { 'Content-Type': 'text/plain' });
@@ -373,4 +396,5 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     res.end(msg);
   }
 };
+
 
