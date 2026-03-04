@@ -746,12 +746,23 @@ exports.handleGet = async function (bot, req, res, discordID) {
         html = strReplace(html, '{$SIZE_OPTIONS}', sizeHtml)
 
         // Build toppings/sauce form
-        // Get available toppings for this product
-        const availableToppingStr = product.AvailableToppings || ''
-        const availableCodes = availableToppingStr ? availableToppingStr.split(',').map(s => s.trim()).filter(Boolean) : []
+        // Get available toppings for this product (handle both string and array formats)
+        const rawAvailToppings = product.AvailableToppings
+        let availableCodes = []
+        if (Array.isArray(rawAvailToppings)) {
+          availableCodes = rawAvailToppings.map(s => String(s).trim()).filter(Boolean)
+        } else if (rawAvailToppings) {
+          availableCodes = String(rawAvailToppings).split(',').map(s => s.trim()).filter(Boolean)
+        }
 
         // Get default options from the variant
         const defaultOptions = v.Options || {}
+
+        // Fallback: if product has no AvailableToppings listed, use all toppings from the menu
+        // (specialty pizzas often omit AvailableToppings even though toppings are customizable)
+        if (availableCodes.length === 0) {
+          availableCodes = Object.keys(menuData.Toppings || {})
+        }
 
         let toppingsSection = ''
         if (availableCodes.length > 0) {
