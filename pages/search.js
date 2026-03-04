@@ -17,8 +17,8 @@ function strReplace(string, needle, replacement) {
 
 const SEARCH_ENGINES = {
   frogfind: 'http://frogfind.com/?q=',
-  wiby:     'https://wiby.me/?q=',
-  google:   'https://www.google.com/search?q=',
+  wiby:     'http://wiby.me/?q=',
+  google:   'http://www.google.com/search?q=',
 };
 
 const VALID_ENGINES = Object.keys(SEARCH_ENGINES);
