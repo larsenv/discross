@@ -28,100 +28,17 @@
     <div class="food-container">
       <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Pizza Tracker</b></font><br><br>
       <div class="food-card">
-        <form id="track-form" onsubmit="startTracking(event)">
-          <label class="food-label">Phone Number (used on your order)</label>
-          <div class="food-input-row">
-            <input type="text" id="phone-input" name="phone" class="food-input" placeholder="5551234567" maxlength="10" pattern="\d{10}" value="{$PHONE}">
-            <button type="submit" class="food-btn">Track</button>
-          </div>
-        </form>
-      </div>
-      <div id="tracker-status" style="display:none">
-        <div class="food-card" style="margin-top:16px">
-          <div class="food-tracker-steps" id="tracker-steps"></div>
-          <div id="tracker-details" style="margin-top:16px;color:#b5bac1;font-size:0.9rem;font-family:'rodin',Arial,Helvetica,sans-serif"></div>
+        <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">
+          To protect your privacy, Discross does not store phone numbers. You can track your order directly on the Domino's website using your order details below.
+        </font><br><br>
+        <div id="order-info">
+          <!-- injected by server if order exists -->
+          {$ORDER_INFO}
         </div>
+        <br>
+        <a href="https://www.dominos.com/en/pages/tracker/" class="food-btn" target="_blank" rel="noopener noreferrer">Track on Domino's Website</a>
       </div>
-      <div id="tracker-error" class="food-error" style="display:none"></div>
     </div>
   </div>
-  <script>
-  var trackingInterval = null;
-  var currentPhone = '{$PHONE}';
-
-  if (currentPhone) {
-    window.onload = function() { loadTracking(currentPhone); };
-  }
-
-  function startTracking(e) {
-    e.preventDefault();
-    var phone = document.getElementById('phone-input').value.replace(/\D/g,'');
-    if (phone.length !== 10) {
-      document.getElementById('tracker-error').innerHTML = 'Please enter a 10-digit phone number.';
-      document.getElementById('tracker-error').style.display = 'block';
-      return;
-    }
-    currentPhone = phone;
-    loadTracking(phone);
-    if (trackingInterval) clearInterval(trackingInterval);
-    trackingInterval = setInterval(function() { loadTracking(phone); }, 30000);
-  }
-
-  function loadTracking(phone) {
-    fetch('/food/track-status?phone=' + encodeURIComponent(phone))
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        document.getElementById('tracker-error').style.display = 'none';
-        var statusEl = document.getElementById('tracker-status');
-        var stepsEl = document.getElementById('tracker-steps');
-        var detailsEl = document.getElementById('tracker-details');
-        if (!data || data.error || !data.Orders || data.Orders.length === 0) {
-          statusEl.style.display = 'none';
-          document.getElementById('tracker-error').innerHTML = 'No active orders found for that phone number.';
-          document.getElementById('tracker-error').style.display = 'block';
-          return;
-        }
-        statusEl.style.display = 'block';
-        var order = data.Orders[0];
-        var steps = [
-          { key: 'Prep', label: 'Prep' },
-          { key: 'Bake', label: 'Bake' },
-          { key: 'Quality', label: 'Quality Check' },
-          { key: 'Delivery', label: 'Out for Delivery' },
-          { key: 'Complete', label: 'Delivered' }
-        ];
-        var currentStep = order.Status || '';
-        var html = '<div class="food-tracker-bar">';
-        for (var i = 0; i < steps.length; i++) {
-          var active = steps[i].key === currentStep ? ' food-tracker-step-active' : '';
-          var done = isStepDone(steps, i, currentStep) ? ' food-tracker-step-done' : '';
-          html += '<div class="food-tracker-step' + active + done + '">' +
-            '<div class="food-tracker-dot"></div>' +
-            '<div class="food-tracker-label">' + escHtml(steps[i].label) + '</div>' +
-            '</div>';
-        }
-        html += '</div>';
-        stepsEl.innerHTML = html;
-        var details = '';
-        if (order.OrderID) details += 'Order ID: ' + escHtml(String(order.OrderID)) + ' &nbsp; ';
-        if (order.StoreID) details += 'Store: #' + escHtml(String(order.StoreID));
-        detailsEl.innerHTML = details;
-      })
-      .catch(function() {
-        document.getElementById('tracker-error').innerHTML = 'Error fetching tracking data.';
-        document.getElementById('tracker-error').style.display = 'block';
-      });
-  }
-
-  function isStepDone(steps, idx, currentStep) {
-    var order = ['Prep','Bake','Quality','Delivery','Complete'];
-    var curIdx = order.indexOf(currentStep);
-    return idx < curIdx;
-  }
-
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-  </script>
 </body>
 </html>

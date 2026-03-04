@@ -102,6 +102,9 @@ function dominosRequest(options, body) {
         }
       })
     })
+    req.setTimeout(15000, () => {
+      req.destroy(new Error('Request timed out'))
+    })
     req.on('error', reject)
     if (body) req.write(body)
     req.end()
@@ -272,11 +275,11 @@ exports.handleGet = async function (bot, req, res, discordID) {
   </div>
 </div>`
       }
-      if (!itemsHtml) itemsHtml = '<p style="color:#b5bac1">No items found in this category.</p>'
+      if (!itemsHtml) itemsHtml = '<font face="\'rodin\', Arial, Helvetica, sans-serif" color="#b5bac1">No items found in this category.</font>'
       html = strReplace(html, '{$MENU_ITEMS}', itemsHtml)
     } else {
       html = strReplace(html, '{$CATEGORY_TABS}', '')
-      html = strReplace(html, '{$MENU_ITEMS}', '<p style="color:#b5bac1">Could not load menu. Please try again.</p>')
+      html = strReplace(html, '{$MENU_ITEMS}', '<div class="food-card"><font face="\'rodin\', Arial, Helvetica, sans-serif" color="#f28b8c">Could not load menu. The store may be temporarily unavailable. Please try again or choose a different store.</font></div>')
     }
 
     res.writeHead(200, { 'Content-Type': 'text/html' })
@@ -310,7 +313,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
 </tr>`
       }
     } else {
-      itemsHtml = '<tr><td colspan="4" style="color:#b5bac1;padding:16px">Your cart is empty.</td></tr>'
+      itemsHtml = '<tr><td colspan="4" style="font-family:\'rodin\',Arial,Helvetica,sans-serif;color:#b5bac1;padding:16px">Your cart is empty.</td></tr>'
     }
 
     html = strReplace(html, '{$CART_ITEMS}', itemsHtml)
@@ -367,33 +370,25 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
   // --- Tracker page ---
   if (subpath === 'track') {
-    const phone = (parsedurl.searchParams.get('phone') || '').replace(/[^0-9]/g, '').slice(0, 10)
     let html = strReplace(templates.track, '{$WHITE_THEME_ENABLED}', theme)
-    html = strReplace(html, '{$PHONE}', escape(phone))
+    // Show the user's most recent order key so they can track on dominos.com
+    const lastOrder = auth.dbQuerySingle(
+      'SELECT order_key, store_name, timestamp FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC LIMIT 1',
+      [discordID]
+    )
+    let orderInfo = ''
+    if (lastOrder && lastOrder.order_key) {
+      orderInfo = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+        <b>Most recent order:</b> ${escape(lastOrder.store_name || 'Unknown store')}<br>
+        <b>Placed:</b> ${escape(new Date(lastOrder.timestamp * 1000).toLocaleString())}<br>
+        <b>Order Key:</b> <code>${escape(lastOrder.order_key)}</code>
+      </font>`
+    } else {
+      orderInfo = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">No recent orders found.</font>`
+    }
+    html = strReplace(html, '{$ORDER_INFO}', orderInfo)
     res.writeHead(200, { 'Content-Type': 'text/html' })
     return res.end(html)
-  }
-
-  // --- Tracker status API (JSON, polled by client JS) ---
-  if (subpath === 'track-status') {
-    const phone = (parsedurl.searchParams.get('phone') || '').replace(/[^0-9]/g, '')
-    if (!phone || phone.length !== 10) {
-      res.writeHead(400, { 'Content-Type': 'application/json' })
-      return res.end(JSON.stringify({ error: 'Invalid phone number' }))
-    }
-    try {
-      const result = await dominosRequest({
-        hostname: 'tracker.dominos.com',
-        path: `/tracker/user/pizza?phonenumber=${encodeURIComponent(phone)}`,
-        method: 'GET',
-      })
-      res.writeHead(200, { 'Content-Type': 'application/json' })
-      return res.end(JSON.stringify(result.data))
-    } catch (e) {
-      console.error('Dominos tracker error:', e)
-      res.writeHead(500, { 'Content-Type': 'application/json' })
-      return res.end(JSON.stringify({ error: 'Failed to fetch tracking data' }))
-    }
   }
 
   // --- Receipts / order history ---
@@ -403,6 +398,12 @@ exports.handleGet = async function (bot, req, res, discordID) {
       [discordID]
     )
     let html = strReplace(templates.receipts, '{$WHITE_THEME_ENABLED}', theme)
+
+    const justPlaced = parsedurl.searchParams.get('placed') === '1'
+    const noticeHtml = justPlaced
+      ? `<div class="food-success-box"><font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Your order has been placed!</b> Your name, address, and email were used only to send the order and have not been saved to our servers. Only your items, total, and store are stored for your receipt.</font></div>`
+      : ''
+    html = strReplace(html, '{$NOTICE}', noticeHtml)
 
     let ordersHtml = ''
     if (orders && orders.length > 0) {
@@ -531,13 +532,12 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
     // Store checkout form data in a short-lived HttpOnly cookie.
     // This keeps all PII client-side; the server never persists it.
-    // Payment is cash on delivery — no card data collected.
+    // Payment is cash on delivery — no card data collected. No phone stored.
     const checkoutData = {
       cart,
       firstName: (params.firstName || '').slice(0, 50),
       lastName: (params.lastName || '').slice(0, 50),
       email: (params.email || '').slice(0, 100),
-      phone: (params.phone || '').replace(/[^0-9]/g, '').slice(0, 10),
       street: (params.street || '').slice(0, 100),
       city: (params.city || '').slice(0, 50),
       region: (params.region || '').slice(0, 2).toUpperCase(),
@@ -597,9 +597,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return res.end()
     }
 
-    const { cart, firstName, lastName, email, phone, street, city, region, postalCode } = checkoutData
+    const { cart, firstName, lastName, email, street, city, region, postalCode } = checkoutData
 
-    if (!firstName || !lastName || !email || !phone || !street || !city || !region || !postalCode) {
+    if (!firstName || !lastName || !email || !street || !city || !region || !postalCode) {
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Missing order details. Please fill out the form again.') })
       return res.end()
     }
@@ -633,7 +633,6 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         Amounts: {},
         BusinessDate: '',
         EstimatedWaitMinutes: '',
-        Phone: phone,
         FirstName: firstName,
         LastName: lastName,
         Email: email,
@@ -685,9 +684,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Clean up verification record
     auth.dbQueryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID])
 
-    // Clear cart and checkout cookies, redirect to receipts
+    // Clear cart and checkout cookies, redirect to receipts with success notice
     res.writeHead(302, {
-      Location: '/food/receipts',
+      Location: '/food/receipts?placed=1',
       'Set-Cookie': [
         clearCartCookieHeader(),
         'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT',
