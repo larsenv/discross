@@ -36,9 +36,9 @@ exports.processChangePassword = async function (bot, req, res, args) {
 
   const username = await auth.getUsername(discordID);
 
-  // Send 6-digit action code via Discord DM (only on fresh page load, not on error redirects)
+  // Send 6-digit action code via Discord DM (only on fresh page load, not on error/success/codesent redirects)
   let dmErrorText = '';
-  if (!parsedUrl.searchParams.get('errortext') && !parsedUrl.searchParams.get('success')) {
+  if (!parsedUrl.searchParams.get('errortext') && !parsedUrl.searchParams.get('success') && !parsedUrl.searchParams.get('codesent')) {
     const code = auth.createActionCode(discordID, 'changepassword');
     const dmResult = await bot.sendDM(discordID, 'Your Discross verification code to change your password: **' + code + '**\nThis code expires in 10 minutes.');
     if (!dmResult.success) {
@@ -46,11 +46,14 @@ exports.processChangePassword = async function (bot, req, res, args) {
     }
   }
 
+  const sendCodeUrl = '/sendactioncode?action=changepassword' + (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
+
   let response = changepassword_template;
   response = strReplace(response, "{$MENU_OPTIONS}",
     strReplace(logged_in_template, "{$USER}", escape(username || ''))
   );
   response = strReplace(response, "{$SESSION_PARAM}", sessionParam);
+  response = strReplace(response, "{$SEND_CODE_URL}", sendCodeUrl);
 
   if (dmErrorText) {
     response = strReplace(response, "{$ERROR}",
@@ -63,6 +66,10 @@ exports.processChangePassword = async function (bot, req, res, args) {
       strReplace(error_template, "{$ERROR_MESSAGE}",
         strReplace(escape(parsedUrl.searchParams.get('errortext')), "\n", "<br>")
       )
+    );
+  } else if (parsedUrl.searchParams.get('codesent')) {
+    response = strReplace(response, "{$ERROR}",
+      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>'
     );
   } else if (parsedUrl.searchParams.get('success')) {
     response = strReplace(response, "{$ERROR}",
