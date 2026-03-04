@@ -9,7 +9,8 @@ const auth = require('../authentication.js');
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
-const YAHOO_FINANCE_USER_AGENT = 'Mozilla/5.0 (compatible; Discross/1.0)';
+// Realistic browser User-Agent required by Yahoo Finance API
+const YAHOO_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 // Maximum ticker symbol length to prevent abuse
 const TICKER_MAX_LENGTH = 10;
@@ -25,6 +26,100 @@ const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement ?? '');
+}
+
+// Cached Yahoo session (crumb + cookie, valid ~1 hour)
+let _yahooSession = { crumb: null, cookie: null, expiry: 0 };
+
+/**
+ * Fetch a URL, following redirects and accumulating Set-Cookie headers.
+ * Returns { status, headers, body, cookies } where cookies is a cookie-header string.
+ */
+function fetchRaw(hostname, path, reqHeaders, maxRedirects) {
+  return new Promise((resolve, reject) => {
+    const cookieJar = {};
+    let hops = 0;
+
+    function parseCookies(setCookieList) {
+      for (const entry of [].concat(setCookieList || [])) {
+        const pair = entry.split(';')[0];
+        const eq = pair.indexOf('=');
+        if (eq > 0) cookieJar[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
+      }
+    }
+
+    function cookieStr() {
+      return Object.entries(cookieJar).map(([k, v]) => `${k}=${v}`).join('; ');
+    }
+
+    function doReq(host, p) {
+      const hdrs = Object.assign({}, reqHeaders);
+      const c = cookieStr();
+      if (c) hdrs['Cookie'] = c;
+
+      const req = https.request({ hostname: host, path: p, method: 'GET', headers: hdrs }, (res) => {
+        parseCookies(res.headers['set-cookie']);
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const body = Buffer.concat(chunks);
+          if (hops < maxRedirects && [301, 302, 303, 307, 308].includes(res.statusCode)) {
+            const loc = res.headers['location'];
+            if (loc) {
+              hops++;
+              try {
+                const url = new URL(loc, `https://${host}${p}`);
+                setImmediate(() => doReq(url.hostname, url.pathname + url.search));
+              } catch (_) {
+                resolve({ status: res.statusCode, headers: res.headers, body, cookies: cookieStr() });
+              }
+              return;
+            }
+          }
+          resolve({ status: res.statusCode, headers: res.headers, body, cookies: cookieStr() });
+        });
+      });
+      req.on('error', reject);
+      req.end();
+    }
+
+    doReq(hostname, path);
+  });
+}
+
+/**
+ * Refresh the Yahoo Finance crumb+cookie session.
+ * Flow: fc.yahoo.com (get cookies) → query2.finance.yahoo.com/v1/test/getcrumb (get crumb).
+ */
+async function refreshYahooSession() {
+  // Step 1: visit fc.yahoo.com to harvest authentication cookies
+  const cookieRes = await fetchRaw('fc.yahoo.com', '/', {
+    'User-Agent': YAHOO_UA,
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+  }, 5);
+  const cookie = cookieRes.cookies;
+
+  // Step 2: fetch crumb using the harvested cookies
+  const crumbRes = await fetchRaw('query2.finance.yahoo.com', '/v1/test/getcrumb', {
+    'User-Agent': YAHOO_UA,
+    'Accept': 'text/plain,*/*',
+    'Cookie': cookie,
+  }, 0);
+
+  const crumbText = crumbRes.body.toString('utf8').trim();
+  if (crumbRes.status !== 200 || !crumbText || crumbText.startsWith('<')) {
+    throw new Error(`Yahoo crumb fetch failed (HTTP ${crumbRes.status}): ${crumbText.slice(0, 120)}`);
+  }
+
+  _yahooSession = { crumb: crumbText, cookie, expiry: Date.now() + 3600000 };
+  return _yahooSession;
+}
+
+/** Return cached session, refreshing if expired. */
+async function getYahooSession() {
+  if (_yahooSession.crumb && Date.now() < _yahooSession.expiry) return _yahooSession;
+  return refreshYahooSession();
 }
 
 function fetchJson(hostname, path, headers) {
@@ -184,13 +279,29 @@ function renderTopIndices(quotes) {
 }
 
 async function fetchQuotes(symbols) {
+  const session = await getYahooSession();
   const symbolsEnc = symbols.map(s => encodeURIComponent(s)).join('%2C');
-  const path = `/v8/finance/quote?symbols=${symbolsEnc}&fields=shortName,longName,regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketPreviousClose,regularMarketOpen,regularMarketDayHigh,regularMarketDayLow,regularMarketVolume,marketState`;
-  const headers = {
-    'User-Agent': YAHOO_FINANCE_USER_AGENT,
-    'Accept': 'application/json',
-  };
-  return fetchJson('query1.finance.yahoo.com', path, headers);
+  const fields = 'shortName,longName,regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketPreviousClose,regularMarketOpen,regularMarketDayHigh,regularMarketDayLow,regularMarketVolume,marketState';
+
+  async function doFetch(sess) {
+    const path = `/v8/finance/quote?symbols=${symbolsEnc}&crumb=${encodeURIComponent(sess.crumb)}&fields=${fields}`;
+    return fetchJson('query2.finance.yahoo.com', path, {
+      'User-Agent': YAHOO_UA,
+      'Accept': 'application/json',
+      'Cookie': sess.cookie,
+    });
+  }
+
+  const result = await doFetch(session);
+
+  // If the session was stale (401/403/500 with HTML), refresh and retry once
+  if (result.status === 401 || result.status === 403 || result.status === 500) {
+    _yahooSession.expiry = 0;
+    const fresh = await refreshYahooSession();
+    return doFetch(fresh);
+  }
+
+  return result;
 }
 
 exports.processStocks = async function processStocks(req, res) {
