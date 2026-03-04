@@ -1196,24 +1196,44 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Without these, Dominos returns ServiceMethodNotAllowed because it can't validate the delivery address.
     let streetName = ''
     let streetNumber = ''
+    // Helper: parse StreetNumber and StreetName from raw street string (e.g. "123 Main St" → "123" / "Main St")
+    const parseStreetParts = (s) => {
+      const m = s.trim().match(/^(\d+)\s+(.+)$/)
+      return m ? { number: m[1], name: m[2] } : null
+    }
     try {
       const addrResult = await dominosRequest({
         hostname: dominosHost,
-        path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(postalCode)}&s=${encodeURIComponent(street)}`,
+        path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(postalCode)}&s=${encodeURIComponent(street)}&a=`,
         method: 'GET',
       })
-      const addrStatus = addrResult && addrResult.data && addrResult.data.Status
       const addrObj = addrResult && addrResult.data && addrResult.data.Address
+      console.log('[place-order] store-locator HTTP=%s | Address=%s', addrResult && addrResult.status, JSON.stringify(addrObj))
       if (addrObj && (addrObj.StreetName || addrObj.StreetNumber)) {
         streetName = addrObj.StreetName || ''
         streetNumber = addrObj.StreetNumber || ''
-        console.log('[place-order] address normalized: StreetName=%s StreetNumber=%s', streetName, streetNumber)
+        console.log('[place-order] address normalized via API: StreetName=%s StreetNumber=%s', streetName, streetNumber)
       } else {
-        console.log('[place-order] address normalization: store-locator status=%s hasAddress=%s hasStreetName=%s hasStreetNumber=%s',
-          addrStatus, !!addrObj, !!(addrObj && addrObj.StreetName), !!(addrObj && addrObj.StreetNumber))
+        // Fallback: parse StreetNumber and StreetName from the raw street string.
+        // Dominos requires these fields for delivery validation.
+        const parsed = parseStreetParts(street)
+        if (parsed) {
+          streetNumber = parsed.number
+          streetName = parsed.name
+          console.log('[place-order] address parsed from street string: StreetName=%s StreetNumber=%s', streetName, streetNumber)
+        } else {
+          console.log('[place-order] address normalization: could not extract StreetName/StreetNumber from street=%s', street)
+        }
       }
     } catch (e) {
-      console.log('[place-order] address normalization failed (non-fatal):', e && e.message)
+      console.log('[place-order] address normalization failed:', e && e.message)
+      // Fallback: parse from raw street string
+      const parsed = parseStreetParts(street)
+      if (parsed) {
+        streetNumber = parsed.number
+        streetName = parsed.name
+        console.log('[place-order] address parsed (fallback): StreetName=%s StreetNumber=%s', streetName, streetNumber)
+      }
     }
 
     // Validate payload (used for validate-order and price-order steps)
@@ -1238,7 +1258,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         PhonePrefix: '',
         Products: products,
         ServiceMethod: 'Delivery',
-        SourceOrganizationURI: 'order.dominos.com',
+        SourceOrganizationURI: 'android.dominos.com',
         StoreID: cart.storeId,
         Tags: {},
         Version: '1.0',
@@ -1378,6 +1398,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     }
 
     // Step 4: Place the priced order.
+    console.log('[place-order] placing order: storeId=%s orderId=%s street=%s streetName=%s streetNumber=%s',
+      cart.storeId, orderId, street, streetName, streetNumber)
     let orderResult = null
     try {
       orderResult = await dominosRequest({
