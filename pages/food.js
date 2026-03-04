@@ -174,15 +174,41 @@ function parseOptions(params) {
   return options
 }
 
+// --- Build a flat topping code→entry dict from menuData ---
+// The Dominos API may return Toppings as a flat dict {code: entry} or nested
+// by category {Pizza: {code: entry}, Wings: {code: entry}}.  Flatten either.
+function buildToppingDict(menuData) {
+  const rawToppings = menuData.Toppings || {}
+  const flat = {}
+  for (const key of Object.keys(rawToppings)) {
+    const val = rawToppings[key]
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      // A topping entry has Code or Name; a category grouping has neither at the top level
+      if ('Code' in val || 'Name' in val) {
+        flat[key] = val
+      } else {
+        // Nested grouping — flatten one level
+        for (const innerKey of Object.keys(val)) {
+          const innerVal = val[innerKey]
+          if (innerVal && typeof innerVal === 'object') {
+            flat[innerKey] = innerVal
+          }
+        }
+      }
+    }
+  }
+  return flat
+}
+
 // --- Classify toppings from menu data ---
 // Returns { sauces: [{code, name}], toppings: [{code, name}] }
 function classifyToppings(menuData, availableCodes) {
-  const toppingDict = menuData.Toppings || {}
+  const toppingDict = buildToppingDict(menuData)
   const sauces = []
   const toppings = []
   for (const code of availableCodes) {
-    const t = toppingDict[code]
-    if (!t) continue
+    // Use the dict entry if available; don't skip if missing — fall back to code as name
+    const t = toppingDict[code] !== undefined ? toppingDict[code] : {}
     const name = t.Name || code
     const tags = t.Tags || {}
     // Classify as sauce if Tags contains a Sauce-like marker or code matches known sauce codes
@@ -761,7 +787,11 @@ exports.handleGet = async function (bot, req, res, discordID) {
         // Fallback: if product has no AvailableToppings listed, use all toppings from the menu
         // (specialty pizzas often omit AvailableToppings even though toppings are customizable)
         if (availableCodes.length === 0) {
-          availableCodes = Object.keys(menuData.Toppings || {})
+          availableCodes = Object.keys(buildToppingDict(menuData))
+        }
+        // Final fallback: at minimum show what's already on the variant (from its Options)
+        if (availableCodes.length === 0) {
+          availableCodes = Object.keys(defaultOptions)
         }
 
         let toppingsSection = ''
