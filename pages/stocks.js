@@ -16,7 +16,7 @@ const TOP_SYMBOLS = ['^dji', '^spx', '^ndq'];
 
 const DISPLAY_NAMES = {
   '^dji': 'Dow Jones Industrial Average',
-  '^spx': 'S&amp;P 500',
+  '^spx': 'S&P 500',
   '^ndq': 'NASDAQ',
 };
 
@@ -39,7 +39,11 @@ function strReplace(string, needle, replacement) {
  */
 function fetchStooqHistory(symbol) {
   return new Promise((resolve, reject) => {
-    const s = encodeURIComponent(symbol);
+    // Index symbols use ^ prefix; regular stock tickers need .us suffix for US stocks
+    const stooqSymbol = (!symbol.startsWith('^') && !symbol.includes('.'))
+      ? symbol + '.us'
+      : symbol;
+    const s = encodeURIComponent(stooqSymbol);
     // i=d: daily bars; returns last ~5 years ascending by date
     const path = `/q/d/l/?s=${s}&i=d`;
     const options = {
@@ -59,6 +63,7 @@ function fetchStooqHistory(symbol) {
           return reject(new Error(`Stooq returned HTTP ${res.statusCode} for ${symbol}`));
         }
         try {
+          // Pass original display symbol (without .us suffix) to the parser
           resolve(parseStooqHistory(symbol, data));
         } catch (e) {
           reject(new Error(`Failed to parse Stooq response for ${symbol}: ${e.message}`));
