@@ -1430,7 +1430,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     if (badHttpStatus || hasProductErrors || hasServiceMethodNotAllowed) {
       const productErrors = products_response
         .flatMap(p => (p.StatusItems || []).map(s => ({ code: s.Code, message: s.Message })).filter(e => e.code || e.message))
-      const errMsg = (orderStatusItems.find(s => s.Message) && orderStatusItems.find(s => s.Message).Message)
+      const statusItemWithMsg = orderStatusItems.find(s => s.Message)
+      const errMsg = (statusItemWithMsg && statusItemWithMsg.Message)
         || (hasServiceMethodNotAllowed ? 'Order failed: delivery not available to this address.' : 'Order failed. Please check your details and try again.')
       console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| top-level Status:', topLevelStatus, '| Order Status:', orderData && orderData.Status, '| OrderStatusItems:', JSON.stringify(orderStatusItems), '| Product errors:', JSON.stringify(productErrors))
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
