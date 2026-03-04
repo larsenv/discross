@@ -101,6 +101,11 @@ function dominosRequest(options, body) {
     options.headers = options.headers || {}
     options.headers['User-Agent'] = 'Dominos API Wrapper'
     options.headers['Accept'] = 'application/json'
+    // Referer required by Dominos API to return results
+    if (!options.headers['Referer']) {
+      const host = options.hostname || 'order.dominos.com'
+      options.headers['Referer'] = `https://${host}/`
+    }
     if (body) {
       options.headers['Content-Type'] = 'application/json'
       options.headers['Content-Length'] = Buffer.byteLength(body)
@@ -240,7 +245,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
           path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(address)}&s=&a=`,
           method: 'GET',
         })
-        return (r.status === 200 && r.data && r.data.Stores) ? r.data.Stores : []
+        return (r.status >= 200 && r.status < 300 && r.data && r.data.Stores) ? r.data.Stores : []
       }
       stores = await trySearch('order.dominos.com')
       if (stores.length === 0) {
