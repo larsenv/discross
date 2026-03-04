@@ -4,6 +4,8 @@ const fs = require('fs');
 const escape = require('escape-html');
 const he = require('he');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const { processUnicodeEmojiInText } = require('./emojiUtils');
 
 const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
 
@@ -34,6 +36,17 @@ function strReplace(string, needle, replacement) {
 
 function proxyImageUrl(url) {
   return '/imageProxy/external/' + Buffer.from(url).toString('base64');
+}
+
+// Escape text for safe HTML output with the same Unicode processing used for
+// Discord messages: normalize weird Unicode → HTML-escape → replace emoji with
+// Twemoji img tags (only when images are enabled).
+function escapeContent(text, showImages) {
+  if (!text) return '';
+  const normalized = normalizeWeirdUnicode(text);
+  const escaped = escape(normalized);
+  if (!showImages) return escaped;
+  return processUnicodeEmojiInText(escaped, 18, '1.125em');
 }
 
 // Strip all HTML tags from a string, preserving text content only.
@@ -212,7 +225,7 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
   const slug = articleUrlToSlug(url);
   if (!slug) return '';
 
-  const headline = escape(title);
+  const headline = escapeContent(title, showImages);
   const date = publishDateStamp ? new Date(publishDateStamp) : null;
   const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
   const articleUrl = `/news/${encodeURIComponent(slug)}${sessionParam}`;
@@ -220,8 +233,8 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
   let imageHtml = '';
   if (showImages && imageUrl) {
     const proxied = proxyImageUrl(imageUrl);
-    const alt = escape(imageAlt || title);
-    const caption = escape(imageCaption || '');
+    const alt = escapeContent(imageAlt || title, showImages);
+    const caption = escapeContent(imageCaption || '', showImages);
     imageHtml = `<div class="news-card-image-wrap"><img src="${proxied}" alt="${alt}" class="news-card-image">${caption ? `<br><span class="news-card-caption">${caption}</span>` : ''}</div>`;
   }
 
@@ -302,7 +315,7 @@ function parseArticlePage(html, showImages) {
         const tagEnd = imgMatch.index + imgMatch[0].length;
         const nearby = body.slice(tagEnd, tagEnd + 2000);
         const captionMatch = nearby.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
-        const caption = captionMatch ? escape(stripHtml(captionMatch[1])) : '';
+        const caption = captionMatch ? escapeContent(stripHtml(captionMatch[1]), showImages) : '';
         leadImageHtml = `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
         break;
       }
@@ -320,7 +333,7 @@ function parseArticlePage(html, showImages) {
       const el = body.slice(match.index, end + 4);
       const text = stripHtml(el).trim();
       if (text.length > 10 && !isCTAParagraph(text)) {
-        contentHtml += `<p class="news-article-paragraph">${escape(text)}</p>\n`;
+        contentHtml += `<p class="news-article-paragraph">${escapeContent(text, showImages)}</p>\n`;
         count++;
       }
     }
@@ -395,8 +408,8 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     const html = await fetchHtml(articleUrl);
     const { headline, bylines, date, leadImageHtml, contentHtml } = parseArticlePage(html, imagesCookie !== 0);
 
-    const headlineEscaped = escape(headline || 'Untitled');
-    const bylinesEscaped = bylines ? `${escape(bylines)} - ` : '';
+    const headlineEscaped = escapeContent(headline || 'Untitled', imagesCookie !== 0);
+    const bylinesEscaped = bylines ? `${escapeContent(bylines, imagesCookie !== 0)} - ` : '';
     const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
 
     let final = strReplace(article_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
