@@ -6,6 +6,11 @@ const crypto = require('crypto')
 
 const auth = require('../authentication.js')
 
+const API_TIMEOUT_MS = 15000
+const VERIFICATION_CODE_MIN = 100000
+const VERIFICATION_CODE_MAX = 1000000
+const SAUCE_CODES = ['X', 'Xm', 'Cp', 'Bq', 'Rd', 'Hw', 'Mh', 'Du']
+
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || '')
 }
@@ -110,7 +115,7 @@ function dominosRequest(options, body) {
         }
       })
     })
-    req.setTimeout(15000, () => {
+    req.setTimeout(API_TIMEOUT_MS, () => {
       req.destroy(new Error('Request timed out'))
     })
     req.on('error', reject)
@@ -174,11 +179,10 @@ function classifyToppings(menuData, availableCodes) {
     if (!t) continue
     const name = t.Name || code
     const tags = t.Tags || {}
-    // Classify as sauce if Tags contains a Sauce-like marker
+    // Classify as sauce if Tags contains a Sauce-like marker or code matches known sauce codes
     const isSauce = !!(tags.Sauce || tags.DefaultSauce || tags.Alfredo ||
       tags.BBQ || tags.HotSauce || tags.GarlicParmesan || tags.Ranch ||
-      code === 'X' || code === 'Xm' || code === 'Cp' || code === 'Bq' ||
-      code === 'Rd' || code === 'Hw' || code === 'Mh' || code === 'Du' ||
+      SAUCE_CODES.includes(code) ||
       (t.Type && t.Type.toLowerCase().indexOf('sauce') !== -1))
     if (isSauce) {
       sauces.push({ code, name })
@@ -900,7 +904,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     }
 
     // Use crypto.randomInt for cryptographically secure 6-digit code
-    const code = String(crypto.randomInt(100000, 1000000))
+    const code = String(crypto.randomInt(VERIFICATION_CODE_MIN, VERIFICATION_CODE_MAX))
     const expires = unixTime() + 10 * 60 // 10 minutes
 
     // Only store the verification code + expiry in DB — no PII
@@ -929,7 +933,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       city: (params.city || '').slice(0, 50),
       region: (params.region || '').slice(0, 2).toUpperCase(),
       postalCode: (params.postalCode || '').replace(/[^a-zA-Z0-9 -]/g, '').slice(0, 10),
-      tip: (function() { const custom = parseFloat(params.tip_custom); return Math.min(custom > 0 ? custom : (parseFloat(params.tip) || 0), 100); })(),
+      tip: Math.min(parseFloat(params.tip_custom) > 0 ? parseFloat(params.tip_custom) : (parseFloat(params.tip) || 0), 100),
     }
     const checkoutCookie = Buffer.from(JSON.stringify(checkoutData)).toString('base64')
     const checkoutCookieHeader = `pizzaCheckout=${encodeURIComponent(checkoutCookie)}; path=/food; HttpOnly${secure ? '; Secure' : ''}; Max-Age=600`
