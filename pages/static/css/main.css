@@ -1227,8 +1227,12 @@ html.page-server font[color="#dcddde"] {
 }
 
 .food-input-row {
+    display: -webkit-box;
+    display: -webkit-flex;
     display: flex;
     gap: 10px;
+    -webkit-box-align: end;
+    -webkit-align-items: flex-end;
     align-items: flex-end;
 }
 
@@ -1236,10 +1240,11 @@ html.page-server font[color="#dcddde"] {
     flex: 1;
 }
 
+a.food-btn,
 .food-btn {
     display: inline-block;
     background: #5865f2;
-    color: #ffffff;
+    color: #ffffff !important;
     border: none;
     border-radius: 6px;
     padding: 10px 18px;
@@ -1247,14 +1252,15 @@ html.page-server font[color="#dcddde"] {
     font-family: 'rodin', Arial, Helvetica, sans-serif;
     font-weight: 500;
     cursor: pointer;
-    text-decoration: none;
+    text-decoration: none !important;
     white-space: nowrap;
 }
 
+a.food-btn:hover,
 .food-btn:hover {
     background: #4752c4;
-    text-decoration: none;
-    color: #ffffff;
+    text-decoration: none !important;
+    color: #ffffff !important;
 }
 
 .food-btn-large {
@@ -1399,56 +1405,74 @@ html.page-server font[color="#dcddde"] {
     font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
-/* Menu tabs */
+/* Menu tabs — display:inline-block + margin is the base fallback;
+   flex upgrades the layout on browsers that support it. */
 .food-tabs {
+    display: -webkit-box;
+    display: -webkit-flex;
     display: flex;
+    -webkit-flex-wrap: wrap;
     flex-wrap: wrap;
-    gap: 8px;
     margin-bottom: 20px;
 }
 
+/* Use anchor-specific selectors so the global "a { color: #00aff4 }" doesn't win */
+a.food-tab,
 .food-tab {
     display: inline-block;
     background: #2a2d31;
-    color: #b5bac1;
+    color: #b5bac1 !important;
     border-radius: 6px;
     padding: 7px 14px;
     font-size: 0.9rem;
-    text-decoration: none;
-    border: 1px solid transparent;
+    text-decoration: none !important;
+    border: 1px solid #3a3d42;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+    margin-right: 6px;
+    margin-bottom: 6px;
 }
 
+a.food-tab:hover,
 .food-tab:hover {
     background: #3a3d42;
-    color: #dddddd;
-    text-decoration: none;
+    color: #dddddd !important;
+    text-decoration: none !important;
 }
 
+a.food-tab-active,
 .food-tab-active {
     background: #5865f2;
-    color: #ffffff;
+    color: #ffffff !important;
     border-color: #5865f2;
 }
 
+a.food-tab-active:hover,
 .food-tab-active:hover {
     background: #4752c4;
-    color: #ffffff;
+    color: #ffffff !important;
 }
 
-/* Menu items grid */
+/* Menu items grid — inline-block is the base fallback; flex wraps on modern browsers */
 .food-items-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-wrap: wrap;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
 }
 
 .food-item-card {
+    display: inline-block;
+    vertical-align: top;
     background: #222327;
+    border: 1px solid #3a3d42;
     border-radius: 10px;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    width: 200px;
+    margin-right: 12px;
+    margin-bottom: 16px;
 }
 
 .food-item-img {
@@ -1462,10 +1486,6 @@ html.page-server font[color="#dcddde"] {
 
 .food-item-info {
     padding: 12px;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    gap: 6px;
 }
 
 .food-item-name {
@@ -1473,13 +1493,14 @@ html.page-server font[color="#dcddde"] {
     color: #dddddd;
     font-size: 0.95rem;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+    margin-bottom: 4px;
 }
 
 .food-item-desc {
     font-size: 0.82rem;
     color: #b5bac1;
-    flex: 1;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+    margin-bottom: 6px;
 }
 
 .food-item-price {
@@ -1487,6 +1508,7 @@ html.page-server font[color="#dcddde"] {
     color: #dddddd;
     font-weight: 600;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+    margin-bottom: 8px;
 }
 
 /* Cart */
@@ -1740,6 +1762,7 @@ html.page-server font[color="#dcddde"] {
 }
 .light-theme .food-item-card {
     background: #e9eaec;
+    border-color: #d4d7dc;
 }
 .light-theme .food-item-name,
 .light-theme .food-item-desc,
@@ -1749,9 +1772,9 @@ html.page-server font[color="#dcddde"] {
 }
 .light-theme .food-item-price { color: #323339; }
 .light-theme .food-store-card { background: #f2f3f5; }
-.light-theme .food-tab { background: #e3e5e8; color: #4f5660; border-color: #d4d7dc; }
-.light-theme .food-tab:hover { background: #d4d7dc; color: #323339; }
-.light-theme .food-tab-active { background: #5865f2 !important; color: #ffffff !important; border-color: #5865f2 !important; }
+.light-theme .food-tab { background: #e3e5e8; color: #4f5660 !important; border-color: #d4d7dc; }
+.light-theme .food-tab:hover { background: #d4d7dc; color: #323339 !important; }
+.light-theme .food-tab-active, .light-theme a.food-tab-active { background: #5865f2 !important; color: #ffffff !important; border-color: #5865f2 !important; }
 .light-theme .food-summary-item { color: #323339; border-bottom-color: #d4d7dc; }
 .light-theme .food-summary-total { color: #323339; }
 .light-theme .food-cart-th { color: #4f5660; border-bottom-color: #d4d7dc; }
@@ -1769,11 +1792,11 @@ html.page-server font[color="#dcddde"] {
 .light-theme .food-label { color: #4f5660; }
 .light-theme .food-store-wait { color: #4f5660; }
 .amoled-theme .food-card { background: #0a0a0c; }
-.amoled-theme .food-item-card { background: #0f0f12; }
+.amoled-theme .food-item-card { background: #0f0f12; border-color: #1e1e22; }
 .amoled-theme .food-store-card { background: #0a0a0c; }
-.amoled-theme .food-tab { background: #141416; color: #b5bac1; }
-.amoled-theme .food-tab:hover { background: #1e1e22; color: #DCDCDF; }
-.amoled-theme .food-tab-active { background: #5865f2 !important; color: #ffffff !important; }
+.amoled-theme .food-tab { background: #141416; color: #b5bac1 !important; }
+.amoled-theme .food-tab:hover { background: #1e1e22; color: #DCDCDF !important; }
+.amoled-theme .food-tab-active, .amoled-theme a.food-tab-active { background: #5865f2 !important; color: #ffffff !important; }
 .amoled-theme .food-receipt-card { background: #0a0a0c; }
 .amoled-theme .food-item-price { color: #DCDCDF; }
 .light-theme .food-size-option { background: #e3e5e8; color: #323339; }
@@ -1788,17 +1811,20 @@ html.page-server font[color="#dcddde"] {
         grid-template-columns: 1fr;
     }
     .food-form-row {
+        -webkit-flex-direction: column;
         flex-direction: column;
     }
     .food-form-group-sm {
+        -webkit-flex: 1;
         flex: 1;
     }
-    .food-items-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    .food-item-card {
+        width: calc(50% - 12px);
+        min-width: 150px;
     }
     .food-tracker-bar {
+        -webkit-flex-direction: column;
         flex-direction: column;
-        gap: 8px;
     }
     .food-tracker-step::before { display: none; }
 }
