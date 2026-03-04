@@ -311,9 +311,11 @@ function parseArticlePage(html, showImages) {
         if (!srcMatch) continue;
         const imgUrl = srcMatch[1];
         const proxied = proxyImageUrl(imgUrl);
-        // Look for figcaption in the next ~2000 chars after this img tag
+        // Use the first figcaption in the whole body — it corresponds to the first image.
+        // Also try looking within ±5000 chars around the img for robustness.
         const tagEnd = imgMatch.index + imgMatch[0].length;
-        const nearby = body.slice(tagEnd, tagEnd + 2000);
+        const searchStart = Math.max(0, imgMatch.index - 3000);
+        const nearby = body.slice(searchStart, tagEnd + 5000);
         const captionMatch = nearby.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
         const caption = captionMatch ? escapeContent(stripHtml(captionMatch[1]), showImages) : '';
         leadImageHtml = `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
