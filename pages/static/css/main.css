@@ -950,6 +950,49 @@ html.page-simple .amoled-theme #wrapper .discross-button.secondary:hover {
     background: #5d6269 !important;
 }
 
+/* Food button overrides for both light and AMOLED themes — needed because the wildcard *
+   rule resets all backgrounds; these re-apply the correct per-variant colors. */
+html.page-simple .light-theme #wrapper .food-btn,
+html.page-simple .amoled-theme #wrapper .food-btn {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+html.page-simple .light-theme #wrapper .food-btn:hover,
+html.page-simple .amoled-theme #wrapper .food-btn:hover {
+    background: #4752c4 !important;
+    color: #ffffff !important;
+}
+html.page-simple .light-theme #wrapper .food-btn-secondary,
+html.page-simple .amoled-theme #wrapper .food-btn-secondary {
+    background: #4f545c !important;
+    color: #dddddd !important;
+}
+html.page-simple .light-theme #wrapper .food-btn-secondary:hover,
+html.page-simple .amoled-theme #wrapper .food-btn-secondary:hover {
+    background: #5d6269 !important;
+    color: #dddddd !important;
+}
+html.page-simple .light-theme #wrapper .food-btn-danger,
+html.page-simple .amoled-theme #wrapper .food-btn-danger {
+    background: #da373c !important;
+    color: #ffffff !important;
+}
+html.page-simple .light-theme #wrapper .food-btn-danger:hover,
+html.page-simple .amoled-theme #wrapper .food-btn-danger:hover {
+    background: #b22127 !important;
+    color: #ffffff !important;
+}
+html.page-simple .light-theme #wrapper .food-btn-success,
+html.page-simple .amoled-theme #wrapper .food-btn-success {
+    background: #248046 !important;
+    color: #ffffff !important;
+}
+html.page-simple .light-theme #wrapper .food-btn-success:hover,
+html.page-simple .amoled-theme #wrapper .food-btn-success:hover {
+    background: #1a6334 !important;
+    color: #ffffff !important;
+}
+
 /* ================================================================
    24. PAGE-SERVER: Server page specific styles
    ================================================================ */
