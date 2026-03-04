@@ -453,7 +453,7 @@ exports.setChannelPreference = function (discordID, serverID, channelID, collaps
 }
 
 exports.isGuestChannel = function (channelID) {
-  return !!querySingle('SELECT channelID FROM guest_channels WHERE channelID=?', [channelID])
+  return !!querySingle('SELECT 1 FROM guest_channels WHERE channelID=?', [channelID])
 }
 
 exports.toggleGuestChannel = function (channelID) {
