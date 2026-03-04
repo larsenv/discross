@@ -14,7 +14,9 @@
         </td>
         <td width="100%" align="right">
           <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a href="/food/cart" style="color:#dddddd">&#8592; Back to Cart</a>
+            <a href="/food/cart" style="color:#dddddd">&#8592; Back to Cart</a>&#160;&#160;
+            <a href="/food/" style="color:#dddddd">Order Pizza</a>&#160;&#160;
+            <a href="/food/receipts" style="color:#dddddd">Orders</a>
           </font>
         </td>
         <td valign="middle">
@@ -43,7 +45,8 @@
             <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">$<strong>{$ORDER_TOTAL}</strong></font>
           </div>
           <div style="margin-top:12px;padding:10px;background:#2a2d31;border-radius:6px;">
-            <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">Payment: Cash upon delivery</font>
+            <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">Payment: Cash upon delivery</font><br>
+            <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="2">Delivery surcharge and tax will be added by the store.</font>
           </div>
           {$STORE_ADDRESS}
         </div>
@@ -83,6 +86,16 @@
                 <div class="food-form-group">
                   <label class="food-label">Email</label>
                   <input type="email" name="email" class="food-input" required maxlength="100" autocomplete="email">
+                </div>
+              </div>
+              <div class="food-form-group">
+                <label class="food-label">Tip (optional)</label>
+                <div class="food-tip-row">
+                  <label><input type="radio" name="tip" value="0" checked> <span class="food-tip-btn">No tip</span></label>
+                  <label><input type="radio" name="tip" value="2"> <span class="food-tip-btn">$2</span></label>
+                  <label><input type="radio" name="tip" value="3"> <span class="food-tip-btn">$3</span></label>
+                  <label><input type="radio" name="tip" value="5"> <span class="food-tip-btn">$5</span></label>
+                  <label><input type="radio" name="tip" value="10"> <span class="food-tip-btn">$10</span></label>
                 </div>
               </div>
               <div style="margin-top:4px;padding:8px;background:#2a2d31;border-radius:6px;">

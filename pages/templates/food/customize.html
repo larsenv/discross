@@ -2,7 +2,7 @@
 <html class="page-simple">
 <head>
   {$COMMON_HEAD}
-  <title>Discross - Order History</title>
+  <title>Discross - Customize Item</title>
 </head>
 <body style="margin: 0;" {$WHITE_THEME_ENABLED}>
   <div id="wrapper">
@@ -16,7 +16,8 @@
           <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
             <a href="/food/" style="color:#dddddd">Order Pizza</a>&#160;&#160;
             <a href="/food/cart" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
-            <a href="/food/track" style="color:#dddddd">Track Order</a>
+            <a href="/food/receipts" style="color:#dddddd">Orders</a>&#160;&#160;
+            <a href="/food/track" style="color:#dddddd">Track</a>
           </font>
         </td>
         <td valign="middle">
@@ -27,13 +28,15 @@
     <hr style="margin: 0;">
     <br>
     <div class="food-container">
-      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Order History</b></font><br><br>
-      {$NOTICE}
-      <div id="orders-list">
-        {$ORDERS}
+      <div class="food-back-row">
+        <a href="{$BACK_URL}" class="food-back-link">&#8592; Back to menu</a>
       </div>
-      <div style="margin-top:24px">
-        <a href="/food/" class="food-btn">Order Again</a>
+      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Customize</b></font><br><br>
+      <div class="food-card">
+        {$PRODUCT_IMG}
+        <font size="5" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>{$PRODUCT_NAME}</b></font><br>
+        <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">{$PRODUCT_DESC}</font><br><br>
+        {$SIZE_OPTIONS}
       </div>
     </div>
   </div>
