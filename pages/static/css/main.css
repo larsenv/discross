@@ -1187,11 +1187,12 @@ html.page-server font[color="#dcddde"] {
 }
 
 .food-input {
-    background: #2a2d31;
-    border: 1px solid #3a3d42;
-    border-radius: 6px;
+    background: #222327;
+    border: none;
+    border-radius: 8px;
     color: #dddddd;
-    padding: 10px 14px;
+    padding: 0 14px;
+    height: 44px;
     font-size: 0.95rem;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
     width: 100%;
@@ -1200,7 +1201,7 @@ html.page-server font[color="#dcddde"] {
 }
 
 .food-input:focus {
-    border-color: #5865f2;
+    outline: none;
 }
 
 .food-input-row {
@@ -1623,6 +1624,43 @@ html.page-server font[color="#dcddde"] {
     color: #b5bac1;
     font-size: 0.9rem;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+
+/* Theme overrides for food pages */
+.light-theme .food-input,
+.amoled-theme .food-input {
+    border: none;
+}
+.light-theme .food-input {
+    background: #FFFFFF;
+    color: #323339;
+}
+.amoled-theme .food-input {
+    background: #141416;
+    color: #DCDCDF;
+}
+.light-theme .food-btn,
+.amoled-theme .food-btn {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+}
+.light-theme .food-btn:hover,
+.amoled-theme .food-btn:hover {
+    background: #4752c4 !important;
+    color: #ffffff !important;
+}
+.light-theme .food-card {
+    background: #f2f3f5;
+    color: #323339;
+}
+.light-theme .food-item-card {
+    background: #e9eaec;
+}
+.light-theme .food-item-name,
+.light-theme .food-item-desc,
+.light-theme .food-store-name,
+.light-theme .food-store-addr {
+    color: #323339;
 }
 
 /* Responsive */

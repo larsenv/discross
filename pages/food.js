@@ -150,7 +150,10 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
   // --- Store finder ---
   if (subpath === '' || subpath === 'index' || subpath === 'index.html') {
+    const cart = getCart(req)
+    const cartCount = (cart.items || []).reduce((s, i) => s + (i.qty || 1), 0)
     let html = strReplace(templates.index, '{$WHITE_THEME_ENABLED}', theme)
+    html = strReplace(html, '{$CART_COUNT}', String(cartCount))
     res.writeHead(200, { 'Content-Type': 'text/html' })
     return res.end(html)
   }
@@ -158,8 +161,11 @@ exports.handleGet = async function (bot, req, res, discordID) {
   // --- Store search (server-rendered HTML) ---
   if (subpath === 'store-search') {
     const address = parsedurl.searchParams.get('address') || ''
+    const cart = getCart(req)
+    const cartCount = (cart.items || []).reduce((s, i) => s + (i.qty || 1), 0)
     let html = strReplace(templates.storeSearch, '{$WHITE_THEME_ENABLED}', theme)
     html = strReplace(html, '{$SEARCH_ADDRESS}', escape(address))
+    html = strReplace(html, '{$CART_COUNT}', String(cartCount))
 
     if (!address) {
       html = strReplace(html, '{$STORE_RESULTS}', '')
@@ -257,19 +263,22 @@ exports.handleGet = async function (bot, req, res, discordID) {
       }
       html = strReplace(html, '{$CATEGORY_TABS}', catTabs)
 
-      // Collect product codes for selected category
-      const catData = categoryByCode[selectedCat]
-      let productCodes = []
-      if (catData) {
-        if (catData.Products && catData.Products.length) {
-          productCodes = catData.Products.slice()
+      // Recursively collect all product codes, handling deeply nested SubCategories (e.g. Pizza)
+      function collectProducts(catNode) {
+        let codes = []
+        if (catNode.Products && catNode.Products.length) {
+          codes = codes.concat(catNode.Products)
         }
-        if (catData.SubCategories && catData.SubCategories.length) {
-          for (const sub of catData.SubCategories) {
-            if (sub && sub.Products) productCodes = productCodes.concat(sub.Products)
+        if (catNode.SubCategories && catNode.SubCategories.length) {
+          for (const sub of catNode.SubCategories) {
+            if (sub) codes = codes.concat(collectProducts(sub))
           }
         }
+        return codes
       }
+
+      const catData = categoryByCode[selectedCat]
+      const productCodes = catData ? collectProducts(catData) : []
 
       const products = menuData.Products || {}
       const variants = menuData.Variants || {}
@@ -752,7 +761,7 @@ exports.foodProxy = async function (req, res) {
     return res.end()
   }
 
-  const imageUrl = `https://cache.dominos.com/nolo/en/market/NOLO/ng/images/products/en/${imagePath}`
+  const imageUrl = `https://cache.dominos.com/nolo/en/market/US/_en/images/img/products/en/${imagePath}`
 
   try {
     await new Promise((resolve, reject) => {
