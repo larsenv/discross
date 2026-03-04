@@ -1144,16 +1144,16 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
     console.log('[place-order] products:', JSON.stringify(products))
 
-    // Step 1: Validate pricing with Dominos (/power/price) before placing order.
+    // Step 1: Validate + price the order with Dominos (/power/validate) before placing it.
     // Without this step, Dominos returns PriceInformationRemoved + ServiceMethodNotAllowed.
     let priceResult = null
     try {
       priceResult = await dominosRequest({
         hostname: dominosHost,
-        path: '/power/price',
+        path: '/power/validate',
         method: 'POST',
       }, JSON.stringify(orderPayload))
-      console.log('[place-order] price HTTP status:', priceResult && priceResult.status)
+      console.log('[place-order] validate HTTP status:', priceResult && priceResult.status)
       const priceOrder = priceResult && priceResult.data && priceResult.data.Order
       const priceBadHttp = !priceResult || priceResult.status < 200 || priceResult.status >= 300
       const priceBadApi = !priceOrder || priceOrder.Status < 0
@@ -1161,12 +1161,12 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         const pStatusItems = priceOrder && priceOrder.StatusItems
         const pErrMsg = (pStatusItems && pStatusItems.find(s => s.Message) && pStatusItems.find(s => s.Message).Message)
           || 'Order validation failed. Please check your address and try again.'
-        console.error('[place-order] price FAILED | HTTP:', priceResult && priceResult.status, '| API Status:', priceOrder && priceOrder.Status, '| StatusItems:', JSON.stringify(pStatusItems))
+        console.error('[place-order] validate FAILED | HTTP:', priceResult && priceResult.status, '| API Status:', priceOrder && priceOrder.Status, '| StatusItems:', JSON.stringify(pStatusItems))
         res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(pErrMsg) })
         return res.end()
       }
-      // Use the validated order from the price response so Amounts/Products are populated.
-      // Re-apply customer fields in case price endpoint strips PII from its response.
+      // Use the validated order from the response so Amounts/Products are populated.
+      // Re-apply customer fields in case validate endpoint strips PII from its response.
       orderPayload.Order = Object.assign({}, priceOrder, {
         FirstName: firstName,
         LastName: lastName,
@@ -1176,7 +1176,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         GratuityAmt: gratuityAmt,
       })
     } catch (e) {
-      console.error('[place-order] price validation network error:', e)
+      console.error('[place-order] validate network error:', e)
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
       return res.end()
     }
