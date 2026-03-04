@@ -3,7 +3,7 @@
 
 <head>
   {$COMMON_HEAD}
-  <title>Discross - Weather</title>
+  <title>Discross - Search</title>
 </head>
 
 <body style="margin: 0;" {$WHITE_THEME_ENABLED}>
@@ -34,14 +34,14 @@
         </td>
         <td>
           <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
-            <font size="5">Weather</font>
+            <font size="5">Search</font>
             <br><br>
-            <form method="GET" action="/weather">
+            <form method="GET" action="/search">
               <table cellpadding="0" cellspacing="4">
                 <tr>
                   <td>
                     <div style="padding: 8px 12px; background: #222327; display: inline-block;">
-                      <input type="text" name="city" value="{$CITY_VALUE}" placeholder="Enter city name..."
+                      <input type="text" name="q" value="{$QUERY_VALUE}" placeholder="Enter search query..."
                         style="color: #dddddd; background: #222327; border: none; width: 220px; outline: none; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 15px;">
                     </div>
                   </td>
@@ -49,13 +49,22 @@
                     <button type="submit" class="discross-button" style="padding: 8px 18px; margin: 0; font-size: 15px;">Search</button>
                   </td>
                 </tr>
+                <tr>
+                  <td colspan="2" style="padding-top: 8px;">
+                    <font size="3" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Search engine:</font><br>
+                    <label style="font-size: 14px;">
+                      <input type="radio" name="engine" value="frogfind" {$FROGFIND_CHECKED}> FrogFind <font size="2" color="#72767d">(for old browsers)</font>
+                    </label><br>
+                    <label style="font-size: 14px;">
+                      <input type="radio" name="engine" value="wiby" {$WIBY_CHECKED}> Wiby.me <font size="2" color="#72767d">(for classic sites)</font>
+                    </label><br>
+                    <label style="font-size: 14px;">
+                      <input type="radio" name="engine" value="google" {$GOOGLE_CHECKED}> Google <font size="2" color="#72767d">(for modern browsers)</font>
+                    </label>
+                  </td>
+                </tr>
               </table>
             </form>
-            <br>
-            {$NAV_BUTTONS}
-            {$WEATHER_CONTENT}
-            <br><br>
-            <font size="2" color="#72767d">Weather data courtesy of <a href="https://www.accuweather.com/" style="color: #5865f2;">AccuWeather</a></font>
           </font>
         </td>
       </tr>
