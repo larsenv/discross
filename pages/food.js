@@ -1204,7 +1204,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     try {
       const addrResult = await dominosRequest({
         hostname: dominosHost,
-        path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(postalCode)}&s=${encodeURIComponent(street)}&a=`,
+        path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(postalCode)}&s=${encodeURIComponent(street)}`,
         method: 'GET',
       })
       const addrObj = addrResult && addrResult.data && addrResult.data.Address
@@ -1258,7 +1258,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         PhonePrefix: '',
         Products: products,
         ServiceMethod: 'Delivery',
-        SourceOrganizationURI: 'android.dominos.com',
+        SourceOrganizationURI: 'order.dominos.com',
         StoreID: cart.storeId,
         Tags: {},
         Version: '1.0',
