@@ -1159,6 +1159,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
     // Step 1: First validate-order call (empty OrderID) — Dominos returns an OrderID.
     // Per WiiLink's GetPrice: call validate-order twice then price-order before place-order.
+    // WiiLink does NOT check Status on validate-order steps — AutoAddedOrderId /
+    // ServiceMethodNotAllowed are informational codes Dominos always returns. Just extract the
+    // OrderID and proceed regardless of API Status.
     let orderId = ''
     for (let vStep = 0; vStep < 2; vStep++) {
       let vResult = null
@@ -1171,15 +1174,15 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         console.log(`[place-order] validate-order step ${vStep + 1} HTTP status:`, vResult && vResult.status)
         const vOrder = vResult && vResult.data && vResult.data.Order
         const vBadHttp = !vResult || vResult.status < 200 || vResult.status >= 300
-        const vBadApi = !vOrder || vOrder.Status < 0
-        if (vBadHttp || vBadApi) {
-          const vStatusItems = vOrder && vOrder.StatusItems
-          const vErrItem = vStatusItems && vStatusItems.find(s => s.Message)
-          const vErrMsg = (vErrItem && vErrItem.Message)
-            || 'Order validation failed. Please check your address and try again.'
-          console.error(`[place-order] validate-order step ${vStep + 1} FAILED | HTTP:`, vResult && vResult.status, '| API Status:', vOrder && vOrder.Status, '| StatusItems:', JSON.stringify(vStatusItems))
-          res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(vErrMsg) })
+        if (vBadHttp) {
+          console.error(`[place-order] validate-order step ${vStep + 1} HTTP error:`, vResult && vResult.status)
+          res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
           return res.end()
+        }
+        // Log informational status items but do NOT fail — these are expected by Dominos
+        const vStatusItems = vOrder && vOrder.StatusItems
+        if (vOrder && vOrder.Status < 0) {
+          console.log(`[place-order] validate-order step ${vStep + 1} API Status:`, vOrder.Status, '| StatusItems:', JSON.stringify(vStatusItems), '(continuing per WiiLink flow)')
         }
         // Save/update the OrderID for subsequent calls
         orderId = (vOrder && vOrder.OrderID) || orderId
@@ -1191,7 +1194,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       }
     }
 
-    // Step 2: price-order — retrieves final price with Amounts populated
+    // Step 2: price-order — retrieves final price with Amounts populated.
+    // WiiLink also does not check Status on price-order; proceed regardless and use cartTotal fallback.
     validatePayload.Order.metaData = { orderFunnel: 'payments' }
     let pricedOrder = null
     try {
@@ -1203,15 +1207,13 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       console.log('[place-order] price-order HTTP status:', priceResult && priceResult.status)
       const priceOrderData = priceResult && priceResult.data && priceResult.data.Order
       const priceBadHttp = !priceResult || priceResult.status < 200 || priceResult.status >= 300
-      const priceBadApi = !priceOrderData || priceOrderData.Status < 0
-      if (priceBadHttp || priceBadApi) {
-        const pStatusItems = priceOrderData && priceOrderData.StatusItems
-        const pErrItem = pStatusItems && pStatusItems.find(s => s.Message)
-        const pErrMsg = (pErrItem && pErrItem.Message)
-          || 'Failed to price order. Please try again.'
-        console.error('[place-order] price-order FAILED | HTTP:', priceResult && priceResult.status, '| API Status:', priceOrderData && priceOrderData.Status, '| StatusItems:', JSON.stringify(pStatusItems))
-        res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(pErrMsg) })
+      if (priceBadHttp) {
+        console.error('[place-order] price-order HTTP error:', priceResult && priceResult.status)
+        res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to price order. Please try again.') })
         return res.end()
+      }
+      if (priceOrderData && priceOrderData.Status < 0) {
+        console.log('[place-order] price-order API Status:', priceOrderData.Status, '| StatusItems:', JSON.stringify(priceOrderData.StatusItems), '(continuing per WiiLink flow)')
       }
       pricedOrder = priceOrderData
     } catch (e) {
@@ -1221,10 +1223,12 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     }
 
     // Step 3: Build the place-order payload using the priced order per WiiLink's PlaceOrder
+    const pricedOrderBase = pricedOrder || {}
+    const addressBase = pricedOrderBase.Address || { Street: street, City: city, Region: region, PostalCode: postalCode, Type: 'House' }
     const placePayload = {
       Status: 0,
-      Order: Object.assign({}, pricedOrder, {
-        Address: Object.assign({}, pricedOrder.Address || {}, { DeliveryInstructions: '' }),
+      Order: Object.assign({}, pricedOrderBase, {
+        Address: Object.assign({}, addressBase, { DeliveryInstructions: '' }),
         Channel: 'Mobile',
         DataWarehouseUpdate: false,
         Email: email,
