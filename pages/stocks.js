@@ -12,12 +12,12 @@ const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 const TICKER_MAX_LENGTH = 10;
 
 // Stooq symbols for major indices (no API key required)
-const TOP_SYMBOLS = ['^dji', '^ndq', '^spx'];
+const TOP_SYMBOLS = ['^dji', '^spx', '^ndq'];
 
 const DISPLAY_NAMES = {
-  '^dji':  'Dow Jones Industrial Average',
-  '^ndq':  'NASDAQ Composite',
-  '^spx':  'S&amp;P 500',
+  '^dji': 'Dow Jones Industrial Average',
+  '^spx': 'S&amp;P 500',
+  '^ndq': 'NASDAQ',
 };
 
 const stocks_template = fs.readFileSync('pages/templates/stocks.html', 'utf-8')
@@ -31,14 +31,17 @@ function strReplace(string, needle, replacement) {
 }
 
 /**
- * Fetch current quote data from stooq.com (no API key required).
- * Returns a Promise resolving to an array of quote objects.
+ * Fetch daily historical data from stooq.com for a single symbol.
+ * Returns a Promise resolving to a quote object (latest completed day) or null.
+ *
+ * Uses the daily history endpoint which always has data regardless of market hours.
+ * Format: Date,Open,High,Low,Close,Volume (ascending date order)
  */
-function fetchStooqQuotes(symbols) {
+function fetchStooqHistory(symbol) {
   return new Promise((resolve, reject) => {
-    const s = symbols.map(sym => encodeURIComponent(sym)).join(',');
-    // f=sd2t2ohlcv: Symbol, Date, Time, Open, High, Low, Close, Volume
-    const path = `/q/l/?s=${s}&f=sd2t2ohlcv&h&e=csv`;
+    const s = encodeURIComponent(symbol);
+    // i=d: daily bars; returns last ~5 years ascending by date
+    const path = `/q/d/l/?s=${s}&i=d`;
     const options = {
       hostname: 'stooq.com',
       path,
@@ -53,12 +56,12 @@ function fetchStooqQuotes(symbols) {
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode !== 200) {
-          return reject(new Error(`Stooq returned HTTP ${res.statusCode}`));
+          return reject(new Error(`Stooq returned HTTP ${res.statusCode} for ${symbol}`));
         }
         try {
-          resolve(parseStooqCSV(data));
+          resolve(parseStooqHistory(symbol, data));
         } catch (e) {
-          reject(new Error(`Failed to parse Stooq response: ${e.message}`));
+          reject(new Error(`Failed to parse Stooq response for ${symbol}: ${e.message}`));
         }
       });
     });
@@ -67,48 +70,70 @@ function fetchStooqQuotes(symbols) {
   });
 }
 
-function parseStooqCSV(csv) {
+/**
+ * Parse stooq daily history CSV.
+ * Returns a quote object built from the most recent two rows (for change calculation).
+ * Returns null if not enough data rows.
+ */
+function parseStooqHistory(symbol, csv) {
   const lines = csv.trim().split('\n');
-  if (lines.length < 2) return [];
+  // Need at least header + 2 data rows for change calculation
+  if (lines.length < 2) return null;
 
   const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-  const quotes = [];
+  const closeIdx  = headers.indexOf('close');
+  const openIdx   = headers.indexOf('open');
+  const highIdx   = headers.indexOf('high');
+  const lowIdx    = headers.indexOf('low');
+  const volumeIdx = headers.indexOf('volume');
 
-  for (let i = 1; i < lines.length; i++) {
+  if (closeIdx === -1) return null;
+
+  // Rows are ascending by date — last row is most recent
+  const rows = [];
+  for (let i = lines.length - 1; i >= 1; i--) {
     const values = lines[i].split(',');
     if (values.length < headers.length) continue;
-
-    const row = {};
-    headers.forEach((h, idx) => { row[h] = (values[idx] || '').trim(); });
-
-    const open  = parseFloat(row.open);
-    const close = parseFloat(row.close);
-    const high  = parseFloat(row.high);
-    const low   = parseFloat(row.low);
-    const vol   = parseInt(row.volume, 10);
-
-    // Skip rows with no data (stooq returns 'N/D' for unavailable quotes)
-    if (isNaN(close) || row.close === 'N/D') continue;
-
-    // Change is calculated as intraday movement (close vs open)
-    const change    = (!isNaN(open) && !isNaN(close)) ? close - open : null;
-    const changePct = (!isNaN(open) && !isNaN(close) && open !== 0)
-      ? (close - open) / open * 100
-      : null;
-
-    quotes.push({
-      symbol:                    (row.symbol || '').toUpperCase(),
-      regularMarketPrice:        isNaN(close) ? null : close,
-      regularMarketOpen:         isNaN(open)  ? null : open,
-      regularMarketDayHigh:      isNaN(high)  ? null : high,
-      regularMarketDayLow:       isNaN(low)   ? null : low,
-      regularMarketVolume:       isNaN(vol)   ? null : vol,
-      regularMarketChange:       change,
-      regularMarketChangePercent: changePct,
-    });
+    const close = parseFloat(values[closeIdx]);
+    if (isNaN(close)) continue;
+    rows.push(values);
+    if (rows.length === 2) break;
   }
 
-  return quotes;
+  if (rows.length === 0) return null;
+
+  const latest   = rows[0];
+  const previous = rows[1] || null;
+
+  const close  = parseFloat(latest[closeIdx]);
+  const open   = openIdx   !== -1 ? parseFloat(latest[openIdx])   : NaN;
+  const high   = highIdx   !== -1 ? parseFloat(latest[highIdx])   : NaN;
+  const low    = lowIdx    !== -1 ? parseFloat(latest[lowIdx])    : NaN;
+  const volume = volumeIdx !== -1 ? parseInt(latest[volumeIdx], 10) : NaN;
+
+  // Use previous close (prior trading day) for daily change, fall back to open
+  let prevClose = null;
+  if (previous) {
+    const pc = parseFloat(previous[closeIdx]);
+    if (!isNaN(pc)) prevClose = pc;
+  }
+  const basePrice = prevClose !== null ? prevClose : (!isNaN(open) ? open : null);
+
+  const change    = basePrice !== null ? close - basePrice : null;
+  const changePct = (basePrice !== null && basePrice !== 0)
+    ? (close - basePrice) / basePrice * 100
+    : null;
+
+  return {
+    symbol:                     symbol.toUpperCase(),
+    regularMarketPrice:         close,
+    regularMarketOpen:          isNaN(open)   ? null : open,
+    regularMarketDayHigh:       isNaN(high)   ? null : high,
+    regularMarketDayLow:        isNaN(low)    ? null : low,
+    regularMarketVolume:        isNaN(volume) ? null : volume,
+    regularMarketChange:        change,
+    regularMarketChangePercent: changePct,
+  };
 }
 
 function formatPrice(price) {
@@ -140,7 +165,7 @@ function renderQuoteRow(quote) {
   const change    = formatChange(quote.regularMarketChange);
   const changePct = formatChangePct(quote.regularMarketChangePercent);
   const color     = changeColor(quote.regularMarketChange);
-  const dayOpen   = quote.regularMarketOpen   != null ? formatPrice(quote.regularMarketOpen)   : '--';
+  const dayOpen   = quote.regularMarketOpen    != null ? formatPrice(quote.regularMarketOpen)    : '--';
   const dayHigh   = quote.regularMarketDayHigh != null ? formatPrice(quote.regularMarketDayHigh) : '--';
   const dayLow    = quote.regularMarketDayLow  != null ? formatPrice(quote.regularMarketDayLow)  : '--';
   const volume    = quote.regularMarketVolume  != null
@@ -235,15 +260,19 @@ exports.processStocks = async function processStocks(req, res) {
   try {
     if (ticker) {
       const safeTicker = ticker.slice(0, TICKER_MAX_LENGTH);
-      const quotes = await fetchStooqQuotes([safeTicker.toLowerCase()]);
+      const quote = await fetchStooqHistory(safeTicker.toLowerCase());
 
-      if (quotes.length === 0) {
+      if (!quote) {
         stocksHtml = `<font color="#ff4444" ${FONT}>No data found for &ldquo;${escape(safeTicker)}&rdquo;. Please check the ticker symbol and try again.</font><br>`;
       } else {
-        stocksHtml = renderQuoteRow(quotes[0]);
+        stocksHtml = renderQuoteRow(quote);
       }
     } else {
-      const quotes = await fetchStooqQuotes(TOP_SYMBOLS);
+      // Fetch all top indices in parallel
+      const results = await Promise.allSettled(TOP_SYMBOLS.map(sym => fetchStooqHistory(sym)));
+      const quotes = results
+        .filter(r => r.status === 'fulfilled' && r.value !== null)
+        .map(r => r.value);
 
       if (quotes.length === 0) {
         stocksHtml = `<font color="#ff4444" ${FONT}>Unable to load market data. Please try again later.</font><br>`;
