@@ -13,6 +13,8 @@ const ACCUWEATHER_HOST = 'api.accuweather.com';
 // Max city name length to prevent abuse
 const CITY_MAX_LENGTH = 100;
 
+const MPH_TO_KMH = 1.60934;
+
 // Map AccuWeather icon codes (1-44) to Twemoji file names (without .gif)
 const WEATHER_ICONS = {
   1:  '2600',    // Sunny
@@ -56,6 +58,40 @@ const WEATHER_ICONS = {
   43: '1f328',   // Mostly Cloudy w/ Flurries (night)
   44: '2744',    // Mostly Cloudy w/ Snow (night)
 };
+
+const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
+
+function fToC(f) {
+  if (f == null || f === '--') return '--';
+  return ((f - 32) * 5 / 9).toFixed(1);
+}
+
+function formatDay(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  } catch (e) { return ''; }
+}
+
+function formatHour(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+  } catch (e) { return ''; }
+}
+
+function sectionHead(title) {
+  return `\n<br><font size="4" ${FONT} color="#b5bac1"><b>${title}</b></font><br>` +
+    `<hr style="border:none;border-top:1px solid #40444b;margin:4px 0 10px 0;">\n`;
+}
+
+function iconImg(code, size) {
+  const file = WEATHER_ICONS[parseInt(code, 10)] || '2600';
+  const s = size || 24;
+  return `<img src="/resources/twemoji/${file}.gif" alt="" width="${s}" height="${s}" style="width:${s}px;height:${s}px;vertical-align:middle;">`;
+}
 
 const weather_template = fs.readFileSync('pages/templates/weather.html', 'utf-8')
   .split('{$COMMON_HEAD}')
@@ -135,41 +171,49 @@ exports.processWeather = async function processWeather(req, res) {
 
       if (locResult.status === 401) {
         console.error('AccuWeather location API returned 401 (unauthorized). Check API key. Response:', JSON.stringify(locResult.data));
-        weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Weather service unavailable. Please try again later.</font><br>`;
+        weatherHtml = `<font color="#ff4444" ${FONT}>Weather service unavailable. Please try again later.</font><br>`;
       } else if (locResult.status === 429) {
         console.error('AccuWeather location API returned 429 (rate limited).');
-        weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Too many requests. Please wait a moment and try again.</font><br>`;
+        weatherHtml = `<font color="#ff4444" ${FONT}>Too many requests. Please wait a moment and try again.</font><br>`;
       } else if (locResult.status !== 200) {
         console.error(`AccuWeather location API returned HTTP ${locResult.status}. Response:`, JSON.stringify(locResult.data));
-        weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Weather service unavailable. Please try again later.</font><br>`;
-      } else if (!locResult.data || !Array.isArray(locResult.data) || locResult.data.length === 0) {
-        weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">City not found. Please try a different city name.</font><br>`;
+        weatherHtml = `<font color="#ff4444" ${FONT}>Weather service unavailable. Please try again later.</font><br>`;
+      } else if (!Array.isArray(locResult.data) || locResult.data.length === 0) {
+        weatherHtml = `<font color="#ff4444" ${FONT}>City not found. Please try a different city name.</font><br>`;
       } else {
         const location = locResult.data[0];
         const locationKey = location.Key;
         const cityName = location.LocalizedName || '';
         const country = location.Country?.LocalizedName || '';
         const adminArea = location.AdministrativeArea?.LocalizedName || '';
+        const locationParts = [escape(cityName)];
+        if (adminArea) locationParts.push(escape(adminArea));
+        if (country) locationParts.push(escape(country));
+        const locationDisplay = locationParts.join(', ');
 
-        // Step 2: Get current conditions with details
-        const condPath = `/currentconditions/v1/${encodeURIComponent(locationKey)}?apikey=${ACCUWEATHER_API_KEY}&details=true`;
-        const condResult = await fetchJson(ACCUWEATHER_HOST, condPath);
+        // Step 2: Parallel API calls for current conditions, 5-day daily, and 12-hour hourly
+        const [condSettled, dailySettled, hourlySettled] = await Promise.allSettled([
+          fetchJson(ACCUWEATHER_HOST, `/currentconditions/v1/${encodeURIComponent(locationKey)}?apikey=${ACCUWEATHER_API_KEY}&details=true`),
+          fetchJson(ACCUWEATHER_HOST, `/forecasts/v1/daily/5day/${encodeURIComponent(locationKey)}?apikey=${ACCUWEATHER_API_KEY}&details=true`),
+          fetchJson(ACCUWEATHER_HOST, `/forecasts/v1/hourly/12hour/${encodeURIComponent(locationKey)}?apikey=${ACCUWEATHER_API_KEY}&details=true`),
+        ]);
 
-        if (condResult.status === 429) {
-          console.error('AccuWeather conditions API returned 429 (rate limited).');
-          weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Too many requests. Please wait a moment and try again.</font><br>`;
-        } else if (condResult.status !== 200) {
-          console.error(`AccuWeather conditions API returned HTTP ${condResult.status}. Response:`, JSON.stringify(condResult.data));
-          weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Weather service unavailable. Please try again later.</font><br>`;
-        } else if (!condResult.data || !Array.isArray(condResult.data) || condResult.data.length === 0) {
-          weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Weather data unavailable for this location.</font><br>`;
-        } else {
+        if (condSettled.status === 'rejected') console.error('AccuWeather current conditions error:', condSettled.reason.message);
+        if (dailySettled.status === 'rejected') console.error('AccuWeather daily forecast error:', dailySettled.reason.message);
+        if (hourlySettled.status === 'rejected') console.error('AccuWeather hourly forecast error:', hourlySettled.reason.message);
+
+        const condResult = condSettled.status === 'fulfilled' ? condSettled.value : null;
+        const dailyResult = dailySettled.status === 'fulfilled' ? dailySettled.value : null;
+        const hourlyResult = hourlySettled.status === 'fulfilled' ? hourlySettled.value : null;
+
+        // Location header
+        weatherHtml = `<font size="5" ${FONT} color="#dddddd"><b>${locationDisplay}</b></font><br>`;
+
+        // --- Current Conditions ---
+        if (condResult && condResult.status === 200 && Array.isArray(condResult.data) && condResult.data.length > 0) {
           const cond = condResult.data[0];
-
           const iconCode = cond.WeatherIcon || 1;
-          const iconFile = WEATHER_ICONS[iconCode] || '2600';
           const weatherText = escape(cond.WeatherText || '');
-
           const tempF = cond.Temperature?.Imperial?.Value ?? '--';
           const tempC = cond.Temperature?.Metric?.Value ?? '--';
           const feelsLikeF = cond.RealFeelTemperature?.Imperial?.Value ?? '--';
@@ -177,7 +221,7 @@ exports.processWeather = async function processWeather(req, res) {
           const humidity = cond.RelativeHumidity ?? '--';
           const windSpeedMph = cond.Wind?.Speed?.Imperial?.Value ?? '--';
           const windSpeedKmh = cond.Wind?.Speed?.Metric?.Value ?? '--';
-          const windDir = cond.Wind?.Direction?.Localized || '';
+          const windDir = escape(cond.Wind?.Direction?.Localized || '');
           const visibilityMi = cond.Visibility?.Imperial?.Value ?? '--';
           const visibilityKm = cond.Visibility?.Metric?.Value ?? '--';
           const pressureInHg = cond.Pressure?.Imperial?.Value ?? '--';
@@ -188,70 +232,147 @@ exports.processWeather = async function processWeather(req, res) {
           const dewPointF = cond.DewPoint?.Imperial?.Value ?? '--';
           const dewPointC = cond.DewPoint?.Metric?.Value ?? '--';
 
-          const locationParts = [escape(cityName)];
-          if (adminArea) locationParts.push(escape(adminArea));
-          if (country) locationParts.push(escape(country));
-          const locationDisplay = locationParts.join(', ');
-
-          weatherHtml = `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;">
+          weatherHtml += sectionHead('Current Conditions');
+          weatherHtml += `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;">
   <tr valign="top">
-    <td style="padding-right:16px;width:80px;">
-      <img src="/resources/twemoji/${iconFile}.gif" alt="${weatherText}" width="64" height="64" style="width:64px;height:64px;">
-    </td>
+    <td style="padding-right:16px;width:80px;">${iconImg(iconCode, 64)}</td>
     <td valign="top">
-      <font size="5" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>${locationDisplay}</b></font><br>
-      <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">${weatherText}</font><br>
-      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>${tempF}&deg;F / ${tempC}&deg;C</b></font><br>
-      <font size="3" face="'rodin', Arial, Helvetica, sans-serif" color="#72767d">Feels like ${feelsLikeF}&deg;F / ${feelsLikeC}&deg;C</font>
+      <font size="4" ${FONT} color="#b5bac1">${weatherText}</font><br>
+      <font size="6" ${FONT} color="#dddddd"><b>${tempF}&deg;F / ${tempC}&deg;C</b></font><br>
+      <font size="3" ${FONT} color="#72767d">Feels like ${feelsLikeF}&deg;F / ${feelsLikeC}&deg;C</font>
     </td>
   </tr>
 </table>
 <br>
-<table cellpadding="8" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">
+<table cellpadding="6" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">
   <tr>
     <td style="border-bottom:1px solid #40444b;width:50%;vertical-align:top;">
-      <font size="2" face="'rodin', Arial, Helvetica, sans-serif" color="#72767d">Humidity</font><br>
-      <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>${humidity}%</b></font>
+      <font size="2" ${FONT} color="#72767d">Humidity</font><br>
+      <font ${FONT} color="#dddddd"><b>${humidity}%</b></font>
     </td>
     <td style="border-bottom:1px solid #40444b;width:50%;vertical-align:top;">
-      <font size="2" face="'rodin', Arial, Helvetica, sans-serif" color="#72767d">Wind</font><br>
-      <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>${windSpeedMph} mph / ${windSpeedKmh} km/h${windDir ? ' ' + escape(windDir) : ''}</b></font>
+      <font size="2" ${FONT} color="#72767d">Wind</font><br>
+      <font ${FONT} color="#dddddd"><b>${windSpeedMph} mph / ${windSpeedKmh} km/h${windDir ? ' ' + windDir : ''}</b></font>
     </td>
   </tr>
   <tr>
     <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" face="'rodin', Arial, Helvetica, sans-serif" color="#72767d">Visibility</font><br>
-      <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>${visibilityMi} mi / ${visibilityKm} km</b></font>
+      <font size="2" ${FONT} color="#72767d">Visibility</font><br>
+      <font ${FONT} color="#dddddd"><b>${visibilityMi} mi / ${visibilityKm} km</b></font>
     </td>
     <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" face="'rodin', Arial, Helvetica, sans-serif" color="#72767d">Pressure</font><br>
-      <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>${pressureInHg} inHg / ${pressureMb} mb</b></font>
+      <font size="2" ${FONT} color="#72767d">Pressure</font><br>
+      <font ${FONT} color="#dddddd"><b>${pressureInHg} inHg / ${pressureMb} mb</b></font>
     </td>
   </tr>
   <tr>
     <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" face="'rodin', Arial, Helvetica, sans-serif" color="#72767d">UV Index</font><br>
-      <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>${uvIndex}${uvText ? ' (' + uvText + ')' : ''}</b></font>
+      <font size="2" ${FONT} color="#72767d">UV Index</font><br>
+      <font ${FONT} color="#dddddd"><b>${uvIndex}${uvText ? ' (' + uvText + ')' : ''}</b></font>
     </td>
     <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" face="'rodin', Arial, Helvetica, sans-serif" color="#72767d">Cloud Cover</font><br>
-      <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>${cloudCover}%</b></font>
+      <font size="2" ${FONT} color="#72767d">Cloud Cover</font><br>
+      <font ${FONT} color="#dddddd"><b>${cloudCover}%</b></font>
     </td>
   </tr>
   <tr>
     <td style="vertical-align:top;">
-      <font size="2" face="'rodin', Arial, Helvetica, sans-serif" color="#72767d">Dew Point</font><br>
-      <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>${dewPointF}&deg;F / ${dewPointC}&deg;C</b></font>
+      <font size="2" ${FONT} color="#72767d">Dew Point</font><br>
+      <font ${FONT} color="#dddddd"><b>${dewPointF}&deg;F / ${dewPointC}&deg;C</b></font>
     </td>
-    <td style="vertical-align:top;">
-    </td>
+    <td style="vertical-align:top;"></td>
   </tr>
 </table>`;
+        } else if (condResult && condResult.status !== 200) {
+          console.error(`AccuWeather conditions API returned HTTP ${condResult.status}. Response:`, JSON.stringify(condResult.data));
+        }
+
+        // --- Today's Forecast ---
+        if (dailyResult && dailyResult.status === 200 && dailyResult.data?.DailyForecasts?.length > 0) {
+          const today = dailyResult.data.DailyForecasts[0];
+          const headline = dailyResult.data.Headline?.Text ? escape(dailyResult.data.Headline.Text) : '';
+          const highF = today.Temperature?.Maximum?.Value ?? '--';
+          const lowF = today.Temperature?.Minimum?.Value ?? '--';
+          const highC = fToC(highF);
+          const lowC = fToC(lowF);
+          const dayIcon = today.Day?.Icon || 1;
+          const dayPhrase = escape(today.Day?.IconPhrase || '');
+          const nightIcon = today.Night?.Icon || 33;
+          const nightPhrase = escape(today.Night?.IconPhrase || '');
+          const dayPrecip = today.Day?.PrecipitationProbability ?? '--';
+          const nightPrecip = today.Night?.PrecipitationProbability ?? '--';
+
+          weatherHtml += sectionHead('Today');
+          if (headline) {
+            weatherHtml += `<font size="3" ${FONT} color="#b5bac1"><i>${headline}</i></font><br><br>\n`;
+          }
+          weatherHtml += `<table cellpadding="6" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">
+  <tr style="border-bottom:1px solid #40444b;">
+    <td style="padding:8px;width:36px;">${iconImg(dayIcon, 32)}</td>
+    <td style="padding:8px;"><font size="3" ${FONT} color="#72767d">Day</font> &mdash; <font ${FONT} color="#dddddd">${dayPhrase}</font><br><font size="2" ${FONT} color="#72767d">Precip: ${dayPrecip}%</font></td>
+    <td style="padding:8px;" align="right"><font ${FONT} color="#dddddd"><b>High: ${highF}&deg;F / ${highC}&deg;C</b></font></td>
+  </tr>
+  <tr>
+    <td style="padding:8px;">${iconImg(nightIcon, 32)}</td>
+    <td style="padding:8px;"><font size="3" ${FONT} color="#72767d">Night</font> &mdash; <font ${FONT} color="#dddddd">${nightPhrase}</font><br><font size="2" ${FONT} color="#72767d">Precip: ${nightPrecip}%</font></td>
+    <td style="padding:8px;" align="right"><font ${FONT} color="#dddddd"><b>Low: ${lowF}&deg;F / ${lowC}&deg;C</b></font></td>
+  </tr>
+</table>`;
+        } else if (dailyResult && dailyResult.status !== 200) {
+          console.error(`AccuWeather daily forecast API returned HTTP ${dailyResult.status}. Response:`, JSON.stringify(dailyResult.data));
+        }
+
+        // --- Hourly Forecast ---
+        if (hourlyResult && hourlyResult.status === 200 && Array.isArray(hourlyResult.data) && hourlyResult.data.length > 0) {
+          weatherHtml += sectionHead('Hourly Forecast');
+          weatherHtml += `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n`;
+          for (const hour of hourlyResult.data) {
+            const time = formatHour(hour.DateTime);
+            const tempF = hour.Temperature?.Value ?? '--';
+            const tempC = fToC(tempF);
+            const phrase = escape(hour.IconPhrase || '');
+            const iconCode = hour.WeatherIcon || 1;
+            const precipProb = hour.PrecipitationProbability ?? '--';
+            const windMph = hour.Wind?.Speed?.Value;
+            const windKmh = windMph != null ? (windMph * MPH_TO_KMH).toFixed(1) : null;
+            const windStr = windMph != null ? ` &mdash; Wind: ${windMph} mph / ${windKmh} km/h` : '';
+            weatherHtml += `  <tr style="border-bottom:1px solid #40444b;">
+    <td style="padding:6px 8px;white-space:nowrap;width:70px;"><font size="2" ${FONT} color="#b5bac1">${time}</font></td>
+    <td style="padding:6px 4px;width:28px;">${iconImg(iconCode, 24)}</td>
+    <td style="padding:6px 8px;"><font ${FONT} color="#dddddd">${tempF}&deg;F / ${tempC}&deg;C</font><br><font size="2" ${FONT} color="#72767d">${phrase}${windStr} &mdash; Precip: ${precipProb}%</font></td>
+  </tr>\n`;
+          }
+          weatherHtml += `</table>\n`;
+        } else if (hourlyResult && hourlyResult.status !== 200) {
+          console.error(`AccuWeather hourly forecast API returned HTTP ${hourlyResult.status}. Response:`, JSON.stringify(hourlyResult.data));
+        }
+
+        // --- 5-Day Forecast ---
+        if (dailyResult && dailyResult.status === 200 && dailyResult.data?.DailyForecasts?.length > 0) {
+          weatherHtml += sectionHead('5-Day Forecast');
+          weatherHtml += `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n`;
+          dailyResult.data.DailyForecasts.forEach((day, i) => {
+            const isLast = i === dailyResult.data.DailyForecasts.length - 1;
+            const dayLabel = i === 0 ? 'Today' : formatDay(day.Date);
+            const highF = day.Temperature?.Maximum?.Value ?? '--';
+            const lowF = day.Temperature?.Minimum?.Value ?? '--';
+            const highC = fToC(highF);
+            const lowC = fToC(lowF);
+            const dayIcon = day.Day?.Icon || 1;
+            const dayPhrase = escape(day.Day?.IconPhrase || '');
+            weatherHtml += `  <tr${isLast ? '' : ' style="border-bottom:1px solid #40444b;"'}>
+    <td style="padding:8px;white-space:nowrap;width:80px;"><font size="2" ${FONT} color="#b5bac1"><b>${dayLabel}</b></font></td>
+    <td style="padding:8px;width:32px;">${iconImg(dayIcon, 24)}</td>
+    <td style="padding:8px;"><font ${FONT} color="#dddddd">${dayPhrase}</font></td>
+    <td style="padding:8px;" align="right"><font ${FONT} color="#dddddd"><b>${highF}&deg;F / ${highC}&deg;C</b></font><br><font size="2" ${FONT} color="#72767d">${lowF}&deg;F / ${lowC}&deg;C</font></td>
+  </tr>\n`;
+          });
+          weatherHtml += `</table>\n`;
         }
       }
     } catch (err) {
       console.error('Weather API error:', err.message);
-      weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Unable to fetch weather data. Please try again later.</font><br>`;
+      weatherHtml = `<font color="#ff4444" ${FONT}>Unable to fetch weather data. Please try again later.</font><br>`;
     }
   }
 
