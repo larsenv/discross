@@ -1399,7 +1399,7 @@ html.page-server font[color="#dcddde"] {
 
 .food-item-price {
     font-size: 0.95rem;
-    color: #5865f2;
+    color: #dddddd;
     font-weight: 600;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
@@ -1662,6 +1662,35 @@ html.page-server font[color="#dcddde"] {
 .light-theme .food-store-addr {
     color: #323339;
 }
+.light-theme .food-item-price { color: #323339; }
+.light-theme .food-store-card { background: #f2f3f5; }
+.light-theme .food-tab { background: #e3e5e8; color: #4f5660; border-color: #d4d7dc; }
+.light-theme .food-tab:hover { background: #d4d7dc; color: #323339; }
+.light-theme .food-tab-active { background: #5865f2 !important; color: #ffffff !important; border-color: #5865f2 !important; }
+.light-theme .food-summary-item { color: #323339; border-bottom-color: #d4d7dc; }
+.light-theme .food-summary-total { color: #323339; }
+.light-theme .food-cart-th { color: #4f5660; border-bottom-color: #d4d7dc; }
+.light-theme .food-cart-name,
+.light-theme .food-cart-price { color: #323339; }
+.light-theme .food-cart-qty { color: #4f5660; }
+.light-theme .food-receipt-card { background: #f2f3f5; }
+.light-theme .food-receipt-store { color: #323339; }
+.light-theme .food-receipt-date,
+.light-theme .food-receipt-items { color: #4f5660; }
+.light-theme .food-receipt-total { color: #323339; }
+.light-theme .food-back-link { color: #4f5660; }
+.light-theme .food-back-link:hover { color: #323339; }
+.light-theme .food-store-label { color: #4f5660; }
+.light-theme .food-label { color: #4f5660; }
+.light-theme .food-store-wait { color: #5865f2; }
+.amoled-theme .food-card { background: #0a0a0c; }
+.amoled-theme .food-item-card { background: #0f0f12; }
+.amoled-theme .food-store-card { background: #0a0a0c; }
+.amoled-theme .food-tab { background: #141416; color: #b5bac1; }
+.amoled-theme .food-tab:hover { background: #1e1e22; color: #DCDCDF; }
+.amoled-theme .food-tab-active { background: #5865f2 !important; color: #ffffff !important; }
+.amoled-theme .food-receipt-card { background: #0a0a0c; }
+.amoled-theme .food-item-price { color: #DCDCDF; }
 
 /* Responsive */
 @media (max-width: 720px) {
