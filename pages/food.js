@@ -1423,24 +1423,23 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const orderData = orderResult && orderResult.data && orderResult.data.Order
     const topLevelStatus = orderResult && orderResult.data && orderResult.data.Status
     const badHttpStatus = !orderResult || orderResult.status < 200 || orderResult.status >= 300
-    // Dominos ALWAYS returns outer Status: -1 with AutoAddedOrderId (informational).
-    // Real failures are detected by:
-    //  1. Any product has Status < 0 (e.g. OptionExclusivityViolated)
-    //  2. ServiceMethodNotAllowed in Order.StatusItems (delivery routing failed)
+    // Dominos ALWAYS returns outer Status: -1 with AutoAddedOrderId AND ServiceMethodNotAllowed
+    // in Order.StatusItems — these are informational codes present on every response.
+    // Real failures are only detected by: any product has Status < 0 (e.g. OptionExclusivityViolated).
     const products_response = (orderData && orderData.Products) || []
     const orderStatusItems = (orderData && orderData.StatusItems) || []
     const hasProductErrors = products_response.some(p => (p.Status || 0) < 0)
-    const hasServiceMethodNotAllowed = orderStatusItems.some(s => s.Code === 'ServiceMethodNotAllowed')
-    if (badHttpStatus || hasProductErrors || hasServiceMethodNotAllowed) {
+    if (badHttpStatus || hasProductErrors) {
       const productErrors = products_response
         .flatMap(p => (p.StatusItems || []).map(s => ({ code: s.Code, message: s.Message })).filter(e => e.code || e.message))
       const statusItemWithMsg = orderStatusItems.find(s => s.Message)
       const errMsg = (statusItemWithMsg && statusItemWithMsg.Message)
-        || (hasServiceMethodNotAllowed ? 'Order failed: delivery not available to this address.' : 'Order failed. Please check your details and try again.')
+        || 'Order failed. Please check your details and try again.'
       console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| top-level Status:', topLevelStatus, '| Order Status:', orderData && orderData.Status, '| OrderStatusItems:', JSON.stringify(orderStatusItems), '| Product errors:', JSON.stringify(productErrors))
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
       return res.end()
     }
+    console.log('[place-order] SUCCESS | products:', JSON.stringify(products_response.map(p => ({ code: p.Code, status: p.Status }))), '| orderId:', orderData && orderData.OrderID)
 
     const storeId = cart.storeId || ''
     const storeAddr = orderData.StoreAddress
