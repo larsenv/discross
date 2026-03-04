@@ -3,6 +3,7 @@ const md = require('markdown-it')({
   linkify: true,
   html: false
 });
+const hljs = require('highlight.js');
 
 function escapeHtml(text) {
   return text
@@ -13,31 +14,16 @@ function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
-// Simple syntax highlighting for Wii compatibility
 function highlightCode(code, lang) {
   if (!lang) return escapeHtml(code);
-  
-  let highlighted = escapeHtml(code);
-  
-  // Basic keyword and syntax highlighting for common languages
-  if (lang === 'javascript' || lang === 'js') {
-    highlighted = highlighted
-      .replace(/\b(function|const|let|var|if|else|for|while|return|class|new|this|async|await|import|export|from)\b/g, '<b style="color:#c678dd">$1</b>')
-      .replace(/\b(true|false|null|undefined)\b/g, '<b style="color:#d19a66">$1</b>')
-      .replace(/('.*?'|".*?")/g, '<span style="color:#98c379">$1</span>');
-  } else if (lang === 'python' || lang === 'py') {
-    highlighted = highlighted
-      .replace(/\b(def|class|if|elif|else|for|while|return|import|from|try|except|with|as|in|and|or|not)\b/g, '<b style="color:#c678dd">$1</b>')
-      .replace(/\b(True|False|None)\b/g, '<b style="color:#d19a66">$1</b>')
-      .replace(/('.*?'|".*?")/g, '<span style="color:#98c379">$1</span>');
-  } else if (lang === 'html') {
-    highlighted = highlighted
-      .replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9]*)/g, '<b style="color:#e06c75">$1</b>')
-      .replace(/([a-zA-Z-]+)=/g, '<span style="color:#d19a66">$1</span>=')
-      .replace(/=(".*?"|'.*?')/g, '=<span style="color:#98c379">$1</span>');
+  try {
+    if (hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value;
+    }
+    return hljs.highlightAuto(code).value;
+  } catch (e) {
+    return escapeHtml(code);
   }
-  
-  return highlighted;
 }
 
 function renderDiscordMarkdown(text) {
