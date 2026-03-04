@@ -63,6 +63,57 @@ function httpsGet(options, maxRedirects) {
 }
 
 /**
+ * Fetch a real-time quote from Yahoo Finance v8 chart API for a single symbol.
+ * No API key or authentication required.
+ * Returns a Promise resolving to a quote object or null.
+ */
+function fetchYahooQuote(symbol) {
+  const s = encodeURIComponent(symbol.toUpperCase());
+  const options = {
+    hostname: 'query1.finance.yahoo.com',
+    path: `/v8/finance/chart/${s}?range=5d&interval=1d&includePrePost=false`,
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Encoding': 'identity',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Referer': 'https://finance.yahoo.com/',
+      'Origin': 'https://finance.yahoo.com',
+    },
+  };
+  return httpsGet(options, 5).then(({ statusCode, body }) => {
+    if (statusCode !== 200) return null;
+    let data;
+    try {
+      data = JSON.parse(body);
+    } catch (e) {
+      return null;
+    }
+    const result = data?.chart?.result?.[0];
+    if (!result) return null;
+    const meta = result.meta;
+    const close = meta.regularMarketPrice;
+    if (!close) return null;
+    const prevClose = meta.chartPreviousClose || meta.previousClose || null;
+    const change = prevClose != null ? close - prevClose : null;
+    const changePct = (prevClose != null && prevClose !== 0)
+      ? (close - prevClose) / prevClose * 100
+      : null;
+    return {
+      symbol:                     meta.symbol || symbol.toUpperCase(),
+      regularMarketPrice:         close,
+      regularMarketOpen:          meta.regularMarketOpen          || null,
+      regularMarketDayHigh:       meta.regularMarketDayHigh       || null,
+      regularMarketDayLow:        meta.regularMarketDayLow        || null,
+      regularMarketVolume:        meta.regularMarketVolume        || null,
+      regularMarketChange:        change,
+      regularMarketChangePercent: changePct,
+    };
+  });
+}
+
+/**
  * Fetch daily historical data from stooq.com for a single symbol.
  * Returns a Promise resolving to a quote object (latest completed day) or null.
  *
@@ -290,7 +341,7 @@ exports.processStocks = async function processStocks(req, res) {
   try {
     if (ticker) {
       const safeTicker = ticker.slice(0, TICKER_MAX_LENGTH);
-      const quote = await fetchStooqHistory(safeTicker.toLowerCase());
+      const quote = await fetchYahooQuote(safeTicker);
 
       if (!quote) {
         stocksHtml = `<font color="#ff4444" ${FONT}>No data found for &ldquo;${escape(safeTicker)}&rdquo;. Please check the ticker symbol and try again.</font><br>`;
