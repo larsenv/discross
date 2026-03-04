@@ -104,12 +104,13 @@ function dominosRequest(options, body) {
     // Match WiiLink headers for proper Dominos API authentication
     if (body) {
       options.headers['User-Agent'] = 'DominosAndroid/11.5.0 (Android 11; OnePlus/ONEPLUS A3003; en)'
-      options.headers['Accept'] = 'text/plain, application/json, */*'
+      options.headers['Accept'] = 'text/plain, application/json, application/json, text/plain, */*'
       options.headers['Accept-Language'] = 'en-US,en;q=0.5'
       options.headers['Content-Type'] = 'application/json; charset=utf-8'
       options.headers['Content-Length'] = Buffer.byteLength(body)
       options.headers['Origin'] = `https://${host}`
       options.headers['Referer'] = `https://${host}/assets/build/xdomain/proxy.html`
+      options.headers['Connection'] = 'close'
     } else {
       options.headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15'
       options.headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
@@ -1011,10 +1012,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const existing = cart.items.find(i => i.code === code)
     if (existing) {
       existing.qty = (existing.qty || 1) + 1
-      // Update options if provided
-      if (Object.keys(options).length > 0) {
-        existing.options = options
-      }
+      // Always update options (including clearing stale partial options when re-adding specialty pizza)
+      existing.options = options
     } else {
       cart.items.push({ code, name, qty: 1, price, options })
     }
@@ -1156,11 +1155,35 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       Options: item.options || {},
     }))
 
+    const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
+    console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
+    console.log('[place-order] products:', JSON.stringify(products))
+
+    // Normalize address via store-locator to get StreetName and StreetNumber (per WiiLink's AddressLookup).
+    // Without these, Dominos returns ServiceMethodNotAllowed because it can't validate the delivery address.
+    let streetName = ''
+    let streetNumber = ''
+    try {
+      const addrResult = await dominosRequest({
+        hostname: dominosHost,
+        path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(postalCode)}&s=${encodeURIComponent(street)}`,
+        method: 'GET',
+      })
+      if (addrResult && addrResult.data && addrResult.data.Address) {
+        streetName = addrResult.data.Address.StreetName || ''
+        streetNumber = addrResult.data.Address.StreetNumber || ''
+        console.log('[place-order] address normalized: StreetName=%s StreetNumber=%s', streetName, streetNumber)
+      }
+    } catch (e) {
+      console.log('[place-order] address normalization failed (non-fatal):', e && e.message)
+    }
+
     // Validate payload (used for validate-order and price-order steps)
     // Uses empty Payments/PII fields per WiiLink's GetPrice flow
+    // Includes normalized StreetName and StreetNumber per WiiLink's AddressLookup
     const validatePayload = {
       Order: {
-        Address: { Street: street, City: city, Region: region, PostalCode: postalCode, Type: 'House' },
+        Address: { Street: street, City: city, Region: region, PostalCode: postalCode, Type: 'House', StreetName: streetName, StreetNumber: streetNumber },
         Coupons: [],
         CustomerID: '',
         Email: '',
@@ -1188,10 +1211,6 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         metaData: null,
       },
     }
-
-    const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
-    console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
-    console.log('[place-order] products:', JSON.stringify(products))
 
     // Step 1: First validate-order call (empty OrderID) — Dominos returns an OrderID.
     // Per WiiLink's GetPrice: call validate-order twice then price-order before place-order.
@@ -1273,6 +1292,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
           Region: region,
           PostalCode: postalCode,
           Type: 'House',
+          StreetName: streetName,
+          StreetNumber: streetNumber,
           DeliveryInstructions: '',
         },
         Channel: 'Mobile',
@@ -1333,12 +1354,11 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const orderData = orderResult && orderResult.data && orderResult.data.Order
     const topLevelStatus = orderResult && orderResult.data && orderResult.data.Status
     const badHttpStatus = !orderResult || orderResult.status < 200 || orderResult.status >= 300
-    // Check product-level errors — a real failure (OptionExclusivityViolated, etc.) always shows
-    // up as product Status < 0. Order-level Status -1 with only AutoAddedOrderId /
-    // ServiceMethodNotAllowed are informational codes Dominos always returns (like in validate-order).
+    // Per WiiLink's PlaceOrder: top-level Status 0 or 1 = success; anything else (e.g. -1) = failure.
+    // Status 1 is a non-fatal informational warning. Status -1 with ServiceMethodNotAllowed means
+    // the order was not actually placed (AdvanceOrderID will be empty).
     const products_response = (orderData && orderData.Products) || []
-    const hasProductError = products_response.some(p => p.Status < 0)
-    if (badHttpStatus || hasProductError) {
+    if (badHttpStatus || (topLevelStatus !== 0 && topLevelStatus !== 1)) {
       const statusItems = orderData && orderData.StatusItems
       const productErrors = products_response
         .flatMap(p => (p.StatusItems || []).map(s => ({ code: s.Code, message: s.Message })).filter(e => e.code || e.message))
