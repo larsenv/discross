@@ -5,6 +5,59 @@ const md = require('markdown-it')({
 });
 const hljs = require('highlight.js');
 
+// Color map from highlight.js token classes to atom-one-dark hex colors.
+// Using inline styles ensures colors appear even on browsers that have cached
+// an older version of main.css or that have limited CSS support.
+const HLJS_INLINE_STYLES = {
+  'hljs-keyword':        'color:#c678dd',
+  'hljs-doctag':         'color:#c678dd',
+  'hljs-formula':        'color:#c678dd',
+  'hljs-comment':        'color:#5c6370;font-style:italic',
+  'hljs-quote':          'color:#5c6370;font-style:italic',
+  'hljs-string':         'color:#98c379',
+  'hljs-addition':       'color:#98c379',
+  'hljs-attribute':      'color:#98c379',
+  'hljs-regexp':         'color:#98c379',
+  'hljs-literal':        'color:#56b6c2',
+  'hljs-number':         'color:#d19a66',
+  'hljs-attr':           'color:#d19a66',
+  'hljs-type':           'color:#d19a66',
+  'hljs-variable':       'color:#d19a66',
+  'hljs-template-variable': 'color:#d19a66',
+  'hljs-selector-class': 'color:#d19a66',
+  'hljs-selector-attr':  'color:#d19a66',
+  'hljs-selector-pseudo':'color:#d19a66',
+  'hljs-built_in':       'color:#e6c07b',
+  'hljs-title':          'color:#61aeee',
+  'hljs-bullet':         'color:#61aeee',
+  'hljs-link':           'color:#61aeee',
+  'hljs-meta':           'color:#61aeee',
+  'hljs-selector-id':    'color:#61aeee',
+  'hljs-symbol':         'color:#61aeee',
+  'hljs-name':           'color:#e06c75',
+  'hljs-section':        'color:#e06c75',
+  'hljs-selector-tag':   'color:#e06c75',
+  'hljs-deletion':       'color:#e06c75',
+  'hljs-subst':          'color:#e06c75',
+  'hljs-strong':         'font-weight:700',
+  'hljs-emphasis':       'font-style:italic',
+};
+
+// Convert highlight.js class-based spans to inline-style spans so that
+// colors render without requiring an external CSS file.
+// Only class names matching the expected highlight.js pattern (alphanumeric + hyphens + underscores)
+// are looked up against the HLJS_INLINE_STYLES map; anything else is dropped.
+function applyInlineStyles(html) {
+  return html.replace(/<span class="([^"]+)">/g, (match, classes) => {
+    const styles = classes.split(' ')
+      .filter(cls => /^[\w-]+$/.test(cls))
+      .map(cls => HLJS_INLINE_STYLES[cls])
+      .filter(Boolean)
+      .join(';');
+    return styles ? `<span style="${styles}">` : '<span>';
+  });
+}
+
 function escapeHtml(text) {
   return text
     .replace(/&/g, "&amp;")
@@ -17,10 +70,13 @@ function escapeHtml(text) {
 function highlightCode(code, lang) {
   if (!lang) return escapeHtml(code);
   try {
+    let raw;
     if (hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value;
+      raw = hljs.highlight(code, { language: lang }).value;
+    } else {
+      raw = hljs.highlightAuto(code).value;
     }
-    return hljs.highlightAuto(code).value;
+    return applyInlineStyles(raw);
   } catch (e) {
     return escapeHtml(code);
   }
