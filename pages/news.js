@@ -38,7 +38,7 @@ function proxyImageUrl(url) {
 
 // Strip all HTML tags from a string, preserving text content only.
 // Block-level elements become newlines; all tag markup is removed entirely.
-// Output is always passed through escape-html before rendering.
+// Output is always passed through he.decode + escape-html before rendering.
 function stripHtml(html) {
   if (!html) return '';
   return he.decode(
@@ -49,6 +49,13 @@ function stripHtml(html) {
       .replace(/<[^>]*>/g, '')  // Remove all HTML tags and their attributes
       .replace(/</g, '')        // Remove any stray '<' left by malformed attribute values
   ).trim();
+}
+
+// Returns true if the paragraph text is a CTA / live-update callout that
+// should not appear in the article body (e.g. "▶ Follow live updates…").
+function isCTAParagraph(text) {
+  // AP News prepends ▶ (U+25B6) to live-blog follow links
+  return text.startsWith('\u25B6') || text.startsWith('▶');
 }
 
 function resolvePrefs(req) {
@@ -221,7 +228,7 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
   return `<div class="news-card">
   ${imageHtml}
   <div class="news-card-body">
-    <b class="news-card-title"><font face="'rodin', Arial, Helvetica, sans-serif" size="4">${headline}</font></b><br>
+    <b class="news-card-title"><font face="'rodin', Arial, Helvetica, sans-serif">${headline}</font></b>
     ${dateStr ? `<span class="news-card-meta">${dateStr}</span><br>` : ''}
     <a href="${articleUrl}" class="discross-button news-read-btn">Read Article</a>
   </div>
@@ -288,7 +295,7 @@ function parseArticlePage(html, showImages) {
       const el = match[1];
       if (/^<p[\s>]/i.test(el)) {
         const text = stripHtml(el).trim();
-        if (text.length > 10) {
+        if (text.length > 10 && !isCTAParagraph(text)) {
           contentHtml += `<p class="news-article-paragraph">${escape(text)}</p>\n`;
           count++;
         }
