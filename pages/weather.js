@@ -88,7 +88,8 @@ function fetchJson(hostname, path) {
           try {
             resolve({ status: res.statusCode, data: JSON.parse(raw.toString('utf8')) });
           } catch (e) {
-            reject(new Error(`Failed to parse response (HTTP ${res.statusCode}): ${e.message}`));
+            const preview = raw.toString('utf8', 0, 200);
+            reject(new Error(`Failed to parse response (HTTP ${res.statusCode}): ${e.message} | body preview: ${preview}`));
           }
         };
         if (decompress) {
@@ -133,9 +134,14 @@ exports.processWeather = async function processWeather(req, res) {
       const locResult = await fetchJson(ACCUWEATHER_HOST, locationPath);
 
       if (locResult.status === 401) {
+        console.error('AccuWeather location API returned 401 (unauthorized). Check API key. Response:', JSON.stringify(locResult.data));
         weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Weather service unavailable. Please try again later.</font><br>`;
       } else if (locResult.status === 429) {
+        console.error('AccuWeather location API returned 429 (rate limited).');
         weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Too many requests. Please wait a moment and try again.</font><br>`;
+      } else if (locResult.status !== 200) {
+        console.error(`AccuWeather location API returned HTTP ${locResult.status}. Response:`, JSON.stringify(locResult.data));
+        weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Weather service unavailable. Please try again later.</font><br>`;
       } else if (!locResult.data || !Array.isArray(locResult.data) || locResult.data.length === 0) {
         weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">City not found. Please try a different city name.</font><br>`;
       } else {
@@ -150,7 +156,11 @@ exports.processWeather = async function processWeather(req, res) {
         const condResult = await fetchJson(ACCUWEATHER_HOST, condPath);
 
         if (condResult.status === 429) {
+          console.error('AccuWeather conditions API returned 429 (rate limited).');
           weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Too many requests. Please wait a moment and try again.</font><br>`;
+        } else if (condResult.status !== 200) {
+          console.error(`AccuWeather conditions API returned HTTP ${condResult.status}. Response:`, JSON.stringify(condResult.data));
+          weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Weather service unavailable. Please try again later.</font><br>`;
         } else if (!condResult.data || !Array.isArray(condResult.data) || condResult.data.length === 0) {
           weatherHtml = `<font color="#ff4444" face="'rodin', Arial, Helvetica, sans-serif">Weather data unavailable for this location.</font><br>`;
         } else {
