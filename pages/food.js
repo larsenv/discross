@@ -206,27 +206,38 @@ exports.handleGet = async function (bot, req, res, discordID) {
     html = strReplace(html, '{$CART_COUNT}', String(cartCount))
 
     if (menuData) {
-      const categories = menuData.Categorization || {}
-      const topLevel = Object.keys(categories)
-      const selectedCat = category || topLevel[0] || ''
+      // Domino's structured menu: Categorization.Food.Categories[] is the array of food categories
+      const categorization = menuData.Categorization || {}
+      const foodSection = categorization.Food || {}
+      const allCategories = foodSection.Categories || []
+
+      // Build a code->category map
+      const categoryByCode = {}
+      for (const cat of allCategories) {
+        if (cat && cat.Code) categoryByCode[cat.Code] = cat
+      }
+
+      const selectedCat = category || (allCategories[0] && allCategories[0].Code) || ''
 
       // Category tabs
       let catTabs = ''
-      for (const cat of topLevel) {
-        const active = (selectedCat === cat) ? ' food-tab-active' : ''
-        catTabs += `<a href="/food/menu?store=${encodeURIComponent(storeId)}&amp;category=${encodeURIComponent(cat)}" class="food-tab${active}">${escape(categories[cat].Name || cat)}</a>`
+      for (const cat of allCategories) {
+        if (!cat || !cat.Code) continue
+        const active = (selectedCat === cat.Code) ? ' food-tab-active' : ''
+        catTabs += `<a href="/food/menu?store=${encodeURIComponent(storeId)}&amp;category=${encodeURIComponent(cat.Code)}" class="food-tab${active}">${escape(cat.Name || cat.Code)}</a>`
       }
       html = strReplace(html, '{$CATEGORY_TABS}', catTabs)
 
       // Collect product codes for selected category
-      const catData = categories[selectedCat]
+      const catData = categoryByCode[selectedCat]
       let productCodes = []
       if (catData) {
         if (catData.Products && catData.Products.length) {
-          productCodes = catData.Products
-        } else if (catData.Subcategories) {
-          for (const sub of Object.values(catData.Subcategories)) {
-            if (sub.Products) productCodes = productCodes.concat(sub.Products)
+          productCodes = catData.Products.slice()
+        }
+        if (catData.SubCategories && catData.SubCategories.length) {
+          for (const sub of catData.SubCategories) {
+            if (sub && sub.Products) productCodes = productCodes.concat(sub.Products)
           }
         }
       }
