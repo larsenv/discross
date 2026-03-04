@@ -5,6 +5,7 @@ const querystring = require('querystring')
 const crypto = require('crypto')
 
 const auth = require('../authentication.js')
+const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils')
 
 const API_TIMEOUT_MS = 15000
 const VERIFICATION_CODE_MIN = 100000
@@ -19,10 +20,10 @@ function unixTime() {
   return Math.floor(Date.now() / 1000)
 }
 
-// Format a Unix timestamp as UTC string
-function formatTimestamp(ts) {
-  const d = new Date(ts * 1000)
-  return d.toUTCString()
+// Format a Unix timestamp using the user's detected timezone (IP-based)
+function formatTimestamp(ts, req) {
+  const timezone = req ? getTimezoneFromIP(getClientIP(req)) : null
+  return formatDateWithTimezone(new Date(ts * 1000), timezone)
 }
 
 // --- Template loading ---
@@ -558,7 +559,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     if (lastOrder && lastOrder.timestamp) {
       orderInfo = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
         <b>Most recent order:</b> ${escape(lastOrder.store_name || 'Unknown store')}<br>
-        <b>Placed:</b> ${escape(formatTimestamp(lastOrder.timestamp))}
+        <b>Placed:</b> ${escape(formatTimestamp(lastOrder.timestamp, req))}
       </font>`
     } else {
       orderInfo = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">No recent orders found.</font>`
@@ -588,7 +589,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     let ordersHtml = ''
     if (orders && orders.length > 0) {
       for (const order of orders) {
-        const date = formatTimestamp(order.timestamp)
+        const date = formatTimestamp(order.timestamp, req)
         let items = []
         try { items = JSON.parse(order.items_json) } catch (e) {}
         const itemsList = items.map(i => `${escape(i.name || i.code)} ×${i.qty || 1}`).join(', ')
