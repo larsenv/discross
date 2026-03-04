@@ -8,7 +8,7 @@ const escape = require('escape-html');
 const auth = require('../authentication.js');
 
 const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY || '6e30dc9ea2aa4d3eb99ad8f6630174cd';
-const ACCUWEATHER_HOST = 'dataservice.accuweather.com';
+const ACCUWEATHER_HOST = 'api.accuweather.com';
 
 // Max city name length to prevent abuse
 const CITY_MAX_LENGTH = 100;
