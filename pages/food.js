@@ -284,6 +284,12 @@ exports.handleGet = async function (bot, req, res, discordID) {
       const variants = menuData.Variants || {}
       let itemsHtml = ''
 
+      // Build a map of product code → qty already in cart
+      const cartQtyByCode = {}
+      for (const item of (cart.items || [])) {
+        cartQtyByCode[item.code] = (cartQtyByCode[item.code] || 0) + (item.qty || 1)
+      }
+
       for (const code of productCodes.slice(0, 50)) {
         const p = products[code]
         if (!p) continue
@@ -306,6 +312,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
         const safePrice = escape(price.replace('$', '') || '0')
         const safeStoreId = escape(storeId)
         const safeRedirect = escape(req.url)
+        const inCart = cartQtyByCode[code] || 0
+        const btnLabel = inCart > 0 ? `Add to Cart (${inCart} in cart)` : 'Add to Cart'
 
         itemsHtml += `<div class="food-item-card">
   <img src="${imgUrl}" alt="${name}" class="food-item-img" onerror="this.style.display='none'">
@@ -319,7 +327,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
       <input type="hidden" name="name" value="${safeName}">
       <input type="hidden" name="price" value="${safePrice}">
       <input type="hidden" name="redirect" value="${safeRedirect}">
-      <button type="submit" class="food-btn">Add to Cart</button>
+      <button type="submit" class="food-btn">${escape(btnLabel)}</button>
     </form>
   </div>
 </div>`
