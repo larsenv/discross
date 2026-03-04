@@ -300,7 +300,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         path: `/power/store/${encodeURIComponent(storeId)}/menu?lang=en&structured=true`,
         method: 'GET',
       })
-      if (result.status === 200) menuData = result.data
+      if (result.status >= 200 && result.status < 300) menuData = result.data
     } catch (e) {
       console.error('Dominos menu fetch error:', e)
     }
@@ -443,6 +443,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
   if (subpath === 'cart') {
     const cart = getCart(req)
     let html = strReplace(templates.cart, '{$WHITE_THEME_ENABLED}', theme)
+    const cartPageCount = (cart.items || []).reduce((s, i) => s + (i.qty || 1), 0)
+    html = strReplace(html, '{$CART_COUNT}', String(cartPageCount))
 
     let itemsHtml = ''
     let total = 0
@@ -488,6 +490,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
     const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
     let html = strReplace(templates.checkout, '{$WHITE_THEME_ENABLED}', theme)
+    const checkoutCartCount = (cart.items || []).reduce((s, i) => s + (i.qty || 1), 0)
+    html = strReplace(html, '{$CART_COUNT}', String(checkoutCartCount))
     const errorText = parsedurl.searchParams.get('error') || ''
     html = strReplace(html, '{$ERROR}', errorText
       ? `<div class="food-error">${escape(errorText)}</div>`
@@ -502,7 +506,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
           path: `/power/store/${encodeURIComponent(cart.storeId)}/profile`,
           method: 'GET',
         })
-        if (profileResult.status === 200 && profileResult.data) {
+        if (profileResult.status >= 200 && profileResult.status < 300 && profileResult.data) {
           const p = profileResult.data
           const addr = [p.StreetName || p.AddressDescription, p.City, p.Region, p.PostalCode]
             .filter(Boolean).join(', ')
@@ -540,7 +544,10 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
   // --- Verify code page ---
   if (subpath === 'verify') {
+    const verifyCart = getCart(req)
+    const verifyCartCount = (verifyCart.items || []).reduce((s, i) => s + (i.qty || 1), 0)
     let html = strReplace(templates.verify, '{$WHITE_THEME_ENABLED}', theme)
+    html = strReplace(html, '{$CART_COUNT}', String(verifyCartCount))
     const errorText = parsedurl.searchParams.get('error') || ''
     html = strReplace(html, '{$ERROR}', errorText
       ? `<div class="food-error">${escape(errorText)}</div>`
@@ -653,7 +660,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         path: `/power/store/${encodeURIComponent(storeId)}/menu?lang=en&structured=true`,
         method: 'GET',
       })
-      if (result.status === 200) menuData = result.data
+      if (result.status >= 200 && result.status < 300) menuData = result.data
     } catch (e) {
       console.error('Dominos menu fetch error (customize):', e)
     }
@@ -1060,7 +1067,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     }
 
     const orderData = orderResult && orderResult.data && orderResult.data.Order
-    if (!orderResult || orderResult.status !== 200 || !orderData) {
+    const badHttpStatus = !orderResult || orderResult.status < 200 || orderResult.status >= 300
+    const badApiStatus = !orderData || orderData.Status < 0
+    if (badHttpStatus || badApiStatus) {
       const errMsg = (orderData && orderData.StatusItems && orderData.StatusItems[0] && orderData.StatusItems[0].Message)
         || 'Order failed. Please check your details and try again.'
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
