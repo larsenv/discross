@@ -1091,6 +1091,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       email: (params.email || '').slice(0, 100),
       phone: rawPhone,
       street: (params.street || '').slice(0, 100),
+      addressType: ['House', 'Apartment', 'Business', 'Hotel', 'Other'].includes(params.addressType) ? params.addressType : 'House',
       city: (params.city || '').slice(0, 50),
       region: (params.region || '').slice(0, 2).toUpperCase(),
       postalCode: (params.postalCode || '').replace(/[^a-zA-Z0-9 -]/g, '').slice(0, 10),
@@ -1154,7 +1155,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return res.end()
     }
 
-    const { cart, firstName, lastName, email, phone, street, city, region, postalCode } = checkoutData
+    const { cart, firstName, lastName, email, phone, street, city, region, postalCode, addressType } = checkoutData
 
     if (!firstName || !lastName || !email || !phone || !street || !city || !region || !postalCode) {
       console.error('[place-order] missing fields: firstName=%s lastName=%s email=%s phone=%s street=%s city=%s region=%s postalCode=%s',
@@ -1244,7 +1245,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Includes normalized StreetName and StreetNumber per WiiLink's AddressLookup
     const validatePayload = {
       Order: {
-        Address: { Street: normalizedStreet, City: city, Region: region, PostalCode: postalCode, Type: 'House', StreetName: streetName, StreetNumber: streetNumber },
+        Address: { Street: normalizedStreet, City: city, Region: region, PostalCode: postalCode, Type: addressType || 'House', StreetName: streetName, StreetNumber: streetNumber },
         Coupons: [],
         CustomerID: '',
         Email: '',
@@ -1357,7 +1358,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
           City: city,
           Region: region,
           PostalCode: postalCode,
-          Type: 'House',
+          Type: addressType || 'House',
           StreetName: streetName,
           StreetNumber: streetNumber,
           DeliveryInstructions: '',
