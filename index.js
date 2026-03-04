@@ -357,10 +357,7 @@ server.on('request', async (req, res) => {
         await foodpage.handleGet(bot, req, res, discordID)
       }
     } else if (args[1] === 'foodProxy') {
-      const discordID = await auth.checkAuth(req, res)
-      if (discordID) {
-        await foodpage.foodProxy(req, res)
-      }
+      await foodpage.foodProxy(req, res)
     } else if (args[1] === 'upload') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {

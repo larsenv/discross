@@ -429,7 +429,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <div class="food-receipt-items">${itemsList || '<em>No item details</em>'}</div>
   <div class="food-receipt-footer">
     <span class="food-receipt-total">Total: $${parseFloat(order.total || 0).toFixed(2)}</span>
-    <a href="/food/track?phone=" class="food-btn food-btn-sm" title="Track order ${trackKey}">Track</a>
+    <a href="/food/track" class="food-btn food-btn-sm" title="Track order ${trackKey}">Track</a>
   </div>
 </div>`
       }
@@ -519,7 +519,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     }
 
     // Use crypto.randomInt for cryptographically secure 6-digit code
-    const code = String(crypto.randomInt(100000, 999999))
+    const code = String(crypto.randomInt(100000, 1000000))
     const expires = unixTime() + 10 * 60 // 10 minutes
 
     // Only store the verification code + expiry in DB — no PII
