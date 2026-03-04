@@ -384,7 +384,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     const { headline, bylines, date, contentHtml } = parseArticlePage(html, imagesCookie !== 0);
 
     const headlineEscaped = escape(headline || 'Untitled');
-    const bylinesEscaped = bylines ? `${escape(bylines)} &middot; ` : '';
+    const bylinesEscaped = bylines ? `${escape(bylines)} - ` : '';
     const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
 
     let final = strReplace(article_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
