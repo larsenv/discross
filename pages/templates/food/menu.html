@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html class="page-simple">
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Pizza Menu</title>
+</head>
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
+            <a href="/food/" style="color:#dddddd">Order Pizza</a>&#160;&#160;
+            <a href="/food/cart" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
+            <a href="/food/receipts" style="color:#dddddd">Orders</a>&#160;&#160;
+            <a href="/food/track" style="color:#dddddd">Track</a>
+          </font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <div class="food-container">
+      <div class="food-back-row">
+        <a href="/food/" class="food-back-link">&#8592; Back to stores</a>
+        <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">Store #{$STORE_ID}</font>
+      </div>
+      <div class="food-tabs">{$CATEGORY_TABS}</div>
+      <div class="food-items-grid">{$MENU_ITEMS}</div>
+    </div>
+  </div>
+</body>
+</html>
