@@ -1138,7 +1138,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return res.end()
     }
 
-    const { cart, firstName, lastName, email, phone, street, city, region, postalCode, tip } = checkoutData
+    const { cart, firstName, lastName, email, phone, street, city, region, postalCode } = checkoutData
 
     if (!firstName || !lastName || !email || !phone || !street || !city || !region || !postalCode) {
       console.error('[place-order] missing fields: firstName=%s lastName=%s email=%s phone=%s street=%s city=%s region=%s postalCode=%s',
@@ -1146,8 +1146,6 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Missing order details. Please fill out the form again.') })
       return res.end()
     }
-
-    const gratuityAmt = parseFloat(tip) || 0
 
     // Calculate total from cart items (used for receipt)
     const cartTotal = cart.items.reduce((s, i) => s + (parseFloat(i.price || 0) * (i.qty || 1)), 0)
@@ -1233,9 +1231,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     }
 
     // Step 2: price-order — retrieves final price with Amounts populated.
-    // WiiLink also does not check Status on price-order; proceed regardless and use cartTotal fallback.
+    // WiiLink also does not check Status on price-order; proceed regardless.
     validatePayload.Order.metaData = { orderFunnel: 'payments' }
-    let pricedOrder = null
     try {
       const priceResult = await dominosRequest({
         hostname: dominosHost,
@@ -1253,33 +1250,50 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       if (priceOrderData && priceOrderData.Status < 0) {
         console.log('[place-order] price-order API Status:', priceOrderData.Status, '| StatusItems:', JSON.stringify(priceOrderData.StatusItems), '(continuing per WiiLink flow)')
       }
-      pricedOrder = priceOrderData
+      // Update orderId from price-order response (WiiLink uses price-order OrderID for place-order)
+      if (priceOrderData && priceOrderData.OrderID) {
+        orderId = priceOrderData.OrderID
+        console.log('[place-order] using price-order OrderID:', orderId)
+      }
     } catch (e) {
       console.error('[place-order] price-order network error:', e)
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
       return res.end()
     }
 
-    // Step 3: Build the place-order payload using the priced order per WiiLink's PlaceOrder
-    const pricedOrderBase = pricedOrder || {}
-    const addressBase = pricedOrderBase.Address || { Street: street, City: city, Region: region, PostalCode: postalCode, Type: 'House' }
+    // Step 3: Build the place-order payload from scratch per WiiLink's PlaceOrder function.
+    // WiiLink never merges pricedOrderBase — it builds the full payload from user info.
+    // Using pricedOrderBase risked carrying stale/bad fields (empty Address, wrong ServiceMethod, etc.)
     const placePayload = {
       Status: 0,
-      Order: Object.assign({ Products: products }, pricedOrderBase, {
-        Address: Object.assign({}, addressBase, { DeliveryInstructions: '' }),
+      Order: {
+        Address: {
+          Street: street,
+          City: city,
+          Region: region,
+          PostalCode: postalCode,
+          Type: 'House',
+          DeliveryInstructions: '',
+        },
         Channel: 'Mobile',
+        Coupons: [],
+        CustomerID: '',
         DataWarehouseUpdate: false,
         Email: email,
         EstimatedWaitMinutes: '21-31',
+        Extension: '',
         FirstName: firstName,
-        LastName: lastName,
         HotspotsLite: true,
         LanguageCode: 'en',
+        LastName: lastName,
+        NoCombine: true,
         OrderChannel: 'OLO',
         OrderID: orderId,
+        OrderInfoCollection: [],
         OrderMethod: 'Web',
         OrderTaker: 'power',
         OrderTakeSeconds: 0,
+        Partners: {},
         Payments: [{ Type: 'Cash', Amount: cartTotal }],
         PendingOrder: false,
         Phone: phone,
@@ -1287,12 +1301,16 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         Platform: 'androidNativeApp',
         PlaceOrderMs: 0,
         PriceOrderMs: 0,
+        Products: products,
+        ServiceMethod: 'Delivery',
         SourceOrganizationURI: cart.country === 'ca' ? 'order.dominos.com' : 'android.dominos.com',
         Status: 0,
+        StoreID: cart.storeId,
+        Tags: {},
         TestOrderFlagCCProcess: false,
+        Version: '1.0',
         metaData: { PiePassPickup: false, calculateNutrition: true, contactless: false },
-        GratuityAmt: gratuityAmt,
-      }),
+      },
     }
 
     // Step 4: Place the priced order.
@@ -1315,12 +1333,14 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const orderData = orderResult && orderResult.data && orderResult.data.Order
     const topLevelStatus = orderResult && orderResult.data && orderResult.data.Status
     const badHttpStatus = !orderResult || orderResult.status < 200 || orderResult.status >= 300
-    // Per WiiLink PlaceOrder: success when top-level Status === 0 or 1; anything else is failure
-    const badApiStatus = topLevelStatus === undefined || topLevelStatus === null || (topLevelStatus !== 0 && topLevelStatus !== 1)
-    if (badHttpStatus || badApiStatus) {
+    // Check product-level errors — a real failure (OptionExclusivityViolated, etc.) always shows
+    // up as product Status < 0. Order-level Status -1 with only AutoAddedOrderId /
+    // ServiceMethodNotAllowed are informational codes Dominos always returns (like in validate-order).
+    const products_response = (orderData && orderData.Products) || []
+    const hasProductError = products_response.some(p => p.Status < 0)
+    if (badHttpStatus || hasProductError) {
       const statusItems = orderData && orderData.StatusItems
-      // Also check product-level errors for better diagnostics
-      const productErrors = (orderData && orderData.Products || [])
+      const productErrors = products_response
         .flatMap(p => (p.StatusItems || []).map(s => ({ code: s.Code, message: s.Message })).filter(e => e.code || e.message))
       const errMsg = (statusItems && statusItems.find(s => s.Message) && statusItems.find(s => s.Message).Message)
         || 'Order failed. Please check your details and try again.'
