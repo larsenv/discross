@@ -1174,7 +1174,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         const vBadApi = !vOrder || vOrder.Status < 0
         if (vBadHttp || vBadApi) {
           const vStatusItems = vOrder && vOrder.StatusItems
-          const vErrMsg = (vStatusItems && vStatusItems.find(s => s.Message) && vStatusItems.find(s => s.Message).Message)
+          const vErrItem = vStatusItems && vStatusItems.find(s => s.Message)
+          const vErrMsg = (vErrItem && vErrItem.Message)
             || 'Order validation failed. Please check your address and try again.'
           console.error(`[place-order] validate-order step ${vStep + 1} FAILED | HTTP:`, vResult && vResult.status, '| API Status:', vOrder && vOrder.Status, '| StatusItems:', JSON.stringify(vStatusItems))
           res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(vErrMsg) })
@@ -1205,7 +1206,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       const priceBadApi = !priceOrderData || priceOrderData.Status < 0
       if (priceBadHttp || priceBadApi) {
         const pStatusItems = priceOrderData && priceOrderData.StatusItems
-        const pErrMsg = (pStatusItems && pStatusItems.find(s => s.Message) && pStatusItems.find(s => s.Message).Message)
+        const pErrItem = pStatusItems && pStatusItems.find(s => s.Message)
+        const pErrMsg = (pErrItem && pErrItem.Message)
           || 'Failed to price order. Please try again.'
         console.error('[place-order] price-order FAILED | HTTP:', priceResult && priceResult.status, '| API Status:', priceOrderData && priceOrderData.Status, '| StatusItems:', JSON.stringify(pStatusItems))
         res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(pErrMsg) })
