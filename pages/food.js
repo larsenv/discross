@@ -175,16 +175,25 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
     let storesHtml = ''
     try {
-      const result = await dominosRequest({
-        hostname: 'order.dominos.com',
-        path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(address)}&s=&a=`,
-        method: 'GET',
-      })
-      const data = result.data
-      if (result.status === 200 && data && data.Stores && data.Stores.length > 0) {
+      // Try US API first; fall back to Canada API if no results
+      let stores = []
+      let country = 'us'
+      const trySearch = async (hostname) => {
+        const r = await dominosRequest({
+          hostname,
+          path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(address)}&s=&a=`,
+          method: 'GET',
+        })
+        return (r.status === 200 && r.data && r.data.Stores) ? r.data.Stores : []
+      }
+      stores = await trySearch('order.dominos.com')
+      if (stores.length === 0) {
+        stores = await trySearch('order.dominos.ca')
+        if (stores.length > 0) country = 'ca'
+      }
+      if (stores.length > 0) {
         storesHtml += `<br><font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Nearby Stores</b></font><br><br>`
-        const stores = data.Stores.slice(0, 5)
-        for (const s of stores) {
+        for (const s of stores.slice(0, 5)) {
           const addr = escape((s.AddressDescription || '').replace(/\n/g, ', '))
           const city = escape(s.City || '')
           const storeId = escape(String(s.StoreID || ''))
@@ -195,7 +204,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <div class="food-store-name">Store #${storeId} &mdash; ${city}</div>
   <div class="food-store-addr">${addr}</div>
   ${wait ? `<div class="food-store-wait">Est. delivery: ${wait}</div>` : ''}
-  <a href="/food/menu?store=${encodeURIComponent(s.StoreID || '')}" class="food-btn" style="display:inline-block;margin-top:8px">View Menu</a>
+  <a href="/food/menu?store=${encodeURIComponent(s.StoreID || '')}&amp;country=${country}" class="food-btn" style="display:inline-block;margin-top:8px">View Menu</a>
 </div>`
         }
       } else {
@@ -215,6 +224,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
   if (subpath === 'menu') {
     const storeId = (parsedurl.searchParams.get('store') || '').replace(/[^0-9]/g, '')
     const category = parsedurl.searchParams.get('category') || ''
+    const country = parsedurl.searchParams.get('country') === 'ca' ? 'ca' : 'us'
+    const dominosHost = country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
 
     if (!storeId) {
       res.writeHead(302, { Location: '/food/' })
@@ -224,7 +235,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     let menuData = null
     try {
       const result = await dominosRequest({
-        hostname: 'order.dominos.com',
+        hostname: dominosHost,
         path: `/power/store/${encodeURIComponent(storeId)}/menu?lang=en&structured=true`,
         method: 'GET',
       })
@@ -259,7 +270,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
       for (const cat of allCategories) {
         if (!cat || !cat.Code) continue
         const active = (selectedCat === cat.Code) ? ' food-tab-active' : ''
-        catTabs += `<a href="/food/menu?store=${encodeURIComponent(storeId)}&amp;category=${encodeURIComponent(cat.Code)}" class="food-tab${active}">${escape(cat.Name || cat.Code)}</a>`
+        catTabs += `<a href="/food/menu?store=${encodeURIComponent(storeId)}&amp;category=${encodeURIComponent(cat.Code)}&amp;country=${country}" class="food-tab${active}">${escape(cat.Name || cat.Code)}</a>`
       }
       html = strReplace(html, '{$CATEGORY_TABS}', catTabs)
 
@@ -324,6 +335,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     <div class="food-item-price">${escape(price)}</div>
     <form method="POST" action="/food/cart/add">
       <input type="hidden" name="storeId" value="${safeStoreId}">
+      <input type="hidden" name="country" value="${escape(country)}">
       <input type="hidden" name="code" value="${safeCode}">
       <input type="hidden" name="name" value="${safeName}">
       <input type="hidden" name="price" value="${safePrice}">
@@ -391,11 +403,40 @@ exports.handleGet = async function (bot, req, res, discordID) {
       return res.end()
     }
 
+    const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
     let html = strReplace(templates.checkout, '{$WHITE_THEME_ENABLED}', theme)
     const errorText = parsedurl.searchParams.get('error') || ''
     html = strReplace(html, '{$ERROR}', errorText
       ? `<div class="food-error">${escape(errorText)}</div>`
       : '')
+
+    // Fetch store address to display to user
+    let storeAddrHtml = ''
+    if (cart.storeId) {
+      try {
+        const profileResult = await dominosRequest({
+          hostname: dominosHost,
+          path: `/power/store/${encodeURIComponent(cart.storeId)}/profile`,
+          method: 'GET',
+        })
+        if (profileResult.status === 200 && profileResult.data) {
+          const p = profileResult.data
+          // Use AddressDescription if StreetName not available (field varies by API version)
+          const addr = [p.StreetName || p.AddressDescription, p.City, p.Region, p.PostalCode]
+            .filter(Boolean).join(', ')
+          if (addr) {
+            storeAddrHtml = `<div style="margin-top:12px;padding:10px;background:#2a2d31;border-radius:6px;">
+  <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">
+    Delivering from: Store #${escape(cart.storeId)} &mdash; ${escape(addr)}
+  </font>
+</div>`
+          }
+        }
+      } catch (e) {
+        console.error('Dominos store profile fetch error (non-critical):', e.message)
+      }
+    }
+    html = strReplace(html, '{$STORE_ADDRESS}', storeAddrHtml)
 
     let itemsSummary = ''
     let total = 0
@@ -524,6 +565,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
   if (subpath === 'cart/add') {
     const cart = getCart(req)
     const storeId = (params.storeId || '').replace(/[^0-9]/g, '')
+    const country = params.country === 'ca' ? 'ca' : 'us'
     const code = (params.code || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50)
     const name = (params.name || '').slice(0, 100)
     const price = parseFloat(params.price) || 0
@@ -541,6 +583,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       cart.items = []
     }
     cart.storeId = storeId
+    cart.country = country
 
     const existing = cart.items.find(i => i.code === code)
     if (existing) {
@@ -699,9 +742,10 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
     let orderResult = null
     try {
+      const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
       const bodyStr = JSON.stringify(orderPayload)
       orderResult = await dominosRequest({
-        hostname: 'order.dominos.com',
+        hostname: dominosHost,
         path: '/power/place-order',
         method: 'POST',
       }, bodyStr)
