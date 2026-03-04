@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html class="page-simple">
+
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Weather</title>
+</head>
+
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/server/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; {$MENU_OPTIONS}</font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <table>
+      <tr>
+        <td>
+          &nbsp;&nbsp;&nbsp;&nbsp;
+        </td>
+        <td>
+          <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+            <font size="5"><img src="/resources/twemoji/26c5.gif" alt="" width="28" height="28" style="width:28px;height:28px;vertical-align:middle;"> Weather</font>
+            <br><br>
+            <form method="GET" action="/weather">
+              <table cellpadding="0" cellspacing="4">
+                <tr>
+                  <td>
+                    <div style="padding: 8px 12px; background: #222327; display: inline-block;">
+                      <input type="text" name="city" value="{$CITY_VALUE}" placeholder="Enter city name..."
+                        style="color: #dddddd; background: #222327; border: none; width: 220px; outline: none; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 15px;">
+                    </div>
+                  </td>
+                  <td style="padding-left: 8px;">
+                    <button type="submit" class="discross-button" style="padding: 8px 18px; margin: 0; font-size: 15px;">Search</button>
+                  </td>
+                </tr>
+              </table>
+            </form>
+            <br>
+            {$WEATHER_CONTENT}
+            <br><br>
+            <font size="2" color="#72767d">Weather data courtesy of <a href="https://www.accuweather.com/" style="color: #5865f2;">AccuWeather</a></font>
+          </font>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+
+</html>
