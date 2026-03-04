@@ -1193,12 +1193,16 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
     console.log('[place-order] products:', JSON.stringify(products))
 
-    // Normalize address via store-locator to get Street, StreetName, and StreetNumber
-    // (per WiiLink's AddressLookup). Without these Dominos returns ServiceMethodNotAllowed.
-    // WiiLink uses the normalized Street from the API response (not the raw user input) in the payload.
+    // Normalize address via store-locator to get Street, StreetName, StreetNumber, City, PostalCode,
+    // CountyName, CountyNumber (per WiiLink's AddressLookup). Without these Dominos returns ServiceMethodNotAllowed.
+    // WiiLink uses the normalized Street/City/PostalCode from the API response in the payload.
     let normalizedStreet = street
+    let normalizedCity = city
+    let normalizedPostalCode = postalCode
     let streetName = ''
     let streetNumber = ''
+    let countyName = ''
+    let countyNumber = ''
     // Helper: parse StreetNumber and StreetName from raw street string (e.g. "123 Main St" → "123" / "Main St")
     const parseStreetParts = (s) => {
       const m = s.trim().match(/^(\d+)\s+(.+)$/)
@@ -1217,7 +1221,13 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         if (addrObj.Street) normalizedStreet = addrObj.Street
         streetName = addrObj.StreetName || ''
         streetNumber = addrObj.StreetNumber || ''
-        console.log('[place-order] address normalized via API: Street=%s StreetName=%s StreetNumber=%s', normalizedStreet, streetName, streetNumber)
+        // Also use normalized City, PostalCode (zip+4), CountyName, CountyNumber from store-locator
+        if (addrObj.City) normalizedCity = addrObj.City
+        if (addrObj.PostalCode) normalizedPostalCode = addrObj.PostalCode
+        countyName = addrObj.CountyName || ''
+        countyNumber = addrObj.CountyNumber || ''
+        console.log('[place-order] address normalized via API: Street=%s StreetName=%s StreetNumber=%s City=%s PostalCode=%s',
+          normalizedStreet, streetName, streetNumber, normalizedCity, normalizedPostalCode)
       } else {
         // Fallback: parse StreetNumber and StreetName from the raw street string.
         const parsed = parseStreetParts(street)
@@ -1245,7 +1255,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Includes normalized StreetName and StreetNumber per WiiLink's AddressLookup
     const validatePayload = {
       Order: {
-        Address: { Street: normalizedStreet, City: city, Region: region, PostalCode: postalCode, Type: addressType || 'House', StreetName: streetName, StreetNumber: streetNumber },
+        Address: { Street: normalizedStreet, City: normalizedCity, Region: region, PostalCode: normalizedPostalCode, Type: addressType || 'House', StreetName: streetName, StreetNumber: streetNumber, CountyName: countyName, CountyNumber: countyNumber },
         Coupons: [],
         CustomerID: '',
         Email: '',
@@ -1355,13 +1365,15 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       Order: {
         Address: {
           Street: normalizedStreet,
-          City: city,
+          City: normalizedCity,
           Region: region,
-          PostalCode: postalCode,
+          PostalCode: normalizedPostalCode,
           Type: addressType || 'House',
           StreetName: streetName,
           StreetNumber: streetNumber,
           DeliveryInstructions: '',
+          CountyName: countyName,
+          CountyNumber: countyNumber,
         },
         Channel: 'Mobile',
         Coupons: [],
@@ -1402,8 +1414,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     }
 
     // Step 4: Place the priced order.
-    console.log('[place-order] placing order: storeId=%s orderId=%s street=%s streetName=%s streetNumber=%s',
-      cart.storeId, orderId, normalizedStreet, streetName, streetNumber)
+    console.log('[place-order] placing order: storeId=%s orderId=%s street=%s city=%s postalCode=%s streetName=%s streetNumber=%s',
+      cart.storeId, orderId, normalizedStreet, normalizedCity, normalizedPostalCode, streetName, streetNumber)
+    console.log('[place-order] place payload:', JSON.stringify(placePayload))
     let orderResult = null
     try {
       orderResult = await dominosRequest({
@@ -1422,20 +1435,22 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
     const orderData = orderResult && orderResult.data && orderResult.data.Order
     const topLevelStatus = orderResult && orderResult.data && orderResult.data.Status
+    const topLevelStatusItems = (orderResult && orderResult.data && orderResult.data.StatusItems) || []
     const badHttpStatus = !orderResult || orderResult.status < 200 || orderResult.status >= 300
-    // Dominos ALWAYS returns outer Status: -1 with AutoAddedOrderId AND ServiceMethodNotAllowed
-    // in Order.StatusItems — these are informational codes present on every response.
-    // Real failures are only detected by: any product has Status < 0 (e.g. OptionExclusivityViolated).
     const products_response = (orderData && orderData.Products) || []
     const orderStatusItems = (orderData && orderData.StatusItems) || []
     const hasProductErrors = products_response.some(p => (p.Status || 0) < 0)
-    if (badHttpStatus || hasProductErrors) {
+    // ServiceMethodNotAllowed in Order.StatusItems means Dominos can't route delivery to the address.
+    // AutoAddedOrderId is always informational. outer StatusItems "Failure" = real order failure.
+    const hasServiceMethodNotAllowed = orderStatusItems.some(s => s.Code === 'ServiceMethodNotAllowed')
+    const hasTopLevelFailure = topLevelStatusItems.some(s => s.Code === 'Failure')
+    if (badHttpStatus || hasProductErrors || hasServiceMethodNotAllowed || hasTopLevelFailure) {
       const productErrors = products_response
         .flatMap(p => (p.StatusItems || []).map(s => ({ code: s.Code, message: s.Message })).filter(e => e.code || e.message))
       const statusItemWithMsg = orderStatusItems.find(s => s.Message)
-      const errMsg = (statusItemWithMsg && statusItemWithMsg.Message)
-        || 'Order failed. Please check your details and try again.'
-      console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| top-level Status:', topLevelStatus, '| Order Status:', orderData && orderData.Status, '| OrderStatusItems:', JSON.stringify(orderStatusItems), '| Product errors:', JSON.stringify(productErrors))
+      let errMsg = (statusItemWithMsg && statusItemWithMsg.Message)
+        || (hasServiceMethodNotAllowed ? 'Delivery is not available for this address. Please check your address or choose a different store.' : 'Order failed. Please check your details and try again.')
+      console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| top-level Status:', topLevelStatus, '| Order Status:', orderData && orderData.Status, '| OrderStatusItems:', JSON.stringify(orderStatusItems), '| top-level StatusItems:', JSON.stringify(topLevelStatusItems), '| Product errors:', JSON.stringify(productErrors))
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
       return res.end()
     }
@@ -1443,7 +1458,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
     const storeId = cart.storeId || ''
     const storeAddr = orderData.StoreAddress
-    const storeName = storeAddr ? `${storeAddr.City || city} Store #${storeId}` : `Store #${storeId}`
+    const storeName = storeAddr ? `${storeAddr.City || normalizedCity} Store #${storeId}` : `Store #${storeId}`
 
     // Use cart total for receipt (Domino's API Amounts may be 0 on cash orders)
     const total = cartTotal > 0 ? cartTotal : parseFloat((orderData.Amounts && (orderData.Amounts.Payment || orderData.Amounts.Total)) || 0)
