@@ -909,6 +909,13 @@ html.page-simple .light-theme #wrapper .discross-button {
 html.page-simple .light-theme #wrapper .discross-button:hover {
     background: #4752c4 !important;
 }
+html.page-simple .light-theme #wrapper .discross-button.secondary {
+    background: #4f545c !important;
+    color: white !important;
+}
+html.page-simple .light-theme #wrapper .discross-button.secondary:hover {
+    background: #5d6269 !important;
+}
 
 html.page-simple .amoled-theme {
     background: #09090A !important;
