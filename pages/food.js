@@ -826,7 +826,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
               // Get default sauce amount from variant Options (same logic as toppings)
               const defaultEntry = defaultOptions[s.code]
               const defaultAmt = defaultEntry
-                ? (defaultEntry['1/1'] || '1')
+                ? String(defaultEntry['1/1'] || '1')
                 : '0'
               const rawPortions = portions.get(s.code) || DEFAULT_PORTIONS
               const portionSet = new Set(rawPortions)
@@ -853,7 +853,7 @@ ${optHtml}
               // Get the default amount from Options (e.g. {X: {"1/1": "1"}} → "1")
               const defaultEntry = defaultOptions[t.code]
               const defaultAmt = defaultEntry
-                ? (defaultEntry['1/1'] || '1')
+                ? String(defaultEntry['1/1'] || '1')
                 : '0'
               // Get allowed portion values for this topping; DEFAULT_PORTIONS used when no
               // portion info was present in AvailableToppings for this code
@@ -1140,17 +1140,55 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       },
     }
 
+    const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
+    console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
+    console.log('[place-order] products:', JSON.stringify(products))
+
+    // Step 1: Validate pricing with Dominos (/power/price) before placing order.
+    // Without this step, Dominos returns PriceInformationRemoved + ServiceMethodNotAllowed.
+    let priceResult = null
+    try {
+      priceResult = await dominosRequest({
+        hostname: dominosHost,
+        path: '/power/price',
+        method: 'POST',
+      }, JSON.stringify(orderPayload))
+      console.log('[place-order] price HTTP status:', priceResult && priceResult.status)
+      const priceOrder = priceResult && priceResult.data && priceResult.data.Order
+      const priceBadHttp = !priceResult || priceResult.status < 200 || priceResult.status >= 300
+      const priceBadApi = !priceOrder || priceOrder.Status < 0
+      if (priceBadHttp || priceBadApi) {
+        const pStatusItems = priceOrder && priceOrder.StatusItems
+        const pErrMsg = (pStatusItems && pStatusItems.find(s => s.Message) && pStatusItems.find(s => s.Message).Message)
+          || 'Order validation failed. Please check your address and try again.'
+        console.error('[place-order] price FAILED | HTTP:', priceResult && priceResult.status, '| API Status:', priceOrder && priceOrder.Status, '| StatusItems:', JSON.stringify(pStatusItems))
+        res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(pErrMsg) })
+        return res.end()
+      }
+      // Use the validated order from the price response so Amounts/Products are populated.
+      // Re-apply customer fields in case price endpoint strips PII from its response.
+      orderPayload.Order = Object.assign({}, priceOrder, {
+        FirstName: firstName,
+        LastName: lastName,
+        Email: email,
+        Phone: phone,
+        Payments: [{ Type: 'Cash' }],
+        GratuityAmt: gratuityAmt,
+      })
+    } catch (e) {
+      console.error('[place-order] price validation network error:', e)
+      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
+      return res.end()
+    }
+
+    // Step 2: Place the validated order.
     let orderResult = null
     try {
-      const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
-      const bodyStr = JSON.stringify(orderPayload)
-      console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
-      console.log('[place-order] products:', JSON.stringify(products))
       orderResult = await dominosRequest({
         hostname: dominosHost,
         path: '/power/place-order',
         method: 'POST',
-      }, bodyStr)
+      }, JSON.stringify(orderPayload))
       console.log('[place-order] HTTP status:', orderResult && orderResult.status)
       console.log('[place-order] response:', JSON.stringify(orderResult && orderResult.data))
     } catch (e) {
@@ -1164,7 +1202,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const badApiStatus = !orderData || orderData.Status < 0
     if (badHttpStatus || badApiStatus) {
       const statusItems = orderData && orderData.StatusItems
-      const errMsg = (statusItems && statusItems[0] && statusItems[0].Message)
+      const errMsg = (statusItems && statusItems.find(s => s.Message) && statusItems.find(s => s.Message).Message)
         || 'Order failed. Please check your details and try again.'
       console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| API Status:', orderData && orderData.Status, '| StatusItems:', JSON.stringify(statusItems))
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
