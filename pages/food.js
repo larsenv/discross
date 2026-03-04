@@ -99,17 +99,27 @@ function clearCartCookieHeader() {
 function dominosRequest(options, body) {
   return new Promise((resolve, reject) => {
     options.headers = options.headers || {}
-    options.headers['User-Agent'] = 'Dominos API Wrapper'
-    options.headers['Accept'] = 'application/json'
-    // Referer required by Dominos API to return results
-    if (!options.headers['Referer']) {
-      const host = options.hostname || 'order.dominos.com'
-      options.headers['Referer'] = `https://${host}/`
-    }
+    const host = options.hostname || 'order.dominos.com'
+    const market = host.endsWith('.ca') ? 'CANADA' : 'UNITED_STATES'
+    // Match WiiLink headers for proper Dominos API authentication
     if (body) {
-      options.headers['Content-Type'] = 'application/json'
+      options.headers['User-Agent'] = 'DominosAndroid/11.5.0 (Android 11; OnePlus/ONEPLUS A3003; en)'
+      options.headers['Accept'] = 'text/plain, application/json, */*'
+      options.headers['Accept-Language'] = 'en-US,en;q=0.5'
+      options.headers['Content-Type'] = 'application/json; charset=utf-8'
       options.headers['Content-Length'] = Buffer.byteLength(body)
+      options.headers['Origin'] = `https://${host}`
+      options.headers['Referer'] = `https://${host}/assets/build/xdomain/proxy.html`
+    } else {
+      options.headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15'
+      options.headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
+      if (!options.headers['Referer']) {
+        options.headers['Referer'] = `https://${host}/`
+      }
     }
+    options.headers['Market'] = market
+    options.headers['DPZ-Language'] = 'en'
+    options.headers['DPZ-Market'] = market
     const req = https.request(options, (res) => {
       let data = ''
       res.on('data', chunk => { data += chunk })
@@ -777,7 +787,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
           return res.end()
         }
         const vPrice = parseFloat(v.Price || 0)
-        const vFullName = escape(`${v.Name || ''} ${product.Name || productCode}`.trim())
+        const vFullName = escape(v.Name || product.Name || productCode)
 
         // Show selected size confirmation
         const sizeHtml = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
@@ -818,7 +828,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <input type="hidden" name="code" value="${escape(variantCode)}">
   <input type="hidden" name="name" value="${vFullName}">
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
-  <input type="hidden" name="redirect" value="${escape(backUrl)}">`
+  <input type="hidden" name="redirect" value="${escape(backUrl)}">
+<font face="'rodin', Arial, Helvetica, sans-serif" color="#aaaaaa"><i>Default toppings, sauce, and cheese are pre-selected below. Adjust as needed.</i></font><br><br>`
 
           if (sauces.length > 0) {
             toppingsSection += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Sauce</b></font><br><br>`
@@ -1109,34 +1120,36 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       Options: item.options || {},
     }))
 
-    const orderPayload = {
+    // Validate payload (used for validate-order and price-order steps)
+    // Uses empty Payments/PII fields per WiiLink's GetPrice flow
+    const validatePayload = {
       Order: {
         Address: { Street: street, City: city, Region: region, PostalCode: postalCode, Type: 'House' },
         Coupons: [],
         CustomerID: '',
+        Email: '',
         Extension: '',
+        FirstName: '',
+        LastName: '',
+        LanguageCode: 'en',
         OrderChannel: 'OLO',
         OrderID: '',
         OrderMethod: 'Web',
         OrderTaker: null,
-        Payments: [{
-          Type: 'Cash',
-        }],
+        Payments: [],
+        Phone: '',
+        PhonePrefix: '',
         Products: products,
         ServiceMethod: 'Delivery',
+        SourceOrganizationURI: 'order.dominos.com',
         StoreID: cart.storeId,
         Tags: {},
         Version: '1.0',
-        NPC: false,
-        metaData: {},
-        Amounts: {},
-        BusinessDate: '',
-        EstimatedWaitMinutes: '',
-        FirstName: firstName,
-        LastName: lastName,
-        Email: email,
-        Phone: phone,
-        GratuityAmt: gratuityAmt,
+        NoCombine: true,
+        Partners: {},
+        HotspotsLite: false,
+        OrderInfoCollection: [],
+        metaData: null,
       },
     }
 
@@ -1144,51 +1157,109 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
     console.log('[place-order] products:', JSON.stringify(products))
 
-    // Step 1: Validate + price the order with Dominos (/power/validate) before placing it.
-    // Without this step, Dominos returns PriceInformationRemoved + ServiceMethodNotAllowed.
-    let priceResult = null
+    // Step 1: First validate-order call (empty OrderID) — Dominos returns an OrderID.
+    // Per WiiLink's GetPrice: call validate-order twice then price-order before place-order.
+    let orderId = ''
+    for (let vStep = 0; vStep < 2; vStep++) {
+      let vResult = null
+      try {
+        vResult = await dominosRequest({
+          hostname: dominosHost,
+          path: '/power/validate-order',
+          method: 'POST',
+        }, JSON.stringify(validatePayload))
+        console.log(`[place-order] validate-order step ${vStep + 1} HTTP status:`, vResult && vResult.status)
+        const vOrder = vResult && vResult.data && vResult.data.Order
+        const vBadHttp = !vResult || vResult.status < 200 || vResult.status >= 300
+        const vBadApi = !vOrder || vOrder.Status < 0
+        if (vBadHttp || vBadApi) {
+          const vStatusItems = vOrder && vOrder.StatusItems
+          const vErrMsg = (vStatusItems && vStatusItems.find(s => s.Message) && vStatusItems.find(s => s.Message).Message)
+            || 'Order validation failed. Please check your address and try again.'
+          console.error(`[place-order] validate-order step ${vStep + 1} FAILED | HTTP:`, vResult && vResult.status, '| API Status:', vOrder && vOrder.Status, '| StatusItems:', JSON.stringify(vStatusItems))
+          res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(vErrMsg) })
+          return res.end()
+        }
+        // Save/update the OrderID for subsequent calls
+        orderId = (vOrder && vOrder.OrderID) || orderId
+        validatePayload.Order.OrderID = orderId
+      } catch (e) {
+        console.error(`[place-order] validate-order step ${vStep + 1} network error:`, e)
+        res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
+        return res.end()
+      }
+    }
+
+    // Step 2: price-order — retrieves final price with Amounts populated
+    validatePayload.Order.metaData = { orderFunnel: 'payments' }
+    let pricedOrder = null
     try {
-      priceResult = await dominosRequest({
+      const priceResult = await dominosRequest({
         hostname: dominosHost,
-        path: '/power/validate',
+        path: '/power/price-order',
         method: 'POST',
-      }, JSON.stringify(orderPayload))
-      console.log('[place-order] validate HTTP status:', priceResult && priceResult.status)
-      const priceOrder = priceResult && priceResult.data && priceResult.data.Order
+      }, JSON.stringify(validatePayload))
+      console.log('[place-order] price-order HTTP status:', priceResult && priceResult.status)
+      const priceOrderData = priceResult && priceResult.data && priceResult.data.Order
       const priceBadHttp = !priceResult || priceResult.status < 200 || priceResult.status >= 300
-      const priceBadApi = !priceOrder || priceOrder.Status < 0
+      const priceBadApi = !priceOrderData || priceOrderData.Status < 0
       if (priceBadHttp || priceBadApi) {
-        const pStatusItems = priceOrder && priceOrder.StatusItems
+        const pStatusItems = priceOrderData && priceOrderData.StatusItems
         const pErrMsg = (pStatusItems && pStatusItems.find(s => s.Message) && pStatusItems.find(s => s.Message).Message)
-          || 'Order validation failed. Please check your address and try again.'
-        console.error('[place-order] validate FAILED | HTTP:', priceResult && priceResult.status, '| API Status:', priceOrder && priceOrder.Status, '| StatusItems:', JSON.stringify(pStatusItems))
+          || 'Failed to price order. Please try again.'
+        console.error('[place-order] price-order FAILED | HTTP:', priceResult && priceResult.status, '| API Status:', priceOrderData && priceOrderData.Status, '| StatusItems:', JSON.stringify(pStatusItems))
         res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(pErrMsg) })
         return res.end()
       }
-      // Use the validated order from the response so Amounts/Products are populated.
-      // Re-apply customer fields in case validate endpoint strips PII from its response.
-      orderPayload.Order = Object.assign({}, priceOrder, {
-        FirstName: firstName,
-        LastName: lastName,
-        Email: email,
-        Phone: phone,
-        Payments: [{ Type: 'Cash' }],
-        GratuityAmt: gratuityAmt,
-      })
+      pricedOrder = priceOrderData
     } catch (e) {
-      console.error('[place-order] validate network error:', e)
+      console.error('[place-order] price-order network error:', e)
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
       return res.end()
     }
 
-    // Step 2: Place the validated order.
+    // Step 3: Build the place-order payload using the priced order per WiiLink's PlaceOrder
+    const placePayload = {
+      Status: 0,
+      Order: Object.assign({}, pricedOrder, {
+        Address: Object.assign({}, pricedOrder.Address || {}, { DeliveryInstructions: '' }),
+        Channel: 'Mobile',
+        DataWarehouseUpdate: false,
+        Email: email,
+        EstimatedWaitMinutes: '21-31',
+        FirstName: firstName,
+        LastName: lastName,
+        HotspotsLite: true,
+        LanguageCode: 'en',
+        OrderChannel: 'OLO',
+        OrderID: orderId,
+        OrderMethod: 'Web',
+        OrderTaker: 'power',
+        OrderTakeSeconds: 0,
+        Payments: [{ Type: 'Cash', Amount: cartTotal }],
+        PendingOrder: false,
+        Phone: phone,
+        PhonePrefix: '',
+        Platform: 'androidNativeApp',
+        PlaceOrderMs: 0,
+        PriceOrderMs: 0,
+        SourceOrganizationURI: cart.country === 'ca' ? 'order.dominos.com' : 'android.dominos.com',
+        Status: 0,
+        TestOrderFlagCCProcess: false,
+        metaData: { PiePassPickup: false, calculateNutrition: true, contactless: false },
+        GratuityAmt: gratuityAmt,
+      }),
+    }
+
+    // Step 4: Place the priced order.
     let orderResult = null
     try {
       orderResult = await dominosRequest({
         hostname: dominosHost,
         path: '/power/place-order',
         method: 'POST',
-      }, JSON.stringify(orderPayload))
+        headers: { 'DPZ-Source': 'DSSPlaceOrder' },
+      }, JSON.stringify(placePayload))
       console.log('[place-order] HTTP status:', orderResult && orderResult.status)
       console.log('[place-order] response:', JSON.stringify(orderResult && orderResult.data))
     } catch (e) {
