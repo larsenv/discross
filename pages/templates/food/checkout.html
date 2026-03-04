@@ -88,7 +88,7 @@
                   <input type="email" name="email" class="food-input" required maxlength="100" autocomplete="email">
                 </div>
               </div>
-              <div class="food-form-group">
+                <div class="food-form-group">
                 <label class="food-label">Tip (optional)</label>
                 <div class="food-tip-row">
                   <label><input type="radio" name="tip" value="0" checked> <span class="food-tip-btn">No tip</span></label>
@@ -96,6 +96,11 @@
                   <label><input type="radio" name="tip" value="3"> <span class="food-tip-btn">$3</span></label>
                   <label><input type="radio" name="tip" value="5"> <span class="food-tip-btn">$5</span></label>
                   <label><input type="radio" name="tip" value="10"> <span class="food-tip-btn">$10</span></label>
+                </div>
+                <div style="margin-top:8px;">
+                  <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">Custom amount: $</font>
+                  <input type="number" name="tip_custom" min="0" max="100" step="0.01" placeholder="0.00" style="width:80px;font-family:'rodin',Arial,Helvetica,sans-serif;background:#222327;color:#dddddd;border:none;border-radius:6px;padding:4px 8px;">
+                  <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="2">(overrides selection above)</font>
                 </div>
               </div>
               <div style="margin-top:4px;padding:8px;background:#2a2d31;border-radius:6px;">

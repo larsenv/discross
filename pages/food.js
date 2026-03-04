@@ -202,7 +202,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
             : ''
           const addrLines = (s.AddressDescription || '').split('\n').map(l => escape(l)).join('<br>')
           storesHtml += `<div class="food-store-card">
-  <div class="food-store-name">Store #${storeId} &mdash; ${city}</div>
+  <div class="food-store-name">Store #${storeId} ${city}</div>
   <div class="food-store-addr">${addrLines}</div>
   ${wait ? `<div class="food-store-wait">Est. delivery: ${wait}</div>` : ''}
   <a href="/food/menu?store=${encodeURIComponent(s.StoreID || '')}&amp;country=${country}" class="food-btn" style="display:inline-block;margin-top:8px">View Menu</a>
@@ -439,7 +439,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
           if (addr) {
             storeAddrHtml = `<div style="margin-top:12px;padding:10px;background:#2a2d31;border-radius:6px;">
   <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">
-    Delivering from: Store #${escape(cart.storeId)} &mdash; ${escape(addr)}
+    Delivering from: Store #${escape(cart.storeId)} ${escape(addr)}
   </font>
 </div>`
           }
@@ -785,7 +785,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       city: (params.city || '').slice(0, 50),
       region: (params.region || '').slice(0, 2).toUpperCase(),
       postalCode: (params.postalCode || '').replace(/[^a-zA-Z0-9 -]/g, '').slice(0, 10),
-      tip: Math.min(parseFloat(params.tip) || 0, 100),
+      tip: (function() { const custom = parseFloat(params.tip_custom); return Math.min(custom > 0 ? custom : (parseFloat(params.tip) || 0), 100); })(),
     }
     const checkoutCookie = Buffer.from(JSON.stringify(checkoutData)).toString('base64')
     const checkoutCookieHeader = `pizzaCheckout=${encodeURIComponent(checkoutCookie)}; path=/food; HttpOnly${secure ? '; Secure' : ''}; Max-Age=600`
