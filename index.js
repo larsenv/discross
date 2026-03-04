@@ -67,6 +67,7 @@ const changepasswordpage = require('./pages/changepassword.js')
 const setup2fapage = require('./pages/setup2fa.js')
 const privacypage = require('./pages/privacy.js')
 const termspage = require('./pages/terms.js')
+const foodpage = require('./pages/food.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -274,14 +275,27 @@ server.on('request', async (req, res) => {
           res.writeHead(500, { 'Content-Type': 'text/plain' })
           res.end('Internal Server Error')
         })
+      } else if (parsedurl.startsWith('/food/')) {
+        (async () => {
+          const discordID = await auth.checkAuth(req, res)
+          if (discordID) {
+            await foodpage.handlePost(bot, req, res, discordID, body)
+          }
+        })().catch((err) => {
+          console.error(err)
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' })
+            res.end('Internal Server Error')
+          }
+        })
       } else {
         auth.handleLoginRegister(req, res, body)
       }
     })
   } else {
     try {
-    const parsedurl = new URL(req.url, 'http://localhost')
 
+    const parsedurl = new URL(req.url, 'http://localhost')
     const args = strReplace(parsedurl.pathname, '?', '/').split('/') // Split by / or ?
     if (args[1] === 'send') {
       const discordID = await auth.checkAuth(req, res)
@@ -360,6 +374,13 @@ server.on('request', async (req, res) => {
       await forgotpage.processForgot(bot, req, res, args)
     } else if (args[1] === 'changepassword.html') {
       await changepasswordpage.processChangePassword(bot, req, res, args)
+    } else if (args[1] === 'food') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await foodpage.handleGet(bot, req, res, discordID)
+      }
+    } else if (args[1] === 'foodProxy') {
+      await foodpage.foodProxy(req, res)
     } else if (args[1] === 'setup2fa.html') {
       await setup2fapage.processSetup2FA(bot, req, res, args)
     } else if (args[1] === 'index.html' || parsedurl.pathname === '/') {
