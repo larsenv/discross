@@ -167,8 +167,16 @@ function isSecure(req) {
 
 // --- Parse topping options from a POST request params ---
 // Expects params like topping_P=1 (amount: 0=none, 0.5=light, 1=normal, 1.5=extra),
-// and sauce_X=1, sauce_Xm=0, etc. (same amount-based format as toppings)
+// and sauce_X=1, sauce_Xm=0, etc. (same amount-based format as toppings).
+// If a default_options JSON param is present, codes in the defaults that the user
+// sets to "0" are included as {"1/1":"0"} (explicit removal) so Dominos knows to
+// remove that topping rather than re-adding the product default.
 function parseOptions(params) {
+  let defaultsMap = {} // code → amount string
+  try {
+    if (params.default_options) defaultsMap = JSON.parse(params.default_options)
+  } catch (e) {}
+
   const options = {}
   for (const key of Object.keys(params)) {
     const isTopping = key.startsWith('topping_')
@@ -177,9 +185,14 @@ function parseOptions(params) {
       const prefix = isTopping ? 'topping_' : 'sauce_'
       const code = key.slice(prefix.length).replace(/[^a-zA-Z0-9]/g, '')
       const amount = params[key]
-      // Accept numeric amounts; skip 0 (none = not included)
-      if (code && amount && amount !== '0' && /^[0-9.]+$/.test(amount)) {
-        options[code] = { '1/1': amount }
+      if (code && amount && /^[0-9.]+$/.test(amount)) {
+        if (amount !== '0') {
+          options[code] = { '1/1': amount }
+        } else if (code in defaultsMap) {
+          // User explicitly removed a default topping — include as "0" so Dominos removes it
+          options[code] = { '1/1': '0' }
+        }
+        // amount='0' and not in defaults: skip (topping was never on this pizza)
       }
     }
   }
@@ -806,13 +819,25 @@ exports.handleGet = async function (bot, req, res, discordID) {
         // e.g. "X=0:0.5:1:1.5,C=0:0.5:1:1.5,P=1/1" → codeSet=Set{X,C,P}, portions=Map{X:["0","0.5","1","1.5"]}
         const { codeSet, portions } = parseAvailableToppings(product.AvailableToppings)
 
-        // If AvailableToppings is empty, show ALL toppings for this productType (specialty pizzas
-        // omit AvailableToppings but still support customization). If the toppingDict is also empty
-        // (productType not in Toppings), no customization section is shown.
-        const finalCodeSet = codeSet.size > 0 ? codeSet : new Set(Object.keys(toppingDict))
-
         // Get default options from the variant (e.g. {X: {"1/1": "1"}, C: {"1/1": "1"}})
         const defaultOptions = v.Options || {}
+
+        // If AvailableToppings is explicitly set, use those codes (BYO pizzas list exactly which
+        // toppings can be added/changed). If empty, fall back to the variant's existing Options
+        // (specialty pizzas omit AvailableToppings — only show what's already on the pizza so the
+        // user can adjust amounts without adding invalid sauces that cause OptionExclusivityViolated).
+        const finalCodeSet = codeSet.size > 0 ? codeSet : new Set(Object.keys(defaultOptions))
+
+        // Build a normalized defaults map (code → amount string) for the hidden field.
+        // Normalises portion keys (1/1, 1/2, 2/4, etc.) to a plain amount string for the form.
+        const normalizedDefaults = {}
+        for (const [code, portionObj] of Object.entries(defaultOptions)) {
+          // Prefer '1/1' (full pizza), then any other portion key; fall back to '1'
+          const vals = portionObj && Object.values(portionObj)
+          const amt = (portionObj && (portionObj['1/1'] || portionObj['1/2'] || portionObj['2/4'])) ||
+            (vals && vals[0]) || '1'
+          if (amt !== undefined && amt !== null) normalizedDefaults[code] = String(amt)
+        }
 
         const PORTION_LABELS = { '0': 'None', '0.5': 'Light', '1': 'Normal', '1.5': 'Extra' }
         // Used when a topping code exists in toppingDict but has no portion info in AvailableToppings
@@ -829,16 +854,14 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <input type="hidden" name="name" value="${vFullName}">
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
+  <input type="hidden" name="default_options" value="${escape(JSON.stringify(normalizedDefaults))}">
 <font face="'rodin', Arial, Helvetica, sans-serif" color="#aaaaaa"><i>Default toppings, sauce, and cheese are pre-selected below. Adjust as needed.</i></font><br><br>`
 
           if (sauces.length > 0) {
             toppingsSection += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Sauce</b></font><br><br>`
             for (const s of sauces) {
-              // Get default sauce amount from variant Options (same logic as toppings)
-              const defaultEntry = defaultOptions[s.code]
-              const defaultAmt = defaultEntry
-                ? String(defaultEntry['1/1'] || '1')
-                : '0'
+              // Use normalizedDefaults so portion key variants (1/2, 2/4, etc.) are handled
+              const defaultAmt = normalizedDefaults[s.code] || '0'
               const rawPortions = portions.get(s.code) || DEFAULT_PORTIONS
               const portionSet = new Set(rawPortions)
               if (defaultAmt !== '0') portionSet.add(defaultAmt)
@@ -861,11 +884,8 @@ ${optHtml}
           if (toppingList.length > 0) {
             toppingsSection += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Toppings</b></font><br><br>`
             for (const t of toppingList) {
-              // Get the default amount from Options (e.g. {X: {"1/1": "1"}} → "1")
-              const defaultEntry = defaultOptions[t.code]
-              const defaultAmt = defaultEntry
-                ? String(defaultEntry['1/1'] || '1')
-                : '0'
+              // Use normalizedDefaults so portion key variants (1/2, 2/4, etc.) are handled
+              const defaultAmt = normalizedDefaults[t.code] || '0'
               // Get allowed portion values for this topping; DEFAULT_PORTIONS used when no
               // portion info was present in AvailableToppings for this code
               const rawPortions = portions.get(t.code) || DEFAULT_PORTIONS
@@ -1275,13 +1295,18 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     }
 
     const orderData = orderResult && orderResult.data && orderResult.data.Order
+    const topLevelStatus = orderResult && orderResult.data && orderResult.data.Status
     const badHttpStatus = !orderResult || orderResult.status < 200 || orderResult.status >= 300
-    const badApiStatus = !orderData || orderData.Status < 0
+    // Per WiiLink PlaceOrder: success when top-level Status === 0 or 1; anything else is failure
+    const badApiStatus = topLevelStatus === undefined || topLevelStatus === null || (topLevelStatus !== 0 && topLevelStatus !== 1)
     if (badHttpStatus || badApiStatus) {
       const statusItems = orderData && orderData.StatusItems
+      // Also check product-level errors for better diagnostics
+      const productErrors = (orderData && orderData.Products || [])
+        .flatMap(p => (p.StatusItems || []).map(s => ({ code: s.Code, message: s.Message })).filter(e => e.code || e.message))
       const errMsg = (statusItems && statusItems.find(s => s.Message) && statusItems.find(s => s.Message).Message)
         || 'Order failed. Please check your details and try again.'
-      console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| API Status:', orderData && orderData.Status, '| StatusItems:', JSON.stringify(statusItems))
+      console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| top-level Status:', topLevelStatus, '| Order Status:', orderData && orderData.Status, '| StatusItems:', JSON.stringify(statusItems), '| Product errors:', JSON.stringify(productErrors))
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
       return res.end()
     }
