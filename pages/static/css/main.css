@@ -1159,6 +1159,15 @@ html.page-server font[color="#dcddde"] {
     font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
+.food-success-box {
+    background: #1a3a1a;
+    border: 1px solid #248046;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+
 .food-card {
     background: #222327;
     border-radius: 10px;
