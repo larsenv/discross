@@ -228,8 +228,8 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
   return `<div class="news-card">
   ${imageHtml}
   <div class="news-card-body">
-    <b class="news-card-title"><font face="'rodin', Arial, Helvetica, sans-serif">${headline}</font></b>
-    ${dateStr ? `<span class="news-card-meta">${dateStr}</span><br>` : ''}
+    <div class="news-card-title"><font face="'rodin', Arial, Helvetica, sans-serif">${headline}</font></div>
+    ${dateStr ? `<div class="news-card-meta">${dateStr}</div>` : ''}
     <a href="${articleUrl}" class="discross-button news-read-btn">Read Article</a>
   </div>
 </div>`;
@@ -286,30 +286,44 @@ function parseArticlePage(html, showImages) {
   let contentHtml = '';
 
   if (body) {
-    // Walk <p> and <figure> elements in document order
-    const elRegex = /(<p[^>]*>[\s\S]*?<\/p>|<figure[^>]*>[\s\S]*?<\/figure>)/gi;
+    // Walk <p> and <img> tags in document order.
+    // Looking for <img> directly (rather than <figure> or <div>) handles any
+    // wrapping structure AP News uses (figure, div.Figure, bare img, etc.).
+    const tagRe = /<(p|img)(\s|>)/gi;
     let match;
     let count = 0;
+    const seenImages = new Set();
 
-    while ((match = elRegex.exec(body)) !== null && count < MAX_ARTICLE_ELEMENTS) {
-      const el = match[1];
-      if (/^<p[\s>]/i.test(el)) {
+    while ((match = tagRe.exec(body)) !== null && count < MAX_ARTICLE_ELEMENTS) {
+      const tagName = match[1].toLowerCase();
+
+      if (tagName === 'p') {
+        const end = body.indexOf('</p>', match.index);
+        if (end === -1) continue;
+        tagRe.lastIndex = end + 4;
+        const el = body.slice(match.index, end + 4);
         const text = stripHtml(el).trim();
         if (text.length > 10 && !isCTAParagraph(text)) {
           contentHtml += `<p class="news-article-paragraph">${escape(text)}</p>\n`;
           count++;
         }
-      } else if (showImages && /^<figure[\s>]/i.test(el)) {
-        // Use the shared src regex (not srcset) to get the proxied image URL
-        const imgMatch = el.match(AP_IMG_SRC_RE) ||
-                         el.match(/\bsrc(?!set)="(https?:\/\/[^"]+)"/i);
-        const captionMatch = el.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
-        if (imgMatch) {
-          const imgUrl = imgMatch[1];
-          const proxied = proxyImageUrl(imgUrl);
-          const caption = captionMatch ? escape(stripHtml(captionMatch[1])) : '';
-          contentHtml += `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
-        }
+      } else if (tagName === 'img' && showImages) {
+        const tagEnd = body.indexOf('>', match.index);
+        if (tagEnd === -1) continue;
+        tagRe.lastIndex = tagEnd + 1;
+        const el = body.slice(match.index, tagEnd + 1);
+        // Only proxy AP News CDN images (dims/assets.apnews.com)
+        const srcMatch = el.match(AP_IMG_SRC_RE);
+        if (!srcMatch || seenImages.has(srcMatch[1])) continue;
+        seenImages.add(srcMatch[1]);
+        const imgUrl = srcMatch[1];
+        const proxied = proxyImageUrl(imgUrl);
+        // Look for figcaption in the next ~1500 chars after this img tag
+        const nearby = body.slice(tagEnd + 1, tagEnd + 1500);
+        const captionMatch = nearby.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
+        const caption = captionMatch ? escape(stripHtml(captionMatch[1])) : '';
+        contentHtml += `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
+        count++;
       }
     }
   }
