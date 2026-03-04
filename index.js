@@ -67,6 +67,7 @@ const changepasswordpage = require('./pages/changepassword.js')
 const setup2fapage = require('./pages/setup2fa.js')
 const privacypage = require('./pages/privacy.js')
 const termspage = require('./pages/terms.js')
+const weatherpage = require('./pages/weather.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -368,6 +369,8 @@ server.on('request', async (req, res) => {
       await privacypage.processPrivacy(bot, req, res, args)
     } else if (args[1] === 'terms.html') {
       await termspage.processTerms(bot, req, res, args)
+    } else if (args[1] === 'weather') {
+      await weatherpage.processWeather(req, res)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
       connectionHandler.processRequest(req, res)
     } else if (args[1] === "discord") {
