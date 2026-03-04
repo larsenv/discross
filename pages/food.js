@@ -214,23 +214,6 @@ function parseOptions(params) {
   return options
 }
 
-// --- Parse a comma-separated "Code=amount" default toppings string from Dominos variant Tags ---
-// e.g. "Xw=1,C=1,P=1.5" → {Xw: "1", C: "1", P: "1.5"}
-// Used for Tags.DefaultToppings and Tags.DefaultSides.
-function parseTagDefaults(str) {
-  const result = {}
-  if (!str) return result
-  for (const entry of str.split(',')) {
-    const eqIdx = entry.indexOf('=')
-    if (eqIdx !== -1) {
-      const code = entry.slice(0, eqIdx).trim()
-      const amt = entry.slice(eqIdx + 1).trim()
-      if (code && amt) result[code] = amt
-    }
-  }
-  return result
-}
-
 // --- Build a topping code→entry dict from menuData ---
 // The Dominos API returns Toppings nested by ProductType: { Pizza: {C: {...}, X: {...}}, Wings: {...} }.
 // Per WiiLink/Demae-Dominos: use ONLY the exact productType category.
@@ -949,28 +932,16 @@ ${optHtml}
 </form></div>`
         } else {
           // No AvailableToppings (specialty pizza) — direct add form.
-          // Per WiiLink: use Tags.DefaultToppings for the full default option set (sauce + cheese +
-          // toppings) so Dominos applies the complete recipe without OptionExclusivityViolated.
-          // parseOptions will use these as options when no topping_*/sauce_* form fields are present.
-          const tagsDefaultToppings = (v.Tags && v.Tags.DefaultToppings) || ''
-          const tagsDefaultSides = (v.Tags && v.Tags.DefaultSides) || ''
-          const fullDefaults = Object.assign(
-            {},
-            parseTagDefaults(tagsDefaultToppings),
-            parseTagDefaults(tagsDefaultSides)
-          )
-          // Merge: Tags.DefaultToppings wins over v.Options (normalizedDefaults)
-          const mergedDefaults = Object.assign({}, normalizedDefaults, fullDefaults)
-          const defaultOptionsJson = Object.keys(mergedDefaults).length > 0
-            ? escape(JSON.stringify(mergedDefaults)) : ''
-
+          // Per WiiLink's GetToppings returning nil for specialty pizzas: send Options: {} to
+          // Dominos and let it apply the product's own default recipe. Sending partial options
+          // (e.g. just the sauce) triggers OptionExclusivityViolated, so we send nothing.
           toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
   <input type="hidden" name="country" value="${escape(country)}">
   <input type="hidden" name="code" value="${escape(variantCode)}">
   <input type="hidden" name="name" value="${vFullName}">
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
-  <input type="hidden" name="redirect" value="${escape(backUrl)}">${defaultOptionsJson ? `\n  <input type="hidden" name="default_options" value="${defaultOptionsJson}">` : ''}
+  <input type="hidden" name="redirect" value="${escape(backUrl)}">
   <div style="margin-top:8px">
     <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` — $${vPrice.toFixed(2)}` : ''}</button>
     &#160;&#160;
