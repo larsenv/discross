@@ -263,14 +263,15 @@ exports.handleGet = async function (bot, req, res, discordID) {
       }
       html = strReplace(html, '{$CATEGORY_TABS}', catTabs)
 
-      // Recursively collect all product codes, handling deeply nested SubCategories (e.g. Pizza)
+      // Recursively collect all product codes, handling deeply nested Categories (e.g. Pizza)
+      // Domino's structured menu uses "Categories" (not "SubCategories") at all nesting levels
       function collectProducts(catNode) {
         let codes = []
         if (catNode.Products && catNode.Products.length) {
           codes = codes.concat(catNode.Products)
         }
-        if (catNode.SubCategories && catNode.SubCategories.length) {
-          for (const sub of catNode.SubCategories) {
+        if (catNode.Categories && catNode.Categories.length) {
+          for (const sub of catNode.Categories) {
             if (sub) codes = codes.concat(collectProducts(sub))
           }
         }
@@ -769,7 +770,7 @@ exports.foodProxy = async function (req, res) {
     return res.end()
   }
 
-  const imageUrl = `https://cache.dominos.com/nolo/en/market/US/_en/images/img/products/en/${imagePath}`
+  const imageUrl = `https://cache.dominos.com/olo/6_92_1/assets/build/market/US/_en/images/img/products/larges/${imagePath}`
 
   try {
     await new Promise((resolve, reject) => {
