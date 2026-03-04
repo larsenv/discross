@@ -855,6 +855,21 @@ exports.handleGet = async function (bot, req, res, discordID) {
           if (amt !== undefined && amt !== null) normalizedDefaults[code] = String(amt)
         }
 
+        // For specialty pizzas (empty AvailableToppings): build full recipe from Tags.DefaultToppings
+        // and Tags.DefaultSides per WiiLink's AddItem. v.Options only has the sauce code; the full
+        // default recipe (sauce + cheese + toppings) lives in Tags.DefaultToppings.
+        const defaultToppingsStr = (v.Tags && v.Tags.DefaultToppings) || ''
+        const defaultSidesStr = (v.Tags && v.Tags.DefaultSides) || ''
+        const tagDefaults = {}
+        for (const part of defaultToppingsStr.split(',')) {
+          const eqIdx = part.indexOf('=')
+          if (eqIdx > 0) tagDefaults[part.slice(0, eqIdx)] = part.slice(eqIdx + 1)
+        }
+        for (const part of defaultSidesStr.split(',')) {
+          const eqIdx = part.indexOf('=')
+          if (eqIdx > 0) tagDefaults[part.slice(0, eqIdx)] = part.slice(eqIdx + 1)
+        }
+
         const PORTION_LABELS = { '0': 'None', '0.5': 'Light', '1': 'Normal', '1.5': 'Extra' }
         // Used when a topping code exists in toppingDict but has no portion info in AvailableToppings
         const DEFAULT_PORTIONS = ['0', '1']
@@ -933,9 +948,10 @@ ${optHtml}
 </form></div>`
         } else {
           // No AvailableToppings (specialty pizza) — direct add form.
-          // Per WiiLink's GetToppings returning nil for specialty pizzas: send Options: {} to
-          // Dominos and let it apply the product's own default recipe. Sending partial options
-          // (e.g. just the sauce) triggers OptionExclusivityViolated, so we send nothing.
+          // Per WiiLink's AddItem: send Options built from Tags.DefaultToppings/DefaultSides
+          // so the full recipe (sauce + cheese + toppings) is included. Sending {} (no options)
+          // or partial options (e.g. just the sauce) can cause OptionExclusivityViolated or
+          // an incomplete order that the store may not process correctly.
           toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
   <input type="hidden" name="country" value="${escape(country)}">
@@ -943,6 +959,7 @@ ${optHtml}
   <input type="hidden" name="name" value="${vFullName}">
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
+  <input type="hidden" name="default_options" value="${escape(JSON.stringify(tagDefaults))}">
   <div style="margin-top:8px">
     <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` — $${vPrice.toFixed(2)}` : ''}</button>
     &#160;&#160;
@@ -1149,11 +1166,27 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Calculate total from cart items (used for receipt)
     const cartTotal = cart.items.reduce((s, i) => s + (parseFloat(i.price || 0) * (i.qty || 1)), 0)
 
-    const products = cart.items.map(item => ({
-      Code: item.code,
-      Qty: item.qty || 1,
-      Options: item.options || {},
-    }))
+    // Dominos pizza sauce codes. Used to detect stale partial-options from old cart data.
+    // Old code stored only the sauce (e.g. {"Xw":{"1/1":"1"}}) for specialty pizzas.
+    // This is incomplete — WiiLink sends the full recipe (sauce + cheese + toppings).
+    // If all option keys are sauce codes with ≤2 keys total, it's stale — reset to {} so
+    // Dominos applies the full product default recipe.
+    // Note: cheese (C) and topping codes (P, B, etc.) are not in this set, so a BYO pizza
+    // where the user explicitly changed cheese or toppings will NOT be flagged as stale.
+    const PIZZA_SAUCE_CODES = new Set(['X', 'Xw', 'Xf', 'Xo', 'Xb', 'Xm', 'Cp', 'Rd'])
+    const products = cart.items.map(item => {
+      const opts = item.options || {}
+      const keys = Object.keys(opts)
+      const isStale = keys.length > 0 && keys.length <= 2 && keys.every(k => PIZZA_SAUCE_CODES.has(k))
+      if (isStale) {
+        console.log('[place-order] stale sauce-only options detected for', item.code, '— resetting to {} so Dominos applies full recipe')
+      }
+      return {
+        Code: item.code,
+        Qty: item.qty || 1,
+        Options: isStale ? {} : opts,
+      }
+    })
 
     const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
     console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
@@ -1169,10 +1202,15 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(postalCode)}&s=${encodeURIComponent(street)}`,
         method: 'GET',
       })
-      if (addrResult && addrResult.data && addrResult.data.Address) {
-        streetName = addrResult.data.Address.StreetName || ''
-        streetNumber = addrResult.data.Address.StreetNumber || ''
+      const addrStatus = addrResult && addrResult.data && addrResult.data.Status
+      const addrObj = addrResult && addrResult.data && addrResult.data.Address
+      if (addrObj && (addrObj.StreetName || addrObj.StreetNumber)) {
+        streetName = addrObj.StreetName || ''
+        streetNumber = addrObj.StreetNumber || ''
         console.log('[place-order] address normalized: StreetName=%s StreetNumber=%s', streetName, streetNumber)
+      } else {
+        console.log('[place-order] address normalization: store-locator status=%s hasAddress=%s hasStreetName=%s hasStreetNumber=%s',
+          addrStatus, !!addrObj, !!(addrObj && addrObj.StreetName), !!(addrObj && addrObj.StreetNumber))
       }
     } catch (e) {
       console.log('[place-order] address normalization failed (non-fatal):', e && e.message)
@@ -1228,17 +1266,19 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         }, JSON.stringify(validatePayload))
         console.log(`[place-order] validate-order step ${vStep + 1} HTTP status:`, vResult && vResult.status)
         const vOrder = vResult && vResult.data && vResult.data.Order
+        const vOuterStatus = vResult && vResult.data && vResult.data.Status
         const vBadHttp = !vResult || vResult.status < 200 || vResult.status >= 300
         if (vBadHttp) {
           console.error(`[place-order] validate-order step ${vStep + 1} HTTP error:`, vResult && vResult.status)
           res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
           return res.end()
         }
-        // Log informational status items but do NOT fail — these are expected by Dominos
+        // Log outer + Order status. Per WiiLink: AutoAddedOrderId/ServiceMethodNotAllowed at Order
+        // level are informational. WiiLink does NOT check Status on validate steps; only on price-order.
         const vStatusItems = vOrder && vOrder.StatusItems
-        if (vOrder && vOrder.Status < 0) {
-          console.log(`[place-order] validate-order step ${vStep + 1} API Status:`, vOrder.Status, '| StatusItems:', JSON.stringify(vStatusItems), '(continuing per WiiLink flow)')
-        }
+        console.log(`[place-order] validate-order step ${vStep + 1} outer Status:`, vOuterStatus,
+          '| Order Status:', vOrder && vOrder.Status, '| StatusItems:', JSON.stringify(vStatusItems),
+          '(continuing per WiiLink flow)')
         // Save/update the OrderID for subsequent calls
         orderId = (vOrder && vOrder.OrderID) || orderId
         validatePayload.Order.OrderID = orderId
@@ -1260,15 +1300,18 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       }, JSON.stringify(validatePayload))
       console.log('[place-order] price-order HTTP status:', priceResult && priceResult.status)
       const priceOrderData = priceResult && priceResult.data && priceResult.data.Order
+      const priceOuterStatus = priceResult && priceResult.data && priceResult.data.Status
       const priceBadHttp = !priceResult || priceResult.status < 200 || priceResult.status >= 300
       if (priceBadHttp) {
         console.error('[place-order] price-order HTTP error:', priceResult && priceResult.status)
         res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to price order. Please try again.') })
         return res.end()
       }
-      if (priceOrderData && priceOrderData.Status < 0) {
-        console.log('[place-order] price-order API Status:', priceOrderData.Status, '| StatusItems:', JSON.stringify(priceOrderData.StatusItems), '(continuing per WiiLink flow)')
-      }
+      // Log outer Status (what WiiLink actually checks) and Order Status
+      console.log('[place-order] price-order outer Status:', priceOuterStatus,
+        '| Order Status:', priceOrderData && priceOrderData.Status,
+        '| StatusItems:', JSON.stringify(priceOrderData && priceOrderData.StatusItems),
+        '(continuing per WiiLink flow)')
       // Update orderId from price-order response (WiiLink uses price-order OrderID for place-order)
       if (priceOrderData && priceOrderData.OrderID) {
         orderId = priceOrderData.OrderID
