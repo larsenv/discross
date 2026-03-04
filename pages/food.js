@@ -1440,16 +1440,16 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const products_response = (orderData && orderData.Products) || []
     const orderStatusItems = (orderData && orderData.StatusItems) || []
     const hasProductErrors = products_response.some(p => (p.Status || 0) < 0)
-    // ServiceMethodNotAllowed in Order.StatusItems means Dominos can't route delivery to the address.
-    // AutoAddedOrderId is always informational. outer StatusItems "Failure" = real order failure.
-    const hasServiceMethodNotAllowed = orderStatusItems.some(s => s.Code === 'ServiceMethodNotAllowed')
+    // ServiceMethodNotAllowed and AutoAddedOrderId appear in Order.StatusItems on EVERY Dominos response
+    // at every stage (validate × 2, price, place) — they are purely informational, never failure indicators.
+    // Real failures: outer StatusItems has "Failure" code, product Status < 0, or HTTP error.
     const hasTopLevelFailure = topLevelStatusItems.some(s => s.Code === 'Failure')
-    if (badHttpStatus || hasProductErrors || hasServiceMethodNotAllowed || hasTopLevelFailure) {
+    if (badHttpStatus || hasProductErrors || hasTopLevelFailure) {
       const productErrors = products_response
         .flatMap(p => (p.StatusItems || []).map(s => ({ code: s.Code, message: s.Message })).filter(e => e.code || e.message))
       const statusItemWithMsg = orderStatusItems.find(s => s.Message)
       let errMsg = (statusItemWithMsg && statusItemWithMsg.Message)
-        || (hasServiceMethodNotAllowed ? 'Delivery is not available for this address. Please check your address or choose a different store.' : 'Order failed. Please check your details and try again.')
+        || 'Order failed. Please check your details and try again.'
       console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| top-level Status:', topLevelStatus, '| Order Status:', orderData && orderData.Status, '| OrderStatusItems:', JSON.stringify(orderStatusItems), '| top-level StatusItems:', JSON.stringify(topLevelStatusItems), '| Product errors:', JSON.stringify(productErrors))
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
       return res.end()
