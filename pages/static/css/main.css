@@ -1105,6 +1105,60 @@ html.page-server font[color="#dcddde"] {
 }
 
 /* ================================================================
+   25b. NEWS PAGE (AP News viewer)
+   ================================================================ */
+
+/* News feed */
+.news-search-form { margin: 12px 0; }
+.news-search-input {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background: #2f3136;
+    color: #dcddde;
+    font-size: 14px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+.news-search-btn { padding: 8px 16px; font-size: 14px; margin: 0; vertical-align: middle; }
+.news-empty { color: #72767d; font-family: sans-serif; }
+
+/* News card */
+.news-card {
+    border: 1px solid #3a3c40;
+    border-radius: 8px;
+    margin: 12px 0;
+    overflow: hidden;
+    background: #222327;
+}
+.news-card-image-wrap { display: block; }
+.news-card-image { width: 100%; max-width: 512px; display: block; }
+.news-card-caption { font-size: 11px; color: #72767d; display: block; padding: 2px 12px; }
+.news-card-body { padding: 12px; }
+.news-card-title { font-size: 17px; }
+.news-card-meta { font-size: 12px; color: #72767d; }
+.news-card-summary { font-size: 14px; color: #b5bac1; }
+.news-read-btn { margin-top: 10px; padding: 8px 20px; font-size: 14px; }
+
+/* Article view */
+.news-article-meta { color: #72767d; font-size: 13px; margin-bottom: 16px; }
+.news-article-content { max-width: 680px; }
+.news-article-paragraph { margin: 0 0 14px 0; font-size: 15px; line-height: 1.6; color: #dcddde; }
+.news-article-image-wrap { margin: 16px 0; }
+.news-article-image { width: 100%; max-width: 512px; display: block; border-radius: 4px; }
+.news-article-caption { font-size: 12px; color: #72767d; display: block; margin-top: 4px; }
+
+/* Light theme overrides */
+.light-theme .news-card { background: #f2f3f5; border-color: #d0d2d6; }
+.light-theme .news-card-summary { color: #4f5660; }
+.light-theme .news-article-paragraph { color: #23272a; }
+.light-theme .news-search-input { background: #fff; border-color: #c7ccd1; color: #23272a; }
+
+/* AMOLED theme overrides */
+.amoled-theme .news-card { background: #141416; border-color: #2b2c30; }
+
+/* ================================================================
    26. @font-face — placed last for IE1/IE2 compatibility
        (old browsers stop parsing on unknown @ rules; normal rules above
         are all applied before reaching this point)
