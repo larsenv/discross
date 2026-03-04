@@ -307,6 +307,14 @@ function renderDiscordMarkdown(text) {
       return `<pre><code${langClass}>${highlightedCode}</code></pre>`;
   });
 
+  // Replace discord.com channel/message jump links with local Discross paths.
+  // The message content sent to Discord keeps the discord.com URL (for Discord clients),
+  // but when rendered on the Discross frontend we convert them so "jump" navigates locally.
+  result = result.replace(
+    /<a\s+href="https:\/\/discord\.com\/channels\/\d{16,20}\/(\d{16,20})\/(\d{16,20})"/gi,
+    '<a href="/channels/$1/$2"'
+  );
+
   return result;
 }
 
