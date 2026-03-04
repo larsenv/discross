@@ -129,15 +129,6 @@ function setup() {
 }
 setup()
 
-// --- Card type detection ---
-function detectCardType(number) {
-  if (/^4/.test(number)) return 'VISA'
-  if (/^5[1-5]/.test(number)) return 'MASTERCARD'
-  if (/^3[47]/.test(number)) return 'AMEX'
-  if (/^6(?:011|5)/.test(number)) return 'DISCOVER'
-  return 'VISA'
-}
-
 // --- Determine if HTTPS is in use (mirrors auth.js logic) ---
 function isSecure(req) {
   return req.socket && req.socket.encrypted
@@ -434,7 +425,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
 </div>`
       }
     } else {
-      ordersHtml = '<p style="color:#b5bac1">No orders yet.</p>'
+      ordersHtml = '<font face="\'rodin\', Arial, Helvetica, sans-serif" color="#b5bac1">No orders yet.</font>'
     }
     html = strReplace(html, '{$ORDERS}', ordersHtml)
 
@@ -442,9 +433,19 @@ exports.handleGet = async function (bot, req, res, discordID) {
     return res.end(html)
   }
 
+  // --- Cancel order (clears pending verification and checkout cookie) ---
+  if (subpath === 'cancel-order') {
+    auth.dbQueryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID])
+    res.writeHead(302, {
+      Location: '/food/cart',
+      'Set-Cookie': 'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT',
+    })
+    return res.end()
+  }
+
   // 404
   res.writeHead(404, { 'Content-Type': 'text/html' })
-  res.end('<html><body style="background:#1A1A1E;color:#ddd;font-family:sans-serif;padding:40px"><h1>Not Found</h1><a href="/food/" style="color:#00aff4">Back to Pizza</a></body></html>')
+  res.end('<html><body style="background:#1A1A1E;color:#ddd;font-family:\'rodin\',sans-serif;padding:40px"><h1>Not Found</h1><a href="/food/" style="color:#00aff4">Back to Pizza</a></body></html>')
 }
 
 // =============================================================================
@@ -528,8 +529,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       [discordID, code, '', expires]
     )
 
-    // Store checkout form data (including payment) in a short-lived HttpOnly cookie.
-    // This keeps all PII and payment data client-side; the server never persists it.
+    // Store checkout form data in a short-lived HttpOnly cookie.
+    // This keeps all PII client-side; the server never persists it.
+    // Payment is cash on delivery — no card data collected.
     const checkoutData = {
       cart,
       firstName: (params.firstName || '').slice(0, 50),
@@ -539,11 +541,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       street: (params.street || '').slice(0, 100),
       city: (params.city || '').slice(0, 50),
       region: (params.region || '').slice(0, 2).toUpperCase(),
-      postalCode: (params.postalCode || '').replace(/[^0-9]/g, '').slice(0, 5),
-      cardNumber: (params.cardNumber || '').replace(/[^0-9]/g, '').slice(0, 16),
-      cardExpiration: (params.cardExpiration || '').replace(/[^0-9]/g, '').slice(0, 4),
-      cardSecurityCode: (params.cardSecurityCode || '').replace(/[^0-9]/g, '').slice(0, 4),
-      cardPostalCode: (params.cardPostalCode || '').replace(/[^0-9]/g, '').slice(0, 5),
+      postalCode: (params.postalCode || '').replace(/[^a-zA-Z0-9 -]/g, '').slice(0, 10),
     }
     const checkoutCookie = Buffer.from(JSON.stringify(checkoutData)).toString('base64')
     const checkoutCookieHeader = `pizzaCheckout=${encodeURIComponent(checkoutCookie)}; path=/food; HttpOnly${secure ? '; Secure' : ''}; Max-Age=600`
@@ -599,11 +597,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return res.end()
     }
 
-    const { cart, firstName, lastName, email, phone, street, city, region, postalCode,
-      cardNumber, cardExpiration, cardSecurityCode, cardPostalCode } = checkoutData
+    const { cart, firstName, lastName, email, phone, street, city, region, postalCode } = checkoutData
 
-    if (!firstName || !lastName || !email || !phone || !street || !city || !region ||
-        !postalCode || !cardNumber || !cardExpiration || !cardSecurityCode || !cardPostalCode) {
+    if (!firstName || !lastName || !email || !phone || !street || !city || !region || !postalCode) {
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Missing order details. Please fill out the form again.') })
       return res.end()
     }
@@ -625,12 +621,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         OrderMethod: 'Web',
         OrderTaker: null,
         Payments: [{
-          Type: 'CreditCard',
-          Number: cardNumber,
-          CardType: detectCardType(cardNumber),
-          Expiration: cardExpiration,
-          SecurityCode: cardSecurityCode,
-          PostalCode: cardPostalCode,
+          Type: 'Cash',
         }],
         Products: products,
         ServiceMethod: 'Delivery',

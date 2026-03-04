@@ -26,9 +26,11 @@
     <br>
     <div class="food-container">
       <div class="food-card food-verify-card">
-        <div class="food-verify-icon">🍕</div>
-        <h1 class="food-title">Verify Your Order</h1>
-        <p style="color:#b5bac1;margin-bottom:24px">Check your Discord DMs for a 6-digit verification code. Enter it below to confirm your pizza order.</p>
+        <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Verify Your Order</b></font><br><br>
+        <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">Check your Discord DMs for a 6-digit verification code. Enter it below to confirm your pizza order.</font><br><br>
+        <div class="food-warning-box">
+          <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>This will place a real order.</b> Once you submit the code, an actual order will be sent to the store and you will owe cash upon delivery.</font>
+        </div>
         {$ERROR}
         <form method="POST" action="/food/place-order">
           <div class="food-form-group">
@@ -36,12 +38,13 @@
             <input type="text" name="code" class="food-input food-code-input" required maxlength="6" pattern="\d{6}" placeholder="123456" autocomplete="one-time-code">
           </div>
           <div style="margin-top:20px">
-            <button type="submit" class="food-btn food-btn-large food-btn-success">Place Order 🍕</button>
+            <button type="submit" class="food-btn food-btn-large food-btn-success">Place Order</button>
+            &#160;&#160;
+            <a href="/food/cancel-order" class="food-btn food-btn-danger">Cancel Order</a>
           </div>
         </form>
-        <div style="margin-top:16px">
-          <a href="/food/checkout" style="color:#b5bac1;font-size:0.9rem">Didn't receive the code? Go back and re-submit to resend.</a>
-        </div>
+        <br>
+        <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">Didn't receive the code? Go back and re-submit to resend.</font>
       </div>
     </div>
   </div>
