@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html class="page-simple">
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Your Cart</title>
+</head>
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
+            <a href="/food/" style="color:#dddddd">🏠 Stores</a>&#160;&#160;
+            <a href="/food/receipts" style="color:#dddddd">📋 Orders</a>
+          </font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <div class="food-container">
+      <h1 class="food-title">🛒 Your Cart</h1>
+      <div class="food-card">
+        <table class="food-cart-table">
+          <thead>
+            <tr>
+              <th class="food-cart-th">Item</th>
+              <th class="food-cart-th">Qty</th>
+              <th class="food-cart-th">Price</th>
+              <th class="food-cart-th"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {$CART_ITEMS}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" style="padding:12px 8px;font-weight:600;color:#dddddd">Total</td>
+              <td class="food-cart-price" style="font-weight:600;color:#dddddd">$<span id="cart-total">{$CART_TOTAL}</span></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div style="{$HAS_ITEMS}margin-top:16px">
+        <a href="/food/checkout" class="food-btn food-btn-large">Proceed to Checkout &#8594;</a>
+        &#160;&#160;
+        <a href="/food/menu?store={$STORE_ID}" class="food-btn food-btn-secondary">Continue Shopping</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

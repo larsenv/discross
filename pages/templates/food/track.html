@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html class="page-simple">
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Pizza Tracker</title>
+</head>
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
+            <a href="/food/" style="color:#dddddd">🏠 Order More</a>&#160;&#160;
+            <a href="/food/receipts" style="color:#dddddd">📋 Orders</a>
+          </font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <div class="food-container">
+      <h1 class="food-title">🍕 Pizza Tracker</h1>
+      <div class="food-card">
+        <form id="track-form" onsubmit="startTracking(event)">
+          <label class="food-label">Phone Number (used on your order)</label>
+          <div class="food-input-row">
+            <input type="text" id="phone-input" name="phone" class="food-input" placeholder="5551234567" maxlength="10" pattern="\d{10}" value="{$PHONE}">
+            <button type="submit" class="food-btn">Track</button>
+          </div>
+        </form>
+      </div>
+      <div id="tracker-status" style="display:none">
+        <div class="food-card" style="margin-top:16px">
+          <div class="food-tracker-steps" id="tracker-steps"></div>
+          <div id="tracker-details" style="margin-top:16px;color:#b5bac1;font-size:0.9rem"></div>
+        </div>
+      </div>
+      <div id="tracker-error" class="food-error" style="display:none"></div>
+    </div>
+  </div>
+  <script>
+  var trackingInterval = null;
+  var currentPhone = '{$PHONE}';
+
+  if (currentPhone) {
+    window.onload = function() { loadTracking(currentPhone); };
+  }
+
+  function startTracking(e) {
+    e.preventDefault();
+    var phone = document.getElementById('phone-input').value.replace(/\D/g,'');
+    if (phone.length !== 10) {
+      document.getElementById('tracker-error').innerHTML = 'Please enter a 10-digit phone number.';
+      document.getElementById('tracker-error').style.display = 'block';
+      return;
+    }
+    currentPhone = phone;
+    loadTracking(phone);
+    if (trackingInterval) clearInterval(trackingInterval);
+    trackingInterval = setInterval(function() { loadTracking(phone); }, 30000);
+  }
+
+  function loadTracking(phone) {
+    fetch('/food/track-status?phone=' + encodeURIComponent(phone))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        document.getElementById('tracker-error').style.display = 'none';
+        var statusEl = document.getElementById('tracker-status');
+        var stepsEl = document.getElementById('tracker-steps');
+        var detailsEl = document.getElementById('tracker-details');
+        if (!data || data.error || !data.Orders || data.Orders.length === 0) {
+          statusEl.style.display = 'none';
+          document.getElementById('tracker-error').innerHTML = 'No active orders found for that phone number.';
+          document.getElementById('tracker-error').style.display = 'block';
+          return;
+        }
+        statusEl.style.display = 'block';
+        var order = data.Orders[0];
+        var steps = [
+          { key: 'Prep', label: '🍕 Prep', icon: '🍕' },
+          { key: 'Bake', label: '🔥 Bake', icon: '🔥' },
+          { key: 'Quality', label: '✅ Quality Check', icon: '✅' },
+          { key: 'Delivery', label: '🚗 Out for Delivery', icon: '🚗' },
+          { key: 'Complete', label: '🏠 Delivered', icon: '🏠' }
+        ];
+        var currentStep = order.Status || '';
+        var html = '<div class="food-tracker-bar">';
+        for (var i = 0; i < steps.length; i++) {
+          var active = steps[i].key === currentStep ? ' food-tracker-step-active' : '';
+          var done = isStepDone(steps, i, currentStep) ? ' food-tracker-step-done' : '';
+          html += '<div class="food-tracker-step' + active + done + '">' +
+            '<div class="food-tracker-dot"></div>' +
+            '<div class="food-tracker-label">' + escHtml(steps[i].label) + '</div>' +
+            '</div>';
+        }
+        html += '</div>';
+        stepsEl.innerHTML = html;
+        var details = '';
+        if (order.OrderID) details += 'Order ID: ' + escHtml(String(order.OrderID)) + ' &nbsp; ';
+        if (order.StoreID) details += 'Store: #' + escHtml(String(order.StoreID));
+        detailsEl.innerHTML = details;
+      })
+      .catch(function() {
+        document.getElementById('tracker-error').innerHTML = 'Error fetching tracking data.';
+        document.getElementById('tracker-error').style.display = 'block';
+      });
+  }
+
+  function isStepDone(steps, idx, currentStep) {
+    var order = ['Prep','Bake','Quality','Delivery','Complete'];
+    var curIdx = order.indexOf(currentStep);
+    return idx < curIdx;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  </script>
+</body>
+</html>
