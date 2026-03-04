@@ -1075,12 +1075,16 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       if (checkoutCookie) {
         const val = checkoutCookie.split('=').slice(1).join('=')
         checkoutData = JSON.parse(Buffer.from(decodeURIComponent(val), 'base64').toString('utf-8'))
+        console.log('[place-order] checkout cookie found, items:', checkoutData && checkoutData.cart && checkoutData.cart.items && checkoutData.cart.items.length)
+      } else {
+        console.error('[place-order] no pizzaCheckout cookie found')
       }
     } catch (e) {
-      console.error('place-order: failed to parse checkout cookie:', e.message)
+      console.error('[place-order] failed to parse checkout cookie:', e.message)
     }
 
     if (!checkoutData || !checkoutData.cart || !checkoutData.cart.items || checkoutData.cart.items.length === 0) {
+      console.error('[place-order] missing/empty checkout data:', JSON.stringify(checkoutData && { cart: checkoutData.cart ? { items: checkoutData.cart.items } : null }))
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Checkout session expired. Please fill out the form again.') })
       return res.end()
     }
@@ -1088,6 +1092,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const { cart, firstName, lastName, email, phone, street, city, region, postalCode, tip } = checkoutData
 
     if (!firstName || !lastName || !email || !phone || !street || !city || !region || !postalCode) {
+      console.error('[place-order] missing fields: firstName=%s lastName=%s email=%s phone=%s street=%s city=%s region=%s postalCode=%s',
+        !!firstName, !!lastName, !!email, !!phone, !!street, !!city, !!region, !!postalCode)
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Missing order details. Please fill out the form again.') })
       return res.end()
     }
@@ -1138,13 +1144,17 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     try {
       const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
       const bodyStr = JSON.stringify(orderPayload)
+      console.log('[place-order] sending to', dominosHost, '| storeId:', cart.storeId, '| items:', products.length, '| country:', cart.country)
+      console.log('[place-order] products:', JSON.stringify(products))
       orderResult = await dominosRequest({
         hostname: dominosHost,
         path: '/power/place-order',
         method: 'POST',
       }, bodyStr)
+      console.log('[place-order] HTTP status:', orderResult && orderResult.status)
+      console.log('[place-order] response:', JSON.stringify(orderResult && orderResult.data))
     } catch (e) {
-      console.error('Dominos place-order error:', e)
+      console.error('[place-order] network error:', e)
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
       return res.end()
     }
@@ -1153,8 +1163,10 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const badHttpStatus = !orderResult || orderResult.status < 200 || orderResult.status >= 300
     const badApiStatus = !orderData || orderData.Status < 0
     if (badHttpStatus || badApiStatus) {
-      const errMsg = (orderData && orderData.StatusItems && orderData.StatusItems[0] && orderData.StatusItems[0].Message)
+      const statusItems = orderData && orderData.StatusItems
+      const errMsg = (statusItems && statusItems[0] && statusItems[0].Message)
         || 'Order failed. Please check your details and try again.'
+      console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| API Status:', orderData && orderData.Status, '| StatusItems:', JSON.stringify(statusItems))
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
       return res.end()
     }
