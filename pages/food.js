@@ -156,22 +156,22 @@ function isSecure(req) {
 }
 
 // --- Parse topping options from a POST request params ---
-// Expects params like topping_P=1 (amount: 0=none, 0.5=light, 1=normal, 1.5=extra), sauce=X
+// Expects params like topping_P=1 (amount: 0=none, 0.5=light, 1=normal, 1.5=extra),
+// and sauce_X=1, sauce_Xm=0, etc. (same amount-based format as toppings)
 function parseOptions(params) {
   const options = {}
   for (const key of Object.keys(params)) {
-    if (key.startsWith('topping_')) {
-      const code = key.slice('topping_'.length).replace(/[^a-zA-Z0-9]/g, '')
+    const isTopping = key.startsWith('topping_')
+    const isSauce = key.startsWith('sauce_')
+    if (isTopping || isSauce) {
+      const prefix = isTopping ? 'topping_' : 'sauce_'
+      const code = key.slice(prefix.length).replace(/[^a-zA-Z0-9]/g, '')
       const amount = params[key]
       // Accept numeric amounts; skip 0 (none = not included)
       if (code && amount && amount !== '0' && /^[0-9.]+$/.test(amount)) {
         options[code] = { '1/1': amount }
       }
     }
-  }
-  // Sauce is a radio — value is the sauce code; fixed normal amount
-  if (params.sauce && /^[a-zA-Z0-9]{1,6}$/.test(params.sauce)) {
-    options[params.sauce] = { '1/1': '1' }
   }
   return options
 }
@@ -822,17 +822,27 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
           if (sauces.length > 0) {
             toppingsSection += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Sauce</b></font><br><br>`
-            // Find which sauce is default
-            let defaultSauce = ''
             for (const s of sauces) {
-              if (defaultOptions[s.code]) { defaultSauce = s.code; break }
-            }
-            if (!defaultSauce && sauces.length > 0) defaultSauce = sauces[0].code
-            for (const s of sauces) {
-              const checked = s.code === defaultSauce ? ' checked' : ''
-              toppingsSection += `<label style="display:block;padding:6px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd;cursor:pointer">
-  <input type="radio" name="sauce" value="${escape(s.code)}"${checked}> ${escape(s.name)}
-</label>`
+              // Get default sauce amount from variant Options (same logic as toppings)
+              const defaultEntry = defaultOptions[s.code]
+              const defaultAmt = defaultEntry
+                ? (defaultEntry['1/1'] || '1')
+                : '0'
+              const rawPortions = portions.get(s.code) || DEFAULT_PORTIONS
+              const portionSet = new Set(rawPortions)
+              if (defaultAmt !== '0') portionSet.add(defaultAmt)
+              const portionList = Array.from(portionSet).sort((a, b) => parseFloat(a) - parseFloat(b))
+              let optHtml = ''
+              for (const p of portionList) {
+                const label = PORTION_LABELS[p] || p
+                const sel = p === defaultAmt ? ' selected' : ''
+                optHtml += `<option value="${escape(p)}"${sel}>${escape(label)}</option>`
+              }
+              toppingsSection += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
+  ${escape(s.name)}: <select name="sauce_${escape(s.code)}" style="background:#222327;color:#dddddd;border:none;border-radius:4px;padding:2px 4px">
+${optHtml}
+  </select>
+</div>`
             }
             toppingsSection += '<br>'
           }
