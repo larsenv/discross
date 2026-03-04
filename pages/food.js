@@ -175,10 +175,16 @@ function parseOptions(params) {
 }
 
 // --- Build a flat topping code→entry dict from menuData ---
-// The Dominos API may return Toppings as a flat dict {code: entry} or nested
-// by category {Pizza: {code: entry}, Wings: {code: entry}}.  Flatten either.
-function buildToppingDict(menuData) {
+// The Dominos API (with structured=true) returns Toppings nested by ProductType,
+// e.g. { Pizza: {C: {...}, P: {...}, X: {...}}, Wings: {...} }.
+// Accepts an optional productType to scope to just that category; otherwise flattens all.
+function buildToppingDict(menuData, productType) {
   const rawToppings = menuData.Toppings || {}
+  // If we know the product type and it exists, use it directly
+  if (productType && rawToppings[productType] && typeof rawToppings[productType] === 'object') {
+    return rawToppings[productType]
+  }
+  // Otherwise flatten all categories into one dict (fallback)
   const flat = {}
   for (const key of Object.keys(rawToppings)) {
     const val = rawToppings[key]
@@ -202,8 +208,7 @@ function buildToppingDict(menuData) {
 
 // --- Classify toppings from menu data ---
 // Returns { sauces: [{code, name}], toppings: [{code, name}] }
-function classifyToppings(menuData, availableCodes) {
-  const toppingDict = buildToppingDict(menuData)
+function classifyToppings(toppingDict, availableCodes) {
   const sauces = []
   const toppings = []
   for (const code of availableCodes) {
@@ -772,22 +777,29 @@ exports.handleGet = async function (bot, req, res, discordID) {
         html = strReplace(html, '{$SIZE_OPTIONS}', sizeHtml)
 
         // Build toppings/sauce form
-        // Get available toppings for this product (handle both string and array formats)
+        // Get the product type for scoped topping lookup (e.g. "Pizza", "Wings")
+        // Per WiiLink/Demae-Dominos: Toppings is nested by ProductType in the Dominos API
+        const productType = product.ProductType || ''
+        const toppingDict = buildToppingDict(menuData, productType)
+
+        // Get available toppings for this product
+        // AvailableToppings can be a comma-separated string with optional "=portion" modifiers
+        // (e.g. "X=1/1,Xm=1/1,C=1/1") — strip the "=..." part to get just the code
         const rawAvailToppings = product.AvailableToppings
         let availableCodes = []
         if (Array.isArray(rawAvailToppings)) {
-          availableCodes = rawAvailToppings.map(s => String(s).trim()).filter(Boolean)
+          availableCodes = rawAvailToppings.map(s => String(s).split('=')[0].trim()).filter(Boolean)
         } else if (rawAvailToppings) {
-          availableCodes = String(rawAvailToppings).split(',').map(s => s.trim()).filter(Boolean)
+          availableCodes = String(rawAvailToppings).split(',').map(s => s.split('=')[0].trim()).filter(Boolean)
         }
 
         // Get default options from the variant
         const defaultOptions = v.Options || {}
 
-        // Fallback: if product has no AvailableToppings listed, use all toppings from the menu
-        // (specialty pizzas often omit AvailableToppings even though toppings are customizable)
+        // Fallback: if product has no AvailableToppings listed, use all toppings from the
+        // product's type category (specialty pizzas often omit AvailableToppings)
         if (availableCodes.length === 0) {
-          availableCodes = Object.keys(buildToppingDict(menuData))
+          availableCodes = Object.keys(toppingDict)
         }
         // Final fallback: at minimum show what's already on the variant (from its Options)
         if (availableCodes.length === 0) {
@@ -796,7 +808,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
         let toppingsSection = ''
         if (availableCodes.length > 0) {
-          const { sauces, toppings: toppingList } = classifyToppings(menuData, availableCodes)
+          const { sauces, toppings: toppingList } = classifyToppings(toppingDict, availableCodes)
 
           toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
