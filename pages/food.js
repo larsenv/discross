@@ -178,10 +178,12 @@ function parseOptions(params) {
   } catch (e) {}
 
   const options = {}
+  let hasFormFields = false
   for (const key of Object.keys(params)) {
     const isTopping = key.startsWith('topping_')
     const isSauce = key.startsWith('sauce_')
     if (isTopping || isSauce) {
+      hasFormFields = true
       const prefix = isTopping ? 'topping_' : 'sauce_'
       const code = key.slice(prefix.length).replace(/[^a-zA-Z0-9]/g, '')
       const amount = params[key]
@@ -196,7 +198,37 @@ function parseOptions(params) {
       }
     }
   }
+
+  // No interactive topping/sauce fields — specialty pizza added directly from customize page.
+  // Per WiiLink: use Tags.DefaultToppings (passed via default_options) so the full recipe
+  // (sauce + cheese + toppings) is sent to Dominos, preventing OptionExclusivityViolated.
+  if (!hasFormFields && Object.keys(defaultsMap).length > 0) {
+    for (const [code, amount] of Object.entries(defaultsMap)) {
+      const amtNum = parseFloat(String(amount))
+      if (!isNaN(amtNum) && isFinite(amtNum) && amtNum > 0) {
+        options[code] = { '1/1': String(amount) }
+      }
+    }
+  }
+
   return options
+}
+
+// --- Parse a comma-separated "Code=amount" default toppings string from Dominos variant Tags ---
+// e.g. "Xw=1,C=1,P=1.5" → {Xw: "1", C: "1", P: "1.5"}
+// Used for Tags.DefaultToppings and Tags.DefaultSides.
+function parseTagDefaults(str) {
+  const result = {}
+  if (!str) return result
+  for (const entry of str.split(',')) {
+    const eqIdx = entry.indexOf('=')
+    if (eqIdx !== -1) {
+      const code = entry.slice(0, eqIdx).trim()
+      const amt = entry.slice(eqIdx + 1).trim()
+      if (code && amt) result[code] = amt
+    }
+  }
+  return result
 }
 
 // --- Build a topping code→entry dict from menuData ---
@@ -823,10 +855,10 @@ exports.handleGet = async function (bot, req, res, discordID) {
         const defaultOptions = v.Options || {}
 
         // If AvailableToppings is explicitly set, use those codes (BYO pizzas list exactly which
-        // toppings can be added/changed). If empty, fall back to the variant's existing Options
-        // (specialty pizzas omit AvailableToppings — only show what's already on the pizza so the
-        // user can adjust amounts without adding invalid sauces that cause OptionExclusivityViolated).
-        const finalCodeSet = codeSet.size > 0 ? codeSet : new Set(Object.keys(defaultOptions))
+        // toppings can be added/changed). For specialty pizzas (empty AvailableToppings), skip the
+        // interactive toppings form entirely — per WiiLink, GetToppings returns nil for these.
+        // We pass Tags.DefaultToppings as hidden default_options so the full recipe is sent.
+        const finalCodeSet = codeSet
 
         // Build a normalized defaults map (code → amount string) for the hidden field.
         // Normalises portion keys (1/1, 1/2, 2/4, etc.) to a plain amount string for the form.
@@ -916,14 +948,29 @@ ${optHtml}
   </div>
 </form></div>`
         } else {
-          // No topping info — just a direct add form
+          // No AvailableToppings (specialty pizza) — direct add form.
+          // Per WiiLink: use Tags.DefaultToppings for the full default option set (sauce + cheese +
+          // toppings) so Dominos applies the complete recipe without OptionExclusivityViolated.
+          // parseOptions will use these as options when no topping_*/sauce_* form fields are present.
+          const tagsDefaultToppings = (v.Tags && v.Tags.DefaultToppings) || ''
+          const tagsDefaultSides = (v.Tags && v.Tags.DefaultSides) || ''
+          const fullDefaults = Object.assign(
+            {},
+            parseTagDefaults(tagsDefaultToppings),
+            parseTagDefaults(tagsDefaultSides)
+          )
+          // Merge: Tags.DefaultToppings wins over v.Options (normalizedDefaults)
+          const mergedDefaults = Object.assign({}, normalizedDefaults, fullDefaults)
+          const defaultOptionsJson = Object.keys(mergedDefaults).length > 0
+            ? escape(JSON.stringify(mergedDefaults)) : ''
+
           toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
   <input type="hidden" name="country" value="${escape(country)}">
   <input type="hidden" name="code" value="${escape(variantCode)}">
   <input type="hidden" name="name" value="${vFullName}">
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
-  <input type="hidden" name="redirect" value="${escape(backUrl)}">
+  <input type="hidden" name="redirect" value="${escape(backUrl)}">${defaultOptionsJson ? `\n  <input type="hidden" name="default_options" value="${defaultOptionsJson}">` : ''}
   <div style="margin-top:8px">
     <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` — $${vPrice.toFixed(2)}` : ''}</button>
     &#160;&#160;
@@ -1247,7 +1294,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const addressBase = pricedOrderBase.Address || { Street: street, City: city, Region: region, PostalCode: postalCode, Type: 'House' }
     const placePayload = {
       Status: 0,
-      Order: Object.assign({}, pricedOrderBase, {
+      Order: Object.assign({ Products: products }, pricedOrderBase, {
         Address: Object.assign({}, addressBase, { DeliveryInstructions: '' }),
         Channel: 'Mobile',
         DataWarehouseUpdate: false,
