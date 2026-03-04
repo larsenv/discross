@@ -72,7 +72,7 @@ function fetchJson(hostname, path) {
       hostname,
       path,
       method: 'GET',
-      headers: { 'Accept': 'application/json' },
+      headers: { 'Accept': 'application/json', 'Accept-Encoding': 'identity' },
     };
     const req = https.request(options, (res) => {
       let data = '';
