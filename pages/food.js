@@ -1419,17 +1419,20 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const orderData = orderResult && orderResult.data && orderResult.data.Order
     const topLevelStatus = orderResult && orderResult.data && orderResult.data.Status
     const badHttpStatus = !orderResult || orderResult.status < 200 || orderResult.status >= 300
-    // Per WiiLink's PlaceOrder: top-level Status 0 or 1 = success; anything else (e.g. -1) = failure.
-    // Status 1 is a non-fatal informational warning. Status -1 with ServiceMethodNotAllowed means
-    // the order was not actually placed (AdvanceOrderID will be empty).
+    // Dominos ALWAYS returns outer Status: -1 with AutoAddedOrderId (informational).
+    // Real failures are detected by:
+    //  1. Any product has Status < 0 (e.g. OptionExclusivityViolated)
+    //  2. ServiceMethodNotAllowed in Order.StatusItems (delivery routing failed)
     const products_response = (orderData && orderData.Products) || []
-    if (badHttpStatus || (topLevelStatus !== 0 && topLevelStatus !== 1)) {
-      const statusItems = orderData && orderData.StatusItems
+    const orderStatusItems = (orderData && orderData.StatusItems) || []
+    const hasProductErrors = products_response.some(p => (p.Status || 0) < 0)
+    const hasServiceMethodNotAllowed = orderStatusItems.some(s => s.Code === 'ServiceMethodNotAllowed')
+    if (badHttpStatus || hasProductErrors || hasServiceMethodNotAllowed) {
       const productErrors = products_response
         .flatMap(p => (p.StatusItems || []).map(s => ({ code: s.Code, message: s.Message })).filter(e => e.code || e.message))
-      const errMsg = (statusItems && statusItems.find(s => s.Message) && statusItems.find(s => s.Message).Message)
-        || 'Order failed. Please check your details and try again.'
-      console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| top-level Status:', topLevelStatus, '| Order Status:', orderData && orderData.Status, '| StatusItems:', JSON.stringify(statusItems), '| Product errors:', JSON.stringify(productErrors))
+      const errMsg = (orderStatusItems.find(s => s.Message) && orderStatusItems.find(s => s.Message).Message)
+        || (hasServiceMethodNotAllowed ? 'Order failed: delivery not available to this address.' : 'Order failed. Please check your details and try again.')
+      console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| top-level Status:', topLevelStatus, '| Order Status:', orderData && orderData.Status, '| OrderStatusItems:', JSON.stringify(orderStatusItems), '| Product errors:', JSON.stringify(productErrors))
       res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
       return res.end()
     }
