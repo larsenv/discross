@@ -1226,6 +1226,14 @@ html.page-server font[color="#dcddde"] {
     outline: none;
 }
 
+select.food-input,
+.food-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
 .food-input-row {
     display: -webkit-box;
     display: -webkit-flex;

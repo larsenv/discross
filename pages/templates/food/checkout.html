@@ -63,8 +63,19 @@
                   <input type="text" name="lastName" class="food-input" required maxlength="50" placeholder="Last name" autocomplete="family-name">
                 </div>
               </div>
-              <div class="food-form-group" style="margin-bottom:14px">
-                <input type="text" name="street" class="food-input" required maxlength="100" placeholder="Street address" autocomplete="street-address">
+              <div class="food-form-row" style="margin-bottom:14px">
+                <div class="food-form-group">
+                  <input type="text" name="street" class="food-input" required maxlength="100" placeholder="Street address" autocomplete="street-address">
+                </div>
+                <div class="food-form-group food-form-group-sm">
+                  <select name="addressType" class="food-input food-select">
+                    <option value="House">House</option>
+                    <option value="Apartment">Apartment</option>
+                    <option value="Business">Business</option>
+                    <option value="Hotel">Hotel</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
               <div class="food-form-row">
                 <div class="food-form-group">
