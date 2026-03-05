@@ -3,10 +3,8 @@ const bot = require('../bot.js');
 const discord = require('discord.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
+const { strReplace } = require('./utils.js');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
   try {

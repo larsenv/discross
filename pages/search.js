@@ -4,6 +4,7 @@ const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
+const { strReplace } = require('./utils.js');
 
 const search_template = fs.readFileSync('pages/templates/search.html', 'utf-8')
   .split('{$COMMON_HEAD}')
@@ -11,9 +12,6 @@ const search_template = fs.readFileSync('pages/templates/search.html', 'utf-8')
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
 
 const SEARCH_ENGINES = {
   frogfind: 'http://frogfind.com/?q=',

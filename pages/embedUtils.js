@@ -5,12 +5,10 @@ const { formatDateWithTimezone } = require('../timezoneUtils');
 const fs = require('fs');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText, cacheCustomEmoji } = require('./emojiUtils');
+const { strReplace } = require('./utils.js');
 
 const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 /**
  * Process emoji in rendered HTML text

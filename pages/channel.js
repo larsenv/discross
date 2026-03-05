@@ -18,6 +18,7 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
 const emojiRegex = require('./twemojiRegex').regex;
 const notFound = require('./notFound.js');
+const { strReplace } = require('./utils.js');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -92,14 +93,6 @@ const TEMPLATES = {
   dateSeparator:        fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8'),
   messageContinuation:  fs.readFileSync('pages/templates/message/message_continuation.html', 'utf-8'),
 };
-
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
 
 function formatFileSize(bytes) {
   if (bytes === 0) return '0.00 Bytes';
@@ -1054,8 +1047,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       res.end();
       return;
     }
-
-    console.log('Processed valid channel request');
 
     const messagesHtml = await exports.buildMessagesHtml({
       bot, chnl, member, discordID, req,

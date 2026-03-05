@@ -7,14 +7,12 @@ const crypto = require('crypto')
 const auth = require('../authentication.js')
 const notFound = require('./notFound.js')
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils')
+const { strReplace } = require('./utils.js');
 
 const API_TIMEOUT_MS = 15000
 const VERIFICATION_CODE_MIN = 100000
 const VERIFICATION_CODE_MAX = 1000000
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || '')
-}
 
 function unixTime() {
   return Math.floor(Date.now() / 1000)

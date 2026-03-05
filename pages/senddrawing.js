@@ -4,10 +4,8 @@ const discord = require('discord.js');
 const { Buffer } = require('buffer');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
+const { strReplace } = require('./utils.js');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
   try {

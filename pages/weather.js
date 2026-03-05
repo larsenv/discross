@@ -6,8 +6,9 @@ const zlib = require('zlib');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
+const { strReplace } = require('./utils.js');
 
-const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY || '6e30dc9ea2aa4d3eb99ad8f6630174cd';
+const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY;
 const ACCUWEATHER_HOST = 'api.accuweather.com';
 
 // Max city name length to prevent abuse
@@ -113,9 +114,6 @@ const weather_template = fs.readFileSync('pages/templates/weather.html', 'utf-8'
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
 
 function fetchJson(hostname, path) {
   return new Promise((resolve, reject) => {

@@ -1,12 +1,10 @@
 const fs = require('fs');
 const escape = require('escape-html');
+const { strReplace } = require('./utils.js');
 
 const poll_template = fs.readFileSync('pages/templates/message/poll.html', 'utf-8');
 const poll_answer_template = fs.readFileSync('pages/templates/message/poll_answer.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 /**
  * Process a poll and render it as HTML

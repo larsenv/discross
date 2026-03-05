@@ -8,6 +8,7 @@ const auth = require('../authentication.js');
 const notFound = require('./notFound.js');
 const { buildMessagesHtml } = require('./channel.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const { strReplace, isValidSnowflake } = require('./utils.js');
 const {
   getClientIP, getTimezoneFromIP,
 } = require('../timezoneUtils');
@@ -20,9 +21,6 @@ const THEME_CONFIG = {
   2: { boxColor: '#141416', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
 };
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
 
 function loadTemplate(filePath) {
   return fs.readFileSync(filePath, 'utf-8')
@@ -57,9 +55,6 @@ function resolveTheme(req) {
   return THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
 }
 
-function isValidSnowflake(id) {
-  return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
-}
 
 // Strip non-printable / potentially dangerous characters from guest names
 function sanitizeGuestName(name) {

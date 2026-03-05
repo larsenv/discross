@@ -5,6 +5,7 @@ const https = require('https');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
+const { strReplace } = require('./utils.js');
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
@@ -26,9 +27,6 @@ const stocks_template = fs.readFileSync('pages/templates/stocks.html', 'utf-8')
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
 
 /**
  * Make an HTTPS GET request, following up to maxRedirects redirects.

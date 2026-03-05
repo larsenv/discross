@@ -1,3 +1,4 @@
+const { strReplace } = require('./utils.js');
 var fs = require('fs');
 var escape = require('escape-html');
 
@@ -8,9 +9,6 @@ const privacy_template = fs.readFileSync('pages/templates/privacy.html', 'utf-8'
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 exports.processPrivacy = async function (bot, req, res, args) {
   const discordID = await auth.checkAuth(req, res, true);
