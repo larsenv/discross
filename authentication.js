@@ -189,6 +189,7 @@ function setup() {
     try { queryRun('DELETE FROM emoji_cache') } catch (err) { console.error('emoji_cache migration error:', err); }
   }
   queryRun('CREATE TABLE IF NOT EXISTS custom_emoji_cache (emoji_id TEXT PRIMARY KEY, emoji_name TEXT, animated INTEGER)')
+  queryRun('CREATE TABLE IF NOT EXISTS guest_channels (channelID TEXT PRIMARY KEY)')
 }
 
 setup();
@@ -448,5 +449,19 @@ exports.setChannelPreference = function (discordID, serverID, channelID, collaps
   } catch (err) {
     console.error('Error setting channel preference:', err)
     return { success: false, error: err.message }
+  }
+}
+
+exports.isGuestChannel = function (channelID) {
+  return !!querySingle('SELECT 1 FROM guest_channels WHERE channelID=?', [channelID])
+}
+
+exports.toggleGuestChannel = function (channelID) {
+  if (exports.isGuestChannel(channelID)) {
+    queryRun('DELETE FROM guest_channels WHERE channelID=?', [channelID])
+    return false
+  } else {
+    queryRun('INSERT INTO guest_channels VALUES (?)', [channelID])
+    return true
   }
 }

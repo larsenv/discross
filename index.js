@@ -67,6 +67,8 @@ const changepasswordpage = require('./pages/changepassword.js')
 const setup2fapage = require('./pages/setup2fa.js')
 const privacypage = require('./pages/privacy.js')
 const termspage = require('./pages/terms.js')
+const guestpage = require('./pages/guest.js')
+const guestsendpage = require('./pages/guest_send.js')
 const newspage = require('./pages/news.js')
 const weatherpage = require('./pages/weather.js')
 const stockspage = require('./pages/stocks.js')
@@ -83,6 +85,10 @@ function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || '')
 }
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
+
+function isValidSnowflake(id) {
+  return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
+}
 
 // create a server object:
 const server = http.createServer(options)
@@ -316,10 +322,15 @@ server.on('request', async (req, res) => {
         await serverpage.processServer(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'channels') {
-      const discordID = await auth.checkAuth(req, res)
+      const discordID = await auth.checkAuth(req, res, true) // true = no redirect
       if (args.length == 3) {
         if (discordID) {
           await channelpage.processChannel(bot, req, res, args, discordID)
+        } else if (isValidSnowflake(args[2]) && auth.isGuestChannel(args[2])) {
+          await guestpage.processGuestChannel(bot, req, res, args[2])
+        } else {
+          res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
+          res.end()
         }
       }
       else if (args.length == 4) {
@@ -329,14 +340,24 @@ server.on('request', async (req, res) => {
             res.end();
             return;
           } else { await chanelreplypage.processChannelReply(bot, req, res, args, discordID) }
+        } else {
+          res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
+          res.end()
         }
       } else {
         if (discordID) {
           res.writeHead(302, { "Location": `/channels/${args[2]}#end` });
           res.end();
           return;
+        } else {
+          res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
+          res.end()
         }
       }
+    } else if (args[1] === 'guest_name') {
+      await guestpage.processGuestName(req, res)
+    } else if (args[1] === 'guest_send') {
+      await guestsendpage.guestSend(bot, req, res)
     } else if (args[1] === "jobs"){
       res.writeHead(302, { "Location": "http://careers.mcdonalds.com/" });
       res.end();
