@@ -211,7 +211,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
   });
 
   imageUrls.forEach(url => {
-    messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;width:100%;height:auto;" alt="image"></a>`;
+    messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;height:auto;" alt="image"></a>`;
   });
 
   return messagetext;
@@ -240,7 +240,7 @@ function renderStickers(messagetext, item, imagesCookie, animationsCookie) {
 // Embed rendering (inline media types handled here; rich embeds delegated)
 // ---------------------------------------------------------------------------
 
-function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;width:100%;height:auto;') {
+function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;height:auto;') {
   const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
   return { proxied, tag: `<img src="${proxied}" style="${style}" alt="${alt}">` };
 }
@@ -594,12 +594,12 @@ function buildReplyIndicator(replyData, replyText) {
   // so no CSS overflow clipping is needed on the content cell.
   const contentTd = replyData.content
     ? `<td rowspan="2" style="padding-left:4px;vertical-align:middle;white-space:nowrap">` +
-      `<font style="font-size:12px;color:${replyText}" face="rodin,sans-serif">${replyData.content}</font></td>`
+      `<font style="font-size:11px;color:${replyText}" face="rodin,sans-serif">${replyData.content}</font></td>`
     : '';
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
     '<td style="width:12px;height:8px"></td>' +
     `<td rowspan="2" style="padding-left:8px;vertical-align:middle;white-space:nowrap">` +
-    `<font style="font-size:12px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
+    `<font style="font-size:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `</td>${contentTd}` +
     '</tr><tr>' +
     '<td style="width:12px;height:8px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
