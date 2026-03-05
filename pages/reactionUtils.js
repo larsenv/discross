@@ -2,28 +2,33 @@
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
 const { strReplace } = require('./utils.js');
 
-
 // Function to process and format reactions
-function processReactions(reactions, imagesCookie, reactions_template, reaction_template, animationsCookie = 1) {
+function processReactions(
+  reactions,
+  imagesCookie,
+  reactions_template,
+  reaction_template,
+  animationsCookie = 1
+) {
   try {
     // In Discord.js v14, message.reactions is a ReactionManager with a cache property
     // that contains the Collection of MessageReaction objects. Handle both cases.
     const reactionCollection = reactions?.cache || reactions;
-    
+
     if (!reactionCollection || reactionCollection.size === 0) {
       return '';
     }
 
     let reactionsHtml = '';
-    
+
     reactionCollection.forEach((reaction) => {
       try {
         const emoji = reaction.emoji;
         const count = reaction.count;
-        
+
         // Determine if it's a super reaction based on burst colors
         const isSuperReaction = reaction.burst_colors && reaction.burst_colors.length > 0;
-        
+
         // Set background and border colors
         let backgroundColor, borderColor;
         if (isSuperReaction) {
@@ -35,14 +40,14 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
           backgroundColor = 'rgba(79, 84, 92, 0.16)';
           borderColor = 'rgba(79, 84, 92, 0.24)';
         }
-        
+
         let emojiHtml = '';
-        
+
         if (emoji.id) {
           // Custom emoji
           if (imagesCookie === 1) {
             // Use animations setting for animated emoji
-            const extension = (emoji.animated && animationsCookie === 1) ? 'gif' : 'png';
+            const extension = emoji.animated && animationsCookie === 1 ? 'gif' : 'png';
             cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
             emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
           } else {
@@ -59,7 +64,7 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
             emojiHtml = emoji.name;
           }
         }
-        
+
         // Build the reaction HTML - skip if emoji couldn't be processed
         if (emojiHtml) {
           let reactionHtml = reaction_template;
@@ -67,7 +72,7 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
           reactionHtml = strReplace(reactionHtml, '{$COUNT}', count.toString());
           reactionHtml = strReplace(reactionHtml, '{$REACTION_BG}', backgroundColor);
           reactionHtml = strReplace(reactionHtml, '{$REACTION_BORDER}', borderColor);
-          
+
           reactionsHtml += reactionHtml;
         }
       } catch (err) {
@@ -75,11 +80,11 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
         // Continue processing other reactions even if one fails
       }
     });
-    
+
     if (reactionsHtml) {
       return reactions_template.replace('{$REACTIONS}', reactionsHtml);
     }
-    
+
     return '';
   } catch (err) {
     console.error('Error processing reactions:', err);
@@ -88,5 +93,5 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
 }
 
 module.exports = {
-  processReactions
+  processReactions,
 };

@@ -6,21 +6,24 @@ const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
 const { isValidSnowflake } = require('./utils.js');
 
-
 function parseCookies(req) {
   const cookiedict = {};
   const cookies = req.headers.cookie;
-  cookies && cookies.split(';').forEach(function (cookie) {
-    const parts = cookie.split('=');
-    cookiedict[parts.shift().trim()] = decodeURIComponent(parts.join('='));
-  });
+  cookies &&
+    cookies.split(';').forEach(function (cookie) {
+      const parts = cookie.split('=');
+      cookiedict[parts.shift().trim()] = decodeURIComponent(parts.join('='));
+    });
   return cookiedict;
 }
 
 // Strip non-printable / potentially dangerous characters from guest names
 function sanitizeGuestName(name) {
   if (!name || typeof name !== 'string') return '';
-  return name.replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '').trim().slice(0, 32);
+  return name
+    .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '')
+    .trim()
+    .slice(0, 32);
 }
 
 exports.guestSend = async function guestSend(bot, req, res) {
@@ -31,8 +34,10 @@ exports.guestSend = async function guestSend(bot, req, res) {
   const rawName = parsedUrl.searchParams.get('guest_name') || cookies.guest_name || '';
   const guestName = sanitizeGuestName(rawName);
 
-  const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') +
-    '://' + (req.headers.host || 'localhost');
+  const baseUrl =
+    (req.socket && req.socket.encrypted ? 'https' : 'http') +
+    '://' +
+    (req.headers.host || 'localhost');
 
   // Validate channel id
   if (!isValidSnowflake(channelId)) {
@@ -56,7 +61,9 @@ exports.guestSend = async function guestSend(bot, req, res) {
   }
 
   // Check bot is ready
-  const clientIsReady = bot && bot.client &&
+  const clientIsReady =
+    bot &&
+    bot.client &&
     (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
   if (!clientIsReady) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });

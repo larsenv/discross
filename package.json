@@ -33,7 +33,9 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ."
+    "start": "node .",
+    "format": "prettier --write \"**/*.js\"",
+    "format:check": "prettier --check \"**/*.js\""
   },
   "repository": {
     "type": "git",
@@ -44,5 +46,8 @@
   "bugs": {
     "url": "https://github.com/Heath123/discross/issues"
   },
-  "homepage": "https://github.com/Heath123/discross#readme"
+  "homepage": "https://github.com/Heath123/discross#readme",
+  "devDependencies": {
+    "prettier": "^3.8.1"
+  }
 }

@@ -8,26 +8,55 @@ const notFound = require('./notFound.js');
 const { strReplace } = require('./utils.js');
 
 // Templates for viewing messages in a channel (Reply Context)
-const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const channel_template = fs
+  .readFileSync('pages/templates/channel_reply.html', 'utf-8')
+  .split('{$COMMON_HEAD}')
+  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 // Reply-specific message wrapper templates
 const message_template = fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8');
-const message_forwarded_template = fs.readFileSync('pages/templates/message/forwarded_message_reply.html', 'utf-8');
-const message_mentioned_template = fs.readFileSync('pages/templates/message/message_reply_mentioned.html', 'utf-8');
-const message_forwarded_mentioned_template = fs.readFileSync('pages/templates/message/forwarded_message_reply_mentioned.html', 'utf-8');
+const message_forwarded_template = fs.readFileSync(
+  'pages/templates/message/forwarded_message_reply.html',
+  'utf-8'
+);
+const message_mentioned_template = fs.readFileSync(
+  'pages/templates/message/message_reply_mentioned.html',
+  'utf-8'
+);
+const message_forwarded_mentioned_template = fs.readFileSync(
+  'pages/templates/message/forwarded_message_reply_mentioned.html',
+  'utf-8'
+);
 
 // Shared templates (same as channel.js)
-const first_message_content_template = fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8');
-const merged_message_content_template = fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8');
+const first_message_content_template = fs.readFileSync(
+  'pages/templates/message/first_message_content.html',
+  'utf-8'
+);
+const merged_message_content_template = fs.readFileSync(
+  'pages/templates/message/merged_message_content.html',
+  'utf-8'
+);
 const mention_template = fs.readFileSync('pages/templates/message/mention.html', 'utf-8');
 const input_template = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
-const input_disabled_template = fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8');
-const no_message_history_template = fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8');
-const file_download_template = fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8');
+const input_disabled_template = fs.readFileSync(
+  'pages/templates/channel/input_disabled.html',
+  'utf-8'
+);
+const no_message_history_template = fs.readFileSync(
+  'pages/templates/channel/no_message_history.html',
+  'utf-8'
+);
+const file_download_template = fs.readFileSync(
+  'pages/templates/channel/file_download.html',
+  'utf-8'
+);
 const reactions_template = fs.readFileSync('pages/templates/message/reactions.html', 'utf-8');
 const reaction_template = fs.readFileSync('pages/templates/message/reaction.html', 'utf-8');
-const date_separator_template = fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8');
-
+const date_separator_template = fs.readFileSync(
+  'pages/templates/message/date_separator.html',
+  'utf-8'
+);
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
@@ -35,44 +64,65 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+  const whiteThemeCookie = req.headers.cookie
+    ?.split('; ')
+    ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
+    ?.split('=')[1];
+  const imagesCookieValue = req.headers.cookie
+    ?.split('; ')
+    ?.find((cookie) => cookie.startsWith('images='))
+    ?.split('=')[1];
 
   // Build combined URL params for links — only include preference params when the
   // corresponding cookie is absent (i.e. the browser doesn't support cookies)
   const linkParamParts = [];
   if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && whiteThemeCookie === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && imagesCookieValue === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  if (urlTheme !== null && whiteThemeCookie === undefined)
+    linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && imagesCookieValue === undefined)
+    linkParamParts.push('images=' + encodeURIComponent(urlImages));
   const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
   // URL param takes priority over cookie
-  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
+  const theme =
+    urlTheme !== null
+      ? parseInt(urlTheme)
+      : whiteThemeCookie !== undefined
+        ? parseInt(whiteThemeCookie)
+        : 0;
 
   // Colors default to dark/amoled theme; light theme overrides them
-  let boxColor = "#40444b";
-  let authorText = "#72767d";
-  let replyText = "#b5bac1";
+  let boxColor = '#40444b';
+  let authorText = '#72767d';
+  let replyText = '#b5bac1';
 
   if (theme === 1) {
-    boxColor = "#ffffff";
-    authorText = "#000000";
-    replyText = "#000000";
+    boxColor = '#ffffff';
+    authorText = '#000000';
+    replyText = '#000000';
   }
 
-  const themeAttr = theme === 1 ? "class=\"light-theme\"" : theme === 2 ? "class=\"amoled-theme\"" : "";
-  let template = strReplace(channel_template, "{$WHITE_THEME_ENABLED}", themeAttr);
+  const themeAttr = theme === 1 ? 'class="light-theme"' : theme === 2 ? 'class="amoled-theme"' : '';
+  let template = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeAttr);
 
-  const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);
+  const imagesCookie =
+    urlImages !== null
+      ? parseInt(urlImages)
+      : imagesCookieValue !== undefined
+        ? parseInt(imagesCookieValue)
+        : 1;
 
   const clientIP = getClientIP(req);
   const clientTimezone = getTimezoneFromIP(clientIP);
 
   try {
-    const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+    const clientIsReady =
+      bot &&
+      bot.client &&
+      (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
 
     if (!clientIsReady) {
-      res.writeHead(503, { "Content-Type": "text/plain" });
+      res.writeHead(503, { 'Content-Type': 'text/plain' });
       res.write("The bot isn't connected, try again in a moment");
       res.end();
       return;
@@ -90,7 +140,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       try {
         botMember = await chnl.guild.members.fetch(bot.client.user.id);
       } catch (err) {
-        res.write("The bot is not in this server!");
+        res.write('The bot is not in this server!');
         res.end();
         return;
       }
@@ -98,31 +148,34 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       try {
         member = await chnl.guild.members.fetch(discordID);
       } catch (err) {
-        res.write("You are not in this server! Please join the server to view this channel.");
+        res.write('You are not in this server! Please join the server to view this channel.');
         res.end();
         return;
       }
 
-      if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) || !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) {
+      if (
+        !member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) ||
+        !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)
+      ) {
         res.write("You (or the bot) don't have permission to do that!");
         res.end();
         return;
       }
 
       if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
-        template = strReplace(template, "{$SERVER_ID}", chnl.guild.id);
-        template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
+        template = strReplace(template, '{$SERVER_ID}', chnl.guild.id);
+        template = strReplace(template, '{$CHANNEL_ID}', chnl.id);
 
         let final;
         if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
-          final = strReplace(template, "{$INPUT}", input_template);
+          final = strReplace(template, '{$INPUT}', input_template);
         } else {
-          final = strReplace(template, "{$INPUT}", input_disabled_template);
+          final = strReplace(template, '{$INPUT}', input_disabled_template);
         }
-        final = strReplace(final, "{$COLOR}", boxColor);
-        final = strReplace(final, "{$MESSAGES}", no_message_history_template);
-        final = strReplace(final, "{$SESSION_ID}", urlSessionID);
-        final = strReplace(final, "{$SESSION_PARAM}", sessionParam);
+        final = strReplace(final, '{$COLOR}', boxColor);
+        final = strReplace(final, '{$MESSAGES}', no_message_history_template);
+        final = strReplace(final, '{$SESSION_ID}', urlSessionID);
+        final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
 
         res.write(final);
         res.end();
@@ -130,9 +183,15 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       const response = await buildMessagesHtml({
-        bot, chnl, member, discordID, req,
+        bot,
+        chnl,
+        member,
+        discordID,
+        req,
         imagesCookie,
-        authorText, replyText, clientTimezone,
+        authorText,
+        replyText,
+        clientTimezone,
         channelId: null, // no reply links in reply context
         templates: {
           message: message_template,
@@ -146,24 +205,35 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           reactions: reactions_template,
           reaction: reaction_template,
           date_separator: date_separator_template,
-        }
+        },
       });
 
-      template = strReplace(template, "{$SERVER_ID}", chnl.guild.id);
-      template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
-      template = strReplace(template, "{$REFRESH_URL}", chnl.id + "?random=" + Math.random() + (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : ''));
+      template = strReplace(template, '{$SERVER_ID}', chnl.guild.id);
+      template = strReplace(template, '{$CHANNEL_ID}', chnl.id);
+      template = strReplace(
+        template,
+        '{$REFRESH_URL}',
+        chnl.id +
+          '?random=' +
+          Math.random() +
+          (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '')
+      );
 
       let final;
       if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
-        final = strReplace(template, "{$INPUT}", input_disabled_template);
-        final = strReplace(final, "{$COLOR}", boxColor);
-        final = strReplace(final, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
+        final = strReplace(template, '{$INPUT}', input_disabled_template);
+        final = strReplace(final, '{$COLOR}', boxColor);
+        final = strReplace(
+          final,
+          "You don't have permission to send messages in this channel.",
+          "Discross bot doesn't have the Manage Webhooks permission"
+        );
       } else if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
-        final = strReplace(template, "{$INPUT}", input_template);
-        final = strReplace(final, "{$COLOR}", boxColor);
+        final = strReplace(template, '{$INPUT}', input_template);
+        final = strReplace(final, '{$COLOR}', boxColor);
       } else {
-        final = strReplace(template, "{$INPUT}", input_disabled_template);
-        final = strReplace(final, "{$COLOR}", boxColor);
+        final = strReplace(template, '{$INPUT}', input_disabled_template);
+        final = strReplace(final, '{$COLOR}', boxColor);
       }
 
       // Reply context: fetch and display the message being replied to
@@ -172,7 +242,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         let message = await chnl.messages.fetch(reply_message_id);
         let message_content = message.content;
         if (message_content.length > 30) {
-          message_content = message.content.substring(0, 30) + "...";
+          message_content = message.content.substring(0, 30) + '...';
         }
 
         let author;
@@ -183,21 +253,23 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           author = getDisplayName(null, message.author);
         }
 
-        final = strReplace(final, "{$REPLY_MESSAGE_ID}", reply_message_id);
-        final = strReplace(final, "{$REPLY_MESSAGE_AUTHOR}", author);
-        final = strReplace(final, "{$REPLY_MESSAGE_CONTENT}", message_content);
+        final = strReplace(final, '{$REPLY_MESSAGE_ID}', reply_message_id);
+        final = strReplace(final, '{$REPLY_MESSAGE_AUTHOR}', author);
+        final = strReplace(final, '{$REPLY_MESSAGE_CONTENT}', message_content);
       } catch (err) {
         return notFound.serve404(req, res, 'Invalid message to reply to.', '/', 'Back to Home');
       }
 
-      const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
-      final = strReplace(final, "{$RANDOM_EMOJI}", randomEmoji);
-      final = strReplace(final, "{$CHANNEL_NAME}", normalizeWeirdUnicode(chnl.name));
-      final = strReplace(final, "{$MESSAGES}", response);
-      final = strReplace(final, "{$SESSION_ID}", urlSessionID);
-      final = strReplace(final, "{$SESSION_PARAM}", sessionParam);
+      const randomEmoji = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'][
+        Math.floor(Math.random() * 7)
+      ];
+      final = strReplace(final, '{$RANDOM_EMOJI}', randomEmoji);
+      final = strReplace(final, '{$CHANNEL_NAME}', normalizeWeirdUnicode(chnl.name));
+      final = strReplace(final, '{$MESSAGES}', response);
+      final = strReplace(final, '{$SESSION_ID}', urlSessionID);
+      final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
 
-      res.writeHead(200, { "Content-Type": "text/html" });
+      res.writeHead(200, { 'Content-Type': 'text/html' });
       res.write(final);
       res.end();
     } else {
@@ -205,8 +277,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     }
   } catch (error) {
     console.error(error);
-    res.writeHead(500, { "Content-Type": "text/html" });
-    res.write("An error occurred! Please try again later.");
+    res.writeHead(500, { 'Content-Type': 'text/html' });
+    res.write('An error occurred! Please try again later.');
     res.end();
   }
-}
+};

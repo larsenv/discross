@@ -10,11 +10,15 @@ const { strReplace } = require('./utils.js');
 
 const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
 
-const news_template = fs.readFileSync('pages/templates/news.html', 'utf-8')
-  .split('{$COMMON_HEAD}').join(head_partial);
+const news_template = fs
+  .readFileSync('pages/templates/news.html', 'utf-8')
+  .split('{$COMMON_HEAD}')
+  .join(head_partial);
 
-const article_template = fs.readFileSync('pages/templates/news_article.html', 'utf-8')
-  .split('{$COMMON_HEAD}').join(head_partial);
+const article_template = fs
+  .readFileSync('pages/templates/news_article.html', 'utf-8')
+  .split('{$COMMON_HEAD}')
+  .join(head_partial);
 
 const THEME_CONFIG = {
   0: { themeClass: '' },
@@ -29,8 +33,8 @@ const DEFAULT_TOPIC = 'apf-topnews';
 const MAX_ARTICLE_ELEMENTS = 150;
 
 // Browser-like User-Agent for AP News requests
-const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
+const BROWSER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 function proxyImageUrl(url) {
   return '/imageProxy/external/' + Buffer.from(url).toString('base64');
@@ -52,14 +56,16 @@ function escapeContent(text, showImages) {
 // Output is always passed through he.decode + escape-html before rendering.
 function stripHtml(html) {
   if (!html) return '';
-  return he.decode(
-    html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<\/div>/gi, '\n')
-      .replace(/<[^>]*>/g, '')  // Remove all HTML tags and their attributes
-      .replace(/</g, '')        // Remove any stray '<' left by malformed attribute values
-  ).trim();
+  return he
+    .decode(
+      html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<[^>]*>/g, '') // Remove all HTML tags and their attributes
+        .replace(/</g, '') // Remove any stray '<' left by malformed attribute values
+    )
+    .trim();
 }
 
 // Returns true if the paragraph text is a CTA / live-update callout that
@@ -75,18 +81,36 @@ function resolvePrefs(req) {
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(c => c.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(c => c.startsWith('images='))?.split('=')[1];
+  const whiteThemeCookie = req.headers.cookie
+    ?.split('; ')
+    ?.find((c) => c.startsWith('whiteThemeCookie='))
+    ?.split('=')[1];
+  const imagesCookieValue = req.headers.cookie
+    ?.split('; ')
+    ?.find((c) => c.startsWith('images='))
+    ?.split('=')[1];
 
   const linkParamParts = [];
   if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && whiteThemeCookie === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && imagesCookieValue === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  if (urlTheme !== null && whiteThemeCookie === undefined)
+    linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && imagesCookieValue === undefined)
+    linkParamParts.push('images=' + encodeURIComponent(urlImages));
   const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
-  const themeValue = urlTheme !== null ? parseInt(urlTheme, 10) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0);
+  const themeValue =
+    urlTheme !== null
+      ? parseInt(urlTheme, 10)
+      : whiteThemeCookie !== undefined
+        ? parseInt(whiteThemeCookie, 10)
+        : 0;
   const theme = THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
-  const imagesCookie = urlImages !== null ? parseInt(urlImages, 10) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue, 10) : 1);
+  const imagesCookie =
+    urlImages !== null
+      ? parseInt(urlImages, 10)
+      : imagesCookieValue !== undefined
+        ? parseInt(imagesCookieValue, 10)
+        : 1;
 
   return { urlSessionID, sessionParam, theme, themeValue, imagesCookie, parsedUrl };
 }
@@ -95,7 +119,7 @@ async function fetchHtml(url) {
   const response = await fetch(url, {
     headers: {
       'User-Agent': BROWSER_UA,
-      'Accept': 'text/html,application/xhtml+xml',
+      Accept: 'text/html,application/xhtml+xml',
     },
   });
   if (!response.ok) {
@@ -176,7 +200,9 @@ function parseHubHtml(html) {
     if (!urlMatch) continue;
 
     // Headline text from the PagePromoContentIcons-text span
-    const titleMatch = block.match(/<span[^>]+class="[^"]*PagePromoContentIcons-text[^"]*"[^>]*>([\s\S]*?)<\/span>/i);
+    const titleMatch = block.match(
+      /<span[^>]+class="[^"]*PagePromoContentIcons-text[^"]*"[^>]*>([\s\S]*?)<\/span>/i
+    );
     if (!titleMatch) continue;
 
     const url = urlMatch[1].startsWith('http') ? urlMatch[1] : `${AP_BASE}${urlMatch[1]}`;
@@ -258,7 +284,9 @@ function extractStoryBody(html) {
 // Extracts headline/author/date from JSON-LD, with a GTM dataLayer fallback.
 // Body text and inline images come from div.RichTextStoryBody only.
 function parseArticlePage(html, showImages) {
-  let headline = '', bylines = '', date = null;
+  let headline = '',
+    bylines = '',
+    date = null;
 
   // Primary: JSON-LD structured data
   const ldMatch = html.match(/<script[^>]+id="link-ld-json"[^>]*>([\s\S]*?)<\/script>/i);
@@ -266,17 +294,24 @@ function parseArticlePage(html, showImages) {
     try {
       const raw = JSON.parse(ldMatch[1]);
       const article = Array.isArray(raw)
-        ? raw.find(e => e['@type'] === 'NewsArticle')
-        : (raw['@type'] === 'NewsArticle' ? raw : null);
+        ? raw.find((e) => e['@type'] === 'NewsArticle')
+        : raw['@type'] === 'NewsArticle'
+          ? raw
+          : null;
       if (article) {
         headline = article.headline || '';
         if (article.author) {
           const authors = Array.isArray(article.author) ? article.author : [article.author];
-          bylines = authors.map(a => a.name || (typeof a === 'string' ? a : '')).filter(Boolean).join(', ');
+          bylines = authors
+            .map((a) => a.name || (typeof a === 'string' ? a : ''))
+            .filter(Boolean)
+            .join(', ');
         }
         if (article.datePublished) date = new Date(article.datePublished);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   // Fallback: GTM dataLayer meta tag
@@ -288,7 +323,9 @@ function parseArticlePage(html, showImages) {
         headline = gtm.headline || '';
         bylines = gtm.author || '';
         if (gtm.publication_date) date = new Date(gtm.publication_date);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -340,14 +377,16 @@ function parseArticlePage(html, showImages) {
   }
 
   if (!contentHtml) {
-    contentHtml = '<p class="news-article-paragraph news-empty">Article text could not be extracted.</p>';
+    contentHtml =
+      '<p class="news-article-paragraph news-empty">Article text could not be extracted.</p>';
   }
 
   return { headline, bylines, date, leadImageHtml, contentHtml };
 }
 
 exports.processNews = async function processNews(req, res, args, discordID) {
-  const { urlSessionID, sessionParam, theme, themeValue, parsedUrl, imagesCookie } = resolvePrefs(req);
+  const { urlSessionID, sessionParam, theme, themeValue, parsedUrl, imagesCookie } =
+    resolvePrefs(req);
   const timezone = getTimezoneFromIP(getClientIP(req));
 
   // Sanitise tag: allow letters, digits, hyphens (AP News topic format)
@@ -362,16 +401,19 @@ exports.processNews = async function processNews(req, res, args, discordID) {
     const feedItems = parseHubHtml(html);
 
     const cards = feedItems
-      .map(item => buildNewsCardHtml(item, timezone, sessionParam, imagesCookie !== 0))
+      .map((item) => buildNewsCardHtml(item, timezone, sessionParam, imagesCookie !== 0))
       .filter(Boolean);
 
-    const newsItemsHtml = cards.length > 0
-      ? cards.join('\n')
-      : '<p class="news-empty">No articles found for this category.</p>';
+    const newsItemsHtml =
+      cards.length > 0
+        ? cards.join('\n')
+        : '<p class="news-empty">No articles found for this category.</p>';
 
     let sessionHidden = '';
-    if (urlSessionID) sessionHidden += `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">`;
-    if (themeValue !== 0) sessionHidden += `<input type="hidden" name="theme" value="${escape(String(themeValue))}">`;
+    if (urlSessionID)
+      sessionHidden += `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">`;
+    if (themeValue !== 0)
+      sessionHidden += `<input type="hidden" name="theme" value="${escape(String(themeValue))}">`;
 
     let final = strReplace(news_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
     final = strReplace(final, '{$TAG_DISPLAY}', displayTag);
@@ -384,7 +426,10 @@ exports.processNews = async function processNews(req, res, args, discordID) {
     res.end(final);
   } catch (err) {
     console.error('AP News feed error:', err);
-    const msg = err.statusCode === 404 ? 'Category not found.' : 'Could not load news feed. Please try again later.';
+    const msg =
+      err.statusCode === 404
+        ? 'Category not found.'
+        : 'Could not load news feed. Please try again later.';
     res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
     res.end(msg);
   }
@@ -406,7 +451,10 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
 
   try {
     const html = await fetchHtml(articleUrl);
-    const { headline, bylines, date, leadImageHtml, contentHtml } = parseArticlePage(html, imagesCookie !== 0);
+    const { headline, bylines, date, leadImageHtml, contentHtml } = parseArticlePage(
+      html,
+      imagesCookie !== 0
+    );
 
     const headlineEscaped = escapeContent(headline || 'Untitled', imagesCookie !== 0);
     const bylinesEscaped = bylines ? `${escapeContent(bylines, imagesCookie !== 0)} - ` : '';
@@ -424,10 +472,11 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     res.end(final);
   } catch (err) {
     console.error('AP News article error:', err);
-    const msg = err.statusCode === 404 ? 'Article not found.' : 'Could not load article. Please try again later.';
+    const msg =
+      err.statusCode === 404
+        ? 'Article not found.'
+        : 'Could not load article. Please try again later.';
     res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
     res.end(msg);
   }
 };
-
-
