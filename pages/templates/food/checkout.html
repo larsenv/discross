@@ -52,8 +52,7 @@
           {$STORE_ADDRESS}
         </div>
         <div>
-          <form method="POST" action="/food/request-verify" id="checkout-form">
-            <input type="hidden" name="sessionID" value="{$SESSION_ID}">
+          <form method="POST" action="/food/request-verify{$SESSION_PARAM}" id="checkout-form">
             <div class="food-card">
               <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Delivery Info</b></font><br><br>
               <div class="food-form-row">

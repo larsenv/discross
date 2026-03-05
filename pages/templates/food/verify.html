@@ -35,8 +35,7 @@
           <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>This will place a real order.</b> Once you submit the code, an actual order will be sent to the store and you will owe cash upon delivery.</font>
         </div>
         {$ERROR}
-        <form method="POST" action="/food/place-order">
-          <input type="hidden" name="sessionID" value="{$SESSION_ID}">
+        <form method="POST" action="/food/place-order{$SESSION_PARAM}">
           <div class="food-form-group">
             <label class="food-label">Verification Code</label>
             <input type="text" name="code" class="food-input food-code-input" required maxlength="6" pattern="\d{6}" placeholder="123456" autocomplete="one-time-code">
