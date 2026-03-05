@@ -5,6 +5,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const { buildMessagesHtml } = require('./channel');
 const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const notFound = require('./notFound.js');
 
 const THEME_CONFIG = {
   0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
@@ -57,9 +58,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
   }
 
   if (!chnl) {
-    res.writeHead(404, { 'Content-Type': 'text/html' });
-    res.end('Invalid channel!');
-    return;
+    return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
   }
 
   try {

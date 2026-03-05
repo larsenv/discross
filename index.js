@@ -74,6 +74,7 @@ const weatherpage = require('./pages/weather.js')
 const stockspage = require('./pages/stocks.js')
 const searchpage = require('./pages/search.js')
 const foodpage = require('./pages/food.js')
+const notFound = require('./pages/notFound.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -100,7 +101,7 @@ const staticFileCache = new Map();
 const STATIC_CACHE_MAX_FILES = 2000;    // max distinct files to cache (FIFO eviction)
 const STATIC_CACHE_MAX_BYTES = 1024 * 1024; // skip caching individual files larger than 1 MB
 
-async function servePage(filename, res, type, textToReplace, replacement) { // textToReplace and replacement allow for dynamic pages (not used anymore as far as I know)
+async function servePage(filename, res, type, textToReplace, replacement, req) { // textToReplace and replacement allow for dynamic pages (not used anymore as far as I know)
   if (!type) {
     type = mime(filename)
   }
@@ -120,10 +121,9 @@ async function servePage(filename, res, type, textToReplace, replacement) { // t
     if (err) {
       //try to find something
       if (filename.endsWith('index.html')) {
-        res.writeHead(404, { 'Content-Type': type })
-        return res.end('404 Not Found')
+        return notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home')
       } else {
-        servePage(filename + '/index.html', res)
+        servePage(filename + '/index.html', res, undefined, undefined, undefined, req)
         return
       }
     }
@@ -549,7 +549,7 @@ server.on('request', async (req, res) => {
       await handleServerIcon(bot, res, serverID, iconHash, theme);
     } else {
       const filename = path.resolve("pages/static", sanitizer(parsedurl.pathname));
-      await servePage(filename, res)
+      await servePage(filename, res, undefined, undefined, undefined, req)
     }
     } catch (err) {
       console.error(err);
