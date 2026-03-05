@@ -10,7 +10,6 @@ const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../t
 const API_TIMEOUT_MS = 15000
 const VERIFICATION_CODE_MIN = 100000
 const VERIFICATION_CODE_MAX = 1000000
-const SAUCE_CODES = ['X', 'Xm', 'Cp', 'Bq', 'Rd', 'Hw', 'Mh', 'Du']
 
 function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || '')
