@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html class="page-channel">
+
+<head>
+    {$COMMON_HEAD}
+    <title>Discross - Pinned Messages - {$CHANNEL_NAME}</title>
+</head>
+
+<body {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+        <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}" class="menu-button">
+            <img src="/resources/images/menu.gif" alt="Back" width="24" height="24" style="width: 24px; height: 24px;">
+        </a>
+
+        <div style="padding-left: 60px;">
+            <div style="padding: 16px;">
+                <b><font size="5" face="'rodin', Arial, Helvetica, sans-serif">Pinned Messages in {$CHANNEL_NAME}</font></b><br>
+                <div id="msgcontainer">
+                    {$MESSAGES}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

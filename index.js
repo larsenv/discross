@@ -62,12 +62,17 @@ const replypage = require('./pages/reply.js')
 const drawpage = require('./pages/draw.js')
 const senddrawing = require('./pages/senddrawing.js')
 const { handleServerIcon } = require('./pages/serverIconHandler.js')
+const pinspage = require('./pages/pins.js')
 const changepasswordpage = require('./pages/changepassword.js')
 const setup2fapage = require('./pages/setup2fa.js')
 const privacypage = require('./pages/privacy.js')
 const termspage = require('./pages/terms.js')
 const guestpage = require('./pages/guest.js')
 const guestsendpage = require('./pages/guest_send.js')
+const newspage = require('./pages/news.js')
+const weatherpage = require('./pages/weather.js')
+const stockspage = require('./pages/stocks.js')
+const searchpage = require('./pages/search.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -362,6 +367,20 @@ server.on('request', async (req, res) => {
       if (discordID) {
         await uploadpage.processUpload(bot, req, res, discordID)
       }
+    } else if (args[1] === 'pins') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await pinspage.processPins(bot, req, res, args, discordID)
+      }
+    } else if (args[1] === 'news') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        if (args.length >= 3 && args[2]) {
+          await newspage.processNewsArticle(req, res, args, discordID)
+        } else {
+          await newspage.processNews(req, res, args, discordID)
+        }
+      }
     } else if (args[1] === 'draw'){
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
@@ -383,6 +402,12 @@ server.on('request', async (req, res) => {
       await privacypage.processPrivacy(bot, req, res, args)
     } else if (args[1] === 'terms.html') {
       await termspage.processTerms(bot, req, res, args)
+    } else if (args[1] === 'weather') {
+      await weatherpage.processWeather(req, res)
+    } else if (args[1] === 'stocks') {
+      await stockspage.processStocks(req, res)
+    } else if (args[1] === 'search') {
+      await searchpage.processSearch(req, res)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
       connectionHandler.processRequest(req, res)
     } else if (args[1] === "discord") {

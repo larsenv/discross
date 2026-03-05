@@ -909,6 +909,13 @@ html.page-simple .light-theme #wrapper .discross-button {
 html.page-simple .light-theme #wrapper .discross-button:hover {
     background: #4752c4 !important;
 }
+html.page-simple .light-theme #wrapper .discross-button.secondary {
+    background: #4f545c !important;
+    color: white !important;
+}
+html.page-simple .light-theme #wrapper .discross-button.secondary:hover {
+    background: #5d6269 !important;
+}
 
 html.page-simple .amoled-theme {
     background: #09090A !important;
@@ -1103,6 +1110,61 @@ html.page-server font[color="#dcddde"] {
     /* position:fixed is unsupported in Opera 9.5 on DSi */
     .menu-button { display: none !important; }
 }
+
+/* ================================================================
+   25b. NEWS PAGE (AP News viewer)
+   ================================================================ */
+
+/* News feed */
+.news-search-form { margin: 12px 0; }
+.news-search-input {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background: #2f3136;
+    color: #dcddde;
+    font-size: 14px;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+.news-search-btn { padding: 8px 16px; font-size: 14px; margin: 0; vertical-align: middle; }
+.news-empty { color: #72767d; font-family: sans-serif; }
+
+/* News card */
+.news-card {
+    border: 1px solid #3a3c40;
+    border-radius: 8px;
+    margin: 12px 0;
+    overflow: hidden;
+    background: #222327;
+    max-width: 480px;
+}
+.news-card-image-wrap { display: block; }
+.news-card-image { width: 100%; max-width: 200px; max-height: 133px; object-fit: cover; display: block; }
+.news-card-caption { font-size: 11px; color: #72767d; display: block; padding: 2px 8px; }
+.news-card-body { padding: 10px; }
+.news-card-title { font-size: 16px; display: block; margin-bottom: 4px; }
+.news-card-meta { font-size: 12px; color: #72767d; display: block; margin-bottom: 6px; }
+.news-card-summary { font-size: 14px; color: #b5bac1; }
+.news-read-btn { margin-top: 8px; padding: 6px 16px; font-size: 13px; }
+
+/* Article view */
+.news-article-meta { color: #72767d; font-size: 13px; margin-bottom: 16px; }
+.news-article-content { max-width: 680px; }
+.news-article-paragraph { margin: 0 0 14px 0; font-size: 15px; line-height: 1.6; color: #dcddde; }
+.news-article-image-wrap { margin: 14px 0; display: block; }
+.news-article-image { width: 100%; max-width: 480px; max-height: 320px; object-fit: cover; display: block; border-radius: 4px; }
+.news-article-caption { font-size: 12px; color: #72767d; display: block; margin-top: 4px; }
+
+/* Light theme overrides */
+.light-theme .news-card { background: #f2f3f5; border-color: #d0d2d6; }
+.light-theme .news-card-summary { color: #4f5660; }
+.light-theme .news-article-paragraph { color: #23272a; }
+.light-theme .news-search-input { background: #fff; border-color: #c7ccd1; color: #23272a; }
+
+/* AMOLED theme overrides */
+.amoled-theme .news-card { background: #141416; border-color: #2b2c30; }
 
 /* ================================================================
    26. @font-face — placed last for IE1/IE2 compatibility
