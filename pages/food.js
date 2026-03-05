@@ -349,18 +349,14 @@ exports.handleGet = async function (bot, req, res, discordID) {
       }
       if (stores.length > 0) {
         storesHtml += `<br><font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Nearby Stores</b></font><br><br>`
-        for (let idx = 0; idx < Math.min(stores.length, 5); idx++) {
-          const s = stores[idx]
+        for (const s of stores.slice(0, 5)) {
           const city = escape(s.City || '')
           const storeId = escape(String(s.StoreID || ''))
           const wait = (s.ServiceMethodEstimatedWaitMinutes && s.ServiceMethodEstimatedWaitMinutes.Delivery)
             ? escape(s.ServiceMethodEstimatedWaitMinutes.Delivery.Min + '-' + s.ServiceMethodEstimatedWaitMinutes.Delivery.Max + ' min')
             : ''
           const addrLines = (s.AddressDescription || '').split('\n').map(l => escape(l)).join('<br>')
-          // Mark the nearest (first) store so users pick the right one for delivery
-          const nearestBadge = idx === 0 ? `<div class="food-store-nearest"><font face="'rodin', Arial, Helvetica, sans-serif" color="#57f287" size="2">&#10003; Nearest store to your address</font></div>` : ''
           storesHtml += `<div class="food-store-card">
-  ${nearestBadge}
   <div class="food-store-name">Store #${storeId} ${city}</div>
   <div class="food-store-addr">${addrLines}</div>
   ${wait ? `<div class="food-store-wait">Est. delivery: ${wait}</div>` : ''}
@@ -1046,10 +1042,20 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const price = parseFloat(params.price) || 0
     // Only allow relative /food/ redirects to prevent open redirect
     const rawRedirect = params.redirect || ''
-    const redirect = /^\/food\//.test(rawRedirect) ? rawRedirect.slice(0, 300) : '/food/cart'
+    // HTML-unescape &amp; → & only: old browsers (e.g. Wii U WebKit) may submit form
+    // values with literal &amp; instead of decoding HTML entities first. In a URL context
+    // only &amp; appears (as the query-param separator), so we decode only that to avoid
+    // the double-unescape risk from chaining multiple entity replacements.
+    const rawRedirectDecoded = rawRedirect.replace(/&amp;/g, '&')
+    const redirect = /^\/food\//.test(rawRedirectDecoded) ? rawRedirectDecoded.slice(0, 300) : '/food/cart'
 
     if (!code) {
-      res.writeHead(302, { Location: redirect })
+      // Preserve session ID even on early exit
+      let noCodeRedirect = redirect
+      if (urlSessionID && !redirect.includes('sessionID=')) {
+        noCodeRedirect = redirect + (redirect.includes('?') ? sessionIdSuffix : sessionParam)
+      }
+      res.writeHead(302, { Location: noCodeRedirect })
       return res.end()
     }
 
