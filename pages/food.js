@@ -842,7 +842,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
         // Show selected size confirmation
         const sizeHtml = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
-  <b>Size:</b> ${escape(v.Name || variantCode)}${vPrice > 0 ? ` — $${vPrice.toFixed(2)}` : ''}
+  <b>Size:</b> ${escape(v.Name || variantCode)}${vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : ''}
   &#160;<a href="/food/customize?store=${encodeURIComponent(storeId)}&amp;code=${encodeURIComponent(productCode)}&amp;country=${encodeURIComponent(country)}&amp;back=${encodeURIComponent(backUrl)}${sessionIdSuffix.replace(/&/g, '&amp;')}" class="food-back-link" style="font-size:0.85rem">Change size</a>
 </font>`
         html = strReplace(html, '{$SIZE_OPTIONS}', sizeHtml)
@@ -963,7 +963,7 @@ ${optHtml}
           }
 
           toppingsSection += `  <div style="margin-top:16px">
-    <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` — $${vPrice.toFixed(2)}` : ''}</button>
+    <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : ''}</button>
     &#160;&#160;
     <a href="${escape(backUrl)}" class="food-btn food-btn-secondary">Cancel</a>
   </div>
@@ -983,7 +983,7 @@ ${optHtml}
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
   <input type="hidden" name="default_options" value="${escape(JSON.stringify(tagDefaults))}">
   <div style="margin-top:8px">
-    <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` — $${vPrice.toFixed(2)}` : ''}</button>
+    <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : ''}</button>
     &#160;&#160;
     <a href="${escape(backUrl)}" class="food-btn food-btn-secondary">Cancel</a>
   </div>
@@ -1398,7 +1398,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       if (priceOuterStatus !== 0 && priceOuterStatus !== 1) {
         const priceTopItems = (priceResult && priceResult.data && priceResult.data.StatusItems) || []
         const priceErrMsg = priceTopItems.map(s => s.Message).filter(Boolean).join(' ')
-          || 'This isn\'t the closest location — the selected store may not deliver to your address. Please go back to store search and choose the nearest store.'
+          || 'This isn\'t the closest location - the selected store may not deliver to your address. Please go back to store search and choose the nearest store.'
         console.error('[place-order] price-order failed: outer Status:', priceOuterStatus, '| top-level StatusItems:', JSON.stringify(priceTopItems))
         res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent(priceErrMsg) })
         return res.end()
