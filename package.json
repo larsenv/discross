@@ -17,6 +17,7 @@
     "formidable": "^3.5.4",
     "geoip-lite": "^1.4.10",
     "he": "^1.2.0",
+    "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.0",
     "mime-types": "^3.0.1",
     "otplib": "^13.3.0",
