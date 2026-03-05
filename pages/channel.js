@@ -17,6 +17,7 @@ const { processPoll } = require('./pollUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
 const emojiRegex = require('./twemojiRegex').regex;
+const notFound = require('./notFound.js');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -1011,9 +1012,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   }
 
   if (!chnl) {
-    res.writeHead(404, { 'Content-Type': 'text/html' });
-    res.end('Invalid channel!');
-    return;
+    return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
   }
 
   try {

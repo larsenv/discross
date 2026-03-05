@@ -5,6 +5,7 @@ const escape = require('escape-html');
 const { PermissionFlagsBits } = require('discord.js');
 
 const auth = require('../authentication.js');
+const notFound = require('./notFound.js');
 const { buildMessagesHtml } = require('./channel.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {
@@ -109,9 +110,7 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
   }
 
   if (!chnl) {
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Invalid channel!');
-    return;
+    return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
   }
 
   let botMember;
