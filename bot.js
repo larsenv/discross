@@ -121,3 +121,14 @@ exports.getHistoryCached = async function (chnl) {
 
 exports.client = client
 
+exports.sendDM = async function (discordID, message) {
+  try {
+    const user = await client.users.fetch(discordID)
+    await user.send(message)
+    return { success: true }
+  } catch (err) {
+    console.error('Failed to send DM to', discordID, ':', err.message || err)
+    return { success: false, error: err.message || 'Failed to send Discord DM.' }
+  }
+}
+

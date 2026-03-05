@@ -386,6 +386,40 @@ server.on('request', async (req, res) => {
       if (discordID) {
         await drawpage.processDraw(bot, req, res, args, discordID)
       }
+    } else if (args[1] === 'sendactioncode') {
+      const discordID = await auth.checkAuth(req, res, true)
+      if (!discordID) {
+        res.writeHead(302, { Location: '/login.html' })
+        res.end()
+      } else {
+        const returnPages = {
+          'changepassword': '/changepassword.html',
+          'setup2fa': '/setup2fa.html',
+          'disable2fa': '/setup2fa.html'
+        }
+        const actionParam = parsedurl.searchParams.get('action')
+        if (!returnPages[actionParam]) {
+          res.writeHead(302, { Location: '/server/' })
+          res.end()
+        } else {
+          const urlSessionID = parsedurl.searchParams.get('sessionID') || ''
+          const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''
+          const code = auth.createActionCode(discordID, actionParam)
+          const dmMessages = {
+            'changepassword': 'Your Discross verification code to change your password: **' + code + '**\nThis code expires in 10 minutes.',
+            'setup2fa': 'Your Discross verification code to set up two-factor authentication: **' + code + '**\nThis code expires in 10 minutes.',
+            'disable2fa': 'Your Discross verification code to disable two-factor authentication: **' + code + '**\nThis code expires in 10 minutes.'
+          }
+          const dmResult = await bot.sendDM(discordID, dmMessages[actionParam])
+          const returnPath = returnPages[actionParam]
+          if (dmResult.success) {
+            res.writeHead(302, { Location: returnPath + sessionParam + (sessionParam ? '&' : '?') + 'codesent=1' })
+          } else {
+            res.writeHead(302, { Location: returnPath + sessionParam + (sessionParam ? '&' : '?') + 'errortext=' + encodeURIComponent('Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.') })
+          }
+          res.end()
+        }
+      }
     } else if (args[1] === 'login.html') {
       await loginpage.processLogin(bot, req, res, args)
     } else if (args[1] === 'register.html') {
