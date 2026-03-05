@@ -14,14 +14,14 @@
         </td>
         <td width="100%" align="right">
           <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a href="/food/" style="color:#dddddd">Order Pizza</a>&#160;&#160;
-            <a href="/food/cart" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
-            <a href="/food/receipts" style="color:#dddddd">Orders</a>&#160;&#160;
-            <a href="/food/track" style="color:#dddddd">Track</a>
+            <a href="/food/{$SESSION_PARAM}" style="color:#dddddd">Order Pizza</a>&#160;&#160;
+            <a href="/food/cart{$SESSION_PARAM}" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
+            <a href="/food/receipts{$SESSION_PARAM}" style="color:#dddddd">Orders</a>&#160;&#160;
+            <a href="/food/track{$SESSION_PARAM}" style="color:#dddddd">Track</a>
           </font>
         </td>
         <td valign="middle">
-          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+          <a href="/switchtheme{$SESSION_PARAM}"><img src="/resources/images/themeswitch.gif" alt="Switch theme" width="36" height="36" style="background: none; border: none;"></a>
         </td>
       </tr>
     </table>
@@ -35,6 +35,7 @@
         <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Find a Store</b></font><br><br>
         <form method="GET" action="/food/store-search">
           <div class="food-input-row">
+            <input type="hidden" name="sessionID" value="{$SESSION_ID}">
             <input type="text" name="address" class="food-input" value="{$SEARCH_ADDRESS}" placeholder="Delivery address or zip code" required>
             <button type="submit" class="food-btn">Find Stores</button>
           </div>

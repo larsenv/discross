@@ -95,12 +95,13 @@ function iconImg(code, size) {
   return `<img src="/resources/twemoji/${file}.gif" alt="" width="${s}" height="${s}" style="width:${s}px;height:${s}px;vertical-align:middle;">`;
 }
 
-function buildNavButtons(city, activeView) {
+function buildNavButtons(city, activeView, urlSessionID) {
   const cityEnc = encodeURIComponent(city);
+  const sessionSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '';
   let html = '<table cellpadding="0" cellspacing="0"><tr>\n';
   for (const v of VIEWS) {
     const cls = v.id === activeView ? 'discross-button' : 'discross-button secondary';
-    html += `  <td style="padding:0 6px 10px 0;"><a href="/weather?city=${cityEnc}&view=${v.id}" class="${cls}" style="padding:7px 16px;font-size:14px;margin:0;">${v.label}</a></td>\n`;
+    html += `  <td style="padding:0 6px 10px 0;"><a href="/weather?city=${cityEnc}&view=${v.id}${sessionSuffix}" class="${cls}" style="padding:7px 16px;font-size:14px;margin:0;">${v.label}</a></td>\n`;
   }
   html += '</tr></table>\n';
   return html;
@@ -332,6 +333,7 @@ exports.processWeather = async function processWeather(req, res) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const city = parsedUrl.searchParams.get('city') || '';
   const rawView = parsedUrl.searchParams.get('view') || '';
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
   // Resolve view: use rawView if it matches a known view, otherwise default to 'current' when a city is set
   let view = '';
   if (VIEWS.some(v => v.id === rawView)) {
@@ -383,7 +385,7 @@ exports.processWeather = async function processWeather(req, res) {
         const locationDisplay = locationParts.join(', ');
 
         // Build navigation buttons (pass trimmedCity so the links preserve the normalised name)
-        navHtml = buildNavButtons(trimmedCity, view);
+        navHtml = buildNavButtons(trimmedCity, view, urlSessionID);
 
         // Location header
         weatherHtml = `<font size="5" ${FONT} color="#dddddd"><b>${locationDisplay}</b></font><br><br>\n`;
@@ -417,6 +419,7 @@ exports.processWeather = async function processWeather(req, res) {
   response = strReplace(response, '{$CITY_VALUE}', escape(city));
   response = strReplace(response, '{$NAV_BUTTONS}', navHtml);
   response = strReplace(response, '{$WEATHER_CONTENT}', weatherHtml);
+  response = strReplace(response, '{$SESSION_ID}', escape(urlSessionID));
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);

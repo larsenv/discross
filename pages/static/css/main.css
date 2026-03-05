@@ -1476,6 +1476,10 @@ a.food-btn:hover,
     font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
+.food-store-nearest {
+    margin-bottom: 6px;
+}
+
 /* Menu tabs — display:inline-block + margin is the base fallback;
    flex upgrades the layout on browsers that support it. */
 .food-tabs {

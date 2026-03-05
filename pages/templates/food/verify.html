@@ -14,14 +14,14 @@
         </td>
         <td width="100%" align="right">
           <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a href="/food/" style="color:#dddddd">Order Pizza</a>&#160;&#160;
-            <a href="/food/cart" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
-            <a href="/food/receipts" style="color:#dddddd">Orders</a>&#160;&#160;
-            <a href="/food/track" style="color:#dddddd">Track</a>
+            <a href="/food/{$SESSION_PARAM}" style="color:#dddddd">Order Pizza</a>&#160;&#160;
+            <a href="/food/cart{$SESSION_PARAM}" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
+            <a href="/food/receipts{$SESSION_PARAM}" style="color:#dddddd">Orders</a>&#160;&#160;
+            <a href="/food/track{$SESSION_PARAM}" style="color:#dddddd">Track</a>
           </font>
         </td>
         <td valign="middle">
-          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+          <a href="/switchtheme{$SESSION_PARAM}"><img src="/resources/images/themeswitch.gif" alt="Switch theme" width="36" height="36" style="background: none; border: none;"></a>
         </td>
       </tr>
     </table>
@@ -36,6 +36,7 @@
         </div>
         {$ERROR}
         <form method="POST" action="/food/place-order">
+          <input type="hidden" name="sessionID" value="{$SESSION_ID}">
           <div class="food-form-group">
             <label class="food-label">Verification Code</label>
             <input type="text" name="code" class="food-input food-code-input" required maxlength="6" pattern="\d{6}" placeholder="123456" autocomplete="one-time-code">
@@ -43,7 +44,7 @@
           <div style="margin-top:20px">
             <button type="submit" class="food-btn food-btn-large food-btn-success">Place Order</button>
             &#160;&#160;
-            <a href="/food/cancel-order" class="food-btn food-btn-danger">Cancel Order</a>
+            <a href="/food/cancel-order{$SESSION_PARAM}" class="food-btn food-btn-danger">Cancel Order</a>
           </div>
         </form>
         <br>

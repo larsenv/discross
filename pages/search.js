@@ -30,6 +30,7 @@ exports.processSearch = async function processSearch(req, res) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const query = parsedUrl.searchParams.get('q') || '';
   const engine = parsedUrl.searchParams.get('engine') || 'frogfind';
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
   const urlTheme = parsedUrl.searchParams.get('theme');
   const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(c => c.startsWith('whiteThemeCookie='))?.split('=')[1];
   const themeValue = urlTheme !== null ? parseInt(urlTheme, 10) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0);
@@ -60,6 +61,7 @@ exports.processSearch = async function processSearch(req, res) {
   response = strReplace(response, '{$FROGFIND_CHECKED}', safeEngine === 'frogfind' ? 'checked' : '');
   response = strReplace(response, '{$WIBY_CHECKED}',     safeEngine === 'wiby'     ? 'checked' : '');
   response = strReplace(response, '{$GOOGLE_CHECKED}',   safeEngine === 'google'   ? 'checked' : '');
+  response = strReplace(response, '{$SESSION_ID}', escape(urlSessionID));
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);

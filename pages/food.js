@@ -288,12 +288,27 @@ exports.handleGet = async function (bot, req, res, discordID) {
   const theme = getThemeAttr(req)
   const templates = getTemplates()
 
+  // Session ID propagation: Wii U and other browsers without cookie support
+  // pass the session ID as a URL param. We forward it in all links and form
+  // hidden fields so the user stays authenticated across page navigation.
+  const urlSessionID = parsedurl.searchParams.get('sessionID') || ''
+  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''
+  const sessionIdSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : ''
+
+  function applySessionToTemplate(html) {
+    html = strReplace(html, '{$SESSION_PARAM}', sessionParam)
+    html = strReplace(html, '{$SESSION_ID}', escape(urlSessionID))
+    html = strReplace(html, '{$SESSION_ID_SUFFIX}', sessionIdSuffix)
+    return html
+  }
+
   // --- Store finder ---
   if (subpath === '' || subpath === 'index' || subpath === 'index.html') {
     const cart = getCart(req)
     const cartCount = (cart.items || []).reduce((s, i) => s + (i.qty || 1), 0)
     let html = strReplace(templates.index, '{$WHITE_THEME_ENABLED}', theme)
     html = strReplace(html, '{$CART_COUNT}', String(cartCount))
+    html = applySessionToTemplate(html)
     res.writeHead(200, { 'Content-Type': 'text/html' })
     return res.end(html)
   }
@@ -309,6 +324,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
     if (!address) {
       html = strReplace(html, '{$STORE_RESULTS}', '')
+      html = applySessionToTemplate(html)
       res.writeHead(200, { 'Content-Type': 'text/html' })
       return res.end(html)
     }
@@ -333,18 +349,22 @@ exports.handleGet = async function (bot, req, res, discordID) {
       }
       if (stores.length > 0) {
         storesHtml += `<br><font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Nearby Stores</b></font><br><br>`
-        for (const s of stores.slice(0, 5)) {
+        for (let idx = 0; idx < Math.min(stores.length, 5); idx++) {
+          const s = stores[idx]
           const city = escape(s.City || '')
           const storeId = escape(String(s.StoreID || ''))
           const wait = (s.ServiceMethodEstimatedWaitMinutes && s.ServiceMethodEstimatedWaitMinutes.Delivery)
             ? escape(s.ServiceMethodEstimatedWaitMinutes.Delivery.Min + '-' + s.ServiceMethodEstimatedWaitMinutes.Delivery.Max + ' min')
             : ''
           const addrLines = (s.AddressDescription || '').split('\n').map(l => escape(l)).join('<br>')
+          // Mark the nearest (first) store so users pick the right one for delivery
+          const nearestBadge = idx === 0 ? `<div class="food-store-nearest"><font face="'rodin', Arial, Helvetica, sans-serif" color="#57f287" size="2">&#10003; Nearest store to your address</font></div>` : ''
           storesHtml += `<div class="food-store-card">
+  ${nearestBadge}
   <div class="food-store-name">Store #${storeId} ${city}</div>
   <div class="food-store-addr">${addrLines}</div>
   ${wait ? `<div class="food-store-wait">Est. delivery: ${wait}</div>` : ''}
-  <a href="/food/menu?store=${encodeURIComponent(s.StoreID || '')}&amp;country=${country}" class="food-btn" style="display:inline-block;margin-top:8px">View Menu</a>
+  <a href="/food/menu?store=${encodeURIComponent(s.StoreID || '')}&amp;country=${country}${sessionIdSuffix}" class="food-btn" style="display:inline-block;margin-top:8px">View Menu</a>
 </div>`
         }
       } else {
@@ -356,6 +376,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     }
 
     html = strReplace(html, '{$STORE_RESULTS}', storesHtml)
+    html = applySessionToTemplate(html)
     res.writeHead(200, { 'Content-Type': 'text/html' })
     return res.end(html)
   }
@@ -368,7 +389,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     const dominosHost = country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com'
 
     if (!storeId) {
-      res.writeHead(302, { Location: '/food/' })
+      res.writeHead(302, { Location: '/food/' + sessionParam })
       return res.end()
     }
 
@@ -410,7 +431,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
       for (const cat of allCategories) {
         if (!cat || !cat.Code) continue
         const active = (selectedCat === cat.Code) ? ' food-tab-active' : ''
-        catTabs += `<a href="/food/menu?store=${encodeURIComponent(storeId)}&amp;category=${encodeURIComponent(cat.Code)}&amp;country=${country}" class="food-tab${active}">${escape(cat.Name || cat.Code)}</a>`
+        catTabs += `<a href="/food/menu?store=${encodeURIComponent(storeId)}&amp;category=${encodeURIComponent(cat.Code)}&amp;country=${country}${sessionIdSuffix}" class="food-tab${active}">${escape(cat.Name || cat.Code)}</a>`
       }
       html = strReplace(html, '{$CATEGORY_TABS}', catTabs)
 
@@ -479,7 +500,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         // Items with multiple size variants get a "Customize" button linking to the size picker
         let actionHtml
         if (hasMultipleVariants) {
-          const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(code)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(req.url)}`
+          const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(code)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(req.url)}${sessionIdSuffix}`
           const btnLabel = inCart > 0 ? `Customize (${inCart} in cart)` : 'Customize / Add'
           actionHtml = `<a href="${customizeUrl}" class="food-btn food-btn-sm">${escape(btnLabel)}</a>`
         } else {
@@ -493,6 +514,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
       <input type="hidden" name="name" value="${safeName}">
       <input type="hidden" name="price" value="${safePrice}">
       <input type="hidden" name="redirect" value="${safeRedirect}">
+      <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
       <button type="submit" class="food-btn food-btn-sm">${escape(btnLabel)}</button>
     </form>`
         }
@@ -515,6 +537,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     }
 
     res.writeHead(200, { 'Content-Type': 'text/html' })
+    html = applySessionToTemplate(html)
     return res.end(html)
   }
 
@@ -541,6 +564,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <td>
     <form method="POST" action="/food/cart/remove" style="display:inline">
       <input type="hidden" name="index" value="${i}">
+      <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
       <button type="submit" class="food-btn food-btn-danger">Remove</button>
     </form>
   </td>
@@ -554,6 +578,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     html = strReplace(html, '{$CART_TOTAL}', total.toFixed(2))
     html = strReplace(html, '{$STORE_ID}', escape(cart.storeId || ''))
     html = strReplace(html, '{$HAS_ITEMS}', items.length > 0 ? '' : 'display:none;')
+    html = applySessionToTemplate(html)
 
     res.writeHead(200, { 'Content-Type': 'text/html' })
     return res.end(html)
@@ -563,7 +588,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
   if (subpath === 'checkout') {
     const cart = getCart(req)
     if (!cart.items || cart.items.length === 0) {
-      res.writeHead(302, { Location: '/food/cart' })
+      res.writeHead(302, { Location: '/food/cart' + sessionParam })
       return res.end()
     }
 
@@ -616,6 +641,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     }
     html = strReplace(html, '{$ORDER_SUMMARY}', itemsSummary)
     html = strReplace(html, '{$ORDER_TOTAL}', total.toFixed(2))
+    html = applySessionToTemplate(html)
 
     res.writeHead(200, { 'Content-Type': 'text/html' })
     return res.end(html)
@@ -631,6 +657,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     html = strReplace(html, '{$ERROR}', errorText
       ? `<div class="food-error">${escape(errorText)}</div>`
       : '')
+    html = applySessionToTemplate(html)
     res.writeHead(200, { 'Content-Type': 'text/html' })
     return res.end(html)
   }
@@ -656,6 +683,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
       orderInfo = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">No recent orders found.</font>`
     }
     html = strReplace(html, '{$ORDER_INFO}', orderInfo)
+    html = applySessionToTemplate(html)
     res.writeHead(200, { 'Content-Type': 'text/html' })
     return res.end(html)
   }
@@ -692,7 +720,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <div class="food-receipt-items">${itemsList || '<em>No item details</em>'}</div>
   <div class="food-receipt-footer">
     <span class="food-receipt-total">Total: $${parseFloat(order.total || 0).toFixed(2)}</span>
-    <a href="/food/track" class="food-btn food-btn-sm">Track</a>
+    <a href="/food/track${sessionParam}" class="food-btn food-btn-sm">Track</a>
   </div>
 </div>`
       }
@@ -700,6 +728,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
       ordersHtml = '<font face="\'rodin\', Arial, Helvetica, sans-serif" color="#b5bac1">No orders yet.</font>'
     }
     html = strReplace(html, '{$ORDERS}', ordersHtml)
+    html = applySessionToTemplate(html)
 
     res.writeHead(200, { 'Content-Type': 'text/html' })
     return res.end(html)
@@ -709,7 +738,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
   if (subpath === 'cancel-order') {
     auth.dbQueryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID])
     res.writeHead(302, {
-      Location: '/food/cart',
+      Location: '/food/cart' + sessionParam,
       'Set-Cookie': 'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT',
     })
     return res.end()
@@ -727,7 +756,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     })()
 
     if (!storeId || !productCode) {
-      res.writeHead(302, { Location: '/food/' })
+      res.writeHead(302, { Location: '/food/' + sessionParam })
       return res.end()
     }
 
@@ -779,7 +808,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
             if (!v) continue
             const vPrice = parseFloat(v.Price || 0)
             const vSizeName = escape(v.Name || vCode)
-            const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(productCode)}&variant=${encodeURIComponent(vCode)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(backUrl)}`
+            const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(productCode)}&variant=${encodeURIComponent(vCode)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(backUrl)}${sessionIdSuffix}`
             sizeOptionsHtml += `<div class="food-size-option">
   <a href="${customizeUrl}" class="food-size-link">
     ${vSizeName}${vPrice > 0 ? `<span class="food-size-price">$${vPrice.toFixed(2)}</span>` : ''}
@@ -789,7 +818,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         } else if (productVariants.length === 1) {
           // Single size — redirect directly to toppings step
           const vCode = productVariants[0]
-          const redirectUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(productCode)}&variant=${encodeURIComponent(vCode)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(backUrl)}`
+          const redirectUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(productCode)}&variant=${encodeURIComponent(vCode)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(backUrl)}${sessionIdSuffix}`
           res.writeHead(302, { Location: redirectUrl })
           return res.end()
         } else {
@@ -800,6 +829,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <input type="hidden" name="name" value="${pName}">
   <input type="hidden" name="price" value="0">
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
+  <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
   <button type="submit" class="food-btn food-btn-large">Add to Cart</button>
   &#160;&#160;
   <a href="${escape(backUrl)}" class="food-btn food-btn-secondary">Cancel</a>
@@ -820,7 +850,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         // Show selected size confirmation
         const sizeHtml = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
   <b>Size:</b> ${escape(v.Name || variantCode)}${vPrice > 0 ? ` — $${vPrice.toFixed(2)}` : ''}
-  &#160;<a href="/food/customize?store=${encodeURIComponent(storeId)}&amp;code=${encodeURIComponent(productCode)}&amp;country=${encodeURIComponent(country)}&amp;back=${encodeURIComponent(backUrl)}" class="food-back-link" style="font-size:0.85rem">Change size</a>
+  &#160;<a href="/food/customize?store=${encodeURIComponent(storeId)}&amp;code=${encodeURIComponent(productCode)}&amp;country=${encodeURIComponent(country)}&amp;back=${encodeURIComponent(backUrl)}${sessionIdSuffix.replace(/&/g, '&amp;')}" class="food-back-link" style="font-size:0.85rem">Change size</a>
 </font>`
         html = strReplace(html, '{$SIZE_OPTIONS}', sizeHtml)
 
@@ -885,6 +915,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
   <input type="hidden" name="default_options" value="${escape(JSON.stringify(normalizedDefaults))}">
+  <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
 <font face="'rodin', Arial, Helvetica, sans-serif" color="#aaaaaa"><i>Default toppings, sauce, and cheese are pre-selected below. Adjust as needed.</i></font><br><br>`
 
           if (sauces.length > 0) {
@@ -959,6 +990,7 @@ ${optHtml}
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
   <input type="hidden" name="default_options" value="${escape(JSON.stringify(tagDefaults))}">
+  <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
   <div style="margin-top:8px">
     <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` — $${vPrice.toFixed(2)}` : ''}</button>
     &#160;&#160;
@@ -977,12 +1009,13 @@ ${optHtml}
     }
 
     res.writeHead(200, { 'Content-Type': 'text/html' })
+    html = applySessionToTemplate(html)
     return res.end(html)
   }
 
   // 404
   res.writeHead(404, { 'Content-Type': 'text/html' })
-  res.end('<html><body style="background:#1A1A1E;color:#ddd;font-family:\'rodin\',sans-serif;padding:40px"><h1>Not Found</h1><a href="/food/" style="color:#00aff4">Back to Pizza</a></body></html>')
+  res.end('<html><body style="background:#1A1A1E;color:#ddd;font-family:\'rodin\',sans-serif;padding:40px"><h1>Not Found</h1><a href="/food/' + sessionParam + '" style="color:#00aff4">Back to Pizza</a></body></html>')
 }
 
 // =============================================================================
@@ -997,6 +1030,11 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
   try {
     params = querystring.parse(body)
   } catch (e) {}
+
+  // Session ID propagation: pick up from POST body (hidden field) or URL param
+  const urlSessionID = params.sessionID || parsedurl.searchParams.get('sessionID') || ''
+  const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''
+  const sessionIdSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : ''
 
   // --- Add item to cart ---
   if (subpath === 'cart/add') {
@@ -1035,8 +1073,13 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       cart.items.push({ code, name, qty: 1, price, options, _nf: 1 }) // _nf: new-format, skip stale detection
     }
 
+    // For redirects, append sessionID to the redirect URL if needed
+    let redirectWithSession = redirect
+    if (urlSessionID && !redirect.includes('sessionID=')) {
+      redirectWithSession = redirect + (redirect.includes('?') ? sessionIdSuffix : sessionParam)
+    }
     res.writeHead(302, {
-      Location: redirect,
+      Location: redirectWithSession,
       'Set-Cookie': cartCookieHeader(cart, secure),
     })
     return res.end()
@@ -1050,7 +1093,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       cart.items.splice(idx, 1)
     }
     res.writeHead(302, {
-      Location: '/food/cart',
+      Location: '/food/cart' + sessionParam,
       'Set-Cookie': cartCookieHeader(cart, secure),
     })
     return res.end()
@@ -1060,7 +1103,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
   if (subpath === 'request-verify') {
     const cart = getCart(req)
     if (!cart.items || cart.items.length === 0) {
-      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Your cart is empty.') })
+      res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Your cart is empty.') })
       return res.end()
     }
 
@@ -1077,7 +1120,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Validate and sanitize phone: digits only, 10 digits for US/CA
     const rawPhone = (params.phone || '').replace(/\D/g, '').slice(0, 10)
     if (!rawPhone || rawPhone.length < 7) {
-      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Please enter a valid phone number.') })
+      res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Please enter a valid phone number.') })
       return res.end()
     }
 
@@ -1104,13 +1147,13 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const sent = await bot.sendPizzaVerification(discordID, code)
     if (!sent) {
       res.writeHead(302, {
-        Location: '/food/checkout?error=' + encodeURIComponent('Could not send Discord DM. Please make sure DMs from server members are enabled.'),
+        Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Could not send Discord DM. Please make sure DMs from server members are enabled.'),
       })
       return res.end()
     }
 
     res.writeHead(302, {
-      Location: '/food/verify',
+      Location: '/food/verify' + sessionParam,
       'Set-Cookie': checkoutCookieHeader,
     })
     return res.end()
@@ -1120,7 +1163,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
   if (subpath === 'place-order') {
     const code = (params.code || '').replace(/[^0-9]/g, '').slice(0, 6)
     if (!code || !/^\d{6}$/.test(code)) {
-      res.writeHead(302, { Location: '/food/verify?error=' + encodeURIComponent('Invalid code format.') })
+      res.writeHead(302, { Location: '/food/verify' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Invalid code format.') })
       return res.end()
     }
 
@@ -1130,7 +1173,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       [discordID, code, time]
     )
     if (!verification) {
-      res.writeHead(302, { Location: '/food/verify?error=' + encodeURIComponent('Invalid or expired verification code.') })
+      res.writeHead(302, { Location: '/food/verify' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Invalid or expired verification code.') })
       return res.end()
     }
 
@@ -1152,7 +1195,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
     if (!checkoutData || !checkoutData.cart || !checkoutData.cart.items || checkoutData.cart.items.length === 0) {
       console.error('[place-order] missing/empty checkout data:', JSON.stringify(checkoutData && { cart: checkoutData.cart ? { items: checkoutData.cart.items } : null }))
-      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Checkout session expired. Please fill out the form again.') })
+      res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Checkout session expired. Please fill out the form again.') })
       return res.end()
     }
 
@@ -1161,7 +1204,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     if (!firstName || !lastName || !email || !phone || !street || !city || !region || !postalCode) {
       console.error('[place-order] missing fields: firstName=%s lastName=%s email=%s phone=%s street=%s city=%s region=%s postalCode=%s',
         !!firstName, !!lastName, !!email, !!phone, !!street, !!city, !!region, !!postalCode)
-      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Missing order details. Please fill out the form again.') })
+      res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Missing order details. Please fill out the form again.') })
       return res.end()
     }
 
@@ -1308,7 +1351,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         const vBadHttp = !vResult || vResult.status < 200 || vResult.status >= 300
         if (vBadHttp) {
           console.error(`[place-order] validate-order step ${vStep + 1} HTTP error:`, vResult && vResult.status)
-          res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
+          res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
           return res.end()
         }
         // Log outer + Order status. Per WiiLink: AutoAddedOrderId/ServiceMethodNotAllowed at Order
@@ -1322,7 +1365,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         validatePayload.Order.OrderID = orderId
       } catch (e) {
         console.error(`[place-order] validate-order step ${vStep + 1} network error:`, e)
-        res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
+        res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
         return res.end()
       }
     }
@@ -1343,7 +1386,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       const priceBadHttp = !priceResult || priceResult.status < 200 || priceResult.status >= 300
       if (priceBadHttp) {
         console.error('[place-order] price-order HTTP error:', priceResult && priceResult.status)
-        res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to price order. Please try again.') })
+        res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Failed to price order. Please try again.') })
         return res.end()
       }
       console.log('[place-order] price-order outer Status:', priceOuterStatus,
@@ -1354,9 +1397,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       if (priceOuterStatus !== 0 && priceOuterStatus !== 1) {
         const priceTopItems = (priceResult && priceResult.data && priceResult.data.StatusItems) || []
         const priceErrMsg = priceTopItems.map(s => s.Message).filter(Boolean).join(' ')
-          || 'This store may not deliver to your address. Please try a different Domino\'s location.'
+          || 'This isn\'t the closest location — the selected store may not deliver to your address. Please go back to store search and choose the nearest store.'
         console.error('[place-order] price-order failed: outer Status:', priceOuterStatus, '| top-level StatusItems:', JSON.stringify(priceTopItems))
-        res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(priceErrMsg) })
+        res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent(priceErrMsg) })
         return res.end()
       }
       // Update orderId from price-order response (WiiLink uses price-order OrderID for place-order)
@@ -1376,7 +1419,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       }
     } catch (e) {
       console.error('[place-order] price-order network error:', e)
-      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
+      res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
       return res.end()
     }
 
@@ -1451,7 +1494,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       console.log('[place-order] response:', JSON.stringify(orderResult && orderResult.data))
     } catch (e) {
       console.error('[place-order] network error:', e)
-      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
+      res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.') })
       return res.end()
     }
 
@@ -1474,7 +1517,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       let errMsg = (statusItemWithMsg && statusItemWithMsg.Message)
         || 'Order failed. Please check your details and try again.'
       console.error('[place-order] FAILED | HTTP:', orderResult && orderResult.status, '| top-level Status:', topLevelStatus, '| Order Status:', orderData && orderData.Status, '| OrderStatusItems:', JSON.stringify(orderStatusItems), '| top-level StatusItems:', JSON.stringify(topLevelStatusItems), '| Product errors:', JSON.stringify(productErrors))
-      res.writeHead(302, { Location: '/food/checkout?error=' + encodeURIComponent(errMsg) })
+      res.writeHead(302, { Location: '/food/checkout' + sessionParam + (sessionParam ? '&' : '?') + 'error=' + encodeURIComponent(errMsg) })
       return res.end()
     }
     console.log('[place-order] SUCCESS | products:', JSON.stringify(products_response.map(p => ({ code: p.Code, status: p.Status }))), '| orderId:', orderData && orderData.OrderID)
@@ -1507,7 +1550,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
     // Clear cart and checkout cookies, redirect to receipts with success notice
     res.writeHead(302, {
-      Location: '/food/receipts?placed=1',
+      Location: '/food/receipts' + sessionParam + (sessionParam ? '&' : '?') + 'placed=1',
       'Set-Cookie': [
         clearCartCookieHeader(),
         'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT',
