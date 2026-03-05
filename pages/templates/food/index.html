@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html class="page-food">
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Order Pizza</title>
+</head>
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
+            <a href="/food/" style="color:#dddddd">Order Pizza</a>&#160;&#160;
+            <a href="/food/cart" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
+            <a href="/food/receipts" style="color:#dddddd">Orders</a>&#160;&#160;
+            <a href="/food/track" style="color:#dddddd">Track</a>
+          </font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <div class="food-container">
+      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Order Pizza</b></font><br><br>
+      <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">
+        <b>This is a real pizza ordering feature.</b> Orders placed here are sent directly to Domino's Pizza and you will be charged for them. Please use this feature seriously.<br><br>
+        Payment is by cash upon delivery.<br><br>
+        This service is only available in the <b>United States</b> and <b>Canada</b>.<br><br>
+        For your security, we recommend using HTTPS to access this page. Make sure the address bar shows <b>https://</b> before placing an order.<br><br>
+        Pizza ordering courtesy of <a href="https://wiilink.ca/" style="color:#00aff4;">WiiLink</a>.
+      </font><br><br>
+      <div class="food-card">
+        <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Find a Store</b></font><br><br>
+        <form method="GET" action="/food/store-search">
+          <div class="food-input-row">
+            <input type="text" name="address" class="food-input" placeholder="Delivery address or zip code" required>
+            <button type="submit" class="food-btn">Find Stores</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
