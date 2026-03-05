@@ -70,6 +70,7 @@ const termspage = require('./pages/terms.js')
 const newspage = require('./pages/news.js')
 const weatherpage = require('./pages/weather.js')
 const searchpage = require('./pages/search.js')
+const foodpage = require('./pages/food.js')
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -277,6 +278,19 @@ server.on('request', async (req, res) => {
           res.writeHead(500, { 'Content-Type': 'text/plain' })
           res.end('Internal Server Error')
         })
+      } else if (parsedurl.startsWith('/food/')) {
+        (async () => {
+          const discordID = await auth.checkAuth(req, res)
+          if (discordID) {
+            await foodpage.handlePost(bot, req, res, discordID, body)
+          }
+        })().catch((err) => {
+          console.error(err)
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' })
+            res.end('Internal Server Error')
+          }
+        })
       } else {
         auth.handleLoginRegister(req, res, body)
       }
@@ -384,6 +398,13 @@ server.on('request', async (req, res) => {
       await weatherpage.processWeather(req, res)
     } else if (args[1] === 'search') {
       await searchpage.processSearch(req, res)
+    } else if (args[1] === 'food') {
+      const discordID = await auth.checkAuth(req, res)
+      if (discordID) {
+        await foodpage.handleGet(bot, req, res, discordID)
+      }
+    } else if (args[1] === 'foodProxy') {
+      await foodpage.foodProxy(req, res)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
       connectionHandler.processRequest(req, res)
     } else if (args[1] === "discord") {

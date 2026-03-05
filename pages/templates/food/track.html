@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html class="page-food">
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Pizza Tracker</title>
+</head>
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
+            <a href="/food/" style="color:#dddddd">Order Pizza</a>&#160;&#160;
+            <a href="/food/cart" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
+            <a href="/food/receipts" style="color:#dddddd">Orders</a>&#160;&#160;
+            <a href="/food/track" style="color:#dddddd">Track</a>
+          </font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <div class="food-container">
+      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Pizza Tracker</b></font><br><br>
+      <div class="food-card">
+        <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">
+          To protect your privacy, Discross does not store phone numbers. You can track your order directly on the Domino's website using your order details below.
+        </font><br><br>
+        <div id="order-info">
+          <!-- injected by server if order exists -->
+          {$ORDER_INFO}
+        </div>
+        <br>
+        <a href="https://www.dominos.com/en/pages/tracker/" class="food-btn" target="_blank" rel="noopener noreferrer">Track on Domino's Website</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
