@@ -1030,8 +1030,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       existing.qty = (existing.qty || 1) + 1
       // Always update options (including clearing stale partial options when re-adding specialty pizza)
       existing.options = options
+      existing._nf = 1 // new-format flag: options include full recipe; skip stale detection
     } else {
-      cart.items.push({ code, name, qty: 1, price, options })
+      cart.items.push({ code, name, qty: 1, price, options, _nf: 1 }) // _nf: new-format, skip stale detection
     }
 
     res.writeHead(302, {
@@ -1090,6 +1091,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       email: (params.email || '').slice(0, 100),
       phone: rawPhone,
       street: (params.street || '').slice(0, 100),
+      apt: (params.apt || '').replace(/[^a-zA-Z0-9 #-]/g, '').slice(0, 20),
       addressType: ['House', 'Apartment', 'Business', 'Hotel', 'Other'].includes(params.addressType) ? params.addressType : 'House',
       city: (params.city || '').slice(0, 50),
       region: (params.region || '').slice(0, 2).toUpperCase(),
@@ -1154,7 +1156,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return res.end()
     }
 
-    const { cart, firstName, lastName, email, phone, street, city, region, postalCode, addressType } = checkoutData
+    const { cart, firstName, lastName, email, phone, street, apt, city, region, postalCode, addressType } = checkoutData
 
     if (!firstName || !lastName || !email || !phone || !street || !city || !region || !postalCode) {
       console.error('[place-order] missing fields: firstName=%s lastName=%s email=%s phone=%s street=%s city=%s region=%s postalCode=%s',
@@ -1169,15 +1171,13 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Dominos pizza sauce codes. Used to detect stale partial-options from old cart data.
     // Old code stored only the sauce (e.g. {"Xw":{"1/1":"1"}}) for specialty pizzas.
     // This is incomplete — WiiLink sends the full recipe (sauce + cheese + toppings).
-    // If all option keys are sauce codes with ≤2 keys total, it's stale — reset to {} so
-    // Dominos applies the full product default recipe.
-    // Note: cheese (C) and topping codes (P, B, etc.) are not in this set, so a BYO pizza
-    // where the user explicitly changed cheese or toppings will NOT be flagged as stale.
+    // Items added by current code have _nf:1 — skip stale check for those (preserves user customization).
+    // Only apply stale detection to old cart data (no _nf flag) with sauce-only options.
     const PIZZA_SAUCE_CODES = new Set(['X', 'Xw', 'Xf', 'Xo', 'Xb', 'Xm', 'Cp', 'Rd'])
     const products = cart.items.map(item => {
       const opts = item.options || {}
       const keys = Object.keys(opts)
-      const isStale = keys.length > 0 && keys.length <= 2 && keys.every(k => PIZZA_SAUCE_CODES.has(k))
+      const isStale = !item._nf && keys.length > 0 && keys.length <= 2 && keys.every(k => PIZZA_SAUCE_CODES.has(k))
       if (isStale) {
         console.log('[place-order] stale sauce-only options detected for', item.code, '— resetting to {} so Dominos applies full recipe')
       }
@@ -1259,7 +1259,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Includes normalized StreetName and StreetNumber per WiiLink's AddressLookup
     const validatePayload = {
       Order: {
-        Address: { Street: normalizedStreet, City: normalizedCity, Region: region, PostalCode: normalizedPostalCode, Type: addressType || 'House', StreetName: streetName, StreetNumber: streetNumber },
+        Address: { Street: normalizedStreet, City: normalizedCity, Region: region, PostalCode: normalizedPostalCode, Type: addressType || 'House', StreetName: streetName, StreetNumber: streetNumber, UnitNumber: apt || '' },
         Coupons: [],
         CustomerID: '',
         Email: '',
@@ -1394,6 +1394,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
           Type: addressType || 'House',
           StreetName: streetName,
           StreetNumber: streetNumber,
+          UnitNumber: apt || '',
           DeliveryInstructions: '',
         },
         Channel: 'Mobile',
