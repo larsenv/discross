@@ -55,7 +55,6 @@ const { toggleTheme } = require('./pages/themeToggle.js')
 const { imageProxy } = require('./pages/imageProxy.js')
 const { fileProxy } = require('./pages/fileProxy.js')
 const { toggleImages } = require('./pages/toggleImages.js')
-const { toggleAnimations } = require('./pages/toggleAnimations.js')
 const { uploadFile } = require('./pages/uploadFile.js')
 const uploadpage = require('./pages/upload.js')
 const chanelreplypage = require('./pages/channel_reply.js')
@@ -322,8 +321,6 @@ server.on('request', async (req, res) => {
       }
       res.writeHead(302, { Location: '/' })
       res.end()
-    } else if (parsedurl.pathname === '/toggleAnimations') {
-      toggleAnimations(req, res)
     } else if (args[1] === 'server') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
