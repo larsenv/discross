@@ -40,16 +40,36 @@ client.on('messageCreate', async function (msg) {
     }
   }
 
+  if (msg.webhookId) {
+    // TODO: Do properly
+    connectionHandler.sendToAll(msg.content, msg.channel.id)
+    return
+  }
+
   if (msg.content === '^connect') {
-    if (msg.webhookId) {
-      msg.reply("You're already using Discross!")
-    } else {
-      try {
-        await msg.author.send('Verification code:\n`' + (await auth.createVerificationCode(msg.author.id)) + '`')
-        await msg.reply('You have been sent a direct message with your verification code.')
-      } catch (e) {
-        await msg.reply('Your verification code could not be sent. Please make sure you have direct messages enabled and try again.')
+    try {
+      await msg.author.send('Verification code:\n`' + (await auth.createVerificationCode(msg.author.id)) + '`')
+      await msg.reply('You have been sent a direct message with your verification code.')
+    } catch (e) {
+      await msg.reply('Your verification code could not be sent. Please make sure you have direct messages enabled and try again.')
+    }
+  } else if (msg.content === '^help') {
+    await msg.reply('**Discross Bot Commands:**\n`^connect` - Link your Discord account to Discross\n`^guest` - Toggle guest access for this channel (requires Manage Channel permission)\n`^help` - Show this help message')
+  } else if (msg.content === '^guest') {
+    if (!msg.guild) {
+      await msg.reply('This command can only be used in a server channel.')
+      return
+    }
+    try {
+      const member = await msg.guild.members.fetch(msg.author.id)
+      if (!member.permissionsIn(msg.channel).has(Discord.PermissionFlagsBits.ManageChannels)) {
+        await msg.reply('You need the Manage Channel permission to use this command.')
+        return
       }
+      const enabled = auth.toggleGuestChannel(msg.channel.id)
+      await msg.reply(`Guest access for this channel has been **${enabled ? 'enabled' : 'disabled'}**.`)
+    } catch (e) {
+      await msg.reply('An error occurred while toggling guest access.')
     }
   }
 
