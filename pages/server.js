@@ -273,7 +273,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             serversDeleted++;
           } else {
             // bot not ready / not connected: do not delete the server row; treat as temporarily missing
-            console.log(`Skipping deletion of server ${serverID} because bot client is not ready.`);
+            console.warn(`Skipping deletion of server ${serverID} because bot client is not ready.`);
             continue;
           }
         }

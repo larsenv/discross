@@ -18,7 +18,7 @@ const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'ut
  * @returns {string} HTML with emoji replaced by images
  */
 function processEmojiInHTML(text, imagesCookie, animationsCookie) {
-  if (imagesCookie != 1) {
+  if (imagesCookie !== 1) {
     return text;
   }
   
@@ -57,7 +57,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
   // Apply theme colors: 1=light, otherwise dark/amoled
   let embedHead = "#ffffff";
   let embedText = "#dcddde";
-  if (whiteThemeCookie == 1) {
+  if (whiteThemeCookie === '1') {
     embedHead = "#000000";
     embedText = "#000000";
   }

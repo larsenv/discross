@@ -1,8 +1,7 @@
 const { strReplace } = require('./utils.js');
-var fs = require('fs');
-var escape = require('escape-html');
-
-var auth = require('../authentication.js');
+const fs = require('fs');
+const escape = require('escape-html');
+const auth = require('../authentication.js');
 
 const privacy_template = fs.readFileSync('pages/templates/privacy.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 

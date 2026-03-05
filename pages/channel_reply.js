@@ -1,4 +1,4 @@
-var fs = require('fs');
+const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { getDisplayName } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
@@ -204,7 +204,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.writeHead(500, { "Content-Type": "text/html" });
     res.write("An error occurred! Please try again later.");
     res.end();

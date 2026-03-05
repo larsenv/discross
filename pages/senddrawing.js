@@ -10,7 +10,7 @@ const { strReplace } = require('./utils.js');
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
   try {
     let parsedurl;
-    if (urlQuery == null) {
+    if (urlQuery === null) {
       parsedurl = Object.fromEntries(new URL(req.url, 'http://localhost').searchParams);
     } else {
       parsedurl = urlQuery;
@@ -120,7 +120,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
   } catch (err) {
     console.error(`[sendDrawing] Error:`, err);
     res.writeHead(500, { "Content-Type": "text/html" });
-    res.write("An error occurred! Please try again later.<br>"); //write a response to the client
+    res.write("An error occurred! Please try again later.<br>");
     res.end();
   }
 };

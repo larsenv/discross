@@ -41,7 +41,7 @@ exports.imageProxy = async function imageProxy(res, URL) {
         // If the upstream server returned an error, return a 1x1 transparent GIF so the
         // browser renders nothing rather than showing a broken image or error text.
         if (proxyRes.statusCode < 200 || proxyRes.statusCode >= 300) {
-            console.log(`Image proxy: upstream returned ${proxyRes.statusCode} for ${URL}`);
+            console.warn(`Image proxy: upstream returned ${proxyRes.statusCode} for ${URL}`);
             // Drain the response to free the socket
             proxyRes.resume();
             res.writeHead(200, { 'Content-Type': 'image/gif', 'Content-Length': EMPTY_GIF.length });
@@ -65,7 +65,7 @@ exports.imageProxy = async function imageProxy(res, URL) {
                         .toBuffer();
                 } catch (err) {
                     // If conversion fails, just send original
-                    console.log('Could not convert image, sending original');
+                    console.warn('Could not convert image, sending original');
                     gifbuffer = buffer;
                 }
                 cacheSet(URL, gifbuffer);

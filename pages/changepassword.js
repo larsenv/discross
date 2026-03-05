@@ -1,9 +1,8 @@
 const { strReplace } = require('./utils.js');
-var fs = require('fs');
-var escape = require('escape-html');
-var { parse } = require('querystring');
-
-var auth = require('../authentication.js');
+const fs = require('fs');
+const escape = require('escape-html');
+const { parse } = require('querystring');
+const auth = require('../authentication.js');
 
 const changepassword_template = fs.readFileSync('pages/templates/changepassword.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
