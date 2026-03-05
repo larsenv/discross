@@ -11,6 +11,7 @@ const saltRounds = 10
 const expiryTime = 24 * 60 * 60 // For sessions - expires in 24 hours
 const codeExpiryTime = 30 * 60 // For verification codes - expires in 30 minutes
 const pendingTotpExpiryTime = 10 * 60 // Pending TOTP setup expires in 10 minutes
+const actionCodeExpiryTime = 10 * 60 // In-session action codes expire in 10 minutes
 
 // Password validation: ≥7 chars, ≥1 uppercase, ≥1 lowercase, ≥1 digit
 function validatePassword(password) {
@@ -179,6 +180,7 @@ function setup() {
   queryRun('CREATE TABLE IF NOT EXISTS channel_preferences (discordID TEXT, serverID TEXT, channelID TEXT, collapsed INTEGER DEFAULT 0, PRIMARY KEY (discordID, serverID, channelID))')
   queryRun('CREATE TABLE IF NOT EXISTS pending_totp (discordID TEXT PRIMARY KEY, secret TEXT, expires INT)')
   queryRun('CREATE TABLE IF NOT EXISTS backup_codes (id INTEGER PRIMARY KEY AUTOINCREMENT, discordID TEXT, code_hash TEXT)')
+  queryRun('CREATE TABLE IF NOT EXISTS action_codes (discordID TEXT, action TEXT, code TEXT, expires INT, PRIMARY KEY (discordID, action))')
   queryRun('CREATE TABLE IF NOT EXISTS emoji_cache (emoji_key TEXT PRIMARY KEY, twemoji_code TEXT)')
   // One-time migration: clear emoji_cache to fix stale entries that used the
   // incorrect fe0f-including codes (e.g. #️⃣ → "23-fe0f-20e3" instead of "23-20e3").
@@ -189,6 +191,7 @@ function setup() {
     try { queryRun('DELETE FROM emoji_cache') } catch (err) { console.error('emoji_cache migration error:', err); }
   }
   queryRun('CREATE TABLE IF NOT EXISTS custom_emoji_cache (emoji_id TEXT PRIMARY KEY, emoji_name TEXT, animated INTEGER)')
+  queryRun('CREATE TABLE IF NOT EXISTS guest_channels (channelID TEXT PRIMARY KEY)')
 }
 
 setup();
@@ -324,6 +327,34 @@ exports.changePassword = async function (discordID, currentPassword, newPassword
   return { status: 'success' }
 }
 
+// Create a 6-digit numeric code for an in-session sensitive action (changepassword, setup2fa, disable2fa)
+// Reuses the existing code if it hasn't expired yet
+exports.createActionCode = function (discordID, action) {
+  const time = unixTime()
+  queryRun('DELETE FROM action_codes WHERE NOT expires > ?', [time])
+  const existing = querySingle('SELECT code FROM action_codes WHERE discordID=? AND action=? AND expires > ?', [discordID, action, time])
+  if (existing) {
+    return existing.code
+  }
+  const code = crypto.randomInt(0, 1000000).toString().padStart(6, '0')
+  queryRun('INSERT OR REPLACE INTO action_codes (discordID, action, code, expires) VALUES (?,?,?,?)', [discordID, action, code, time + actionCodeExpiryTime])
+  return code
+}
+
+// Verify and consume a 6-digit action code; returns true if valid, false otherwise
+exports.verifyAndConsumeActionCode = function (discordID, action, code) {
+  const time = unixTime()
+  const match = querySingle('SELECT code FROM action_codes WHERE discordID=? AND action=? AND expires > ?', [discordID, action, time])
+  if (!match) {
+    return false
+  }
+  if (match.code !== (code || '').trim()) {
+    return false
+  }
+  queryRun('DELETE FROM action_codes WHERE discordID=? AND action=?', [discordID, action])
+  return true
+}
+
 exports.checkAuth = async function (req, res, noRedirect) {
   const cookies = req.headers.cookie
 
@@ -448,5 +479,19 @@ exports.setChannelPreference = function (discordID, serverID, channelID, collaps
   } catch (err) {
     console.error('Error setting channel preference:', err)
     return { success: false, error: err.message }
+  }
+}
+
+exports.isGuestChannel = function (channelID) {
+  return !!querySingle('SELECT 1 FROM guest_channels WHERE channelID=?', [channelID])
+}
+
+exports.toggleGuestChannel = function (channelID) {
+  if (exports.isGuestChannel(channelID)) {
+    queryRun('DELETE FROM guest_channels WHERE channelID=?', [channelID])
+    return false
+  } else {
+    queryRun('INSERT INTO guest_channels VALUES (?)', [channelID])
+    return true
   }
 }
