@@ -121,6 +121,16 @@ exports.getHistoryCached = async function (chnl) {
 
 exports.client = client
 
+exports.sendPizzaVerification = async function (discordID, code) {
+  try {
+    const user = await client.users.fetch(discordID)
+    await user.send(`🍕 Your Domino's Pizza order verification code is: \`${code}\`\n\nEnter this code on the checkout page to confirm your order. It expires in 10 minutes.`)
+    return true
+  } catch (e) {
+    console.error('sendPizzaVerification error:', e.message)
+    return false
+  }
+}
 exports.sendDM = async function (discordID, message) {
   try {
     const user = await client.users.fetch(discordID)

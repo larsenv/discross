@@ -396,7 +396,15 @@ exports.handleLoginRegister = async function (req, res, body) {
       const result = await exports.login(params.username, params.password, params.totp_code)
       if (result.status === 'success') {
         if (params.redirect) {
-          const redirectBase = params.redirect
+          // Strip any stale sessionID from the redirect URL — if the user was redirected here
+          // with an expired sessionID in the URL, appending the new one without removing the old
+          // one results in duplicate params and searchParams.get() returning the stale value.
+          let redirectBase = params.redirect
+          try {
+            const redirectUrl = new URL(redirectBase, 'http://localhost')
+            redirectUrl.searchParams.delete('sessionID')
+            redirectBase = redirectUrl.pathname + (redirectUrl.search || '') + (redirectUrl.hash || '')
+          } catch (e) {}
           const sep = redirectBase.includes('?') ? '&' : '?'
           const redirectPath = redirectBase + sep + 'sessionID=' + encodeURIComponent(result.sessionID) + '#end'
           res.writeHead(200, { 'Set-Cookie': ['sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : '')], Location: redirectPath, 'Content-Type': 'text/html' })

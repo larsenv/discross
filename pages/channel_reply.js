@@ -4,6 +4,7 @@ const { getDisplayName } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { buildMessagesHtml } = require('./channel');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const notFound = require('./notFound.js');
 
 // Templates for viewing messages in a channel (Reply Context)
 const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
@@ -188,10 +189,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         final = strReplace(final, "{$REPLY_MESSAGE_AUTHOR}", author);
         final = strReplace(final, "{$REPLY_MESSAGE_CONTENT}", message_content);
       } catch (err) {
-        res.writeHead(404, { "Content-Type": "text/html" });
-        res.write("Invalid message to reply to!");
-        res.end();
-        return;
+        return notFound.serve404(req, res, 'Invalid message to reply to.', '/', 'Back to Home');
       }
 
       const randomEmoji = ["1f62d", "1f480", "2764-fe0f", "1f44d", "1f64f", "1f389", "1f642"][Math.floor(Math.random() * 7)];
@@ -205,9 +203,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       res.write(final);
       res.end();
     } else {
-      res.writeHead(404, { "Content-Type": "text/html" });
-      res.write("Invalid channel!");
-      res.end();
+      return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
     }
   } catch (error) {
     console.log(error);
