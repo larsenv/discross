@@ -95,7 +95,7 @@ const staticFileCache = new Map();
 const STATIC_CACHE_MAX_FILES = 2000;    // max distinct files to cache (FIFO eviction)
 const STATIC_CACHE_MAX_BYTES = 1024 * 1024; // skip caching individual files larger than 1 MB
 
-async function servePage(filename, res, type, textToReplace, replacement, req) { // textToReplace and replacement allow for dynamic pages (not used anymore as far as I know)
+async function servePage(filename, res, type, textToReplace, replacement, req) {
   if (!type) {
     type = mime(filename)
   }
@@ -181,7 +181,7 @@ server.on('request', async (req, res) => {
           await uploadFile(bot, req, res, [], discordID);
         }
       })().catch((err) => {
-        console.log(err);
+        console.error(err);
         if (sentryEnabled) Sentry.captureException(err);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
@@ -231,7 +231,7 @@ server.on('request', async (req, res) => {
         })()
       } else if (parsedurl == "/senddrawing") {
         senddrawingAsync(req, res, body).then(() => {}).catch((err) => {
-          console.log(err)
+          console.error(err)
           if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' })
           res.end('Internal Server Error')
@@ -457,8 +457,6 @@ server.on('request', async (req, res) => {
       }
     } else if (args[1] === 'foodProxy') {
       await foodpage.foodProxy(req, res)
-    } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
-      connectionHandler.processRequest(req, res)
     } else if (args[1] === "discord") {
       const discordID = await auth.checkAuth(req, res);
       if (discordID) {
@@ -472,9 +470,7 @@ server.on('request', async (req, res) => {
             const readyServers = filteredServers.map(function (e) {
               return { serverID: e.id, discordID: discordID, icon: e.icon }
             });
-            //insert onto sqlite
             auth.insertServers(readyServers);
-            //GIFs
             for (const server of readyServers) {
               if (server.icon) {
                 await fs.promises.mkdir(path.resolve(`pages/static/ico/server`, sanitizer(server.serverID)), { recursive: true });
@@ -486,16 +482,13 @@ server.on('request', async (req, res) => {
               }
             }
             res.writeHead(302, { Location: "/server/" });
-            res.write("");
             res.end();
           } else {
             res.writeHead(302, { Location: "/" });
-            res.write("");
             res.end();
           }
         } catch {
           res.writeHead(302, { Location: "/" });
-          res.write("");
           res.end();
         }
       }
