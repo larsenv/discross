@@ -48,12 +48,12 @@ function processPoll(poll, imagesCookie) {
         let emojiHtml = '';
         if (answer._emoji) {
           const emoji = answer._emoji;
-          if (emoji.id && imagesCookie == 1) {
+          if (emoji.id && imagesCookie === 1) {
             // Custom emoji
             const isAnimated = emoji.animated || false;
             const extension = isAnimated ? 'gif' : 'png';
             emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
-          } else if (emoji.name && imagesCookie == 1) {
+          } else if (emoji.name && imagesCookie === 1) {
             // Unicode emoji - convert to twemoji
             const codePoints = [];
             for (let i = 0; i < emoji.name.length; i++) {

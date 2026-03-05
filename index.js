@@ -169,7 +169,7 @@ server.on('request', async (req, res) => {
     const parsedurl = new URL(req.url, 'http://localhost').pathname;
     
     // Handle file upload BEFORE reading body (formidable needs raw stream)
-    if (parsedurl == "/uploadFile") {
+    if (parsedurl === "/uploadFile") {
       // Set high timeout for file uploads (15 minutes = 15 * 60 * 1000 ms)
       req.setTimeout(15 * 60 * 1000);
       res.setTimeout(15 * 60 * 1000);
@@ -189,9 +189,9 @@ server.on('request', async (req, res) => {
     }
     
     // For all other POST requests, read the body
-    let body = '' // https://itnext.io/how-to-handle-the-post-request-body-in-node-js-without-using-a-framework-cd2038b93190
+    let body = ''
     req.on('data', chunk => {
-      body += chunk.toString() // convert Buffer to string
+      body += chunk.toString()
     })
     req.on('error', (err) => {
       console.error('Error reading request body:', err);
@@ -202,7 +202,7 @@ server.on('request', async (req, res) => {
       }
     })
     req.on('end', () => {
-      if (parsedurl == "/toggleCategory") {
+      if (parsedurl === "/toggleCategory") {
         // Handle category toggle
         (async () => {
           const discordID = await auth.checkAuth(req, res, true)
@@ -228,7 +228,7 @@ server.on('request', async (req, res) => {
             res.end(JSON.stringify({ success: false, error: 'Not authenticated' }))
           }
         })()
-      } else if (parsedurl == "/senddrawing") {
+      } else if (parsedurl === "/senddrawing") {
         senddrawingAsync(req, res, body).then(() => {}).catch((err) => {
           console.error(err)
           if (sentryEnabled) Sentry.captureException(err);
@@ -236,7 +236,7 @@ server.on('request', async (req, res) => {
           res.end('Internal Server Error')
         }
         )
-      } else if (parsedurl == "/changepassword") {
+      } else if (parsedurl === "/changepassword") {
         (async () => {
           const discordID = await auth.checkAuth(req, res, true)
           if (discordID) {
@@ -250,7 +250,7 @@ server.on('request', async (req, res) => {
           res.writeHead(500, { 'Content-Type': 'text/plain' })
           res.end('Internal Server Error')
         })
-      } else if (parsedurl == "/setup2fa") {
+      } else if (parsedurl === "/setup2fa") {
         (async () => {
           const discordID = await auth.checkAuth(req, res, true)
           if (discordID) {
@@ -264,7 +264,7 @@ server.on('request', async (req, res) => {
           res.writeHead(500, { 'Content-Type': 'text/plain' })
           res.end('Internal Server Error')
         })
-      } else if (parsedurl == "/disable2fa") {
+      } else if (parsedurl === "/disable2fa") {
         (async () => {
           const discordID = await auth.checkAuth(req, res, true)
           if (discordID) {
@@ -328,7 +328,7 @@ server.on('request', async (req, res) => {
       }
     } else if (args[1] === 'channels') {
       const discordID = await auth.checkAuth(req, res, true) // true = no redirect
-      if (args.length == 3) {
+      if (args.length === 3) {
         if (discordID) {
           await channelpage.processChannel(bot, req, res, args, discordID)
         } else if (isValidSnowflake(args[2]) && auth.isGuestChannel(args[2])) {
@@ -338,9 +338,9 @@ server.on('request', async (req, res) => {
           res.end()
         }
       }
-      else if (args.length == 4) {
+      else if (args.length === 4) {
         if (discordID) {
-          if (args[3].length == 0) {
+          if (args[3].length === 0) {
             res.writeHead(302, { "Location": `/channels/${args[2]}#end` });
             res.end();
             return;
@@ -503,7 +503,7 @@ server.on('request', async (req, res) => {
         await imageProxy(res, fullImageUrl);
       } else {
         // Emoji and attachment URLs
-        const fullImageUrl = `https://cdn.discordapp.com/${args[2] == "emoji" ? "emojis" : "attachments"}/${args[2] == "emoji" ? req.url.slice(18) : req.url.slice(12)}`
+        const fullImageUrl = `https://cdn.discordapp.com/${args[2] === "emoji" ? "emojis" : "attachments"}/${args[2] === "emoji" ? req.url.slice(18) : req.url.slice(12)}`
         await imageProxy(res, fullImageUrl);
       }
     } else if (args[1] === 'fileProxy') {

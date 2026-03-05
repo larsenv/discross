@@ -1,4 +1,4 @@
-var fs = require('fs');
+const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
@@ -55,7 +55,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       botMember = await chnl.guild.members.fetch(bot.client.user.id);
       member = await chnl.guild.members.fetch(discordID);
       
-      // 3. Security: Check View Permissions
       if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) || 
           !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) {
         res.write("You (or the bot) don't have permission to do that!");
@@ -63,23 +62,21 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         return;
       }
 
-      // 4. Load & Prepare the Drawing Template
       template = strReplace(template, "{$SERVER_ID}", chnl.guild.id);
       template = strReplace(template, "{$CHANNEL_ID}", chnl.id);
       template = strReplace(template, "{$CHANNEL_NAME}", (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
       template = strReplace(template, "{$SESSION_ID}", urlSessionID);
       template = strReplace(template, "{$SESSION_PARAM}", sessionParam);
 
-      // Send the Response
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.write(template); 
+      res.write(template);
       res.end();
 
     } else {
       return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.writeHead(500, { "Content-Type": "text/html" });
     res.write("An error occurred! Please try again later.<br>");
     res.end();
