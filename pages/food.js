@@ -1332,6 +1332,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // Step 2: price-order — retrieves final price with Amounts populated.
     // Per WiiLink's GetPrice: checks outer Status (0 or 1 = success, else fail).
     validatePayload.Order.metaData = { orderFunnel: 'payments' }
+    let pricedTotal = null  // set from Amounts.Customer in price-order response
     try {
       const priceResult = await dominosRequest({
         hostname: dominosHost,
@@ -1364,6 +1365,16 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       if (priceOrderData && priceOrderData.OrderID) {
         orderId = priceOrderData.OrderID
         console.log('[place-order] using price-order OrderID:', orderId)
+      }
+      // Use the priced total (Amounts.Customer) as the payment amount — this includes tax +
+      // delivery surcharge and is the amount Domino's POS expects. Without this the order fails
+      // with "Amount paid is insufficient" (PosOrderIncomplete). Fall back to cartTotal if the
+      // Amounts field is absent (e.g. on an error response that still returned Status 0/1).
+      pricedTotal = priceOrderData && priceOrderData.Amounts && typeof priceOrderData.Amounts.Customer === 'number'
+        ? priceOrderData.Amounts.Customer
+        : null
+      if (pricedTotal !== null) {
+        console.log('[place-order] using priced total from price-order Amounts.Customer:', pricedTotal, '(cart subtotal was:', cartTotal, ')')
       }
     } catch (e) {
       console.error('[place-order] price-order network error:', e)
@@ -1406,7 +1417,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         OrderTaker: 'power',
         OrderTakeSeconds: 0,
         Partners: {},
-        Payments: [{ Type: 'Cash', Amount: cartTotal }],
+        Payments: [{ Type: 'Cash', Amount: pricedTotal !== null ? pricedTotal : cartTotal }],
         PendingOrder: false,
         Phone: phone,
         PhonePrefix: '',
@@ -1473,8 +1484,11 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const storeAddr = orderData.StoreAddress
     const storeName = storeAddr ? `${storeAddr.City || normalizedCity} Store #${storeId}` : `Store #${storeId}`
 
-    // Use cart total for receipt (Domino's API Amounts may be 0 on cash orders)
-    const total = cartTotal > 0 ? cartTotal : parseFloat((orderData.Amounts && (orderData.Amounts.Payment || orderData.Amounts.Total)) || 0)
+    // Use the priced total (from price-order Amounts.Customer, includes tax + delivery) for receipt.
+    // Fall back to cart total if priced total unavailable, then to the place-order response amounts.
+    const total = pricedTotal !== null ? pricedTotal
+      : cartTotal > 0 ? cartTotal
+      : parseFloat((orderData.Amounts && (orderData.Amounts.Payment || orderData.Amounts.Total)) || 0)
 
     // Save receipt — no PII (no address/name/phone/email)
     auth.dbQueryRun(
