@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="page-channel-reply">
+<html class="page-channel">
 
 <head>
     {$COMMON_HEAD}
@@ -9,12 +9,12 @@
 
 <body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <a href="../server/{$SERVER_ID}" class="menu-button">
-            <img src="/resources/images/menu.gif" alt="Menu" width="24" height="24" style="width: 24px; height: 24px;">
+        <a href="/" class="menu-button">
+            <img src="/resources/images/menu.gif" alt="Home" width="24" height="24" style="width: 24px; height: 24px;">
         </a>
 
         <!-- Main content area with padding at bottom for message input -->
-        <div style="padding-left: 60px; padding-bottom: 190px;"> <!-- Extra padding keeps last messages above fixed reply bar -->
+        <div style="padding-left: 60px;"> <!-- Padding accommodates message form container height -->
             <div style="padding: 16px;">
                 <div id="msgcontainer">
                     {$MESSAGES}
@@ -23,15 +23,6 @@
         </div>
         
         <div class="message-form-container">
-            <div id="replying_to">
-                <div class="reply-label">
-                    <strong>Replying to {$REPLY_MESSAGE_AUTHOR}</strong>
-                    <a href="./" class="reply-cancel">Cancel</a>
-                </div>
-                <div class="reply-content-preview">
-                    {$REPLY_MESSAGE_CONTENT}
-                </div>
-            </div>
             <div id="emoji" style="display: none;">
                 <table cellpadding="0" cellspacing="0" width="100%">
                     <tr>
@@ -51,49 +42,20 @@
                 </table>
             </div>
             
-            <form action="../../send" method="GET" onsubmit="return sendMessageOrFile()" style="position: relative;">
+            <form action="/guest_send" method="GET" onsubmit="return sendMessageOrFile()" style="position: relative;">
                 <div>
                     <a href="javascript:void(0)" onclick="showEmoji()" class="message-action-btn">
                         <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji" width="24" height="24"
                             style="width: 24px; height: 24px;">
                     </a>
-                    <button type="button" onclick="openFileUpload()" class="message-action-btn">
-                        <img src="/resources/twemoji/1f4e4.gif" alt="Upload file" width="24" height="24"
-                            style="width: 24px; height: 24px;">
-                    </button>
-                    <a href="/draw/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
-                        <img src="/resources/twemoji/1f58c-fe0f.gif" alt="Draw" width="24" height="24" style="width: 24px; height: 24px;">
-                    </a>
-                    <a href="/pins/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
-                        <img src="/resources/twemoji/1f4cc.gif" alt="Pins" width="24" height="24" style="width: 24px; height: 24px;">
-                    </a>
-                    <a href="/food/{$SESSION_PARAM}" class="message-action-btn">
-                        <img src="/resources/twemoji/1f355.gif" alt="Order Pizza" width="24" height="24" style="width: 24px; height: 24px;">
-                    </a>
-                    <a href="/news{$SESSION_PARAM}" class="message-action-btn">
-                        <img src="/resources/twemoji/1f4f0.gif" alt="News" width="24" height="24" style="width: 24px; height: 24px;">
-                    <a href="/weather{$SESSION_PARAM}" class="message-action-btn">
-                        <img src="/resources/twemoji/26c5.gif" alt="Weather" width="24" height="24" style="width: 24px; height: 24px;">
-                    </a>
-                    <a href="/stocks{$SESSION_PARAM}" class="message-action-btn">
-                        <img src="/resources/twemoji/1f4c8.gif" alt="Stocks" width="24" height="24">
-                    </a>
-                    <a href="/switchtheme{$SESSION_PARAM}" class="message-action-btn">
-                        <img src="/resources/twemoji/1f313.gif" alt="Switch theme" width="24" height="24" style="width: 24px; height: 24px;">
-                    </a>
                     <a href="{$REFRESH_URL}" class="message-action-btn">
-                        <img src="/resources/twemoji/1f501.gif" alt="Refresh" width="24" height="24" style="width: 24px; height: 24px;">
+                        <img src="/resources/images/refresh.gif" alt="Refresh" width="24" height="24" style="width: 24px; height: 24px;">
                     </a>
                 </div>
                 <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
-                <input type="hidden" id="sessionID" name="sessionID" value="{$SESSION_ID}">
-                <input type="hidden" id="lite" name="lite" value="False">
-                <input type="hidden" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">
+                <input type="hidden" id="guest_name" name="guest_name" value="{$GUEST_NAME}">
                 {$INPUT}
             </form>
-            
-            <!-- Standalone hidden file input for AJAX upload (modern browsers) -->
-            <input type="file" id="fileUpload" style="display:none;" aria-label="Upload file" onchange="handleFileSelect(this)">
         </div>
         <a id="end" name="end"></a>
     </div>

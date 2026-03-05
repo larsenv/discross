@@ -67,8 +67,11 @@ const changepasswordpage = require('./pages/changepassword.js')
 const setup2fapage = require('./pages/setup2fa.js')
 const privacypage = require('./pages/privacy.js')
 const termspage = require('./pages/terms.js')
+const guestpage = require('./pages/guest.js')
+const guestsendpage = require('./pages/guest_send.js')
 const newspage = require('./pages/news.js')
 const weatherpage = require('./pages/weather.js')
+const stockspage = require('./pages/stocks.js')
 const searchpage = require('./pages/search.js')
 const foodpage = require('./pages/food.js')
 
@@ -83,6 +86,10 @@ function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement || '')
 }
 // https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
+
+function isValidSnowflake(id) {
+  return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
+}
 
 // create a server object:
 const server = http.createServer(options)
@@ -329,10 +336,15 @@ server.on('request', async (req, res) => {
         await serverpage.processServer(bot, req, res, args, discordID)
       }
     } else if (args[1] === 'channels') {
-      const discordID = await auth.checkAuth(req, res)
+      const discordID = await auth.checkAuth(req, res, true) // true = no redirect
       if (args.length == 3) {
         if (discordID) {
           await channelpage.processChannel(bot, req, res, args, discordID)
+        } else if (isValidSnowflake(args[2]) && auth.isGuestChannel(args[2])) {
+          await guestpage.processGuestChannel(bot, req, res, args[2])
+        } else {
+          res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
+          res.end()
         }
       }
       else if (args.length == 4) {
@@ -342,14 +354,24 @@ server.on('request', async (req, res) => {
             res.end();
             return;
           } else { await chanelreplypage.processChannelReply(bot, req, res, args, discordID) }
+        } else {
+          res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
+          res.end()
         }
       } else {
         if (discordID) {
           res.writeHead(302, { "Location": `/channels/${args[2]}#end` });
           res.end();
           return;
+        } else {
+          res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) })
+          res.end()
         }
       }
+    } else if (args[1] === 'guest_name') {
+      await guestpage.processGuestName(req, res)
+    } else if (args[1] === 'guest_send') {
+      await guestsendpage.guestSend(bot, req, res)
     } else if (args[1] === "jobs"){
       res.writeHead(302, { "Location": "http://careers.mcdonalds.com/" });
       res.end();
@@ -378,6 +400,40 @@ server.on('request', async (req, res) => {
       if (discordID) {
         await drawpage.processDraw(bot, req, res, args, discordID)
       }
+    } else if (args[1] === 'sendactioncode') {
+      const discordID = await auth.checkAuth(req, res, true)
+      if (!discordID) {
+        res.writeHead(302, { Location: '/login.html' })
+        res.end()
+      } else {
+        const returnPages = {
+          'changepassword': '/changepassword.html',
+          'setup2fa': '/setup2fa.html',
+          'disable2fa': '/setup2fa.html'
+        }
+        const actionParam = parsedurl.searchParams.get('action')
+        if (!returnPages[actionParam]) {
+          res.writeHead(302, { Location: '/server/' })
+          res.end()
+        } else {
+          const urlSessionID = parsedurl.searchParams.get('sessionID') || ''
+          const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''
+          const code = auth.createActionCode(discordID, actionParam)
+          const dmMessages = {
+            'changepassword': 'Your Discross verification code to change your password: **' + code + '**\nThis code expires in 10 minutes.',
+            'setup2fa': 'Your Discross verification code to set up two-factor authentication: **' + code + '**\nThis code expires in 10 minutes.',
+            'disable2fa': 'Your Discross verification code to disable two-factor authentication: **' + code + '**\nThis code expires in 10 minutes.'
+          }
+          const dmResult = await bot.sendDM(discordID, dmMessages[actionParam])
+          const returnPath = returnPages[actionParam]
+          if (dmResult.success) {
+            res.writeHead(302, { Location: returnPath + sessionParam + (sessionParam ? '&' : '?') + 'codesent=1' })
+          } else {
+            res.writeHead(302, { Location: returnPath + sessionParam + (sessionParam ? '&' : '?') + 'errortext=' + encodeURIComponent('Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.') })
+          }
+          res.end()
+        }
+      }
     } else if (args[1] === 'login.html') {
       await loginpage.processLogin(bot, req, res, args)
     } else if (args[1] === 'register.html') {
@@ -396,6 +452,8 @@ server.on('request', async (req, res) => {
       await termspage.processTerms(bot, req, res, args)
     } else if (args[1] === 'weather') {
       await weatherpage.processWeather(req, res)
+    } else if (args[1] === 'stocks') {
+      await stockspage.processStocks(req, res)
     } else if (args[1] === 'search') {
       await searchpage.processSearch(req, res)
     } else if (args[1] === 'food') {

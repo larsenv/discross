@@ -56,18 +56,56 @@ exports.processSetup2FA = async function (bot, req, res, args) {
   const username = await auth.getUsername(discordID);
   const totpEnabled = auth.getTOTPStatus(discordID);
 
+  const action = totpEnabled ? 'disable2fa' : 'setup2fa';
+
+  // Send 6-digit action code via Discord DM on fresh page load (not on error/codesent redirects)
+  let dmErrorText = '';
+  if (!parsedUrl.searchParams.get('errortext') && !parsedUrl.searchParams.get('codesent')) {
+    const code = auth.createActionCode(discordID, action);
+    const dmResult = await bot.sendDM(discordID, 'Your Discross verification code to ' + (totpEnabled ? 'disable' : 'set up') + ' two-factor authentication: **' + code + '**\nThis code expires in 10 minutes.');
+    if (!dmResult.success) {
+      dmErrorText = 'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.';
+    }
+  }
+
+  const sendCodeUrl = '/sendactioncode?action=' + action + (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
+
   let response;
   if (totpEnabled) {
     // 2FA already enabled — show the disable page
     response = disable2fa_template;
-    response = injectMenuAndError(response, username, parsedUrl, sessionParam);
   } else {
     // 2FA not yet enabled — show setup page with QR code
     const { secret, qrDataUrl } = await auth.beginTOTPSetup(discordID, username || discordID);
     response = setup2fa_template;
-    response = injectMenuAndError(response, username, parsedUrl, sessionParam);
     response = strReplace(response, "{$QR_CODE}", qrDataUrl);
     response = strReplace(response, "{$SECRET}", escape(secret));
+  }
+
+  response = strReplace(response, "{$MENU_OPTIONS}",
+    strReplace(logged_in_template, "{$USER}", escape(username || ''))
+  );
+  response = strReplace(response, "{$SESSION_PARAM}", sessionParam);
+  response = strReplace(response, "{$SEND_CODE_URL}", sendCodeUrl);
+
+  if (dmErrorText) {
+    response = strReplace(response, "{$ERROR}",
+      strReplace(error_template, "{$ERROR_MESSAGE}",
+        strReplace(escape(dmErrorText), "\n", "<br>")
+      )
+    );
+  } else if (parsedUrl.searchParams.get('errortext')) {
+    response = strReplace(response, "{$ERROR}",
+      strReplace(error_template, "{$ERROR_MESSAGE}",
+        strReplace(escape(parsedUrl.searchParams.get('errortext')), "\n", "<br>")
+      )
+    );
+  } else if (parsedUrl.searchParams.get('codesent')) {
+    response = strReplace(response, "{$ERROR}",
+      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>'
+    );
+  } else {
+    response = strReplace(response, "{$ERROR}", "");
   }
 
   response = applyTheme(response, req);
@@ -81,6 +119,12 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
   const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
+
+  if (!auth.verifyAndConsumeActionCode(discordID, 'setup2fa', params.discord_code)) {
+    res.writeHead(302, { Location: '/setup2fa.html' + sessionParam + (sessionParam ? '&' : '?') + 'errortext=' + encodeURIComponent('Invalid or expired Discord verification code.') });
+    res.end();
+    return;
+  }
 
   const result = await auth.verifyAndEnableTOTP(discordID, params.password || '', params.totp_code || '');
 
@@ -115,6 +159,12 @@ exports.handleDisable2FA = async function (bot, req, res, body, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
   const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
+
+  if (!auth.verifyAndConsumeActionCode(discordID, 'disable2fa', params.discord_code)) {
+    res.writeHead(302, { Location: '/setup2fa.html' + sessionParam + (sessionParam ? '&' : '?') + 'errortext=' + encodeURIComponent('Invalid or expired Discord verification code.') });
+    res.end();
+    return;
+  }
 
   const result = await auth.disableTOTP(discordID, params.password || '');
 

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html class="page-simple">
+
+<head>
+  {$COMMON_HEAD}
+  <title>Discross - Guest Access</title>
+</head>
+
+<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
+  <div id="wrapper">
+    <table style="width: 100%;">
+      <tr valign="middle">
+        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
+        <td>
+          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
+        </td>
+        <td width="100%" align="right">
+          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;</font>
+        </td>
+        <td valign="middle">
+          <a href="/switchtheme"><img src="/resources/images/themeswitch.gif" alt="Switch theme" style="background: none; border: none;"></a>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin: 0;">
+    <br>
+    <table>
+        <tr>
+          <td>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+          </td>
+          <td>
+            <form action="/guest_name" method="GET">
+              <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Guest Access</font><br><br>
+              <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+                Enter your name to chat as a guest:
+                <br><br>
+                <div style="padding: 16px;background: #222327;width: 25%;min-width: 200px;"><input type="text"
+                    name="name" id="name" value=""
+                    style="color: #dddddd;background: #222327;border: none;width: 100%;outline: none;"
+                    placeholder="Your name" maxlength="32" required></div>
+                <br>
+                <input type="hidden" name="channel" value="{$CHANNEL_ID}">
+                {$ERROR}<br>
+                <input type="submit"
+                  style="color: #ffffff;height: 44px;width:150px;border: none;background: #5865f2;border-radius: 8px;font-family: 'rodin', Arial, Helvetica, sans-serif;font-size: 16px;font-weight: 500;cursor: pointer;"
+                  value="Enter">
+              </font>
+            </form>
+          </td>
+        </tr>
+    </table>
+  </div>
+</body>
+
+</html>
