@@ -503,14 +503,13 @@ exports.handleGet = async function (bot, req, res, discordID) {
           const singleVariant = (p.Variants && p.Variants[0]) || code
           const inCartSingle = cartQtyByVariant[singleVariant] || 0
           const btnLabel = inCartSingle > 0 ? `Add to Cart (${inCartSingle} in cart)` : 'Add to Cart'
-          actionHtml = `<form method="POST" action="/food/cart/add">
+          actionHtml = `<form method="POST" action="/food/cart/add${urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''}">
       <input type="hidden" name="storeId" value="${safeStoreId}">
       <input type="hidden" name="country" value="${escape(country)}">
       <input type="hidden" name="code" value="${safeCode}">
       <input type="hidden" name="name" value="${safeName}">
       <input type="hidden" name="price" value="${safePrice}">
       <input type="hidden" name="redirect" value="${safeRedirect}">
-      <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
       <button type="submit" class="food-btn food-btn-sm">${escape(btnLabel)}</button>
     </form>`
         }
@@ -558,9 +557,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <td class="food-cart-qty">${escape(String(qty))}</td>
   <td class="food-cart-price">$${(price * qty).toFixed(2)}</td>
   <td>
-    <form method="POST" action="/food/cart/remove" style="display:inline">
+    <form method="POST" action="/food/cart/remove${urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''}" style="display:inline">
       <input type="hidden" name="index" value="${i}">
-      <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
       <button type="submit" class="food-btn food-btn-danger">Remove</button>
     </form>
   </td>
@@ -818,14 +816,13 @@ exports.handleGet = async function (bot, req, res, discordID) {
           res.writeHead(302, { Location: redirectUrl })
           return res.end()
         } else {
-          sizeOptionsHtml = `<form method="POST" action="/food/cart/add">
+          sizeOptionsHtml = `<form method="POST" action="/food/cart/add${urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''}">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
   <input type="hidden" name="country" value="${escape(country)}">
   <input type="hidden" name="code" value="${escape(productCode)}">
   <input type="hidden" name="name" value="${pName}">
   <input type="hidden" name="price" value="0">
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
-  <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
   <button type="submit" class="food-btn food-btn-large">Add to Cart</button>
   &#160;&#160;
   <a href="${escape(backUrl)}" class="food-btn food-btn-secondary">Cancel</a>
@@ -903,7 +900,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         if (finalCodeSet.size > 0 && Object.keys(toppingDict).length > 0) {
           const { sauces, toppings: toppingList } = classifyToppings(toppingDict, finalCodeSet)
 
-          toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add">
+          toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add${urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''}">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
   <input type="hidden" name="country" value="${escape(country)}">
   <input type="hidden" name="code" value="${escape(variantCode)}">
@@ -911,7 +908,6 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
   <input type="hidden" name="default_options" value="${escape(JSON.stringify(normalizedDefaults))}">
-  <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
 <font face="'rodin', Arial, Helvetica, sans-serif" color="#aaaaaa"><i>Default toppings, sauce, and cheese are pre-selected below. Adjust as needed.</i></font><br><br>`
 
           if (sauces.length > 0) {
@@ -978,7 +974,7 @@ ${optHtml}
           // so the full recipe (sauce + cheese + toppings) is included. Sending {} (no options)
           // or partial options (e.g. just the sauce) can cause OptionExclusivityViolated or
           // an incomplete order that the store may not process correctly.
-          toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add">
+          toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add${urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : ''}">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
   <input type="hidden" name="country" value="${escape(country)}">
   <input type="hidden" name="code" value="${escape(variantCode)}">
@@ -986,7 +982,6 @@ ${optHtml}
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
   <input type="hidden" name="default_options" value="${escape(JSON.stringify(tagDefaults))}">
-  <input type="hidden" name="sessionID" value="${escape(urlSessionID)}">
   <div style="margin-top:8px">
     <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` — $${vPrice.toFixed(2)}` : ''}</button>
     &#160;&#160;
