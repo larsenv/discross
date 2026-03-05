@@ -1205,9 +1205,10 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       return m ? { number: m[1], name: m[2] } : null
     }
     try {
+      const fullAddress = `${street}, ${city}, ${region} ${postalCode}`
       const addrResult = await dominosRequest({
         hostname: dominosHost,
-        path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(postalCode)}&s=${encodeURIComponent(street)}`,
+        path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(fullAddress)}&s=&a=`,
         method: 'GET',
       })
       const addrObj = addrResult && addrResult.data && addrResult.data.Address
