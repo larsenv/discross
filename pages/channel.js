@@ -675,10 +675,10 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
     html = templates.messageForwarded.replace('{$MESSAGE_CONTENT}', html);
   } else if (lastMentioned) {
     html = templates.messageMentioned.replace('{$MESSAGE_CONTENT}', html);
-    if (channelId) html = html.replace('{$MESSAGE_REPLY_LINK}', `/channels/${channelId}/${messageid}`);
+    html = html.replace('{$MESSAGE_REPLY_LINK}', channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)');
   } else {
     html = templates.message.replace('{$MESSAGE_CONTENT}', html);
-    if (channelId) html = html.replace('{$MESSAGE_REPLY_LINK}', `/channels/${channelId}/${messageid}`);
+    html = html.replace('{$MESSAGE_REPLY_LINK}', channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)');
   }
 
   // Forwarded metadata
@@ -752,6 +752,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     imagesCookie, animationsCookie = 1,
     authorText, replyText, clientTimezone,
     channelId,
+    messages: overrideMessages,
   } = params;
 
   // Unify template references under camelCase
@@ -770,7 +771,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     messageContinuation:       TEMPLATES.messageContinuation,
   };
 
-  const messages = await bot.getHistoryCached(chnl);
+  const messages = overrideMessages ?? await bot.getHistoryCached(chnl);
   const memberCache = new Map();
 
   // Mutable rendering state
