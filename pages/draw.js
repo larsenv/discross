@@ -1,6 +1,7 @@
 var fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const notFound = require('./notFound.js');
 const channel_template = fs.readFileSync('pages/templates/draw.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 function strReplace(string, needle, replacement) {
@@ -77,9 +78,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       res.end();
 
     } else {
-      res.writeHead(404, { "Content-Type": "text/html" });
-      res.write("Invalid channel!");
-      res.end();
+      return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
     }
   } catch (error) {
     console.log(error);
