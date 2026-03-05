@@ -366,12 +366,17 @@ exports.processStocks = async function processStocks(req, res) {
     stocksHtml = `<font color="#ff4444" ${FONT}>Unable to fetch stock data. Please try again later.</font><br>`;
   }
 
+  const credit = ticker
+    ? 'Stock data courtesy of <a href="https://finance.yahoo.com/" style="color: #5865f2;">Yahoo Finance</a>'
+    : 'Stock data courtesy of <a href="https://stooq.com/" style="color: #5865f2;">Stooq</a>';
+
   let response = strReplace(stocks_template, '{$WHITE_THEME_ENABLED}', themeClass);
   response = strReplace(response, '{$MENU_OPTIONS}',
     strReplace(logged_in_template, '{$USER}', escape(await auth.getUsername(discordID)))
   );
   response = strReplace(response, '{$TICKER_VALUE}', escape(ticker));
   response = strReplace(response, '{$STOCKS_CONTENT}', stocksHtml);
+  response = strReplace(response, '{$CREDIT}', credit);
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
