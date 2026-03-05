@@ -14,7 +14,7 @@ function sleep(ms) {
 }
 
 function sendToAll(message, channel) {
-  for (const i in sockets) {
+  for (let i = 0; i < sockets.length; i++) {
     if (listenChannels[i] === channel) {
       sockets[i].send(message)
     }
@@ -51,10 +51,10 @@ function processMessage(connectionType, isAuthed, listenChannel, message) {
 exports.processRequest = async function (req, res) {
   const parsedurl = new URL(req.url, 'http://localhost')
   if (parsedurl.pathname === '/longpoll.js') {
-    const initialID = /* latestMessageID */ Number(req.url.slice(13, req.url.length));
+    const initialID = Number(req.url.slice(13, req.url.length));
     res.write('latestMessageID = ' + JSON.stringify(latestMessageID) + '; addMessage(' + JSON.stringify(messages.slice(initialID, messages.length)) + '); addLongpoll(latestMessageID);')
   } else if (parsedurl.pathname === '/longpoll-xhr') {
-    var initialID = /* latestMessageID */ Number(req.url.slice(14, req.url.length).split('&')[0])
+    let initialID = Number(req.url.slice(14, req.url.length).split('&')[0])
     while (initialID >= latestMessageID) {
       await sleep(25)
     }
@@ -77,17 +77,17 @@ exports.startWsServer = function (server) {
   wss = new WebSocket.Server({ server })
 
   wss.on('connection', function connection(ws) {
-    var index = sockets.length
+    const index = sockets.length
     sockets.push(ws)
     listenChannels.push('')
     console.log('A client connected.')
     console.log(sockets.length + ' clients are now connected.')
-    var isAuthed = true // false; TODO: Fix
-    var listenChannel = ''
+    let isAuthed = false
+    let listenChannel = ''
 
     ws.on('message', function incoming(message) {
       const response = processMessage('websockets', isAuthed, listenChannel, message)
-      listenChannel = response.isAuthed
+      listenChannel = response.listenChannel
       listenChannels[index] = response.listenChannel
       isAuthed = response.isAuthed
     })

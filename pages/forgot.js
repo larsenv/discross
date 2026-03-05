@@ -1,15 +1,12 @@
-var fs = require('fs');
-var escape = require('escape-html');
+const fs = require('fs');
+const escape = require('escape-html');
 
-var auth = require('../authentication.js');
+const auth = require('../authentication.js');
+const { strReplace } = require('./utils.js');
 
 const forgot_template = fs.readFileSync('pages/templates/forgot.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
 const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 exports.processForgot = async function (bot, req, res, args) {
   const parsedurl = new URL(req.url, 'http://localhost');

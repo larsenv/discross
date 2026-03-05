@@ -4,10 +4,8 @@ const auth = require('../authentication.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
+const { isValidSnowflake } = require('./utils.js');
 
-function isValidSnowflake(id) {
-  return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
-}
 
 function parseCookies(req) {
   const cookiedict = {};

@@ -1,9 +1,7 @@
 // Shared utility functions for processing and rendering reactions
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
+const { strReplace } = require('./utils.js');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 // Function to process and format reactions
 function processReactions(reactions, imagesCookie, reactions_template, reaction_template, animationsCookie = 1) {

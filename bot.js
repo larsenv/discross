@@ -24,9 +24,7 @@ const client = new Discord.Client({
   intents: intentsArray
 })
 
-// https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
-
-client.on('clientReady', () => {
+client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`)
 })
 
@@ -109,7 +107,7 @@ exports.addToCache = function (msg) {
 
 exports.getHistoryCached = async function (chnl) {
   if (!chnl.id) {
-    chnl = client.channels.get(chnl)
+    chnl = client.channels.cache.get(chnl)
   }
   if (!msghistory[chnl.id]) {
     // Fetch messages - Discord.js will try to populate member data automatically if available in cache
@@ -121,16 +119,6 @@ exports.getHistoryCached = async function (chnl) {
 
 exports.client = client
 
-exports.sendPizzaVerification = async function (discordID, code) {
-  try {
-    const user = await client.users.fetch(discordID)
-    await user.send(`🍕 Your Domino's Pizza order verification code is: \`${code}\`\n\nEnter this code on the checkout page to confirm your order. It expires in 10 minutes.`)
-    return true
-  } catch (e) {
-    console.error('sendPizzaVerification error:', e.message)
-    return false
-  }
-}
 exports.sendDM = async function (discordID, message) {
   try {
     const user = await client.users.fetch(discordID)

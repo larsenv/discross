@@ -16,7 +16,7 @@ const options = {}
 const sentryEnabled = !!process.env.SENTRY_DSN;
 
 process.on("unhandledRejection", (err) => {
-  console.log(err);
+  console.error(err);
   if (sentryEnabled) Sentry.captureException(err);
 });
 
@@ -55,6 +55,7 @@ const { toggleTheme } = require('./pages/themeToggle.js')
 const { imageProxy } = require('./pages/imageProxy.js')
 const { fileProxy } = require('./pages/fileProxy.js')
 const { toggleImages } = require('./pages/toggleImages.js')
+const { toggleAnimations } = require('./pages/toggleAnimations.js')
 const { uploadFile } = require('./pages/uploadFile.js')
 const uploadpage = require('./pages/upload.js')
 const chanelreplypage = require('./pages/channel_reply.js')
@@ -83,14 +84,7 @@ const STICKER_PROXY_PREFIX_LENGTH = '/imageProxy/sticker/'.length; // 20
 
 bot.startBot();
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || '')
-}
-// https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
-
-function isValidSnowflake(id) {
-  return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
-}
+const { strReplace, isValidSnowflake } = require('./pages/utils.js')
 
 // create a server object:
 const server = http.createServer(options)

@@ -1,12 +1,12 @@
 'use strict'
 
 const fs = require('fs')
+const { strReplace } = require('./utils.js');
 
 const commonHead = fs.readFileSync('pages/templates/partials/head.html', 'utf-8')
 const template404 = fs.readFileSync('pages/templates/404.html', 'utf-8')
   .split('{$COMMON_HEAD}').join(commonHead)
 
-function strReplace(s, n, r) { return s.split(n).join(r || '') }
 
 function getThemeAttr(req) {
   const cookie = req.headers.cookie || ''

@@ -6,6 +6,7 @@ const he = require('he');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText } = require('./emojiUtils');
+const { strReplace } = require('./utils.js');
 
 const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
 
@@ -30,9 +31,6 @@ const MAX_ARTICLE_ELEMENTS = 150;
 // Browser-like User-Agent for AP News requests
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
 
 function proxyImageUrl(url) {
   return '/imageProxy/external/' + Buffer.from(url).toString('base64');

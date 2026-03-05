@@ -5,6 +5,7 @@ const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../t
 const { buildMessagesHtml } = require('./channel');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
+const { strReplace } = require('./utils.js');
 
 // Templates for viewing messages in a channel (Reply Context)
 const channel_template = fs.readFileSync('pages/templates/channel_reply.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
@@ -27,9 +28,6 @@ const reactions_template = fs.readFileSync('pages/templates/message/reactions.ht
 const reaction_template = fs.readFileSync('pages/templates/message/reaction.html', 'utf-8');
 const date_separator_template = fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');

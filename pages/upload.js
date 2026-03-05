@@ -1,18 +1,13 @@
 const fs = require('fs');
 const escape = require('escape-html');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const { strReplace, isValidSnowflake } = require('./utils.js');
 
 const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
 const upload_template = fs.readFileSync('pages/templates/upload.html', 'utf-8')
   .split('{$COMMON_HEAD}').join(head_partial);
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
-function isValidSnowflake(id) {
-  return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
-}
 
 exports.processUpload = async function processUpload(bot, req, res, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');

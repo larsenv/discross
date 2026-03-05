@@ -1,7 +1,7 @@
-var fs = require('fs');
-var escape = require('escape-html');
-var UAParser = require('ua-parser-js');
-var auth = require('../authentication.js');
+const fs = require('fs');
+const escape = require('escape-html');
+const UAParser = require('ua-parser-js');
+const auth = require('../authentication.js');
 const path = require('path')
 const sharp = require("sharp")
 const sanitizer = require("path-sanitizer").default;
@@ -40,11 +40,7 @@ function evictOldestCachedMember() {
   }
 }
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
-
-// https://stackoverflow.com/questions/1967119/why-does-javascript-replace-only-first-instance-when-using-replace
+const { strReplace } = require('./utils.js');
 
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
@@ -91,15 +87,15 @@ async function processServerChannels(server, member, response, sessionParam) {
       threadsByParent.get(thread.parentId).push(thread);
     });
 
-    const categories = server.channels.cache.filter(channel => channel.type == ChannelType.GuildCategory);
+    const categories = server.channels.cache.filter(channel => channel.type === ChannelType.GuildCategory);
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
     // Start with lone text channels (no category), voice channels, and forum/media channels
     let channelsSorted = [...server.channels.cache.filter(channel =>
       (channel.isTextBased() ||
-       channel.type == ChannelType.GuildVoice ||
-       channel.type == ChannelType.GuildForum ||
-       channel.type == ChannelType.GuildMedia) &&
+       channel.type === ChannelType.GuildVoice ||
+       channel.type === ChannelType.GuildForum ||
+       channel.type === ChannelType.GuildMedia) &&
       !channel.parent).values()];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
@@ -110,23 +106,22 @@ async function processServerChannels(server, member, response, sessionParam) {
           .values()]
           .filter(channel =>
             channel.isTextBased() ||
-            channel.type == ChannelType.GuildVoice ||
-            channel.type == ChannelType.GuildForum ||
-            channel.type == ChannelType.GuildMedia)
+            channel.type === ChannelType.GuildVoice ||
+            channel.type === ChannelType.GuildForum ||
+            channel.type === ChannelType.GuildMedia)
       );
     });
 
 
     let channelList = "";
     let currentCategoryId = null;
-    let prevItemWasThread = false;
     
     channelsSorted.forEach((item, index) => {
-      const isThread = item.type == ChannelType.PublicThread || item.type == ChannelType.PrivateThread;
+      const isThread = item.type === ChannelType.PublicThread || item.type === ChannelType.PrivateThread;
       // Check if the member has permission to view the channel
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         const escapedName = escape(normalizeWeirdUnicode(item.name));
-        if (item.type == ChannelType.GuildCategory) {
+        if (item.type === ChannelType.GuildCategory) {
           // Close previous category if exists
           if (currentCategoryId !== null) {
             channelList += '</div>'; // Close previous category-channels div
@@ -135,13 +130,13 @@ async function processServerChannels(server, member, response, sessionParam) {
           channelList += category_channel_template
             .replace("{$CHANNEL_NAME}", escapedName)
             .replace("{$CATEGORY_ID}", item.id);
-        } else if (item.type == ChannelType.GuildForum || item.type == ChannelType.GuildMedia) {
+        } else if (item.type === ChannelType.GuildForum || item.type === ChannelType.GuildMedia) {
           // Forum / media channels
           channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
-        } else if (item.type == ChannelType.GuildAnnouncement || item.type == ChannelType.GuildNews) {
+        } else if (item.type === ChannelType.GuildAnnouncement || item.type === ChannelType.GuildNews) {
           // Use announcement template for announcement/news channels
           channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
-        } else if (item.type == ChannelType.GuildVoice) {
+        } else if (item.type === ChannelType.GuildVoice) {
           // Voice channels - check if they're locked (#27)
           const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
           if (!canSendMessages) {
@@ -151,16 +146,13 @@ async function processServerChannels(server, member, response, sessionParam) {
             // Voice channel with text capability (#14)
             channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
           }
-        } else if (isThread) {
-          if (!prevItemWasThread) {
-            channelList += thread_section_header;
-          }
-          channelList += thread_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
-        } else if (item.type == ChannelType.GuildStageVoice) {
+        } else if (item.type === ChannelType.GuildStageVoice) {
           // Stage channels
           channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
-        } else if (item.isTextBased()) {
-          // Text-based channels - check if locked or if it's a rules channel
+        } else if (!isThread && item.isTextBased()) {
+          // Text-based channels (threads are excluded since they are rendered under
+          // their parent channel via the thread group block below)
+          // Check if locked or if it's a rules channel
           const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
           
           // Check if this is a rules channel by name
@@ -195,7 +187,6 @@ async function processServerChannels(server, member, response, sessionParam) {
           }
         }
       }
-      prevItemWasThread = isThread;
     });
     
     // Close the last category if exists

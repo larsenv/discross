@@ -1,3 +1,4 @@
+const { strReplace } = require('./utils.js');
 var fs = require('fs');
 var escape = require('escape-html');
 var { parse } = require('querystring');
@@ -8,9 +9,6 @@ const changepassword_template = fs.readFileSync('pages/templates/changepassword.
 const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 function applyTheme(response, req) {
   const parsedUrl = new URL(req.url, 'http://localhost');

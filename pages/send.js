@@ -4,16 +4,10 @@ const discord = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
-
-function isValidSnowflake(id) {
-  return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
-}
+const { strReplace, isValidSnowflake } = require('./utils.js');
 
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
+  const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)));
   try {
     const parsedurl = new URL(req.url, 'http://localhost');
     const query = Object.fromEntries(parsedurl.searchParams);
@@ -97,7 +91,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
         // Handle reply if reply_message_id is present
         if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
           try {
-            let reply_message = await channel.messages.fetch(query.reply_message_id);
+            const reply_message = await channel.messages.fetch(query.reply_message_id);
             // Verify the reply message belongs to the channel to prevent reply spoofing
             if (reply_message.channelId !== channel.id) {
               throw new Error('Reply message does not belong to this channel');
@@ -106,8 +100,8 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
             if (reply_message_content.length > 30) {
               reply_message_content = reply_message_content.substring(0, 30) + "...";
             }
-            let author_id = reply_message.author.id;
-            let author_mention = `<@${author_id}>`;
+            const author_id = reply_message.author.id;
+            const author_mention = `<@${author_id}>`;
 
             processedmessage = `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
           } catch (err) {
@@ -133,12 +127,10 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       const redirectChannel = parsedurl.searchParams.get('channel') || (args?.[2] || "");
       const sessionID = parsedurl.searchParams.get('sessionID') || ''
       const sessionPart = sessionID ? '?sessionID=' + encodeURIComponent(sessionID) : ''
-      const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)))
       res.writeHead(302, { "Location": baseUrl + '/channels/' + redirectChannel + sessionPart });
       res.end();
   } catch (err) {
     console.error("Error sending message:", err);
-    const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)))
     res.writeHead(302, { "Location": baseUrl + '/server/' });
     res.end();
   }

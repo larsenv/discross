@@ -6,6 +6,7 @@ const { buildMessagesHtml } = require('./channel');
 const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
+const { strReplace } = require('./utils.js');
 
 const THEME_CONFIG = {
   0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
@@ -17,9 +18,6 @@ const channel_template = fs.readFileSync('pages/templates/pins.html', 'utf-8')
   .split('{$COMMON_HEAD}')
   .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
 
 exports.processPins = async function processPins(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');

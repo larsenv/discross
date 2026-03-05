@@ -1,15 +1,12 @@
-var fs = require('fs');
-var escape = require('escape-html');
+const fs = require('fs');
+const escape = require('escape-html');
 
-var auth = require('../authentication.js');
+const auth = require('../authentication.js');
+const { strReplace } = require('./utils.js');
 
 const register_template = fs.readFileSync('pages/templates/register.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
 const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 exports.processRegister = async function (bot, req, res, args) {
   const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page

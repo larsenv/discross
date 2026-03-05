@@ -2,11 +2,9 @@ var fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
+const { strReplace } = require('./utils.js');
 const channel_template = fs.readFileSync('pages/templates/draw.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
