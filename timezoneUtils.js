@@ -24,12 +24,12 @@ function getClientIP(req) {
     // x-forwarded-for can contain multiple IPs, the first one is the client
     return forwarded.split(',')[0].trim();
   }
-  
+
   const realIP = req.headers['x-real-ip'];
   if (realIP) {
     return realIP;
   }
-  
+
   // Fallback to socket remote address
   return req.socket?.remoteAddress || '127.0.0.1';
 }
@@ -42,25 +42,25 @@ function getClientIP(req) {
 function isPrivateIP(ip) {
   // IPv4 localhost
   if (ip === '127.0.0.1') return true;
-  
+
   // IPv6 localhost
   if (ip === '::1') return true;
-  
+
   // IPv4 private ranges
   if (ip.startsWith('192.168.')) return true;
   if (ip.startsWith('10.')) return true;
-  
+
   // IPv4 172.16.0.0/12 range (172.16.x.x to 172.31.x.x)
   const parts = ip.split('.');
   if (parts.length === 4 && parts[0] === '172') {
     const second = parseInt(parts[1], 10);
     if (second >= 16 && second <= 31) return true;
   }
-  
+
   // IPv6 private ranges
   if (ip.startsWith('fc') || ip.startsWith('fd')) return true; // fc00::/7
   if (ip.startsWith('fe80:')) return true; // fe80::/10
-  
+
   return false;
 }
 
@@ -74,12 +74,12 @@ function getTimezoneFromIP(ip) {
   if (isPrivateIP(ip)) {
     return null; // Will use default behavior
   }
-  
+
   const geo = geoip.lookup(ip);
   if (geo && geo.timezone) {
     return geo.timezone;
   }
-  
+
   return null;
 }
 
@@ -96,14 +96,14 @@ function getDateComponentsInTimezone(date, timezone) {
       timeZone: timezone,
       year: 'numeric',
       month: 'numeric',
-      day: 'numeric'
+      day: 'numeric',
     });
     _dateFormatterCache.set(timezone, formatter);
   }
   const parts = formatter.formatToParts(date);
-  const year = parseInt(parts.find(p => p.type === 'year').value);
-  const month = parseInt(parts.find(p => p.type === 'month').value); // 1-indexed (1-12)
-  const day = parseInt(parts.find(p => p.type === 'day').value);
+  const year = parseInt(parts.find((p) => p.type === 'year').value);
+  const month = parseInt(parts.find((p) => p.type === 'month').value); // 1-indexed (1-12)
+  const day = parseInt(parts.find((p) => p.type === 'day').value);
   return { year, month, day };
 }
 
@@ -116,32 +116,32 @@ function getDateComponentsInTimezone(date, timezone) {
 function formatDateWithTimezone(date, timezone) {
   try {
     const userTimezone = timezone || _systemTimezone;
-    
+
     // Get current date/time
     const now = new Date();
-    
+
     // Extract date components in the target timezone for both dates
     const messageComps = getDateComponentsInTimezone(date, userTimezone);
     const todayComps = getDateComponentsInTimezone(now, userTimezone);
-    
+
     // Create date-only objects in UTC for comparison
     // Note: Date.UTC expects 0-indexed months (0-11), so we subtract 1
     const messageDateOnly = Date.UTC(messageComps.year, messageComps.month - 1, messageComps.day);
     const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
-    
+
     // Calculate difference in days
     const diffTime = todayDateOnly - messageDateOnly;
     const diffDays = Math.round(diffTime / MILLISECONDS_PER_DAY);
-    
+
     // Format time part (e.g., "12:30PM")
     const timeOptions = {
       timeZone: userTimezone,
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     };
     const timeStr = date.toLocaleString('en-US', timeOptions);
-    
+
     if (diffDays === 0) {
       // Today - just show time
       return timeStr;
@@ -154,7 +154,7 @@ function formatDateWithTimezone(date, timezone) {
         timeZone: userTimezone,
         month: '2-digit',
         day: '2-digit',
-        year: '2-digit'
+        year: '2-digit',
       };
       const dateStr = date.toLocaleString('en-US', dateOptions);
       return `${dateStr}, ${timeStr}`;
@@ -162,7 +162,7 @@ function formatDateWithTimezone(date, timezone) {
   } catch (err) {
     // If timezone is invalid, fall back to default format
     console.error('Error formatting date with timezone:', err);
-    return date.toLocaleTimeString('en-US') + " " + date.toDateString();
+    return date.toLocaleTimeString('en-US') + ' ' + date.toDateString();
   }
 }
 
@@ -175,14 +175,14 @@ function formatDateWithTimezone(date, timezone) {
 function formatDateSeparator(date, timezone) {
   try {
     const userTimezone = timezone || _systemTimezone;
-    
+
     const options = {
       timeZone: userTimezone,
       month: 'long',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     };
-    
+
     return date.toLocaleString('en-US', options);
   } catch (err) {
     console.error('Error formatting date separator:', err);
@@ -201,14 +201,14 @@ function areDifferentDays(date1, date2, timezone) {
   if (!date2) {
     return true; // First message, always show separator
   }
-  
+
   try {
     const userTimezone = timezone || _systemTimezone;
-    
+
     // Extract date components for both dates
     const comp1 = getDateComponentsInTimezone(date1, userTimezone);
     const comp2 = getDateComponentsInTimezone(date2, userTimezone);
-    
+
     // Compare year, month, and day
     return comp1.year !== comp2.year || comp1.month !== comp2.month || comp1.day !== comp2.day;
   } catch (err) {
@@ -242,14 +242,14 @@ function formatForwardedTimestamp(date, timezone) {
         timeZone: userTimezone,
         hour: 'numeric',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
       });
     } else {
       return date.toLocaleString('en-US', {
         timeZone: userTimezone,
         month: '2-digit',
         day: '2-digit',
-        year: '2-digit'
+        year: '2-digit',
       });
     }
   } catch (err) {
@@ -264,5 +264,5 @@ module.exports = {
   formatDateWithTimezone,
   formatDateSeparator,
   areDifferentDays,
-  formatForwardedTimestamp
+  formatForwardedTimestamp,
 };

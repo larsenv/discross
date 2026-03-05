@@ -9,7 +9,7 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
 /**
  * Get the display name following Discord's order:
  * server nickname -> Discord global name -> Discord username
- * 
+ *
  * @param {Object} member - Discord GuildMember object (may be null)
  * @param {Object} author - Discord User object from message author
  * @returns {string} Display name to show
@@ -34,26 +34,26 @@ function getDisplayName(member, author) {
     name = author.username;
   }
 
-  return normalizeWeirdUnicode(name || "Unknown User");
+  return normalizeWeirdUnicode(name || 'Unknown User');
 }
 
 /**
  * Get the member's highest role color or default to white
- * 
+ *
  * @param {Object} member - Discord GuildMember object (may be null)
  * @returns {string} Hex color string (e.g., "#ffffff")
  */
 function getMemberColor(member) {
   if (!member || !member.roles) {
-    return "#ffffff"; // Default white color
+    return '#ffffff'; // Default white color
   }
-  
+
   // member.roles.color returns the highest role that has a non-zero color set
   const colorRole = member.roles.color;
   if (!colorRole) {
-    return "#ffffff"; // No colored role found
+    return '#ffffff'; // No colored role found
   }
-  
+
   // Convert Discord color integer to hex
   return `#${colorRole.color.toString(16).padStart(6, '0')}`;
 }
@@ -62,10 +62,10 @@ function getMemberColor(member) {
  * Ensure member data is populated for a message.
  * Discord.js doesn't always populate the member property when fetching messages,
  * so we need to manually fetch it if it's missing.
- * 
+ *
  * For webhook messages (which don't have member data), attempts to find the
  * real guild member by matching the webhook's display name.
- * 
+ *
  * @param {Object} message - Discord Message object
  * @param {Object} guild - Discord Guild object
  * @param {Map} cache - Optional cache to store fetched members and avoid repeated API calls
@@ -80,10 +80,12 @@ async function ensureMemberData(message, guild, cache = null) {
 
   // Application webhooks (slash command bot responses) have applicationId === webhookId.
   // For those, we can fetch the bot member by author ID to get role colors.
-  const isAppWebhook = message.webhookId && message.applicationId && message.webhookId === message.applicationId;
+  const isAppWebhook =
+    message.webhookId && message.applicationId && message.webhookId === message.applicationId;
 
   // Check cache first if provided (use webhook:username for plain webhook messages)
-  const cacheKey = (message.webhookId && !isAppWebhook) ? `webhook:${message.author.username}` : message.author.id;
+  const cacheKey =
+    message.webhookId && !isAppWebhook ? `webhook:${message.author.username}` : message.author.id;
   if (cache && cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
@@ -120,5 +122,5 @@ async function ensureMemberData(message, guild, cache = null) {
 module.exports = {
   getDisplayName,
   getMemberColor,
-  ensureMemberData
+  ensureMemberData,
 };

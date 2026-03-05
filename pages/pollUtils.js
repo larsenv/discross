@@ -5,7 +5,6 @@ const { strReplace } = require('./utils.js');
 const poll_template = fs.readFileSync('pages/templates/message/poll.html', 'utf-8');
 const poll_answer_template = fs.readFileSync('pages/templates/message/poll_answer.html', 'utf-8');
 
-
 /**
  * Process a poll and render it as HTML
  * @param {Poll} poll - The Discord.js Poll object
@@ -17,33 +16,33 @@ function processPoll(poll, imagesCookie) {
 
   try {
     let pollHtml = poll_template;
-    
+
     // Set the poll question
     const question = poll.question?.text || 'Poll';
     pollHtml = strReplace(pollHtml, '{$POLL_QUESTION}', escape(question));
-    
+
     // Calculate total votes across all answers
     let totalVotes = 0;
     if (poll.answers && poll.answers.size > 0) {
-      poll.answers.forEach(answer => {
+      poll.answers.forEach((answer) => {
         totalVotes += answer.voteCount || 0;
       });
     }
-    
+
     // Process each answer
     let answersHtml = '';
     if (poll.answers && poll.answers.size > 0) {
-      poll.answers.forEach(answer => {
+      poll.answers.forEach((answer) => {
         let answerHtml = poll_answer_template;
-        
+
         // Calculate vote percentage
         const voteCount = answer.voteCount || 0;
         const votePercentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-        
+
         // Get answer text
         const answerText = answer.text || '';
         answerHtml = strReplace(answerHtml, '{$ANSWER_TEXT}', escape(answerText));
-        
+
         // Handle emoji if present
         let emojiHtml = '';
         if (answer._emoji) {
@@ -61,7 +60,7 @@ function processPoll(poll, imagesCookie) {
               if (code) {
                 codePoints.push(code.toString(16));
                 // Skip low surrogate if this was a high surrogate
-                if (code > 0xFFFF) i++;
+                if (code > 0xffff) i++;
               }
             }
             const emojiCode = codePoints.join('-');
@@ -72,27 +71,28 @@ function processPoll(poll, imagesCookie) {
           }
         }
         answerHtml = strReplace(answerHtml, '{$ANSWER_EMOJI}', emojiHtml);
-        
+
         // Set vote count and percentage
         answerHtml = strReplace(answerHtml, '{$VOTE_COUNT}', voteCount.toString());
         answerHtml = strReplace(answerHtml, '{$VOTE_PERCENTAGE}', votePercentage.toString());
-        
+
         answersHtml += answerHtml;
       });
     } else {
-      answersHtml = '<div style="color: #72767d; font-size: 14px; font-style: italic;">No answers available</div>';
+      answersHtml =
+        '<div style="color: #72767d; font-size: 14px; font-style: italic;">No answers available</div>';
     }
-    
+
     pollHtml = strReplace(pollHtml, '{$POLL_ANSWERS}', answersHtml);
-    
+
     // Create footer with poll metadata
     let footerParts = [];
     footerParts.push(`${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}`);
-    
+
     if (poll.allowMultiselect) {
       footerParts.push('Multiple choice');
     }
-    
+
     // Check if poll has ended
     const now = Date.now();
     if (poll.expiresTimestamp && poll.expiresTimestamp < now) {
@@ -101,10 +101,10 @@ function processPoll(poll, imagesCookie) {
       const expiresDate = new Date(poll.expiresTimestamp);
       footerParts.push(`Ends ${expiresDate.toLocaleDateString()}`);
     }
-    
+
     const footer = footerParts.join(' • ');
     pollHtml = strReplace(pollHtml, '{$POLL_FOOTER}', escape(footer));
-    
+
     return pollHtml;
   } catch (error) {
     console.error('Error processing poll:', error);
@@ -113,5 +113,5 @@ function processPoll(poll, imagesCookie) {
 }
 
 module.exports = {
-  processPoll
+  processPoll,
 };

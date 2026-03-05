@@ -2,33 +2,72 @@ const fs = require('fs');
 const escape = require('escape-html');
 const UAParser = require('ua-parser-js');
 const auth = require('../authentication.js');
-const path = require('path')
-const sharp = require("sharp")
-const sanitizer = require("path-sanitizer").default;
-const emojiRegex = require("./twemojiRegex").regex;
+const path = require('path');
+const sharp = require('sharp');
+const sanitizer = require('path-sanitizer').default;
+const emojiRegex = require('./twemojiRegex').regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode } = require('./emojiUtils');
 
 // Templates for viewing the channels in a server
-const server_template = fs.readFileSync('pages/templates/server.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const server_template = fs
+  .readFileSync('pages/templates/server.html', 'utf-8')
+  .split('{$COMMON_HEAD}')
+  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
-const text_channel_template = fs.readFileSync('pages/templates/channellist/textchannel.html', 'utf-8');
-const announcement_channel_template = fs.readFileSync('pages/templates/channellist/announcementchannel.html', 'utf-8');
-const category_channel_template = fs.readFileSync('pages/templates/channellist/categorychannel.html', 'utf-8');
-const voice_channel_template = fs.readFileSync('pages/templates/channellist/voicechannel.html', 'utf-8');
-const thread_channel_template = fs.readFileSync('pages/templates/channellist/threadchannel.html', 'utf-8');
-const thread_group_header_template = fs.readFileSync('pages/templates/channellist/threadgroupheader.html', 'utf-8');
-const forum_channel_template = fs.readFileSync('pages/templates/channellist/forumchannel.html', 'utf-8');
-const locked_channel_template = fs.readFileSync('pages/templates/channellist/lockedchannel.html', 'utf-8');
-const rules_channel_template = fs.readFileSync('pages/templates/channellist/ruleschannel.html', 'utf-8');
+const text_channel_template = fs.readFileSync(
+  'pages/templates/channellist/textchannel.html',
+  'utf-8'
+);
+const announcement_channel_template = fs.readFileSync(
+  'pages/templates/channellist/announcementchannel.html',
+  'utf-8'
+);
+const category_channel_template = fs.readFileSync(
+  'pages/templates/channellist/categorychannel.html',
+  'utf-8'
+);
+const voice_channel_template = fs.readFileSync(
+  'pages/templates/channellist/voicechannel.html',
+  'utf-8'
+);
+const thread_channel_template = fs.readFileSync(
+  'pages/templates/channellist/threadchannel.html',
+  'utf-8'
+);
+const thread_group_header_template = fs.readFileSync(
+  'pages/templates/channellist/threadgroupheader.html',
+  'utf-8'
+);
+const forum_channel_template = fs.readFileSync(
+  'pages/templates/channellist/forumchannel.html',
+  'utf-8'
+);
+const locked_channel_template = fs.readFileSync(
+  'pages/templates/channellist/lockedchannel.html',
+  'utf-8'
+);
+const rules_channel_template = fs.readFileSync(
+  'pages/templates/channellist/ruleschannel.html',
+  'utf-8'
+);
 
 const server_icon_template = fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8');
 
-const server_list_only_template = fs.readFileSync('pages/templates/server/server_list_only.html', 'utf-8');
+const server_list_only_template = fs.readFileSync(
+  'pages/templates/server/server_list_only.html',
+  'utf-8'
+);
 const sync_warning_template = fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8');
-const no_images_warning_template = fs.readFileSync('pages/templates/server/no_images_warning.html', 'utf-8');
-const images_enabled_template = fs.readFileSync('pages/templates/server/images_enabled.html', 'utf-8');
+const no_images_warning_template = fs.readFileSync(
+  'pages/templates/server/no_images_warning.html',
+  'utf-8'
+);
+const images_enabled_template = fs.readFileSync(
+  'pages/templates/server/images_enabled.html',
+  'utf-8'
+);
 
 const cachedMembers = {}; // TODO: Find a better way
 const MAX_CACHED_MEMBERS = 250; // evict oldest user's data when the cap is hit
@@ -55,7 +94,7 @@ async function processServerChannels(server, member, response, sessionParam) {
       const activeThreadsResult = await server.channels.fetchActiveThreads();
       activeThreadsList = [...activeThreadsResult.threads.values()];
     } catch (err) {
-      console.error("Failed to fetch active threads:", err);
+      console.error('Failed to fetch active threads:', err);
     }
 
     // For each active thread, check if this specific user is a member.
@@ -65,7 +104,7 @@ async function processServerChannels(server, member, response, sessionParam) {
     const userThreadIds = new Set();
     if (activeThreadsList.length > 0) {
       await Promise.allSettled(
-        activeThreadsList.map(async thread => {
+        activeThreadsList.map(async (thread) => {
           try {
             await thread.members.fetch(discordID);
             userThreadIds.add(thread.id);
@@ -78,7 +117,7 @@ async function processServerChannels(server, member, response, sessionParam) {
 
     // Build threadsByParent using only threads the user is in
     const threadsByParent = new Map();
-    activeThreadsList.forEach(thread => {
+    activeThreadsList.forEach((thread) => {
       if (!thread.parentId) return;
       if (!userThreadIds.has(thread.id)) return;
       if (!threadsByParent.has(thread.parentId)) {
@@ -87,37 +126,45 @@ async function processServerChannels(server, member, response, sessionParam) {
       threadsByParent.get(thread.parentId).push(thread);
     });
 
-    const categories = server.channels.cache.filter(channel => channel.type === ChannelType.GuildCategory);
+    const categories = server.channels.cache.filter(
+      (channel) => channel.type === ChannelType.GuildCategory
+    );
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
     // Start with lone text channels (no category), voice channels, and forum/media channels
-    let channelsSorted = [...server.channels.cache.filter(channel =>
-      (channel.isTextBased() ||
-       channel.type === ChannelType.GuildVoice ||
-       channel.type === ChannelType.GuildForum ||
-       channel.type === ChannelType.GuildMedia) &&
-      !channel.parent).values()];
+    let channelsSorted = [
+      ...server.channels.cache
+        .filter(
+          (channel) =>
+            (channel.isTextBased() ||
+              channel.type === ChannelType.GuildVoice ||
+              channel.type === ChannelType.GuildForum ||
+              channel.type === ChannelType.GuildMedia) &&
+            !channel.parent
+        )
+        .values(),
+    ];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
 
-    categoriesSorted.forEach(category => {
+    categoriesSorted.forEach((category) => {
       channelsSorted.push(category);
       channelsSorted = channelsSorted.concat(
-        [...category.children.cache.sort((a, b) => a.position - b.position)
-          .values()]
-          .filter(channel =>
+        [...category.children.cache.sort((a, b) => a.position - b.position).values()].filter(
+          (channel) =>
             channel.isTextBased() ||
             channel.type === ChannelType.GuildVoice ||
             channel.type === ChannelType.GuildForum ||
-            channel.type === ChannelType.GuildMedia)
+            channel.type === ChannelType.GuildMedia
+        )
       );
     });
 
-
-    let channelList = "";
+    let channelList = '';
     let currentCategoryId = null;
-    
+
     channelsSorted.forEach((item, index) => {
-      const isThread = item.type === ChannelType.PublicThread || item.type === ChannelType.PrivateThread;
+      const isThread =
+        item.type === ChannelType.PublicThread || item.type === ChannelType.PrivateThread;
       // Check if the member has permission to view the channel
       if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
         const escapedName = escape(normalizeWeirdUnicode(item.name));
@@ -128,56 +175,78 @@ async function processServerChannels(server, member, response, sessionParam) {
           }
           currentCategoryId = item.id;
           channelList += category_channel_template
-            .replace("{$CHANNEL_NAME}", escapedName)
-            .replace("{$CATEGORY_ID}", item.id);
+            .replace('{$CHANNEL_NAME}', escapedName)
+            .replace('{$CATEGORY_ID}', item.id);
         } else if (item.type === ChannelType.GuildForum || item.type === ChannelType.GuildMedia) {
           // Forum / media channels
-          channelList += forum_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
-        } else if (item.type === ChannelType.GuildAnnouncement || item.type === ChannelType.GuildNews) {
+          channelList += forum_channel_template
+            .replace('{$CHANNEL_NAME}', escapedName)
+            .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
+        } else if (
+          item.type === ChannelType.GuildAnnouncement ||
+          item.type === ChannelType.GuildNews
+        ) {
           // Use announcement template for announcement/news channels
-          channelList += announcement_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
+          channelList += announcement_channel_template
+            .replace('{$CHANNEL_NAME}', escapedName)
+            .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
         } else if (item.type === ChannelType.GuildVoice) {
           // Voice channels - check if they're locked (#27)
-          const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
+          const canSendMessages = member
+            .permissionsIn(item)
+            .has(PermissionFlagsBits.SendMessages, true);
           if (!canSendMessages) {
             // Locked voice channel
-            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
+            channelList += locked_channel_template
+              .replace('{$CHANNEL_NAME}', escapedName)
+              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
           } else {
             // Voice channel with text capability (#14)
-            channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
+            channelList += voice_channel_template
+              .replace('{$CHANNEL_NAME}', escapedName)
+              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
           }
         } else if (item.type === ChannelType.GuildStageVoice) {
           // Stage channels
-          channelList += voice_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
+          channelList += voice_channel_template
+            .replace('{$CHANNEL_NAME}', escapedName)
+            .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
         } else if (!isThread && item.isTextBased()) {
           // Text-based channels (threads are excluded since they are rendered under
           // their parent channel via the thread group block below)
           // Check if locked or if it's a rules channel
-          const canSendMessages = member.permissionsIn(item).has(PermissionFlagsBits.SendMessages, true);
-          
+          const canSendMessages = member
+            .permissionsIn(item)
+            .has(PermissionFlagsBits.SendMessages, true);
+
           // Check if this is a rules channel by name
           const isRulesChannel = item.name.toLowerCase().includes('rule');
-          
+
           if (isRulesChannel) {
-            channelList += rules_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
+            channelList += rules_channel_template
+              .replace('{$CHANNEL_NAME}', escapedName)
+              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
           } else if (!canSendMessages) {
             // Locked channel (#12)
-            channelList += locked_channel_template.replace("{$CHANNEL_NAME}", escapedName).replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
+            channelList += locked_channel_template
+              .replace('{$CHANNEL_NAME}', escapedName)
+              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
           } else {
             // Regular text channel
             channelList += text_channel_template
-              .replace("{$CHANNEL_NAME}", escapedName)
-              .replace("{$CHANNEL_LINK}", `../channels/${item.id}${sessionParam}`);
+              .replace('{$CHANNEL_NAME}', escapedName)
+              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
           }
         }
 
         // After rendering each non-category channel, add its collapsible thread group if it has threads
         if (item.type !== ChannelType.GuildCategory && threadsByParent.has(item.id)) {
-          const channelThreads = threadsByParent.get(item.id)
+          const channelThreads = threadsByParent
+            .get(item.id)
             .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
           if (channelThreads.length > 0) {
             channelList += thread_group_header_template.replace('{$CHANNEL_ID}', item.id);
-            channelThreads.forEach(thread => {
+            channelThreads.forEach((thread) => {
               const threadEscapedName = escape(normalizeWeirdUnicode(thread.name));
               channelList += thread_channel_template
                 .replace('{$CHANNEL_NAME}', threadEscapedName)
@@ -188,17 +257,17 @@ async function processServerChannels(server, member, response, sessionParam) {
         }
       }
     });
-    
+
     // Close the last category if exists
     if (currentCategoryId !== null) {
       channelList += '</div>';
     }
 
     // Replace the channel list in the response
-    response = response.replace("{$CHANNEL_LIST}", channelList);
+    response = response.replace('{$CHANNEL_LIST}', channelList);
   } catch (err) {
-    console.error("Error processing server channels:", err);
-    response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
+    console.error('Error processing server channels:', err);
+    response = response.replace('{$CHANNEL_LIST}', sync_warning_template);
   }
 
   return response;
@@ -206,12 +275,15 @@ async function processServerChannels(server, member, response, sessionParam) {
 
 exports.processServer = async function (bot, req, res, args, discordID) {
   try {
-    let serverList = "";
+    let serverList = '';
     let serversDeleted = 0; // Track if servers were deleted due to sync issues
-    const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+    const clientIsReady =
+      bot &&
+      bot.client &&
+      (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
 
     if (!clientIsReady) {
-      res.writeHead(503, { "Content-Type": "text/plain" });
+      res.writeHead(503, { 'Content-Type': 'text/plain' });
       res.write("The bot isn't connected, try again in a moment");
       res.end();
       return;
@@ -223,21 +295,29 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     const urlImages = parsedUrl.searchParams.get('images');
 
     // Read cookies up front to decide whether URL params need to be propagated
-    const whiteThemeCookieForParam = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-    const imagesCookieForParam = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
+    const whiteThemeCookieForParam = req.headers.cookie
+      ?.split('; ')
+      ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
+      ?.split('=')[1];
+    const imagesCookieForParam = req.headers.cookie
+      ?.split('; ')
+      ?.find((cookie) => cookie.startsWith('images='))
+      ?.split('=')[1];
 
     // Build combined URL params for links — only include preference params when the
     // corresponding cookie is absent (i.e. the browser doesn't support cookies)
     const linkParamParts = [];
     if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-    if (urlTheme !== null && whiteThemeCookieForParam === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-    if (urlImages !== null && imagesCookieForParam === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+    if (urlTheme !== null && whiteThemeCookieForParam === undefined)
+      linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+    if (urlImages !== null && imagesCookieForParam === undefined)
+      linkParamParts.push('images=' + encodeURIComponent(urlImages));
     const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
     // Acquire lock for this user to prevent race conditions where users might see other users' servers
     await lock.acquire(discordID, async () => {
-      const data = auth.dbQueryAll("SELECT * FROM servers WHERE discordID=?", [discordID]);
-      
+      const data = auth.dbQueryAll('SELECT * FROM servers WHERE discordID=?', [discordID]);
+
       for (let serverData of data) {
         const serverID = serverData.serverID;
         let server = bot.client.guilds.cache.get(serverID);
@@ -251,7 +331,10 @@ exports.processServer = async function (bot, req, res, args, discordID) {
               cachedMembers[discordID] = { ...cachedMembers[discordID], [server.id]: member };
             } catch (err) {
               // Delete from database if member isn't found
-              auth.dbQueryRun("DELETE FROM servers WHERE serverID=? AND discordID=?", [server.id, discordID]);
+              auth.dbQueryRun('DELETE FROM servers WHERE serverID=? AND discordID=?', [
+                server.id,
+                discordID,
+              ]);
               serversDeleted++;
               continue;
             }
@@ -259,8 +342,16 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
           // Construct server list HTML if the member is valid
           if (member && member.user) {
-            const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-            const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);
+            const imagesCookieValue = req.headers.cookie
+              ?.split('; ')
+              ?.find((cookie) => cookie.startsWith('images='))
+              ?.split('=')[1];
+            const imagesCookie =
+              urlImages !== null
+                ? parseInt(urlImages)
+                : imagesCookieValue !== undefined
+                  ? parseInt(imagesCookieValue)
+                  : 1;
             const serverHTML = createServerHTML(server, member, imagesCookie, sessionParam);
             serverList += serverHTML;
           }
@@ -269,18 +360,20 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           // If the bot hasn't connected yet, skip deletion so servers are preserved during boot.
           if (clientIsReady) {
             // bot is connected and the guild truly isn't in cache -> safe to delete
-            auth.dbQueryRun("DELETE FROM servers WHERE serverID=?", [serverID]);
+            auth.dbQueryRun('DELETE FROM servers WHERE serverID=?', [serverID]);
             serversDeleted++;
           } else {
             // bot not ready / not connected: do not delete the server row; treat as temporarily missing
-            console.warn(`Skipping deletion of server ${serverID} because bot client is not ready.`);
+            console.warn(
+              `Skipping deletion of server ${serverID} because bot client is not ready.`
+            );
             continue;
           }
         }
       }
     });
 
-    let response = server_template.replace("{$SERVER_LIST}", serverList);
+    let response = server_template.replace('{$SERVER_LIST}', serverList);
 
     // syncNeeded already parsed via parsedUrl above
     const syncNeeded = parsedUrl.searchParams.get('sync_needed');
@@ -290,64 +383,89 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       const targetServer = bot.client.guilds.cache.get(args[2]);
       await lock.acquire(discordID, async () => {
         if (targetServer) {
-          response = response.replace("{$DISCORD_NAME}", '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' + escape(normalizeWeirdUnicode(targetServer.name)) + "</font></b><br>");
+          response = response.replace(
+            '{$DISCORD_NAME}',
+            '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' +
+              escape(normalizeWeirdUnicode(targetServer.name)) +
+              '</font></b><br>'
+          );
           const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
             response = await processServerChannels(targetServer, member, response, sessionParam);
           } else {
-            response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
+            response = response.replace('{$CHANNEL_LIST}', sync_warning_template);
           }
         } else {
-          response = response.replace("{$DISCORD_NAME}", "");
+          response = response.replace('{$DISCORD_NAME}', '');
         }
       });
     } else {
       // If no specific server is selected, choose template based on whether user has servers
-      if (serverList.trim() === "") {
+      if (serverList.trim() === '') {
         // No servers available, show full authentication banner
-        response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
+        response = response.replace('{$CHANNEL_LIST}', sync_warning_template);
       } else if (syncNeeded === 'true' || serversDeleted > 0) {
         // Show sync warning if explicitly requested or servers were deleted due to sync issues
-        response = response.replace("{$CHANNEL_LIST}", sync_warning_template);
+        response = response.replace('{$CHANNEL_LIST}', sync_warning_template);
       } else {
         // User has servers and they seem synced, show simple server selection
-        response = response.replace("{$CHANNEL_LIST}", server_list_only_template);
+        response = response.replace('{$CHANNEL_LIST}', server_list_only_template);
       }
-      response = response.replace("{$DISCORD_NAME}", "");
+      response = response.replace('{$DISCORD_NAME}', '');
     }
 
-    const imagesCookieValue = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-    const imagesCookie = urlImages !== null ? parseInt(urlImages) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue) : 1);
+    const imagesCookieValue = req.headers.cookie
+      ?.split('; ')
+      ?.find((cookie) => cookie.startsWith('images='))
+      ?.split('=')[1];
+    const imagesCookie =
+      urlImages !== null
+        ? parseInt(urlImages)
+        : imagesCookieValue !== undefined
+          ? parseInt(imagesCookieValue)
+          : 1;
 
     // Handle theme and images preferences
     response = applyUserPreferences(response, req);
 
     if (response.match?.(emojiRegex) && imagesCookie === 1) {
-      const unicode_emoji_matches = [...response.match?.(emojiRegex)]
-      unicode_emoji_matches.forEach(match => {
+      const unicode_emoji_matches = [...response.match?.(emojiRegex)];
+      unicode_emoji_matches.forEach((match) => {
         const output = unicodeToTwemojiCode(match);
-        response = response.replace(match, `<img src="/resources/twemoji/${output}.gif" width="22" height="22" style="width: 6%;vertical-align:top;" alt="emoji">`)
+        response = response.replace(
+          match,
+          `<img src="/resources/twemoji/${output}.gif" width="22" height="22" style="width: 6%;vertical-align:top;" alt="emoji">`
+        );
       });
     }
 
-    const custom_emoji_matches = [...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)];                // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-    if (custom_emoji_matches[0] && imagesCookie === 1) custom_emoji_matches.forEach(async match => {                                                          // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-      response = response.replace(match[0], `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? "gif" : "png"}" width="22" height="22" style="width: 6%;"  alt="emoji">`)    // Make it smaller if inline
-    })
-    
+    const custom_emoji_matches = [
+      ...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g),
+    ]; // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
+    if (custom_emoji_matches[0] && imagesCookie === 1)
+      custom_emoji_matches.forEach(async (match) => {
+        // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+        response = response.replace(
+          match[0],
+          `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? 'gif' : 'png'}" width="22" height="22" style="width: 6%;"  alt="emoji">`
+        ); // Make it smaller if inline
+      });
+
     // Parse and add user agent display
     response = addUserAgentDisplay(response, req);
-    
+
     // Inject URL parameters into template links
     response = response.split('{$SESSION_PARAM}').join(sessionParam);
-    
-    res.writeHead(200, { "Content-Type": "text/html" });
+
+    res.writeHead(200, { 'Content-Type': 'text/html' });
     res.write(response);
     res.end();
   } catch (err) {
     console.error(err);
     res.writeHead(500);
-    res.write("An error occurred. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error");
+    res.write(
+      'An error occurred. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error'
+    );
     res.end();
   }
 };
@@ -369,43 +487,63 @@ async function fetchAndCacheMember(server, discordID) {
 function applyUserPreferences(response, req) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const urlTheme = parsedUrl.searchParams.get('theme');
-  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
+  const whiteThemeCookie = req.headers.cookie
+    ?.split('; ')
+    ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
+    ?.split('=')[1];
 
   // URL param takes priority over cookie
-  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
+  const theme =
+    urlTheme !== null
+      ? parseInt(urlTheme)
+      : whiteThemeCookie !== undefined
+        ? parseInt(whiteThemeCookie)
+        : 0;
 
   // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
   if (theme === 1) {
-    response = response.replace("{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
+    response = response.replace('{$WHITE_THEME_ENABLED}', 'class="light-theme"');
   } else if (theme === 2) {
-    response = response.replace("{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
+    response = response.replace('{$WHITE_THEME_ENABLED}', 'class="amoled-theme"');
   } else {
-    response = response.replace("{$WHITE_THEME_ENABLED}", "bgcolor=\"303338\"");
+    response = response.replace('{$WHITE_THEME_ENABLED}', 'bgcolor="303338"');
   }
 
   const urlImages = parsedUrl.searchParams.get('images');
-  const imagesCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('images='))?.split('=')[1];
-  const imagesEnabled = urlImages !== null ? urlImages === '1' : (imagesCookie === '1' || imagesCookie === undefined); // Default to enabled (1) if not set
-  response = imagesEnabled ? response.replace("{$IMAGES_WARNING}", images_enabled_template) : response.replace("{$IMAGES_WARNING}", no_images_warning_template);
+  const imagesCookie = req.headers.cookie
+    ?.split('; ')
+    ?.find((cookie) => cookie.startsWith('images='))
+    ?.split('=')[1];
+  const imagesEnabled =
+    urlImages !== null ? urlImages === '1' : imagesCookie === '1' || imagesCookie === undefined; // Default to enabled (1) if not set
+  response = imagesEnabled
+    ? response.replace('{$IMAGES_WARNING}', images_enabled_template)
+    : response.replace('{$IMAGES_WARNING}', no_images_warning_template);
 
   return response;
 }
 
 function createServerHTML(server, member, imagesCookie, sessionParam) {
   // Generate server-specific HTML
-  let serverHTML = strReplace(server_icon_template, "{$SERVER_ICON_URL}", server.icon ? `/ico/server/${server.id}/${server.icon.startsWith("a_") ? server.icon.substring(2) : server.icon}.gif` : "/discord-mascot.gif");
-  serverHTML = strReplace(serverHTML, "{$SERVER_URL}", "./" + server.id + (sessionParam || ''));
-  
+  let serverHTML = strReplace(
+    server_icon_template,
+    '{$SERVER_ICON_URL}',
+    server.icon
+      ? `/ico/server/${server.id}/${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
+      : '/discord-mascot.gif'
+  );
+  serverHTML = strReplace(serverHTML, '{$SERVER_URL}', './' + server.id + (sessionParam || ''));
+
   // Always strip emoji from server name to prevent twemoji rendering inside the name text
   let serverName = server.name;
   // Remove custom emoji <:name:id> and <a:name:id>
   serverName = serverName.replace(/<a?:[^:]+:\d+>/g, '');
   // Remove unicode emoji
-  const emojiRegex = require("./twemojiRegex").regex;
+  const emojiRegex = require('./twemojiRegex').regex;
   serverName = serverName.replace(emojiRegex, '');
   serverName = serverName.trim();
-  
-  serverHTML = strReplace(serverHTML, "{$SERVER_NAME}", escape(normalizeWeirdUnicode(serverName)));
+
+  serverHTML = strReplace(serverHTML, '{$SERVER_NAME}', escape(normalizeWeirdUnicode(serverName)));
   return serverHTML;
 }
 
@@ -414,7 +552,7 @@ function addUserAgentDisplay(response, req) {
   const userAgent = req.headers['user-agent'] || '';
   const parser = new UAParser(userAgent);
   const uaResult = parser.getResult();
-  
+
   // Create user agent display string
   let userAgentDisplay = '';
   if (uaResult.browser.name || uaResult.os.name) {
@@ -424,11 +562,16 @@ function addUserAgentDisplay(response, req) {
     const osVersion = escape(uaResult.os.version || '');
     const deviceVendor = escape(uaResult.device.vendor || '');
     const deviceModel = escape(uaResult.device.model || '');
-    
-    const browserInfo = browserName ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}` : '';
+
+    const browserInfo = browserName
+      ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}`
+      : '';
     const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
-    const deviceInfo = deviceVendor || deviceModel ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})` : '';
-    
+    const deviceInfo =
+      deviceVendor || deviceModel
+        ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})`
+        : '';
+
     // Build display text based on what information is available
     if (browserInfo && osInfo) {
       const displayText = `Platform: ${browserInfo} on ${osInfo}${deviceInfo}`;
@@ -442,9 +585,9 @@ function addUserAgentDisplay(response, req) {
     }
     // If neither browserInfo nor osInfo, userAgentDisplay remains empty
   }
-  
+
   // Add user agent display to response using strReplace for consistency
-  response = strReplace(response, "{$USER_AGENT}", userAgentDisplay);
-  
+  response = strReplace(response, '{$USER_AGENT}', userAgentDisplay);
+
   return response;
 }

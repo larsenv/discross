@@ -20,45 +20,47 @@ function generateAcronym(serverName) {
 
   // Split by spaces to get words
   const words = serverName.trim().split(/\s+/);
-  
+
   if (words.length === 1) {
     // Single word: take first character
     return words[0].charAt(0);
   }
-  
+
   // Multiple words: take first character of each word with its surrounding punctuation
-  return words.map(word => {
-    // Find the first Unicode letter (covers Latin, CJK, Arabic, etc.)
-    const firstLetterMatch = word.match(/\p{L}/u);
-    if (!firstLetterMatch) {
-      // No letter found, return first character
-      return word.charAt(0);
-    }
-    
-    const firstLetterIndex = firstLetterMatch.index;
-    const firstLetter = word.charAt(firstLetterIndex);
-    
-    // Get any punctuation that comes before the first letter
-    let prefixPunctuation = '';
-    for (let i = 0; i < firstLetterIndex; i++) {
-      prefixPunctuation += word.charAt(i);
-    }
-    
-    // Skip all letters and digits after the first letter, then collect punctuation
-    let suffixPunctuation = '';
-    let i = firstLetterIndex + 1;
-    // Skip remaining alphanumeric characters
-    while (i < word.length && /[a-zA-Z0-9]/.test(word.charAt(i))) {
-      i++;
-    }
-    // Collect all remaining characters (punctuation)
-    while (i < word.length) {
-      suffixPunctuation += word.charAt(i);
-      i++;
-    }
-    
-    return prefixPunctuation + firstLetter + suffixPunctuation;
-  }).join('');
+  return words
+    .map((word) => {
+      // Find the first Unicode letter (covers Latin, CJK, Arabic, etc.)
+      const firstLetterMatch = word.match(/\p{L}/u);
+      if (!firstLetterMatch) {
+        // No letter found, return first character
+        return word.charAt(0);
+      }
+
+      const firstLetterIndex = firstLetterMatch.index;
+      const firstLetter = word.charAt(firstLetterIndex);
+
+      // Get any punctuation that comes before the first letter
+      let prefixPunctuation = '';
+      for (let i = 0; i < firstLetterIndex; i++) {
+        prefixPunctuation += word.charAt(i);
+      }
+
+      // Skip all letters and digits after the first letter, then collect punctuation
+      let suffixPunctuation = '';
+      let i = firstLetterIndex + 1;
+      // Skip remaining alphanumeric characters
+      while (i < word.length && /[a-zA-Z0-9]/.test(word.charAt(i))) {
+        i++;
+      }
+      // Collect all remaining characters (punctuation)
+      while (i < word.length) {
+        suffixPunctuation += word.charAt(i);
+        i++;
+      }
+
+      return prefixPunctuation + firstLetter + suffixPunctuation;
+    })
+    .join('');
 }
 
 /**
@@ -70,7 +72,7 @@ function generateAcronym(serverName) {
 async function generatePlaceholderIcon(serverName, theme = 'dark') {
   const acronym = generateAcronym(serverName);
   const size = 128;
-  
+
   // Determine background and text colors based on theme
   let bgColor, textColor;
   if (theme === 'light') {
@@ -84,7 +86,7 @@ async function generatePlaceholderIcon(serverName, theme = 'dark') {
     bgColor = '#2c2f33'; // Discord-like dark gray
     textColor = '#ffffff'; // White text
   }
-  
+
   // Calculate font size based on acronym length
   // Shorter acronyms get bigger font, longer ones get smaller
   let fontSize;
@@ -99,7 +101,7 @@ async function generatePlaceholderIcon(serverName, theme = 'dark') {
   } else {
     fontSize = 24;
   }
-  
+
   // Create SVG with text
   const svg = `
     <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
@@ -115,12 +117,10 @@ async function generatePlaceholderIcon(serverName, theme = 'dark') {
       >${acronym}</text>
     </svg>
   `;
-  
+
   // Convert SVG to PNG using sharp
-  const pngBuffer = await sharp(Buffer.from(svg))
-    .png()
-    .toBuffer();
-  
+  const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
+
   return pngBuffer;
 }
 
@@ -132,17 +132,15 @@ async function generatePlaceholderIcon(serverName, theme = 'dark') {
  */
 async function generatePlaceholderIconAsGif(serverName, theme = 'dark') {
   const pngBuffer = await generatePlaceholderIcon(serverName, theme);
-  
+
   // Convert PNG to GIF
-  const gifBuffer = await sharp(pngBuffer)
-    .gif()
-    .toBuffer();
-  
+  const gifBuffer = await sharp(pngBuffer).gif().toBuffer();
+
   return gifBuffer;
 }
 
 module.exports = {
   generateAcronym,
   generatePlaceholderIcon,
-  generatePlaceholderIconAsGif
+  generatePlaceholderIconAsGif,
 };

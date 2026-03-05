@@ -7,9 +7,12 @@ const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
 const {
-  getClientIP, getTimezoneFromIP,
-  formatDateWithTimezone, formatDateSeparator,
-  areDifferentDays, formatForwardedTimestamp,
+  getClientIP,
+  getTimezoneFromIP,
+  formatDateWithTimezone,
+  formatDateSeparator,
+  areDifferentDays,
+  formatForwardedTimestamp,
 } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
@@ -58,8 +61,18 @@ const SYSTEM_MESSAGE_TEXT = {
 
 const THEME_CONFIG = {
   0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
-  1: { boxColor: '#ffffff', authorText: '#000000', replyText: '#000000', themeClass: 'class="light-theme"' },
-  2: { boxColor: '#141416', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
+  1: {
+    boxColor: '#ffffff',
+    authorText: '#000000',
+    replyText: '#000000',
+    themeClass: 'class="light-theme"',
+  },
+  2: {
+    boxColor: '#141416',
+    authorText: '#72767d',
+    replyText: '#b5bac1',
+    themeClass: 'class="amoled-theme"',
+  },
 };
 
 const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
@@ -74,24 +87,36 @@ function readTemplate(filePath) {
 }
 
 const TEMPLATES = {
-  message:                   readTemplate('pages/templates/message/message.html'),
-  messageForwarded:          readTemplate('pages/templates/message/forwarded_message.html'),
-  messageMentioned:          readTemplate('pages/templates/message/message_mentioned.html'),
-  messageForwardedMentioned: readTemplate('pages/templates/message/forwarded_message_mentioned.html'),
-  channel: fs.readFileSync('pages/templates/channel.html', 'utf-8')
-              .split('{$COMMON_HEAD}')
-              .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8')),
-  firstMessageContent:  fs.readFileSync('pages/templates/message/first_message_content.html', 'utf-8'),
-  mergedMessageContent: fs.readFileSync('pages/templates/message/merged_message_content.html', 'utf-8'),
-  mention:              fs.readFileSync('pages/templates/message/mention.html', 'utf-8'),
-  input:                fs.readFileSync('pages/templates/channel/input.html', 'utf-8'),
-  inputDisabled:        fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'),
-  noMessageHistory:     fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'),
-  fileDownload:         fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'),
-  reactions:            fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'),
-  reaction:             fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'),
-  dateSeparator:        fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8'),
-  messageContinuation:  fs.readFileSync('pages/templates/message/message_continuation.html', 'utf-8'),
+  message: readTemplate('pages/templates/message/message.html'),
+  messageForwarded: readTemplate('pages/templates/message/forwarded_message.html'),
+  messageMentioned: readTemplate('pages/templates/message/message_mentioned.html'),
+  messageForwardedMentioned: readTemplate(
+    'pages/templates/message/forwarded_message_mentioned.html'
+  ),
+  channel: fs
+    .readFileSync('pages/templates/channel.html', 'utf-8')
+    .split('{$COMMON_HEAD}')
+    .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8')),
+  firstMessageContent: fs.readFileSync(
+    'pages/templates/message/first_message_content.html',
+    'utf-8'
+  ),
+  mergedMessageContent: fs.readFileSync(
+    'pages/templates/message/merged_message_content.html',
+    'utf-8'
+  ),
+  mention: fs.readFileSync('pages/templates/message/mention.html', 'utf-8'),
+  input: fs.readFileSync('pages/templates/channel/input.html', 'utf-8'),
+  inputDisabled: fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8'),
+  noMessageHistory: fs.readFileSync('pages/templates/channel/no_message_history.html', 'utf-8'),
+  fileDownload: fs.readFileSync('pages/templates/channel/file_download.html', 'utf-8'),
+  reactions: fs.readFileSync('pages/templates/message/reactions.html', 'utf-8'),
+  reaction: fs.readFileSync('pages/templates/message/reaction.html', 'utf-8'),
+  dateSeparator: fs.readFileSync('pages/templates/message/date_separator.html', 'utf-8'),
+  messageContinuation: fs.readFileSync(
+    'pages/templates/message/message_continuation.html',
+    'utf-8'
+  ),
 };
 
 function formatFileSize(bytes) {
@@ -154,21 +179,23 @@ function renderEmojis(messagetext, item, imagesCookie, animationsCookie) {
   const imgStyle = `width: ${size}; height: ${size}; vertical-align: -0.2em;`;
 
   // Unicode emoji — single-pass replacement (avoids O(n×m) per-emoji string scans)
-  messagetext = messagetext.replace(emojiRegex, match => {
+  messagetext = messagetext.replace(emojiRegex, (match) => {
     const code = unicodeToTwemojiCode(match);
     return `<img src="/resources/twemoji/${code}.gif" width="${px}" height="${px}" style="${imgStyle}" alt="emoji" onerror="this.style.display='none'">`;
   });
 
   // Custom emoji
-  [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)].forEach(match => {
-    const animated = !!match[2];
-    const ext = animated && animationsCookie === 1 ? 'gif' : 'png';
-    cacheCustomEmoji(match[4], match[3], animated);
-    messagetext = messagetext.replace(
-      match[0],
-      `<img src="/imageProxy/emoji/${match[4]}.${ext}" width="${px}" height="${px}" style="${imgStyle}" alt="emoji" onerror="this.style.display='none'">`,
-    );
-  });
+  [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)].forEach(
+    (match) => {
+      const animated = !!match[2];
+      const ext = animated && animationsCookie === 1 ? 'gif' : 'png';
+      cacheCustomEmoji(match[4], match[3], animated);
+      messagetext = messagetext.replace(
+        match[0],
+        `<img src="/imageProxy/emoji/${match[4]}.${ext}" width="${px}" height="${px}" style="${imgStyle}" alt="emoji" onerror="this.style.display='none'">`
+      );
+    }
+  );
 
   return messagetext;
 }
@@ -184,7 +211,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
   const VIDEO_EXT = /\.(mp4|webm|mov|avi|mkv)$/i;
   const imageUrls = [];
 
-  item.attachments.forEach(attachment => {
+  item.attachments.forEach((attachment) => {
     const isImage = IMAGE_EXT.test(attachment.name);
     const isVideo = VIDEO_EXT.test(attachment.name);
     const proxyBase = isImage && imagesCookie === 1 ? '/imageProxy/' : '/fileProxy/';
@@ -204,7 +231,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
     }
   });
 
-  imageUrls.forEach(url => {
+  imageUrls.forEach((url) => {
     messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;height:auto;" alt="image"></a>`;
   });
 
@@ -218,7 +245,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
 function renderStickers(messagetext, item, imagesCookie, animationsCookie) {
   if (!item.stickers?.size) return messagetext;
 
-  item.stickers.forEach(sticker => {
+  item.stickers.forEach((sticker) => {
     if (imagesCookie === 1) {
       const ext = animationsCookie === 1 ? 'gif' : 'png';
       messagetext += `<br><img src="/imageProxy/sticker/${sticker.id}.${ext}" style="width:100px;height:100px;" alt="sticker">`;
@@ -234,7 +261,11 @@ function renderStickers(messagetext, item, imagesCookie, animationsCookie) {
 // Embed rendering (inline media types handled here; rich embeds delegated)
 // ---------------------------------------------------------------------------
 
-function buildProxiedImageTag(rawUrl, alt, style = 'max-width:256px;max-height:200px;height:auto;') {
+function buildProxiedImageTag(
+  rawUrl,
+  alt,
+  style = 'max-width:256px;max-height:200px;height:auto;'
+) {
   const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
   return { proxied, tag: `<img src="${proxied}" style="${style}" alt="${alt}">` };
 }
@@ -253,10 +284,18 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
 
   const richEmbeds = [];
 
-  item.embeds.forEach(embed => {
-    const isTenor = (embed.provider?.name === 'Tenor' || urlMatchesDomain(embed.url, 'tenor.com')) && embed.thumbnail?.url;
-    const isGiphy = (embed.provider?.name === 'GIPHY' || urlMatchesDomain(embed.url, 'giphy.com')) && (embed.thumbnail?.url || embed.image?.url);
-    const isYouTube = (embed.provider?.name === 'YouTube' || urlMatchesDomain(embed.url, 'youtube.com') || urlMatchesDomain(embed.url, 'youtu.be')) && embed.thumbnail?.url;
+  item.embeds.forEach((embed) => {
+    const isTenor =
+      (embed.provider?.name === 'Tenor' || urlMatchesDomain(embed.url, 'tenor.com')) &&
+      embed.thumbnail?.url;
+    const isGiphy =
+      (embed.provider?.name === 'GIPHY' || urlMatchesDomain(embed.url, 'giphy.com')) &&
+      (embed.thumbnail?.url || embed.image?.url);
+    const isYouTube =
+      (embed.provider?.name === 'YouTube' ||
+        urlMatchesDomain(embed.url, 'youtube.com') ||
+        urlMatchesDomain(embed.url, 'youtu.be')) &&
+      embed.thumbnail?.url;
 
     if (imagesCookie !== 1) {
       if (!isTenor && !isGiphy) richEmbeds.push(embed);
@@ -309,19 +348,23 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
 
 function renderPollResultEmbed(embed) {
   const fieldMap = {};
-  (embed.fields ?? []).forEach(f => { fieldMap[f.name] = f.value; });
+  (embed.fields ?? []).forEach((f) => {
+    fieldMap[f.name] = f.value;
+  });
 
-  const question    = fieldMap['poll_question_text']    ?? '';
-  const winnerText  = fieldMap['victor_answer_text']    ?? '';
+  const question = fieldMap['poll_question_text'] ?? '';
+  const winnerText = fieldMap['victor_answer_text'] ?? '';
   const winnerEmoji = fieldMap['victor_answer_emoji_name'] ?? '';
-  const winnerVotes = fieldMap['victor_answer_votes']   ?? '0';
-  const totalVotes  = fieldMap['total_votes']            ?? '0';
-  const emojiPart   = winnerEmoji ? escape(winnerEmoji) + ' ' : '';
+  const winnerVotes = fieldMap['victor_answer_votes'] ?? '0';
+  const totalVotes = fieldMap['total_votes'] ?? '0';
+  const emojiPart = winnerEmoji ? escape(winnerEmoji) + ' ' : '';
 
-  return `<div style="font-size:14px;color:#b9bbbe;margin-top:4px;">` +
+  return (
+    `<div style="font-size:14px;color:#b9bbbe;margin-top:4px;">` +
     `Poll ended: <b>${escape(question)}</b><br>` +
     `Winner: ${emojiPart}<b>${escape(winnerText)}</b> (${escape(winnerVotes)}/${escape(totalVotes)} votes)` +
-    `</div>`;
+    `</div>`
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -343,16 +386,23 @@ function roleMentionPill(role, tmpl_mention) {
 function renderKnownMentions(messagetext, item, tmpl_mention) {
   if (!item.mentions?.members) return messagetext;
 
-  item.mentions.members.forEach(user => {
+  item.mentions.members.forEach((user) => {
     if (!user) return;
-    const pill = tmpl_mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(user.displayName)));
+    const pill = tmpl_mention.replace(
+      '{$USERNAME}',
+      escape('@' + normalizeWeirdUnicode(user.displayName))
+    );
     messagetext = strReplace(messagetext, `&lt;@${user.id}&gt;`, pill);
     messagetext = strReplace(messagetext, `&lt;@!${user.id}&gt;`, pill);
   });
 
-  item.mentions.roles?.forEach(role => {
+  item.mentions.roles?.forEach((role) => {
     if (!role) return;
-    messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, tmpl_mention));
+    messagetext = strReplace(
+      messagetext,
+      `&lt;@&amp;${role.id}&gt;`,
+      roleMentionPill(role, tmpl_mention)
+    );
   });
 
   return messagetext;
@@ -361,21 +411,26 @@ function renderKnownMentions(messagetext, item, tmpl_mention) {
 async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_mention) {
   // Fetch any member IDs not yet in cache
   const unresolvedIds = [...messagetext.matchAll(/&lt;@!?(\d{17,19})&gt;/g)]
-    .map(m => m[1])
-    .filter(id => !memberCache.has(id));
+    .map((m) => m[1])
+    .filter((id) => !memberCache.has(id));
 
-  await Promise.allSettled(unresolvedIds.map(async id => {
-    try {
-      memberCache.set(id, await chnl.guild.members.fetch(id));
-    } catch {
-      memberCache.set(id, null);
-    }
-  }));
+  await Promise.allSettled(
+    unresolvedIds.map(async (id) => {
+      try {
+        memberCache.set(id, await chnl.guild.members.fetch(id));
+      } catch {
+        memberCache.set(id, null);
+      }
+    })
+  );
 
   return messagetext.replace(/&lt;@!?(\d{17,19})&gt;/g, (match, userId) => {
     const resolved = memberCache.get(userId) ?? chnl.guild.members.cache.get(userId);
     if (resolved) {
-      return tmpl_mention.replace('{$USERNAME}', escape('@' + normalizeWeirdUnicode(getDisplayName(resolved, resolved.user))));
+      return tmpl_mention.replace(
+        '{$USERNAME}',
+        escape('@' + normalizeWeirdUnicode(getDisplayName(resolved, resolved.user)))
+      );
     }
     return tmpl_mention.replace('{$USERNAME}', '@unknown-user');
   });
@@ -383,12 +438,18 @@ async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_men
 
 async function resolveChannelMentions(messagetext, bot, chnl) {
   const unresolvedIds = [...messagetext.matchAll(/&lt;#(\d{17,19})&gt;/g)]
-    .map(m => m[1])
-    .filter(id => !bot.client.channels.cache.has(id));
+    .map((m) => m[1])
+    .filter((id) => !bot.client.channels.cache.has(id));
 
-  await Promise.allSettled(unresolvedIds.map(async id => {
-    try { await bot.client.channels.fetch(id); } catch { /* not accessible */ }
-  }));
+  await Promise.allSettled(
+    unresolvedIds.map(async (id) => {
+      try {
+        await bot.client.channels.fetch(id);
+      } catch {
+        /* not accessible */
+      }
+    })
+  );
 
   return messagetext.replace(/&lt;#(\d{17,19})&gt;/g, (match, id) => {
     const ch = bot.client.channels.cache.get(id);
@@ -400,7 +461,11 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
 function renderEveryoneMentions(messagetext, item, tmpl_mention) {
   if (!item.mentions?.everyone) return messagetext;
   if (messagetext.includes('@everyone')) {
-    messagetext = strReplace(messagetext, '@everyone', tmpl_mention.replace('{$USERNAME}', '@everyone'));
+    messagetext = strReplace(
+      messagetext,
+      '@everyone',
+      tmpl_mention.replace('{$USERNAME}', '@everyone')
+    );
   }
   if (messagetext.includes('@here')) {
     messagetext = strReplace(messagetext, '@here', tmpl_mention.replace('{$USERNAME}', '@here'));
@@ -456,12 +521,16 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
               try {
                 await otherGuild.members.fetch(discordID);
                 originHtml = `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
-              } catch { /* user not in that guild */ }
+              } catch {
+                /* user not in that guild */
+              }
             }
           }
         }
       }
-    } catch { originHtml = ''; }
+    } catch {
+      originHtml = '';
+    }
 
     return {
       author: getDisplayName(fwdMember, fwdMsg.author),
@@ -483,24 +552,29 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
 // plus memberCache. Unresolved member/channel IDs are fetched from the API.
 // This is run before truncation so mention tokens are never split mid-string.
 async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
-  msg.mentions?.members?.forEach(member => {
+  msg.mentions?.members?.forEach((member) => {
     if (!member) return;
     const name = '@' + normalizeWeirdUnicode(getDisplayName(member, member.user));
     text = text.split(`<@${member.id}>`).join(name);
     text = text.split(`<@!${member.id}>`).join(name);
   });
-  msg.mentions?.roles?.forEach(role => {
+  msg.mentions?.roles?.forEach((role) => {
     if (!role) return;
     text = text.split(`<@&${role.id}>`).join('@' + normalizeWeirdUnicode(role.name));
   });
   // Fetch any remaining unrecognized user IDs from the API
   const unresolvedUserIds = [...text.matchAll(/<@!?(\d{17,19})>/g)]
-    .map(m => m[1])
-    .filter(id => !memberCache.has(id));
-  await Promise.allSettled(unresolvedUserIds.map(async id => {
-    try { memberCache.set(id, await chnl.guild.members.fetch(id)); }
-    catch { memberCache.set(id, null); }
-  }));
+    .map((m) => m[1])
+    .filter((id) => !memberCache.has(id));
+  await Promise.allSettled(
+    unresolvedUserIds.map(async (id) => {
+      try {
+        memberCache.set(id, await chnl.guild.members.fetch(id));
+      } catch {
+        memberCache.set(id, null);
+      }
+    })
+  );
   text = text.replace(/<@!?(\d{17,19})>/g, (match, id) => {
     const cached = memberCache.get(id) ?? chnl.guild.members.cache.get(id);
     if (cached) return '@' + normalizeWeirdUnicode(getDisplayName(cached, cached.user));
@@ -508,11 +582,17 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
   });
   // Fetch any unresolved channel IDs from the API
   const unresolvedChannelIds = [...text.matchAll(/<#(\d{17,19})>/g)]
-    .map(m => m[1])
-    .filter(id => !bot.client.channels.cache.has(id));
-  await Promise.allSettled(unresolvedChannelIds.map(async id => {
-    try { await bot.client.channels.fetch(id); } catch { /* not accessible */ }
-  }));
+    .map((m) => m[1])
+    .filter((id) => !bot.client.channels.cache.has(id));
+  await Promise.allSettled(
+    unresolvedChannelIds.map(async (id) => {
+      try {
+        await bot.client.channels.fetch(id);
+      } catch {
+        /* not accessible */
+      }
+    })
+  );
   text = text.replace(/<#(\d{17,19})>/g, (match, id) => {
     const ch = bot.client.channels.cache.get(id);
     if (ch) return '#' + normalizeWeirdUnicode(ch.name);
@@ -530,7 +610,9 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
     try {
       replyMessage = await item.fetchReference();
       replyUser = replyMessage.author;
-    } catch { /* deleted or inaccessible */ }
+    } catch {
+      /* deleted or inaccessible */
+    }
 
     if (replyMessage) {
       if (!replyMessage.author?.bot) {
@@ -544,7 +626,9 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
         try {
           replyMember = await chnl.guild.members.fetch(replyUser.id);
           memberCache.set(replyUser.id, replyMember);
-        } catch { /* left the server */ }
+        } catch {
+          /* left the server */
+        }
       }
     }
 
@@ -590,14 +674,16 @@ function buildReplyIndicator(replyData, replyText) {
     ? `<td rowspan="2" style="padding-left:4px;vertical-align:middle;white-space:nowrap">` +
       `<font style="font-size:11px;color:${replyText}" face="rodin,sans-serif">${replyData.content}</font></td>`
     : '';
-  return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
+  return (
+    '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
     '<td style="width:12px;height:8px"></td>' +
     `<td rowspan="2" style="padding-left:8px;vertical-align:middle;white-space:nowrap">` +
     `<font style="font-size:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `</td>${contentTd}` +
     '</tr><tr>' +
     '<td style="width:12px;height:8px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
-    '</tr></table>';
+    '</tr></table>'
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -617,7 +703,9 @@ async function resolveInteractionData(item, chnl, memberCache) {
       try {
         interactionMember = await chnl.guild.members.fetch(interactionUser.id);
         memberCache.set(interactionUser.id, interactionMember);
-      } catch { /* user left or not in guild */ }
+      } catch {
+        /* user left or not in guild */
+      }
     }
 
     return {
@@ -636,13 +724,15 @@ async function resolveInteractionData(item, chnl, memberCache) {
 // ---------------------------------------------------------------------------
 
 function buildInteractionIndicator(interactionData, textColor) {
-  return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
+  return (
+    '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
     '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
     `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
     `<font style="font-size:12px;font-weight:600;color:${interactionData.authorColor}" face="rodin,sans-serif">${escape(interactionData.author)}</font>` +
     `<font style="font-size:12px;color:${textColor}" face="rodin,sans-serif"> used /${escape(interactionData.commandName)}</font>` +
     `</td>` +
-    '</tr></table>';
+    '</tr></table>'
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -651,10 +741,18 @@ function buildInteractionIndicator(interactionData, textColor) {
 
 function flushMessageGroup(state, templates, authorText, replyText, channelId) {
   const {
-    currentmessage, isForwarded, forwardData,
-    lastMentioned, lastReply, lastReplyData,
-    lastInteraction, lastInteractionData,
-    lastauthor, lastmember, lastdate, messageid,
+    currentmessage,
+    isForwarded,
+    forwardData,
+    lastMentioned,
+    lastReply,
+    lastReplyData,
+    lastInteraction,
+    lastInteractionData,
+    lastauthor,
+    lastmember,
+    lastdate,
+    messageid,
     isContinuationBlock,
   } = state;
 
@@ -669,32 +767,44 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
     html = templates.messageForwarded.replace('{$MESSAGE_CONTENT}', html);
   } else if (lastMentioned) {
     html = templates.messageMentioned.replace('{$MESSAGE_CONTENT}', html);
-    html = html.replace('{$MESSAGE_REPLY_LINK}', channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)');
+    html = html.replace(
+      '{$MESSAGE_REPLY_LINK}',
+      channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)'
+    );
   } else {
     html = templates.message.replace('{$MESSAGE_CONTENT}', html);
-    html = html.replace('{$MESSAGE_REPLY_LINK}', channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)');
+    html = html.replace(
+      '{$MESSAGE_REPLY_LINK}',
+      channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)'
+    );
   }
 
   // Forwarded metadata
   if (isForwarded) {
-    html = html.replace('{$FORWARDED_AUTHOR}',  escape(forwardData.author));
+    html = html.replace('{$FORWARDED_AUTHOR}', escape(forwardData.author));
     html = html.replace('{$FORWARDED_CONTENT}', forwardData.content);
-    html = html.replace('{$FORWARDED_DATE}',    forwardData.date);
-    html = html.replace('{$FORWARDED_ORIGIN}',  forwardData.origin ?? '');
+    html = html.replace('{$FORWARDED_DATE}', forwardData.date);
+    html = html.replace('{$FORWARDED_ORIGIN}', forwardData.origin ?? '');
   }
 
-  const displayName  = getDisplayName(lastmember, lastauthor);
-  const authorColor  = getMemberColor(lastmember, authorText);
+  const displayName = getDisplayName(lastmember, lastauthor);
+  const authorColor = getMemberColor(lastmember, authorText);
   const replyIndicator = lastReply
     ? buildReplyIndicator(lastReplyData, replyText)
-    : (lastInteraction ? buildInteractionIndicator(lastInteractionData, replyText) : '');
+    : lastInteraction
+      ? buildInteractionIndicator(lastInteractionData, replyText)
+      : '';
 
   html = html.replace('{$MESSAGE_AUTHOR}', escape(displayName));
-  html = strReplace(html, '{$AUTHOR_COLOR}',    authorColor);
+  html = strReplace(html, '{$AUTHOR_COLOR}', authorColor);
   html = strReplace(html, '{$REPLY_INDICATOR}', replyIndicator);
-  html = strReplace(html, '{$PING_INDICATOR}',  '');
-  html = strReplace(html, '{$MESSAGE_DATE}',    formatDateWithTimezone(lastdate, state.clientTimezone));
-  html = strReplace(html, '{$TAG}',             he.encode(JSON.stringify(`<@${lastauthor.id}>`)));
+  html = strReplace(html, '{$PING_INDICATOR}', '');
+  html = strReplace(
+    html,
+    '{$MESSAGE_DATE}',
+    formatDateWithTimezone(lastdate, state.clientTimezone)
+  );
+  html = strReplace(html, '{$TAG}', he.encode(JSON.stringify(`<@${lastauthor.id}>`)));
 
   return html;
 }
@@ -705,9 +815,16 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
 
 async function renderMessageContent(item, context) {
   const {
-    bot, chnl, member, discordID, req,
-    imagesCookie, animationsCookie, clientTimezone,
-    memberCache, templates,
+    bot,
+    chnl,
+    member,
+    discordID,
+    req,
+    imagesCookie,
+    animationsCookie,
+    clientTimezone,
+    memberCache,
+    templates,
   } = context;
 
   let messagetext = renderDiscordMarkdown(item.content);
@@ -715,7 +832,14 @@ async function renderMessageContent(item, context) {
   messagetext = renderEmojis(messagetext, item, imagesCookie, animationsCookie);
   messagetext = renderAttachments(messagetext, item, imagesCookie, templates.fileDownload);
   messagetext = renderStickers(messagetext, item, imagesCookie, animationsCookie);
-  messagetext = renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, clientTimezone);
+  messagetext = renderEmbeds(
+    messagetext,
+    item,
+    req,
+    imagesCookie,
+    animationsCookie,
+    clientTimezone
+  );
 
   if (item?.poll) {
     messagetext += processPoll(item.poll, imagesCookie);
@@ -727,9 +851,13 @@ async function renderMessageContent(item, context) {
   messagetext = renderEveryoneMentions(messagetext, item, templates.mention);
 
   // Role mentions (second pass — catches any remaining after the member pass)
-  item.mentions?.roles?.forEach(role => {
+  item.mentions?.roles?.forEach((role) => {
     if (role) {
-      messagetext = strReplace(messagetext, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, templates.mention));
+      messagetext = strReplace(
+        messagetext,
+        `&lt;@&amp;${role.id}&gt;`,
+        roleMentionPill(role, templates.mention)
+      );
     }
   });
 
@@ -742,30 +870,37 @@ async function renderMessageContent(item, context) {
 
 exports.buildMessagesHtml = async function buildMessagesHtml(params) {
   const {
-    bot, chnl, member, discordID, req,
-    imagesCookie, animationsCookie = 1,
-    authorText, replyText, clientTimezone,
+    bot,
+    chnl,
+    member,
+    discordID,
+    req,
+    imagesCookie,
+    animationsCookie = 1,
+    authorText,
+    replyText,
+    clientTimezone,
     channelId,
     messages: overrideMessages,
   } = params;
 
   // Unify template references under camelCase
   const templates = {
-    message:                   TEMPLATES.message,
-    messageForwarded:          TEMPLATES.messageForwarded,
-    messageMentioned:          TEMPLATES.messageMentioned,
+    message: TEMPLATES.message,
+    messageForwarded: TEMPLATES.messageForwarded,
+    messageMentioned: TEMPLATES.messageMentioned,
     messageForwardedMentioned: TEMPLATES.messageForwardedMentioned,
-    firstMessageContent:       TEMPLATES.firstMessageContent,
-    mergedMessageContent:      TEMPLATES.mergedMessageContent,
-    mention:                   TEMPLATES.mention,
-    fileDownload:              TEMPLATES.fileDownload,
-    reactions:                 TEMPLATES.reactions,
-    reaction:                  TEMPLATES.reaction,
-    dateSeparator:             TEMPLATES.dateSeparator,
-    messageContinuation:       TEMPLATES.messageContinuation,
+    firstMessageContent: TEMPLATES.firstMessageContent,
+    mergedMessageContent: TEMPLATES.mergedMessageContent,
+    mention: TEMPLATES.mention,
+    fileDownload: TEMPLATES.fileDownload,
+    reactions: TEMPLATES.reactions,
+    reaction: TEMPLATES.reaction,
+    dateSeparator: TEMPLATES.dateSeparator,
+    messageContinuation: TEMPLATES.messageContinuation,
   };
 
-  const messages = overrideMessages ?? await bot.getHistoryCached(chnl);
+  const messages = overrideMessages ?? (await bot.getHistoryCached(chnl));
   const memberCache = new Map();
 
   // Mutable rendering state
@@ -790,9 +925,16 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
   let response = '';
 
   const context = {
-    bot, chnl, member, discordID, req,
-    imagesCookie, animationsCookie, clientTimezone,
-    memberCache, templates,
+    bot,
+    chnl,
+    member,
+    discordID,
+    req,
+    imagesCookie,
+    animationsCookie,
+    clientTimezone,
+    memberCache,
+    templates,
   };
 
   const shouldStartNewGroup = (item) =>
@@ -819,7 +961,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
     // Date separator
     if (clientTimezone && areDifferentDays(item.createdAt, state.lastmessagedate, clientTimezone)) {
-      const sep = templates.dateSeparator.replace('{$DATE_SEPARATOR}', formatDateSeparator(item.createdAt, clientTimezone));
+      const sep = templates.dateSeparator.replace(
+        '{$DATE_SEPARATOR}',
+        formatDateSeparator(item.createdAt, clientTimezone)
+      );
       response += sep;
     }
     state.lastmessagedate = item.createdAt;
@@ -828,22 +973,45 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     let isForwarded = false;
     let forwardData = {};
     if (item.reference?.type === MessageReferenceType.Forward) {
-      const data = await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone);
-      if (data) { isForwarded = true; forwardData = data; }
+      const data = await resolveForwardData(
+        item,
+        chnl,
+        bot,
+        discordID,
+        memberCache,
+        clientTimezone
+      );
+      if (data) {
+        isForwarded = true;
+        forwardData = data;
+      }
     }
 
     let isReply = false;
     let replyData = {};
     if (item.reference && !isForwarded) {
-      const data = await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie);
-      if (data) { isReply = true; replyData = data; }
+      const data = await resolveReplyData(
+        item,
+        chnl,
+        memberCache,
+        bot,
+        imagesCookie,
+        animationsCookie
+      );
+      if (data) {
+        isReply = true;
+        replyData = data;
+      }
     }
 
     let isInteraction = false;
     let interactionData = {};
     if (item.interaction) {
       const data = await resolveInteractionData(item, chnl, memberCache);
-      if (data) { isInteraction = true; interactionData = data; }
+      if (data) {
+        isInteraction = true;
+        interactionData = data;
+      }
     }
 
     let messagetext = await renderMessageContent(item, context);
@@ -851,7 +1019,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     const isMentioned = detectMention(item, member, discordID, isReply, replyData);
 
     // Wrap in first-message or merged template
-    const startsNewGroup = !state.lastauthor ||
+    const startsNewGroup =
+      !state.lastauthor ||
       !isSameAuthor(state.lastmember, state.lastauthor, currentMember, item.author) ||
       item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
       isReply ||
@@ -868,19 +1037,35 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       state.isContinuationBlock = !startsNewGroup;
     }
 
-    const reactionsHtml = processReactions(item.reactions, imagesCookie, templates.reactions, templates.reaction, animationsCookie);
+    const reactionsHtml = processReactions(
+      item.reactions,
+      imagesCookie,
+      templates.reactions,
+      templates.reaction,
+      animationsCookie
+    );
     const hasEmbeds = item.embeds && item.embeds.length > 0;
-    const finalReactionsHtml = (hasEmbeds && reactionsHtml)
-      ? reactionsHtml.replace('class="reactions"', 'class="reactions embed-reactions"')
-      : reactionsHtml;
+    const finalReactionsHtml =
+      hasEmbeds && reactionsHtml
+        ? reactionsHtml.replace('class="reactions"', 'class="reactions embed-reactions"')
+        : reactionsHtml;
     messagetext = strReplace(messagetext, '{$MESSAGE_REACTIONS}', finalReactionsHtml);
 
     // System message handling
     const isSystem = !isNormalMessage(item.type);
-    const visibleText = messagetext.replace(/<img\b[^>]*>/gi, 'x').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const visibleText = messagetext
+      .replace(/<img\b[^>]*>/gi, 'x')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    if (!isSystem && visibleText.length === 0 &&
-        !item.attachments?.size && !item.embeds?.length && !item.stickers?.size) {
+    if (
+      !isSystem &&
+      visibleText.length === 0 &&
+      !item.attachments?.size &&
+      !item.embeds?.length &&
+      !item.stickers?.size
+    ) {
       return; // nothing to show
     }
 
@@ -890,16 +1075,16 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
 
     // Advance state
-    state.lastauthor        = item.author;
-    state.lastmember        = currentMember;
-    state.lastdate          = item.createdAt;
-    state.messageid         = item.id;
-    state.isForwarded       = isForwarded;
-    state.forwardData       = forwardData;
-    state.lastMentioned     = isMentioned;
-    state.lastReply         = isReply;
-    state.lastReplyData     = replyData;
-    state.lastInteraction   = isInteraction;
+    state.lastauthor = item.author;
+    state.lastmember = currentMember;
+    state.lastdate = item.createdAt;
+    state.messageid = item.id;
+    state.isForwarded = isForwarded;
+    state.forwardData = forwardData;
+    state.lastMentioned = isMentioned;
+    state.lastReply = isReply;
+    state.lastReplyData = replyData;
+    state.lastInteraction = isInteraction;
     state.lastInteractionData = interactionData;
     state.currentmessage += messagetext;
   };
@@ -920,14 +1105,18 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
 function resolveTheme(req) {
   const parsedUrl = new URL(req.url, 'http://localhost');
-  const urlTheme  = parsedUrl.searchParams.get('theme');
-  const cookieTheme = req.headers.cookie?.split('; ')
-    ?.find(c => c.startsWith('whiteThemeCookie='))
+  const urlTheme = parsedUrl.searchParams.get('theme');
+  const cookieTheme = req.headers.cookie
+    ?.split('; ')
+    ?.find((c) => c.startsWith('whiteThemeCookie='))
     ?.split('=')[1];
 
-  const themeValue = urlTheme !== null
-    ? parseInt(urlTheme, 10)
-    : (cookieTheme !== undefined ? parseInt(cookieTheme, 10) : 0);
+  const themeValue =
+    urlTheme !== null
+      ? parseInt(urlTheme, 10)
+      : cookieTheme !== undefined
+        ? parseInt(cookieTheme, 10)
+        : 0;
 
   return THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
 }
@@ -935,24 +1124,31 @@ function resolveTheme(req) {
 function resolvePreferences(req) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const urlSessionID = parsedUrl.searchParams.get('sessionID') ?? '';
-  const urlTheme     = parsedUrl.searchParams.get('theme');
-  const urlImages    = parsedUrl.searchParams.get('images');
+  const urlTheme = parsedUrl.searchParams.get('theme');
+  const urlImages = parsedUrl.searchParams.get('images');
 
-  const cookieImages = req.headers.cookie?.split('; ')
-    ?.find(c => c.startsWith('images='))
+  const cookieImages = req.headers.cookie
+    ?.split('; ')
+    ?.find((c) => c.startsWith('images='))
     ?.split('=')[1];
-  const cookieTheme = req.headers.cookie?.split('; ')
-    ?.find(c => c.startsWith('whiteThemeCookie='))
+  const cookieTheme = req.headers.cookie
+    ?.split('; ')
+    ?.find((c) => c.startsWith('whiteThemeCookie='))
     ?.split('=')[1];
 
-  const imagesCookie = urlImages !== null
-    ? parseInt(urlImages, 10)
-    : (cookieImages !== undefined ? parseInt(cookieImages, 10) : 1);
+  const imagesCookie =
+    urlImages !== null
+      ? parseInt(urlImages, 10)
+      : cookieImages !== undefined
+        ? parseInt(cookieImages, 10)
+        : 1;
 
   const linkParamParts = [];
   if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && cookieTheme === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && cookieImages === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  if (urlTheme !== null && cookieTheme === undefined)
+    linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && cookieImages === undefined)
+    linkParamParts.push('images=' + encodeURIComponent(urlImages));
   const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
   return { urlSessionID, imagesCookie, sessionParam };
@@ -964,11 +1160,15 @@ function resolvePreferences(req) {
 
 function buildInputHtml(botMember, member, chnl, boxColor) {
   const canWebhook = botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true);
-  const canSend    = member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
+  const canSend = member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
 
   if (!canWebhook) {
     let html = strReplace(TEMPLATES.inputDisabled, '{$COLOR}', boxColor);
-    html = strReplace(html, "You don't have permission to send messages in this channel.", "Discross bot doesn't have the Manage Webhooks permission");
+    html = strReplace(
+      html,
+      "You don't have permission to send messages in this channel.",
+      "Discross bot doesn't have the Manage Webhooks permission"
+    );
     return html;
   }
   if (canSend) {
@@ -988,7 +1188,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   const template = strReplace(TEMPLATES.channel, '{$WHITE_THEME_ENABLED}', theme.themeClass);
   const { authorText, replyText, boxColor } = theme;
 
-  const isReady = bot?.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+  const isReady =
+    bot?.client &&
+    (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
   if (!isReady) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });
     res.end("The bot isn't connected, try again in a moment");
@@ -1025,22 +1227,31 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       return;
     }
 
-    const canView = member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)
-                 && botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true);
+    const canView =
+      member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) &&
+      botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true);
 
     if (!canView) {
       res.end("You (or the bot) don't have permission to do that!");
       return;
     }
 
-    const baseTemplate = strReplace(strReplace(template, '{$SERVER_ID}', chnl.guild.id), '{$CHANNEL_ID}', chnl.id);
+    const baseTemplate = strReplace(
+      strReplace(template, '{$SERVER_ID}', chnl.guild.id),
+      '{$CHANNEL_ID}',
+      chnl.id
+    );
     const inputHtml = buildInputHtml(botMember, member, chnl, boxColor);
 
     // No message history permission
     if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
       let final = strReplace(baseTemplate, '{$INPUT}', inputHtml);
       final = strReplace(final, '{$MESSAGES}', TEMPLATES.noMessageHistory);
-      final = strReplace(final, '{$CHANNEL_NAME}', (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
+      final = strReplace(
+        final,
+        '{$CHANNEL_NAME}',
+        (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
+      );
       final = strReplace(final, '{$SESSION_ID}', urlSessionID);
       final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
       res.write(final);
@@ -1049,9 +1260,16 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     }
 
     const messagesHtml = await exports.buildMessagesHtml({
-      bot, chnl, member, discordID, req,
-      imagesCookie, animationsCookie: 1,
-      authorText, replyText, clientTimezone,
+      bot,
+      chnl,
+      member,
+      discordID,
+      req,
+      imagesCookie,
+      animationsCookie: 1,
+      authorText,
+      replyText,
+      clientTimezone,
       channelId: args[2],
       // Templates are now sourced internally; kept for backward-compat signature
       templates: {
@@ -1070,15 +1288,23 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     });
 
     const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
-    const refreshUrl = chnl.id + '?random=' + Math.random() + (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
+    const refreshUrl =
+      chnl.id +
+      '?random=' +
+      Math.random() +
+      (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
 
     let final = strReplace(baseTemplate, '{$REFRESH_URL}', refreshUrl);
-    final = strReplace(final, '{$INPUT}',        inputHtml);
+    final = strReplace(final, '{$INPUT}', inputHtml);
     final = strReplace(final, '{$RANDOM_EMOJI}', randomEmoji);
-    final = strReplace(final, '{$CHANNEL_NAME}', (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
-    final = strReplace(final, '{$MESSAGES}',     messagesHtml);
-    final = strReplace(final, '{$SESSION_ID}',   urlSessionID);
-    final = strReplace(final, '{$SESSION_PARAM}',sessionParam);
+    final = strReplace(
+      final,
+      '{$CHANNEL_NAME}',
+      (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
+    );
+    final = strReplace(final, '{$MESSAGES}', messagesHtml);
+    final = strReplace(final, '{$SESSION_ID}', urlSessionID);
+    final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);

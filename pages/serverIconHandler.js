@@ -17,7 +17,7 @@ const { generatePlaceholderIconAsGif } = require('./iconGenerator.js');
 async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
   const iconDir = path.resolve('pages/static/ico/server', sanitizer(serverID));
   const iconPath = path.resolve(iconDir, sanitizer(`${iconHash}.gif`));
-  
+
   // Check if icon exists locally
   if (fs.existsSync(iconPath)) {
     // Serve the existing icon
@@ -31,26 +31,26 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
       console.error('Error reading icon file:', err);
     }
   }
-  
+
   // Icon doesn't exist locally, try to fetch from Discord CDN
   try {
     // Try animated GIF first
     let iconUrl = `https://cdn.discordapp.com/icons/${serverID}/a_${iconHash}.gif?size=128`;
     let response = await fetch(iconUrl);
-    
+
     if (!response.ok) {
       // Try static PNG
       iconUrl = `https://cdn.discordapp.com/icons/${serverID}/${iconHash}.png?size=128`;
       response = await fetch(iconUrl);
     }
-    
+
     if (response.ok) {
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      
+
       // Create directory if it doesn't exist
       await fs.promises.mkdir(iconDir, { recursive: true });
-      
+
       // Convert to GIF and save
       let gifBuffer;
       if (iconUrl.endsWith('.gif')) {
@@ -58,9 +58,9 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
       } else {
         gifBuffer = await sharp(buffer).gif().toBuffer();
       }
-      
+
       await fs.promises.writeFile(iconPath, gifBuffer);
-      
+
       // Serve the icon
       res.writeHead(200, { 'Content-Type': 'image/gif', 'Cache-Control': 'public, max-age=86400' });
       res.write(gifBuffer);
@@ -70,7 +70,7 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
   } catch (err) {
     console.error('Error fetching icon from Discord CDN:', err);
   }
-  
+
   // Fallback: generate placeholder icon
   try {
     // Get server name from bot client (if available)
@@ -81,20 +81,20 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
         serverName = server.name;
       }
     }
-    
+
     const placeholderBuffer = await generatePlaceholderIconAsGif(serverName, theme);
-    
+
     // Save placeholder to cache
     await fs.promises.mkdir(iconDir, { recursive: true });
     await fs.promises.writeFile(iconPath, placeholderBuffer);
-    
+
     // Serve the placeholder
     res.writeHead(200, { 'Content-Type': 'image/gif', 'Cache-Control': 'public, max-age=86400' });
     res.write(placeholderBuffer);
     res.end();
   } catch (err) {
     console.error('Error generating placeholder icon:', err);
-    
+
     // Last resort: return 404
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Icon not found');
@@ -102,5 +102,5 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
 }
 
 module.exports = {
-  handleServerIcon
+  handleServerIcon,
 };

@@ -10,14 +10,24 @@ const { strReplace } = require('./utils.js');
 
 const THEME_CONFIG = {
   0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
-  1: { boxColor: '#ffffff', authorText: '#000000', replyText: '#000000', themeClass: 'class="light-theme"' },
-  2: { boxColor: '#141416', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
+  1: {
+    boxColor: '#ffffff',
+    authorText: '#000000',
+    replyText: '#000000',
+    themeClass: 'class="light-theme"',
+  },
+  2: {
+    boxColor: '#141416',
+    authorText: '#72767d',
+    replyText: '#b5bac1',
+    themeClass: 'class="amoled-theme"',
+  },
 };
 
-const channel_template = fs.readFileSync('pages/templates/pins.html', 'utf-8')
+const channel_template = fs
+  .readFileSync('pages/templates/pins.html', 'utf-8')
   .split('{$COMMON_HEAD}')
   .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
-
 
 exports.processPins = async function processPins(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
@@ -25,23 +35,43 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(c => c.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(c => c.startsWith('images='))?.split('=')[1];
+  const whiteThemeCookie = req.headers.cookie
+    ?.split('; ')
+    ?.find((c) => c.startsWith('whiteThemeCookie='))
+    ?.split('=')[1];
+  const imagesCookieValue = req.headers.cookie
+    ?.split('; ')
+    ?.find((c) => c.startsWith('images='))
+    ?.split('=')[1];
 
   const linkParamParts = [];
   if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && whiteThemeCookie === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && imagesCookieValue === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  if (urlTheme !== null && whiteThemeCookie === undefined)
+    linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && imagesCookieValue === undefined)
+    linkParamParts.push('images=' + encodeURIComponent(urlImages));
   const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
-  const themeValue = urlTheme !== null ? parseInt(urlTheme, 10) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0);
+  const themeValue =
+    urlTheme !== null
+      ? parseInt(urlTheme, 10)
+      : whiteThemeCookie !== undefined
+        ? parseInt(whiteThemeCookie, 10)
+        : 0;
   const theme = THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
   const { authorText, replyText } = theme;
 
-  const imagesCookie = urlImages !== null ? parseInt(urlImages, 10) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue, 10) : 1);
+  const imagesCookie =
+    urlImages !== null
+      ? parseInt(urlImages, 10)
+      : imagesCookieValue !== undefined
+        ? parseInt(imagesCookieValue, 10)
+        : 1;
   const clientTimezone = getTimezoneFromIP(getClientIP(req));
 
-  const isReady = bot?.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+  const isReady =
+    bot?.client &&
+    (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
   if (!isReady) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });
     res.end("The bot isn't connected, try again in a moment");
@@ -75,8 +105,9 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
       return;
     }
 
-    const canView = member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)
-                 && botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true);
+    const canView =
+      member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) &&
+      botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true);
     if (!canView) {
       res.end("You (or the bot) don't have permission to do that!");
       return;
@@ -88,12 +119,20 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
 
     let messagesHtml;
     if (pinnedMessages.length === 0) {
-      messagesHtml = '<p style="color: #72767d; font-family: sans-serif;">No pinned messages in this channel.</p>';
+      messagesHtml =
+        '<p style="color: #72767d; font-family: sans-serif;">No pinned messages in this channel.</p>';
     } else {
       messagesHtml = await buildMessagesHtml({
-        bot, chnl, member, discordID, req,
-        imagesCookie, animationsCookie: 1,
-        authorText, replyText, clientTimezone,
+        bot,
+        chnl,
+        member,
+        discordID,
+        req,
+        imagesCookie,
+        animationsCookie: 1,
+        authorText,
+        replyText,
+        clientTimezone,
         channelId: null,
         messages: pinnedMessages,
       });
@@ -102,7 +141,11 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
     let final = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
     final = strReplace(final, '{$CHANNEL_ID}', chnl.id);
     final = strReplace(final, '{$SERVER_ID}', chnl.guild.id);
-    final = strReplace(final, '{$CHANNEL_NAME}', (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name));
+    final = strReplace(
+      final,
+      '{$CHANNEL_NAME}',
+      (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
+    );
     final = strReplace(final, '{$MESSAGES}', messagesHtml);
     final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
 

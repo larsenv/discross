@@ -9,64 +9,82 @@ const notFound = require('./notFound.js');
 const { buildMessagesHtml } = require('./channel.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { strReplace, isValidSnowflake } = require('./utils.js');
-const {
-  getClientIP, getTimezoneFromIP,
-} = require('../timezoneUtils');
+const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 
 const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
 
 const THEME_CONFIG = {
   0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
-  1: { boxColor: '#ffffff', authorText: '#000000', replyText: '#000000', themeClass: 'class="light-theme"' },
-  2: { boxColor: '#141416', authorText: '#72767d', replyText: '#b5bac1', themeClass: 'class="amoled-theme"' },
+  1: {
+    boxColor: '#ffffff',
+    authorText: '#000000',
+    replyText: '#000000',
+    themeClass: 'class="light-theme"',
+  },
+  2: {
+    boxColor: '#141416',
+    authorText: '#72767d',
+    replyText: '#b5bac1',
+    themeClass: 'class="amoled-theme"',
+  },
 };
 
-
 function loadTemplate(filePath) {
-  return fs.readFileSync(filePath, 'utf-8')
+  return fs
+    .readFileSync(filePath, 'utf-8')
     .split('{$COMMON_HEAD}')
     .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 }
 
 const TEMPLATE_CHANNEL = loadTemplate('pages/templates/guest_channel.html');
-const TEMPLATE_NAME    = loadTemplate('pages/templates/guest_name.html');
-const TEMPLATE_INPUT   = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
-const TEMPLATE_INPUT_DISABLED = fs.readFileSync('pages/templates/channel/input_disabled.html', 'utf-8');
+const TEMPLATE_NAME = loadTemplate('pages/templates/guest_name.html');
+const TEMPLATE_INPUT = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
+const TEMPLATE_INPUT_DISABLED = fs.readFileSync(
+  'pages/templates/channel/input_disabled.html',
+  'utf-8'
+);
 
 function parseCookies(req) {
   const cookiedict = {};
   const cookies = req.headers.cookie;
-  cookies && cookies.split(';').forEach(function (cookie) {
-    const parts = cookie.split('=');
-    cookiedict[parts.shift().trim()] = decodeURIComponent(parts.join('='));
-  });
+  cookies &&
+    cookies.split(';').forEach(function (cookie) {
+      const parts = cookie.split('=');
+      cookiedict[parts.shift().trim()] = decodeURIComponent(parts.join('='));
+    });
   return cookiedict;
 }
 
 function resolveTheme(req) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const urlTheme = parsedUrl.searchParams.get('theme');
-  const cookieTheme = req.headers.cookie?.split('; ')
-    ?.find(c => c.startsWith('whiteThemeCookie='))
+  const cookieTheme = req.headers.cookie
+    ?.split('; ')
+    ?.find((c) => c.startsWith('whiteThemeCookie='))
     ?.split('=')[1];
-  const themeValue = urlTheme !== null
-    ? parseInt(urlTheme, 10)
-    : (cookieTheme !== undefined ? parseInt(cookieTheme, 10) : 0);
+  const themeValue =
+    urlTheme !== null
+      ? parseInt(urlTheme, 10)
+      : cookieTheme !== undefined
+        ? parseInt(cookieTheme, 10)
+        : 0;
   return THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
 }
-
 
 // Strip non-printable / potentially dangerous characters from guest names
 function sanitizeGuestName(name) {
   if (!name || typeof name !== 'string') return '';
-  return name.replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '').trim().slice(0, 32);
+  return name
+    .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '')
+    .trim()
+    .slice(0, 32);
 }
 
 exports.processGuestName = async function processGuestName(req, res) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const channelId = parsedUrl.searchParams.get('channel');
-  const rawName   = parsedUrl.searchParams.get('name') || '';
-  const name      = sanitizeGuestName(rawName);
+  const rawName = parsedUrl.searchParams.get('name') || '';
+  const name = sanitizeGuestName(rawName);
 
   if (!isValidSnowflake(channelId) || !auth.isGuestChannel(channelId)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
@@ -90,7 +108,9 @@ exports.processGuestName = async function processGuestName(req, res) {
 exports.processGuestChannel = async function processGuestChannel(bot, req, res, channelId) {
   const theme = resolveTheme(req);
 
-  const isReady = bot?.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+  const isReady =
+    bot?.client &&
+    (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
   if (!isReady) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });
     res.end("The bot isn't connected, try again in a moment");
@@ -133,9 +153,13 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     const hasError = parsedUrl.searchParams.get('guest_name_error') === '1';
     let page = strReplace(TEMPLATE_NAME, '{$WHITE_THEME_ENABLED}', theme.themeClass);
     page = strReplace(page, '{$CHANNEL_ID}', escape(channelId));
-    page = strReplace(page, '{$ERROR}', hasError
-      ? '<font color="#f04747" face="\'rodin\', Arial, Helvetica, sans-serif">Please enter a valid name.</font>'
-      : '');
+    page = strReplace(
+      page,
+      '{$ERROR}',
+      hasError
+        ? '<font color="#f04747" face="\'rodin\', Arial, Helvetica, sans-serif">Please enter a valid name.</font>'
+        : ''
+    );
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(page);
     return;
@@ -146,13 +170,18 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     const imagesCookie = (() => {
       const urlImages = parsedUrl.searchParams.get('images');
       const cookieImages = cookies.images;
-      return urlImages !== null ? parseInt(urlImages, 10) : (cookieImages !== undefined ? parseInt(cookieImages, 10) : 1);
+      return urlImages !== null
+        ? parseInt(urlImages, 10)
+        : cookieImages !== undefined
+          ? parseInt(cookieImages, 10)
+          : 1;
     })();
 
     const clientTimezone = getTimezoneFromIP(getClientIP(req));
     const { boxColor, authorText, replyText } = theme;
-    const canSend = botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)
-                 && botMember.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
+    const canSend =
+      botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true) &&
+      botMember.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
 
     let inputHtml = canSend
       ? strReplace(TEMPLATE_INPUT, '{$COLOR}', boxColor)
@@ -180,13 +209,13 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     const refreshUrl = channelId + '?random=' + Math.random();
 
     let page = strReplace(TEMPLATE_CHANNEL, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    page = strReplace(page, '{$CHANNEL_ID}',   escape(channelId));
+    page = strReplace(page, '{$CHANNEL_ID}', escape(channelId));
     page = strReplace(page, '{$CHANNEL_NAME}', escape(channelDisplayName));
-    page = strReplace(page, '{$GUEST_NAME}',   escape(guestName));
+    page = strReplace(page, '{$GUEST_NAME}', escape(guestName));
     page = strReplace(page, '{$RANDOM_EMOJI}', randomEmoji);
-    page = strReplace(page, '{$REFRESH_URL}',  refreshUrl);
-    page = strReplace(page, '{$INPUT}',        inputHtml);
-    page = strReplace(page, '{$MESSAGES}',     messagesHtml);
+    page = strReplace(page, '{$REFRESH_URL}', refreshUrl);
+    page = strReplace(page, '{$INPUT}', inputHtml);
+    page = strReplace(page, '{$MESSAGES}', messagesHtml);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(page);

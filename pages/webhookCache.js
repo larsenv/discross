@@ -18,7 +18,7 @@ async function getOrCreateWebhook(channel, guildID) {
 
   const existingWebhooks = await webhookChannel.fetchWebhooks();
   let webhook = existingWebhooks.find(
-    w => w.owner && (w.owner.username === 'discross beta' || w.owner.username === 'Discross')
+    (w) => w.owner && (w.owner.username === 'discross beta' || w.owner.username === 'Discross')
   );
 
   if (!webhook) {

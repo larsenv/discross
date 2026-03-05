@@ -7,131 +7,141 @@ const { getOrCreateWebhook } = require('./webhookCache');
 const { strReplace, isValidSnowflake } = require('./utils.js');
 
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
-  const baseUrl = (req.socket && req.socket.encrypted ? 'https' : 'http') + '://' + (req.headers.host || ('localhost:' + (req.socket && req.socket.localPort || 80)));
+  const baseUrl =
+    (req.socket && req.socket.encrypted ? 'https' : 'http') +
+    '://' +
+    (req.headers.host || 'localhost:' + ((req.socket && req.socket.localPort) || 80));
   try {
     const parsedurl = new URL(req.url, 'http://localhost');
     const query = Object.fromEntries(parsedurl.searchParams);
 
-      // Ensure message exists and is a non-empty string
-      if (typeof query.message === 'string' && query.message !== "") {
-        const channelId = (query.channel || query.channel_id || args?.[2]);
+    // Ensure message exists and is a non-empty string
+    if (typeof query.message === 'string' && query.message !== '') {
+      const channelId = query.channel || query.channel_id || args?.[2];
 
-        // Check if bot is connected
-        const clientIsReady = bot && bot.client && (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-        
-        if (!clientIsReady) {
-          res.writeHead(503, { "Content-Type": "text/plain" });
-          res.write("The bot isn't connected, try again in a moment");
-          res.end();
-          return;
-        }
+      // Check if bot is connected
+      const clientIsReady =
+        bot &&
+        bot.client &&
+        (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
 
-        // Validate channel id format early
-        if (!channelId || !isValidSnowflake(channelId)) {
-          res.writeHead(404, { "Content-Type": "text/plain" });
-          res.write("Invalid channel!");
-          res.end();
-          return;
-        }
-
-        // Attempt to fetch channel, handle failures gracefully
-        let channel;
-        try {
-          channel = await bot.client.channels.fetch(channelId);
-        } catch (err) {
-          console.error("Channel fetch error:", err);
-          channel = null;
-        }
-
-        if (!channel) {
-          res.writeHead(404, { "Content-Type": "text/plain" });
-          res.write("Invalid channel!");
-          res.end();
-          return;
-        }
-
-        // Attempt to fetch member and check permissions
-        let member;
-        try {
-          member = await channel.guild.members.fetch(discordID);
-        } catch (err) {
-          console.error("Member fetch error:", err);
-          member = null;
-        }
-
-        if (!member || !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
-          res.write("You don't have permission to do that!");
-          res.end();
-          return;
-        }
-
-        const webhook = await getOrCreateWebhook(channel, channel.guild.id);
-
-        let processedmessage = convertEmoji(query.message || '');
-        const regex = /@([^#]{2,32}#\d{4})/g;
-        let m;
-        do {
-          m = regex.exec(processedmessage);
-          if (m) {
-            let mentioneduser = channel.guild.members.cache.find(member => member.user.tag === m[1]);
-            if (!mentioneduser) {
-              try {
-                mentioneduser = (await channel.guild.members.fetch()).find(member => member.user.tag === m[1]);
-              } catch (err) {
-                console.error("Failed to fetch members for mention:", err);
-                // Continue without resolving the mention
-              }
-            }
-            if (mentioneduser) {
-              processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
-            }
-          }
-        } while (m);
-
-        // Handle reply if reply_message_id is present
-        if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
-          try {
-            const reply_message = await channel.messages.fetch(query.reply_message_id);
-            // Verify the reply message belongs to the channel to prevent reply spoofing
-            if (reply_message.channelId !== channel.id) {
-              throw new Error('Reply message does not belong to this channel');
-            }
-            let reply_message_content = reply_message.content;
-            if (reply_message_content.length > 30) {
-              reply_message_content = reply_message_content.substring(0, 30) + "...";
-            }
-            const author_id = reply_message.author.id;
-            const author_mention = `<@${author_id}>`;
-
-            processedmessage = `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
-          } catch (err) {
-            console.error("Failed to reply:", err);
-          }
-        }
-
-        const sendOptions = {
-          content: processedmessage,
-          username: normalizeWeirdUnicode(member.displayName || member.user.tag),
-          avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-          disableEveryone: true,
-        };
-        if (channel.isThread()) {
-          sendOptions.threadId = channel.id;
-        }
-        const message = await webhook.send(sendOptions);
-
-        bot.addToCache(message);
+      if (!clientIsReady) {
+        res.writeHead(503, { 'Content-Type': 'text/plain' });
+        res.write("The bot isn't connected, try again in a moment");
+        res.end();
+        return;
       }
 
-      // redirect back to the channel (use the provided channel id if available)
-      const redirectChannel = parsedurl.searchParams.get('channel') || (args?.[2] || "");
-      const sessionID = parsedurl.searchParams.get('sessionID') || ''
-      const sessionPart = sessionID ? '?sessionID=' + encodeURIComponent(sessionID) : ''
-      res.writeHead(302, { "Location": baseUrl + '/channels/' + redirectChannel + sessionPart });
-      res.end();
+      // Validate channel id format early
+      if (!channelId || !isValidSnowflake(channelId)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.write('Invalid channel!');
+        res.end();
+        return;
+      }
+
+      // Attempt to fetch channel, handle failures gracefully
+      let channel;
+      try {
+        channel = await bot.client.channels.fetch(channelId);
+      } catch (err) {
+        console.error('Channel fetch error:', err);
+        channel = null;
+      }
+
+      if (!channel) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.write('Invalid channel!');
+        res.end();
+        return;
+      }
+
+      // Attempt to fetch member and check permissions
+      let member;
+      try {
+        member = await channel.guild.members.fetch(discordID);
+      } catch (err) {
+        console.error('Member fetch error:', err);
+        member = null;
+      }
+
+      if (!member || !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
+        res.write("You don't have permission to do that!");
+        res.end();
+        return;
+      }
+
+      const webhook = await getOrCreateWebhook(channel, channel.guild.id);
+
+      let processedmessage = convertEmoji(query.message || '');
+      const regex = /@([^#]{2,32}#\d{4})/g;
+      let m;
+      do {
+        m = regex.exec(processedmessage);
+        if (m) {
+          let mentioneduser = channel.guild.members.cache.find(
+            (member) => member.user.tag === m[1]
+          );
+          if (!mentioneduser) {
+            try {
+              mentioneduser = (await channel.guild.members.fetch()).find(
+                (member) => member.user.tag === m[1]
+              );
+            } catch (err) {
+              console.error('Failed to fetch members for mention:', err);
+              // Continue without resolving the mention
+            }
+          }
+          if (mentioneduser) {
+            processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
+          }
+        }
+      } while (m);
+
+      // Handle reply if reply_message_id is present
+      if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
+        try {
+          const reply_message = await channel.messages.fetch(query.reply_message_id);
+          // Verify the reply message belongs to the channel to prevent reply spoofing
+          if (reply_message.channelId !== channel.id) {
+            throw new Error('Reply message does not belong to this channel');
+          }
+          let reply_message_content = reply_message.content;
+          if (reply_message_content.length > 30) {
+            reply_message_content = reply_message_content.substring(0, 30) + '...';
+          }
+          const author_id = reply_message.author.id;
+          const author_mention = `<@${author_id}>`;
+
+          processedmessage = `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
+        } catch (err) {
+          console.error('Failed to reply:', err);
+        }
+      }
+
+      const sendOptions = {
+        content: processedmessage,
+        username: normalizeWeirdUnicode(member.displayName || member.user.tag),
+        avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
+        disableEveryone: true,
+      };
+      if (channel.isThread()) {
+        sendOptions.threadId = channel.id;
+      }
+      const message = await webhook.send(sendOptions);
+
+      bot.addToCache(message);
+    }
+
+    // redirect back to the channel (use the provided channel id if available)
+    const redirectChannel = parsedurl.searchParams.get('channel') || args?.[2] || '';
+    const sessionID = parsedurl.searchParams.get('sessionID') || '';
+    const sessionPart = sessionID ? '?sessionID=' + encodeURIComponent(sessionID) : '';
+    res.writeHead(302, { Location: baseUrl + '/channels/' + redirectChannel + sessionPart });
+    res.end();
   } catch (err) {
-    console.error("Error sending message:", err);
-    res.writeHead(302, { "Location": baseUrl + '/server/' });
+    console.error('Error sending message:', err);
+    res.writeHead(302, { Location: baseUrl + '/server/' });
     res.end();
   }
 };
