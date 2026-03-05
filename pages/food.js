@@ -1214,16 +1214,14 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       const addrObj = addrResult && addrResult.data && addrResult.data.Address
       const locatorStores = (addrResult && addrResult.data && addrResult.data.Stores) || []
       console.log('[place-order] store-locator HTTP=%s | Address=%s', addrResult && addrResult.status, JSON.stringify(addrObj))
-      // If the user's selected store doesn't serve this delivery address, switch to the nearest
-      // store from the locator results that does. This prevents ServiceMethodNotAllowed failures
-      // caused by ordering from a store outside the address's delivery zone.
+      // Use the nearest store for this delivery address from the locator results.
+      // This ensures the order goes to the store that actually serves the address,
+      // preventing ServiceMethodNotAllowed when the user's selected store is outside
+      // the delivery zone.
       if (locatorStores.length > 0) {
-        const selectedInList = locatorStores.some(s => String(s.StoreID) === String(cart.storeId))
-        if (!selectedInList) {
-          const newStoreId = String(locatorStores[0].StoreID)
-          console.log('[place-order] store %s not in locator results for address; switching to nearest store %s', cart.storeId, newStoreId)
-          cart.storeId = newStoreId
-        }
+        const nearestStoreId = String(locatorStores[0].StoreID)
+        console.log('[place-order] using nearest store for delivery address: %s (was: %s)', nearestStoreId, cart.storeId)
+        cart.storeId = nearestStoreId
       }
       if (addrObj && (addrObj.StreetName || addrObj.StreetNumber)) {
         // Use the API-normalized values (WiiLink uses addrObj.Street for the Street field too)

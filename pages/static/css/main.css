@@ -1293,7 +1293,6 @@ select.food-input,
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
-    gap: 10px;
     -webkit-box-align: end;
     -webkit-align-items: flex-end;
     align-items: flex-end;
@@ -1301,6 +1300,12 @@ select.food-input,
 
 .food-input-row .food-input {
     flex: 1;
+}
+
+.food-input-row .food-btn {
+    margin-left: 10px;
+    -webkit-flex-shrink: 0;
+    flex-shrink: 0;
 }
 
 a.food-btn,
@@ -1403,8 +1408,11 @@ a.food-btn:hover,
 .food-tip-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
     margin-top: 6px;
+}
+.food-tip-row label {
+    margin-right: 8px;
+    margin-bottom: 8px;
 }
 .food-tip-btn {
     padding: 6px 14px;
@@ -1614,16 +1622,31 @@ a.food-tab-active:hover,
 
 /* Checkout */
 .food-checkout-grid {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 20px;
-    align-items: start;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+}
+.food-checkout-grid > *:first-child {
+    width: 300px;
+    margin-right: 20px;
+    margin-bottom: 16px;
+}
+.food-checkout-grid > *:last-child {
+    -webkit-flex: 1;
+    flex: 1;
+    min-width: 280px;
 }
 
 .food-form-row {
     display: flex;
-    gap: 12px;
     margin-bottom: 14px;
+}
+.food-form-row > * + * {
+    margin-left: 12px;
 }
 
 .food-form-group {
@@ -1677,7 +1700,6 @@ a.food-tab-active:hover,
 /* Tracker */
 .food-tracker-bar {
     display: flex;
-    gap: 0;
 }
 
 .food-tracker-step {
@@ -1773,9 +1795,12 @@ a.food-tab-active:hover,
 /* Back nav row */
 .food-back-row {
     display: flex;
+    -webkit-align-items: center;
     align-items: center;
-    gap: 16px;
     margin-bottom: 16px;
+}
+.food-back-row > * + * {
+    margin-left: 16px;
 }
 
 .food-back-link {
@@ -1870,12 +1895,17 @@ a.food-tab-active:hover,
 
 /* Responsive */
 @media (max-width: 720px) {
-    .food-checkout-grid {
-        grid-template-columns: 1fr;
+    .food-checkout-grid > *:first-child {
+        width: 100%;
+        margin-right: 0;
     }
     .food-form-row {
         -webkit-flex-direction: column;
         flex-direction: column;
+    }
+    .food-form-row > * + * {
+        margin-left: 0;
+        margin-top: 12px;
     }
     .food-form-group-sm {
         -webkit-flex: 1;
