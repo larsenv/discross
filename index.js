@@ -69,6 +69,7 @@ const privacypage = require('./pages/privacy.js')
 const termspage = require('./pages/terms.js')
 const newspage = require('./pages/news.js')
 const weatherpage = require('./pages/weather.js')
+const stockspage = require('./pages/stocks.js')
 const searchpage = require('./pages/search.js')
 
 // Constants for imageProxy path lengths
@@ -382,6 +383,8 @@ server.on('request', async (req, res) => {
       await termspage.processTerms(bot, req, res, args)
     } else if (args[1] === 'weather') {
       await weatherpage.processWeather(req, res)
+    } else if (args[1] === 'stocks') {
+      await stockspage.processStocks(req, res)
     } else if (args[1] === 'search') {
       await searchpage.processSearch(req, res)
     } else if (args[1] === 'longpoll.js' || args[1] === 'longpoll-xhr' || args[1] === 'api.js') { // Connection
