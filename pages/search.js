@@ -4,7 +4,7 @@ const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace } = require('./utils.js');
+const { strReplace, THEME_CONFIG } = require('./utils.js');
 
 const search_template = fs
   .readFileSync('pages/templates/search.html', 'utf-8')
@@ -50,12 +50,7 @@ exports.processSearch = async function processSearch(req, res) {
     return;
   }
 
-  let themeClass = '';
-  if (themeValue === 1) {
-    themeClass = 'class="light-theme"';
-  } else if (themeValue === 2) {
-    themeClass = 'class="amoled-theme"';
-  }
+  const themeClass = THEME_CONFIG[themeValue]?.themeClass ?? '';
 
   const safeEngine = VALID_ENGINES.includes(engine) ? engine : 'frogfind';
 

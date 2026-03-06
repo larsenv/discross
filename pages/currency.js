@@ -4,9 +4,9 @@ const fs = require('fs');
 const https = require('https');
 const escape = require('escape-html');
 
-const auth = require('../authentication.js');
+const { strReplace, THEME_CONFIG } = require('./utils.js');
 
-const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
+const auth = require('../authentication.js');
 
 // Frankfurter API — free, no API key required
 const FRANKFURTER_HOST = 'api.frankfurter.app';
@@ -15,7 +15,20 @@ const FRANKFURTER_HOST = 'api.frankfurter.app';
 const CURRENCY_MAX_LENGTH = 3;
 
 // Major currencies to display on the default dashboard
-const DEFAULT_TARGETS = ['EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'MXN', 'BRL', 'KRW', 'HKD'];
+const DEFAULT_TARGETS = [
+  'EUR',
+  'GBP',
+  'JPY',
+  'CAD',
+  'AUD',
+  'CHF',
+  'CNY',
+  'INR',
+  'MXN',
+  'BRL',
+  'KRW',
+  'HKD',
+];
 
 // Full names for well-known currencies
 const CURRENCY_NAMES = {
@@ -53,15 +66,12 @@ const CURRENCY_NAMES = {
   ZAR: 'South African Rand',
 };
 
-const currency_template = fs.readFileSync('pages/templates/currency.html', 'utf-8')
+const currency_template = fs
+  .readFileSync('pages/templates/currency.html', 'utf-8')
   .split('{$COMMON_HEAD}')
   .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
 
 /**
  * Make an HTTPS GET request, following up to maxRedirects redirects.
@@ -83,7 +93,9 @@ function httpsGet(options, maxRedirects) {
         } catch (e) {
           newOptions = Object.assign({}, options, { path: res.headers.location });
         }
-        return httpsGet(newOptions, maxRedirects - 1).then(resolve).catch(reject);
+        return httpsGet(newOptions, maxRedirects - 1)
+          .then(resolve)
+          .catch(reject);
       }
       let body = '';
       res.on('data', (chunk) => {
@@ -122,7 +134,7 @@ async function fetchLatestAndPrevRates(base) {
     method: 'GET',
     headers: {
       'User-Agent': 'Discross/1.0',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Accept-Encoding': 'identity',
     },
   };
@@ -142,7 +154,9 @@ async function fetchLatestAndPrevRates(base) {
   const prevDate = allDates.length >= 2 ? allDates[allDates.length - 2] : null;
 
   const latestData = { date: latestDate, base: data.base, rates: data.rates[latestDate] };
-  const prevData = prevDate ? { date: prevDate, base: data.base, rates: data.rates[prevDate] } : null;
+  const prevData = prevDate
+    ? { date: prevDate, base: data.base, rates: data.rates[prevDate] }
+    : null;
 
   return { latestData, prevData };
 }
@@ -240,13 +254,7 @@ exports.processCurrency = async function processCurrency(req, res) {
     ?.find((c) => c.startsWith('whiteThemeCookie='))
     ?.split('=')[1];
   const themeValue = whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0;
-
-  let themeClass = '';
-  if (themeValue === 1) {
-    themeClass = 'class="light-theme"';
-  } else if (themeValue === 2) {
-    themeClass = 'class="amoled-theme"';
-  }
+  const themeClass = THEME_CONFIG[themeValue]?.themeClass ?? '';
 
   let currencyHtml = '';
 
@@ -268,9 +276,7 @@ exports.processCurrency = async function processCurrency(req, res) {
       // Use all available target currencies or our default list
       const availableCodes = Object.keys(latestData.rates || {}).sort();
       const targets =
-        base === 'USD'
-          ? DEFAULT_TARGETS.filter((c) => availableCodes.includes(c))
-          : availableCodes;
+        base === 'USD' ? DEFAULT_TARGETS.filter((c) => availableCodes.includes(c)) : availableCodes;
       currencyHtml = renderRatesTable(base, latestData, prevData, targets);
     }
   } catch (err) {
