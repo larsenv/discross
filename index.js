@@ -132,7 +132,6 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
       }
       res.end(data);
     }
-    return;
   });
 }
 
