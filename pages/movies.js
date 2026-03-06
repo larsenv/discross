@@ -155,16 +155,39 @@ async function tryFetchRTApi(apiType) {
 function normalizeApiItem(x, isTv) {
   const title = x.title || x.name || x.seriesTitle || "";
   let url = x.url || x.mediaUrl || x.canonicalUrl || "";
+  // Build URL from vanity or slug if the direct url field is absent
+  if (!url && x.vanity) url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.vanity}`;
+  if (!url && x.slug) url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.slug}`;
   if (url && !url.startsWith("http")) url = RT_BASE + url;
   const year = x.year || x.releaseYear || "";
   const criticsScore = parseScore(
-    x.tomatometer ?? x.criticsScore ?? x.tomatometerScore ?? null,
+    // RT private API uses "tomatoScore"; also check other known field names
+    x.tomatoScore ??
+      x.tomatometer ??
+      x.criticsScore ??
+      x.tomatometerScore ??
+      x.rottenTomatoes?.tomatoScore ??
+      x.rottenTomatoes?.criticsScore ??
+      x.rottenTomatoes?.tomatometer ??
+      null,
   );
   const audienceScore = parseScore(
-    x.audienceScore ?? x.popcornmeter ?? x.audiencescore ?? null,
+    x.audienceScore ??
+      x.popcornmeter ??
+      x.audiencescore ??
+      x.rottenTomatoes?.audienceScore ??
+      null,
   );
   const poster =
-    x.posterUri || x.posterUrl || x.thumbnail || x.image || x.poster || "";
+    // RT API returns poster under posters.thumbnail or posters.original
+    x.posters?.thumbnail ||
+    x.posters?.original ||
+    x.posterUri ||
+    x.posterUrl ||
+    x.thumbnail ||
+    x.image ||
+    x.poster ||
+    "";
   return { title, url, year, criticsScore, audienceScore, poster };
 }
 
@@ -337,12 +360,15 @@ function normalizeJsonItem(x, isTv) {
   const year = x.year || x.releaseYear || x.premiereYear || "";
 
   const criticsScore = parseScore(
-    x.tomatometer ??
+    x.tomatoScore ??
+      x.tomatometer ??
       x.criticsScore ??
       x.tomatometerScore ??
-      x.tomatoScore ??
       x.scores?.tomatometer ??
       x.scores?.criticsScore ??
+      x.scores?.tomatoScore ??
+      x.rottenTomatoes?.tomatoScore ??
+      x.rottenTomatoes?.criticsScore ??
       x.rottenTomatoes?.tomatometer ??
       null,
   );
@@ -352,10 +378,14 @@ function normalizeJsonItem(x, isTv) {
       x.audiencescore ??
       x.scores?.audience ??
       x.scores?.audienceScore ??
+      x.rottenTomatoes?.audienceScore ??
       null,
   );
 
   const poster =
+    // RT API returns poster under posters.thumbnail or posters.original
+    x.posters?.thumbnail ||
+    x.posters?.original ||
     x.posterUri ||
     x.image ||
     x.posterUrl ||
@@ -373,12 +403,15 @@ function parseHtmlTiles(html, isTv) {
   const items = [];
   const seen = new Set();
 
-  // Common RT data-qa values for tile containers
+  // Common RT data-qa values for tile containers — include historical and current variants
   const tileQaValues = [
     "discovery-media-list-item",
+    "discover-media-list-item",
     "media-tile",
     "tile",
     "movie-tile",
+    "tv-tile",
+    "media-item",
     "search-result-item",
   ];
 
@@ -396,11 +429,12 @@ function parseHtmlTiles(html, isTv) {
       const tagEnd = html.indexOf(">", tileStart);
       if (tagEnd === -1) break;
 
-      // Extract a bounded block (3000 chars) from the tag's opening < onward
+      // Extract a bounded block (5000 chars) from the tag's opening < onward.
+      // 5000 chars ensures deeply-nested score child elements are always included.
       const blockStart = tagOpenStart === -1 ? tileStart : tagOpenStart;
       const block = html.slice(
         blockStart,
-        Math.min(html.length, blockStart + 3000),
+        Math.min(html.length, blockStart + 5000),
       );
       const item = extractTileItem(block, isTv);
       if (item && item.title && item.url && !seen.has(item.url)) {
@@ -436,10 +470,13 @@ function parseHtmlTiles(html, isTv) {
         pos = tagEnd + 1;
         continue;
       }
-      // Collect anchor block up to 800 chars
-      const block = html.slice(tagEnd + 1, Math.min(html.length, tagEnd + 800));
+      // Collect a wide block: 500 chars before anchor + 1500 chars after it.
+      // Scores are often on sibling elements that come before the <a> tag.
+      const blockStart2 = Math.max(0, anchorStart - 500);
+      const blockEnd2 = Math.min(html.length, tagEnd + 1500);
+      const block = html.slice(blockStart2, blockEnd2);
       const titleMatch = block.match(
-        /data-qa="(?:discovery-media-list-item-title|media-tile-title|tile-title)"[^>]*>([\s\S]{0,200}?)<\/[a-z]+>/i,
+        /data-qa="(?:discovery-media-list-item-title|discover-media-list-item-title|media-tile-title|tile-title|media-list-item-title)"[^>]*>([\s\S]{0,200}?)<\/[a-z]+>/i,
       );
       if (!titleMatch) {
         pos = tagEnd + 1;
@@ -452,17 +489,32 @@ function parseHtmlTiles(html, isTv) {
       }
       seen.add(url);
       const poster = extractPosterFromBlock(block);
-      // Try multiple score attribute patterns
+      // Try multiple score attribute patterns (including RT's private API "tomatoScore")
       let criticsScore = null;
       for (const re of [
         /tomatometerscore\s*=\s*["']?(\d+)/i,
         /criticsscore\s*=\s*["']?(\d+)/i,
         /criticsScore\s*=\s*["']?(\d+)/i,
+        /"tomatoScore"\s*:\s*["']?(\d+)/i,
         /"tomatometer"\s*:\s*(\d+)/,
+        /"criticsScore"\s*:\s*(\d+)/,
       ]) {
         const sm = block.match(re);
         if (sm) {
           criticsScore = parseInt(sm[1], 10);
+          break;
+        }
+      }
+      let audienceScore = null;
+      for (const re of [
+        /audiencescore\s*=\s*["']?(\d+)/i,
+        /audienceScore\s*=\s*["']?(\d+)/i,
+        /popcornmeter\s*=\s*["']?(\d+)/i,
+        /"audienceScore"\s*:\s*(\d+)/,
+      ]) {
+        const sm = block.match(re);
+        if (sm) {
+          audienceScore = parseInt(sm[1], 10);
           break;
         }
       }
@@ -471,7 +523,7 @@ function parseHtmlTiles(html, isTv) {
         url,
         year: "",
         criticsScore,
-        audienceScore: null,
+        audienceScore,
         poster,
       });
       if (items.length >= 30) break;
@@ -483,9 +535,9 @@ function parseHtmlTiles(html, isTv) {
 }
 
 function extractTileItem(block, isTv) {
-  // Title
+  // Title — try all known RT data-qa name variants for the title element
   let titleMatch = block.match(
-    /data-qa="(?:discovery-media-list-item-title|media-tile-title|tile-title)"[^>]*>([\s\S]*?)<\/[a-z]+>/i,
+    /data-qa="(?:discovery-media-list-item-title|discover-media-list-item-title|media-tile-title|tile-title|media-list-item-title)"[^>]*>([\s\S]*?)<\/[a-z]+>/i,
   );
   if (!titleMatch) {
     // Fallback: look for any <p> or <span> with a title-like class
@@ -511,12 +563,14 @@ function extractTileItem(block, isTv) {
   // attributes that may be on the opening tag (before data-qa) now that the
   // block starts from the tag's < rather than from data-qa itself.
   const CRITICS_RE = [
-    /tomatometerscore\s*=\s*["']?(\d+)/i, // RT web component attribute
-    /criticsscore\s*=\s*["']?(\d+)/i, // lowercase variant
+    /tomatometerscore\s*=\s*["']?(\d+)/i, // RT web component attribute (lowercase)
+    /criticsscore\s*=\s*["']?(\d+)/i, // score-pairs-deprecated attribute
     /criticsScore\s*=\s*["']?(\d+)/i, // camelCase variant
     /tomatometer\s*=\s*["'](\d+)["']/i, // short attribute name
-    /<score-icon-critic[^>]+percentage\s*=\s*["']?(\d+)/i, // inner component
+    /<score-icon-critic[^>]+percentage\s*=\s*["']?(\d+)/i, // inner score-icon component
     /<score-pairs[^>]+tomatometerscore\s*=\s*["']?(\d+)/i, // score-pairs component
+    /<score-pairs[^>]+criticsscore\s*=\s*["']?(\d+)/i, // score-pairs-deprecated
+    /"tomatoScore"\s*:\s*["']?(\d+)/i, // RT private API JSON embed
     /"tomatometer"\s*:\s*(\d+)/, // inline JSON
     /"criticsScore"\s*:\s*(\d+)/, // inline JSON camelCase
     /percentage\s*=\s*["']?(\d+)/i, // generic percentage (last resort)
