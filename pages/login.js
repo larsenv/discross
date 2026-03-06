@@ -19,32 +19,29 @@ exports.processLogin = async function (bot, req, res, args) {
     res.end('Logged in! Click <a href="/server/">here</a> to continue.');
   } else {
     const parsedurl = new URL(req.url, 'http://localhost');
-    let response = login_template;
-    response = strReplace(response, '{$MENU_OPTIONS}', logged_out_template);
-    if (parsedurl.searchParams.get('redirect')) {
-      response = strReplace(
-        response,
-        '{$REDIRECT_URL}',
-        strReplace(parsedurl.searchParams.get('redirect'), '"', '%22')
-      );
-    } else {
-      response = strReplace(response, '{$REDIRECT_URL}', '/server/');
-    }
-    if (parsedurl.searchParams.get('errortext')) {
-      response = strReplace(
-        response,
-        '{$ERROR}',
-        strReplace(
+    const rawRedirect = parsedurl.searchParams.get('redirect');
+    const redirectUrl = rawRedirect ? strReplace(rawRedirect, '"', '%22') : '/server/';
+    const rawErrorText = parsedurl.searchParams.get('errortext');
+    const errorHtml = rawErrorText
+      ? strReplace(
           error_template,
           '{$ERROR_MESSAGE}',
-          strReplace(escape(parsedurl.searchParams.get('errortext')), '\n', '<br>')
+          strReplace(escape(rawErrorText), '\n', '<br>')
         )
-      );
-    } else {
-      response = strReplace(response, '{$ERROR}', '');
-    }
-
-    response = strReplace(response, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
+      : '';
+    const response = strReplace(
+      strReplace(
+        strReplace(
+          strReplace(login_template, '{$MENU_OPTIONS}', logged_out_template),
+          '{$REDIRECT_URL}',
+          redirectUrl
+        ),
+        '{$ERROR}',
+        errorHtml
+      ),
+      '{$WHITE_THEME_ENABLED}',
+      getPageThemeAttr(req)
+    );
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);
   }

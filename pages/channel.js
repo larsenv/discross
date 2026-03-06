@@ -691,18 +691,17 @@ async function resolveInteractionData(item, chnl, memberCache) {
     const interactionUser = item.interaction?.user;
     if (!interactionUser) return null;
 
-    let interactionMember;
     const cached = memberCache.get(interactionUser.id);
-    if (cached !== undefined) {
-      interactionMember = cached;
-    } else {
-      try {
-        interactionMember = await chnl.guild.members.fetch(interactionUser.id);
-        memberCache.set(interactionUser.id, interactionMember);
-      } catch {
-        /* user left or not in guild */
-      }
-    }
+    const interactionMember =
+      cached !== undefined
+        ? cached
+        : await chnl.guild.members
+            .fetch(interactionUser.id)
+            .then((m) => {
+              memberCache.set(interactionUser.id, m);
+              return m;
+            })
+            .catch(() => undefined);
 
     return {
       author: getDisplayName(interactionMember, interactionUser),
