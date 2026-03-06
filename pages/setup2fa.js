@@ -169,20 +169,29 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
 
   // Render backup codes page inline (codes are shown exactly once)
   const username = await auth.getUsername(discordID);
-  let codesHtml = '<table style="font-family: monospace; font-size: 16px;">';
-  result.backupCodes.forEach((code) => {
-    codesHtml += `<tr><td style="padding: 4px 0;"><code style="background: #393c40; padding: 6px 12px; color: #dddddd;">${escape(code)}</code></td></tr>`;
-  });
-  codesHtml += '</table>';
+  const codesHtml =
+    '<table style="font-family: monospace; font-size: 16px;">' +
+    result.backupCodes
+      .map(
+        (code) =>
+          `<tr><td style="padding: 4px 0;"><code style="background: #393c40; padding: 6px 12px; color: #dddddd;">${escape(code)}</code></td></tr>`
+      )
+      .join('') +
+    '</table>';
 
-  let response = backup_codes_template;
-  response = strReplace(
-    response,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(username || ''))
+  const response = strReplace(
+    strReplace(
+      strReplace(
+        backup_codes_template,
+        '{$MENU_OPTIONS}',
+        strReplace(logged_in_template, '{$USER}', escape(username || ''))
+      ),
+      '{$BACKUP_CODES_LIST}',
+      codesHtml
+    ),
+    '{$WHITE_THEME_ENABLED}',
+    getPageThemeAttr(req)
   );
-  response = strReplace(response, '{$BACKUP_CODES_LIST}', codesHtml);
-  response = strReplace(response, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
