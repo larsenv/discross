@@ -57,7 +57,6 @@ exports.imageProxy = async function imageProxy(res, URL) {
       proxyRes
         .on('end', async () => {
           const buffer = Buffer.concat(chunks);
-          let gifbuffer = buffer;
           try {
             // Resize options: cap all images at 256x256 to keep transfers small for Wii Internet Channel
             const resizeOptions = {
@@ -66,16 +65,14 @@ exports.imageProxy = async function imageProxy(res, URL) {
               fit: 'inside',
               withoutEnlargement: true,
             };
-            try {
-              gifbuffer = await sharp(buffer, { animated: true })
-                .resize(resizeOptions)
-                .toFormat('gif', { colors: 256 })
-                .toBuffer();
-            } catch (err) {
-              // If conversion fails, just send original
-              console.warn('Could not convert image, sending original');
-              gifbuffer = buffer;
-            }
+            const gifbuffer = await sharp(buffer, { animated: true })
+              .resize(resizeOptions)
+              .toFormat('gif', { colors: 256 })
+              .toBuffer()
+              .catch(() => {
+                console.warn('Could not convert image, sending original');
+                return buffer;
+              });
             cacheSet(URL, gifbuffer);
             res.writeHead(200, {
               'Content-Type': 'image/gif',

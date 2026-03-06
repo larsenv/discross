@@ -1,6 +1,6 @@
 'use strict';
 const { parseCookies } = require('./utils.js');
-exports.toggleTheme = async function toggleTheme(req, res) {
+exports.toggleTheme = function toggleTheme(req, res) {
   try {
     const parsedUrl = new URL(req.url, 'http://localhost');
     const urlTheme = parsedUrl.searchParams.get('theme');

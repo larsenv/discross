@@ -68,13 +68,10 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         rawReplyContent.length > 30 ? rawReplyContent.substring(0, 30) + '...' : rawReplyContent;
 
       // #39: Get proper member name for reply
-      let author_name = reply_message.author.username;
-      try {
-        const author_member = await channel.guild.members.fetch(reply_message.author.id);
-        author_name = author_member.displayName || author_member.user.username;
-      } catch (err) {
-        // Use username if member fetch fails
-      }
+      const author_name = await channel.guild.members
+        .fetch(reply_message.author.id)
+        .then((m) => m.displayName || m.user.username)
+        .catch(() => reply_message.author.username);
 
       processedmessage = `> Replying to ${reply_message_content} from ${author_name}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
 

@@ -1,7 +1,7 @@
 'use strict';
 const { parseCookies } = require('./utils.js');
 
-exports.toggleImages = async function toggleImages(req, res) {
+exports.toggleImages = function toggleImages(req, res) {
   try {
     const parsedUrl = new URL(req.url, 'http://localhost');
     const urlImages = parsedUrl.searchParams.get('images');

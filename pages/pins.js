@@ -86,26 +86,23 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
     const pinnedCollection = await chnl.messages.fetchPinned();
     const pinnedMessages = Array.from(pinnedCollection.values());
 
-    let messagesHtml;
-    if (pinnedMessages.length === 0) {
-      messagesHtml =
-        '<p style="color: #72767d; font-family: \'rodin\', Arial, Helvetica, sans-serif;">No pinned messages in this channel.</p>';
-    } else {
-      messagesHtml = await buildMessagesHtml({
-        bot,
-        chnl,
-        member,
-        discordID,
-        req,
-        imagesCookie,
-        animationsCookie: 1,
-        authorText,
-        replyText,
-        clientTimezone,
-        channelId: null,
-        messages: pinnedMessages,
-      });
-    }
+    const messagesHtml =
+      pinnedMessages.length === 0
+        ? '<p style="color: #72767d; font-family: \'rodin\', Arial, Helvetica, sans-serif;">No pinned messages in this channel.</p>'
+        : await buildMessagesHtml({
+            bot,
+            chnl,
+            member,
+            discordID,
+            req,
+            imagesCookie,
+            animationsCookie: 1,
+            authorText,
+            replyText,
+            clientTimezone,
+            channelId: null,
+            messages: pinnedMessages,
+          });
 
     let final = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
     final = strReplace(final, '{$CHANNEL_ID}', chnl.id);
