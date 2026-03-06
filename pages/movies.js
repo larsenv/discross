@@ -3,6 +3,7 @@
 const fs = require("fs");
 const escape = require("escape-html");
 const he = require("he");
+const auth = require("../authentication.js");
 
 const head_partial = fs.readFileSync(
   "pages/templates/partials/head.html",
@@ -13,6 +14,11 @@ const movies_template = fs
   .readFileSync("pages/templates/movies.html", "utf-8")
   .split("{$COMMON_HEAD}")
   .join(head_partial);
+
+const logged_in_template = fs.readFileSync(
+  "pages/templates/index/logged_in.html",
+  "utf-8",
+);
 
 const THEME_CONFIG = {
   0: { themeClass: "" },
@@ -36,7 +42,11 @@ const TABS = [
     url: "/browse/movies_in_theaters/",
   },
   { id: "movies_at_home", label: "At Home", url: "/browse/movies_at_home/" },
-  { id: "tv", label: "TV Shows", url: "/browse/tv_series_browsing/" },
+  {
+    id: "tv",
+    label: "TV Shows",
+    url: "/browse/tv-series-streaming/",
+  },
 ];
 
 function strReplace(string, needle, replacement) {
@@ -499,9 +509,8 @@ function buildMovieCardHtml(item, showImages) {
 </div>`;
 }
 
-exports.processMovies = async function processMovies(req, res) {
-  const { urlSessionID, sessionParam, theme, themeValue, imagesCookie, tabId } =
-    resolvePrefs(req);
+exports.processMovies = async function processMovies(req, res, discordID) {
+  const { sessionParam, theme, imagesCookie, tabId } = resolvePrefs(req);
 
   const tab = TABS.find((t) => t.id === tabId) || TABS[0];
   const isTv = tab.id === "tv";
@@ -514,12 +523,6 @@ exports.processMovies = async function processMovies(req, res) {
       : "?tab=" + encodeURIComponent(t.id);
     return `<a href="/movies${sep}" class="movie-tab${active}"><font ${FONT}>${escape(t.label)}</font></a>`;
   }).join("\n");
-
-  let sessionHidden = "";
-  if (urlSessionID)
-    sessionHidden += `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">`;
-  if (themeValue !== 0)
-    sessionHidden += `<input type="hidden" name="theme" value="${escape(String(themeValue))}">`;
 
   let moviesHtml;
   try {
@@ -541,15 +544,20 @@ exports.processMovies = async function processMovies(req, res) {
       '<p class="movie-empty">Could not load Rotten Tomatoes data. Please try again later.</p>';
   }
 
+  const username = await auth.getUsername(discordID);
+  const menuOptions = strReplace(
+    logged_in_template,
+    "{$USER}",
+    escape(username),
+  );
+
   let final = strReplace(
     movies_template,
     "{$WHITE_THEME_ENABLED}",
     theme.themeClass,
   );
-  final = strReplace(final, "{$SESSION_PARAM}", sessionParam);
-  final = strReplace(final, "{$SESSION_HIDDEN}", sessionHidden);
+  final = strReplace(final, "{$MENU_OPTIONS}", menuOptions);
   final = strReplace(final, "{$TABS}", tabsHtml);
-  final = strReplace(final, "{$TAB_LABEL}", escape(tab.label));
   final = strReplace(final, "{$MOVIES_ITEMS}", moviesHtml);
 
   res.writeHead(200, { "Content-Type": "text/html" });
