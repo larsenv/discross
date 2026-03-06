@@ -106,6 +106,18 @@ function proxyImageUrl(url) {
   return '/imageProxy/external/' + Buffer.from(url).toString('base64');
 }
 
+// Build a URL with query parameters from a base path and a params object.
+// Omits keys with falsy values. sessionSuffix (e.g. '&sessionID=abc') is appended last if provided.
+function buildUrl(base, params, sessionSuffix) {
+  var parts = [];
+  for (var key in params) {
+    if (params[key]) parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(params[key]));
+  }
+  var url = base + (parts.length ? '?' + parts.join('&') : '');
+  if (sessionSuffix) url += sessionSuffix;
+  return url;
+}
+
 // Extract a single data-* attribute value from an HTML tag string.
 function parseDataAttr(tagHtml, name) {
   var pattern = new RegExp('\\bdata-' + name + '="([^"]*)"', 'i');
@@ -145,7 +157,9 @@ function parseLineups(html) {
   var lineups = [];
   var seen = new Set();
 
-  // Look for links pointing to /tv-listings/{lineup} (not stations/, sports/, movies, whats-on, or a date)
+  // Look for links pointing to /tv-listings/{lineup} (not stations/, sports/, movies, whats-on, or a date).
+  // The negative lookahead `(?!stations\/|sports\/|movies|whats-on)` filters out non-lineup paths.
+  // Capture group 1 captures the lineup slug/ID path after /tv-listings/.
   var linkRegex = /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/((?!stations\/|sports\/|movies|whats-on)[^"?#\s]+)"/gi;
   var m;
   while ((m = linkRegex.exec(html)) !== null) {
@@ -179,8 +193,10 @@ function parseLineupChannels(html, date) {
   var channels = [];
   var seen = new Set();
 
-  // Find all station page links in the format /tv-listings/stations/{slug}/{id}/{date}
-  // The station site_id is "{slug}/{id}", e.g. "nbc-wnbc-new-york-ny/1767"
+  // Find all station page links in the format /tv-listings/stations/{slug}/{id}/{date}.
+  // Capture group 1: full station site_id (e.g. "nbc-wnbc-new-york-ny/1767")
+  // Capture group 2: station slug (e.g. "nbc-wnbc-new-york-ny")
+  // Capture group 3: numeric station id (e.g. "1767")
   var stationLinkRegex = /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/stations\/(([a-z0-9\-]+)\/(\d+))\/(?:\d{4}-\d{2}-\d{2})?"/gi;
   var m;
 
@@ -215,7 +231,7 @@ function parseLineupChannels(html, date) {
       name = he.decode(stripTags(nameMatch[1])).trim();
     }
     if (!name || name.length < 2) {
-      // Derive from slug: "nbc-wnbc-new-york-ny" -> "NBC (WNBC) New York NY"
+      // Fall back to title-casing the slug: "nbc-wnbc-new-york-ny" -> "Nbc Wnbc New York Ny"
       name = stationSlug.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
     }
 
@@ -286,10 +302,7 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
       logoHtml = '<div style="width:120px;height:68px;background:#1a1b1e;"></div>';
     }
 
-    var stationUrl = '/tv/station/' + ch.stationId + '?date=' + encodeURIComponent(date);
-    if (zip) stationUrl += '&zip=' + encodeURIComponent(zip);
-    if (lineup) stationUrl += '&lineup=' + encodeURIComponent(lineup);
-    if (sessionSuffix) stationUrl += sessionSuffix;
+    var stationUrl = buildUrl('/tv/station/' + ch.stationId, { date: date, zip: zip, lineup: lineup }, sessionSuffix);
     var nameHtml = escape(ch.name);
 
     html += '    <td width="33%" style="padding:4px;">';
@@ -431,7 +444,7 @@ async function serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessi
             contentHtml = '<font ' + FONT + ' color="#dddddd"><b>Select your TV provider:</b></font><br><br>\n';
             for (var i = 0; i < lineupList.length; i++) {
               var li = lineupList[i];
-              var lineupUrl = '/tv?zip=' + encodeURIComponent(cleanZip) + '&lineup=' + encodeURIComponent(li.lineupId) + '&date=' + encodeURIComponent(date) + (sessionSuffix ? '&' + sessionSuffix.slice(1) : '');
+              var lineupUrl = buildUrl('/tv', { zip: cleanZip, lineup: li.lineupId, date: date }, sessionSuffix);
               contentHtml += '<a href="' + lineupUrl + '" class="discross-button" style="padding:6px 14px;font-size:14px;margin:0 0 6px 0;display:inline-block;">' + escape(li.name) + '</a><br>\n';
             }
           }
@@ -504,10 +517,8 @@ async function serveStationPage(req, res, parsedUrl, subpath, themeClass, menuHt
   // Build back URL preserving zip/lineup/date parameters
   var backZip = (parsedUrl.searchParams.get('zip') || '').replace(/[^a-zA-Z0-9 \-]/g, '').trim();
   var backLineup = (parsedUrl.searchParams.get('lineup') || '').replace(/[^a-zA-Z0-9_\-\/]/g, '');
-  var backUrl = '/tv?date=' + encodeURIComponent(date);
-  if (backZip) backUrl += '&zip=' + encodeURIComponent(backZip);
-  if (backLineup) backUrl += '&lineup=' + encodeURIComponent(backLineup);
-  if (urlSessionID) backUrl += '&sessionID=' + encodeURIComponent(urlSessionID);
+  var backSessionSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '';
+  var backUrl = buildUrl('/tv', { date: date, zip: backZip, lineup: backLineup }, backSessionSuffix);
 
   var response = strReplace(tv_station_template, '{$WHITE_THEME_ENABLED}', themeClass);
   response = strReplace(response, '{$MENU_OPTIONS}', menuHtml);
