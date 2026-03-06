@@ -253,7 +253,7 @@ function renderDiscordMarkdown(text) {
   function resolveNested(str) {
     // Restore Spoilers - Wii-compatible table-based implementation
     str = str.replace(/§§SPOILER(\d+)§§/g, function (m, i) {
-      const content = spoilerPlaceholders[parseInt(i)];
+      const content = spoilerPlaceholders[parseInt(i, 10)];
       const rendered = md.renderInline(content);
       // Use table-based spoiler for Wii Internet Channel compatibility
       // The show() function in the template files reveals the spoiler by removing background and showing text
@@ -269,7 +269,7 @@ function renderDiscordMarkdown(text) {
 
     // Restore Underlines
     str = str.replace(/§§UNDERLINE(\d+)§§/g, function (m, i) {
-      const content = underlinePlaceholders[parseInt(i)];
+      const content = underlinePlaceholders[parseInt(i, 10)];
       const rendered = md.renderInline(content);
       return `<u>${rendered}</u>`;
     });
@@ -283,20 +283,20 @@ function renderDiscordMarkdown(text) {
 
   // Restore Headers
   result = result.replace(/§§HEADER(\d+)§§/g, function (m, i) {
-    const h = headerPlaceholders[parseInt(i)];
+    const h = headerPlaceholders[parseInt(i, 10)];
     const content = resolveNested(md.renderInline(h.content));
     return `<h${h.level}>${content}</h${h.level}>`;
   });
 
   // Restore Subtext
   result = result.replace(/§§SUBTEXT(\d+)§§/g, function (m, i) {
-    const content = resolveNested(md.renderInline(subtextPlaceholders[parseInt(i)]));
+    const content = resolveNested(md.renderInline(subtextPlaceholders[parseInt(i, 10)]));
     return `<small class="subtext">${content}</small>`;
   });
 
   // Restore Blockquotes
   result = result.replace(/§§BLOCKQUOTE(\d+)§§/g, function (m, i) {
-    const lines = blockQuotePlaceholders[parseInt(i)];
+    const lines = blockQuotePlaceholders[parseInt(i, 10)];
     const processed = lines
       .map((l) => {
         if (!l || l.trim() === '') return '\u00A0'; // Preserve empty lines
@@ -309,7 +309,7 @@ function renderDiscordMarkdown(text) {
 
   // Restore Lists
   result = result.replace(/§§BULLETLIST(\d+)§§/g, function (m, i) {
-    const items = bulletListPlaceholders[parseInt(i)];
+    const items = bulletListPlaceholders[parseInt(i, 10)];
     let html = '';
     let currentLevel = 0;
     let openTags = 1;
@@ -349,11 +349,11 @@ function renderDiscordMarkdown(text) {
 
   // Restore Code
   result = result.replace(/§§CODEINLINE(\d+)§§/g, (m, i) => {
-    return `<code>${escapeHtml(codePlaceholders[parseInt(i)].content)}</code>`;
+    return `<code>${escapeHtml(codePlaceholders[parseInt(i, 10)].content)}</code>`;
   });
 
   result = result.replace(/§§CODEBLOCK(\d+)§§/g, (m, i) => {
-    const item = codePlaceholders[parseInt(i)];
+    const item = codePlaceholders[parseInt(i, 10)];
     const lang = item.lang || '';
     const highlightedCode = highlightCode(item.content, lang);
     const langClass = lang ? ` class="language-${lang}"` : '';

@@ -10,7 +10,7 @@ exports.toggleImages = async function toggleImages(req, res) {
 
     // URL param takes priority over cookie for determining current images state
     // Validate URL param is a valid images value (0 or 1)
-    let parsedUrlImages = urlImages !== null ? parseInt(urlImages) : null;
+    let parsedUrlImages = urlImages !== null ? parseInt(urlImages, 10) : null;
     if (
       parsedUrlImages !== null &&
       (isNaN(parsedUrlImages) || (parsedUrlImages !== 0 && parsedUrlImages !== 1))
@@ -21,7 +21,7 @@ exports.toggleImages = async function toggleImages(req, res) {
       parsedUrlImages !== null
         ? parsedUrlImages
         : imagesCookie !== undefined
-          ? parseInt(imagesCookie)
+          ? parseInt(imagesCookie, 10)
           : 1;
     const newValue = currentValue === 1 ? 0 : 1;
 
