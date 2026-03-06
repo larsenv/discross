@@ -70,7 +70,7 @@ const VIEWS = [
 ];
 
 function fToC(f) {
-  if (f == null || f === '--') return '--';
+  if (f === null || f === undefined || f === '--') return '--';
   return (((f - 32) * 5) / 9).toFixed(1);
 }
 
@@ -307,8 +307,12 @@ function renderHourly(hourly) {
     const iconCode = hour.WeatherIcon || 1;
     const precipProb = hour.PrecipitationProbability ?? '--';
     const windMph = hour.Wind?.Speed?.Value;
-    const windKmh = windMph != null ? (windMph * MPH_TO_KMH).toFixed(1) : null;
-    const windStr = windMph != null ? ` &mdash; Wind: ${windMph} mph / ${windKmh} km/h` : '';
+    const windKmh =
+      windMph !== null && windMph !== undefined ? (windMph * MPH_TO_KMH).toFixed(1) : null;
+    const windStr =
+      windMph !== null && windMph !== undefined
+        ? ` &mdash; Wind: ${windMph} mph / ${windKmh} km/h`
+        : '';
     html += `  <tr style="border-bottom:1px solid #40444b;">
     <td style="padding:6px 8px;white-space:nowrap;width:70px;"><font size="2" ${FONT} color="#b5bac1">${time}</font></td>
     <td style="padding:6px 4px;width:28px;">${iconImg(iconCode, 24)}</td>

@@ -1,12 +1,11 @@
 'use strict';
 const fs = require('fs');
 const https = require('https');
-const auth = require('../authentication.js');
 const bot = require('../bot.js');
 const discord = require('discord.js');
-const { Buffer } = require('buffer');
 const { formidable } = require('formidable');
 const { isBotReady } = require('./utils.js');
+const { getOrCreateWebhook } = require('./webhookCache');
 
 // Upload file to transfer.notkiska.pw and return the URL
 async function uploadToTransfer(filePath, filename) {
@@ -79,28 +78,6 @@ async function uploadToTransfer(filePath, filename) {
       fileStream.pipe(req);
     });
   });
-}
-
-async function getOrCreateWebhook(channel, guildID) {
-  try {
-    const existingWebhooks = await channel.fetchWebhooks();
-    let webhook = existingWebhooks.find(
-      (w) => w.owner.username === 'discross beta' || w.owner.username === 'Discross'
-    );
-
-    if (!webhook) {
-      webhook = await channel.createWebhook({
-        name: 'Discross',
-        avatar: 'pages/static/resources/logo.png',
-        reason: 'Discross uses webhooks to send messages',
-      });
-      auth.dbQueryRun('INSERT INTO webhooks VALUES (?,?,?)', [guildID, webhook.id, webhook.token]);
-    }
-    return webhook;
-  } catch (err) {
-    console.error('Error fetching/creating webhook:', err);
-    throw err;
-  }
 }
 
 const AsyncLock = require('async-lock');

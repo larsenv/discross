@@ -1,12 +1,10 @@
 'use strict';
+const { parseCookies } = require('./utils.js');
 exports.toggleTheme = async function toggleTheme(req, res) {
   try {
     const parsedUrl = new URL(req.url, 'http://localhost');
     const urlTheme = parsedUrl.searchParams.get('theme');
-    const whiteThemeCookie = req.headers.cookie
-      ?.split('; ')
-      ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
-      ?.split('=')[1];
+    const { whiteThemeCookie } = parseCookies(req);
 
     // URL param takes priority over cookie for determining current theme
     // Validate URL param is a valid theme value (0, 1, or 2)
