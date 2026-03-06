@@ -106,20 +106,11 @@ exports.login = async function (username, password, totpToken) {
         if (!code) {
           return { status: 'error', reason: 'Invalid 2FA code!' };
         }
-        // Try TOTP first (only if it looks like a 6-digit code)
-        let codeAccepted = false;
-        if (/^\d{6}$/.test(code)) {
-          const totpValid = otplib.verifySync({
-            type: 'totp',
-            token: code,
-            secret: match.totp_secret,
-          });
-          codeAccepted = totpValid.valid;
-        }
-        if (!codeAccepted) {
-          // Try backup code
-          codeAccepted = await verifyBackupCode(match.discordID, code);
-        }
+        // Try TOTP first (only if it looks like a 6-digit code), then fall back to backup code
+        const totpValid = /^\d{6}$/.test(code)
+          ? otplib.verifySync({ type: 'totp', token: code, secret: match.totp_secret }).valid
+          : false;
+        const codeAccepted = totpValid || (await verifyBackupCode(match.discordID, code));
         if (!codeAccepted) {
           return { status: 'error', reason: 'Invalid 2FA code!' };
         }
@@ -226,17 +217,16 @@ function setup() {
   // One-time migration: clear emoji_cache to fix stale entries that used the
   // incorrect fe0f-including codes (e.g. #️⃣ → "23-fe0f-20e3" instead of "23-20e3").
   // The marker table prevents this from running again after the first startup.
-  let needsEmojiCacheClean = false;
   try {
     queryRun('CREATE TABLE emoji_cache_cleared_v1 (done INTEGER)');
-    needsEmojiCacheClean = true;
-  } catch (_) {}
-  if (needsEmojiCacheClean) {
+    // Table was just created → first run after the migration marker was added
     try {
       queryRun('DELETE FROM emoji_cache');
     } catch (err) {
       console.error('emoji_cache migration error:', err);
     }
+  } catch {
+    // Table already exists → migration already ran, nothing to do
   }
   queryRun(
     'CREATE TABLE IF NOT EXISTS custom_emoji_cache (emoji_id TEXT PRIMARY KEY, emoji_name TEXT, animated INTEGER)'
