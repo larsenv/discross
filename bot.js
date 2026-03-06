@@ -24,7 +24,7 @@ const client = new Discord.Client({
   intents: intentsArray,
 });
 
-client.on('ready', () => {
+client.on('clientReady', () => {
   console.info(`Logged in as ${client.user.tag}!`);
 });
 
