@@ -1,5 +1,5 @@
 'use strict';
-const { strReplace } = require('./utils.js');
+const { strReplace, getPageThemeAttr } = require('./utils.js');
 const fs = require('fs');
 const escape = require('escape-html');
 const auth = require('../authentication.js');
@@ -10,28 +10,6 @@ const changepassword_template = fs
   .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
-
-function applyTheme(response, req) {
-  const parsedUrl = new URL(req.url, 'http://localhost');
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const theme =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie, 10)
-        : 0;
-  if (theme === 1) {
-    return strReplace(response, '{$WHITE_THEME_ENABLED}', 'class="light-theme"');
-  } else if (theme === 2) {
-    return strReplace(response, '{$WHITE_THEME_ENABLED}', 'class="amoled-theme"');
-  } else {
-    return strReplace(response, '{$WHITE_THEME_ENABLED}', 'bgcolor="303338"');
-  }
-}
 
 exports.processChangePassword = async function (bot, req, res, args) {
   const discordID = await auth.checkAuth(req, res, false);
@@ -108,7 +86,7 @@ exports.processChangePassword = async function (bot, req, res, args) {
     response = strReplace(response, '{$ERROR}', '');
   }
 
-  response = applyTheme(response, req);
+  response = strReplace(response, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
 };

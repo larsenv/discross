@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const auth = require('../authentication.js');
 const notFound = require('./notFound.js');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
-const { strReplace } = require('./utils.js');
+const { strReplace, getPageThemeAttr } = require('./utils.js');
 
 const API_TIMEOUT_MS = 15000;
 const VERIFICATION_CODE_MIN = 100000;
@@ -52,23 +52,6 @@ function getTemplates() {
 }
 
 // --- Theme helper ---
-function getThemeAttr(req) {
-  const parsedurl = new URL(req.url, 'http://localhost');
-  const urlTheme = parsedurl.searchParams.get('theme');
-  const cookie = req.headers.cookie || '';
-  const whiteThemeCookie = cookie.split('; ').find((c) => c.startsWith('whiteThemeCookie='));
-  const cookieVal = whiteThemeCookie ? whiteThemeCookie.split('=')[1] : undefined;
-  const theme =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : cookieVal !== undefined
-        ? parseInt(cookieVal, 10)
-        : 0;
-  if (theme === 1) return 'class="light-theme"';
-  if (theme === 2) return 'class="amoled-theme"';
-  return 'bgcolor="303338"';
-}
-
 // --- Cart cookie helpers ---
 function getCart(req) {
   try {
@@ -311,7 +294,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
   const parsedurl = new URL(req.url, 'http://localhost');
   // Normalize: strip leading /food/ and trailing /
   const subpath = parsedurl.pathname.replace(/^\/food\/?/, '').replace(/\/$/, '');
-  const theme = getThemeAttr(req);
+  const theme = getPageThemeAttr(req);
   const templates = getTemplates();
 
   // Session + cart/checkout state: Wii U and other browsers without cookie support
