@@ -59,7 +59,11 @@ function getThemeAttr(req) {
   const whiteThemeCookie = cookie.split('; ').find((c) => c.startsWith('whiteThemeCookie='));
   const cookieVal = whiteThemeCookie ? whiteThemeCookie.split('=')[1] : undefined;
   const theme =
-    urlTheme !== null ? parseInt(urlTheme) : cookieVal !== undefined ? parseInt(cookieVal) : 0;
+    urlTheme !== null
+      ? parseInt(urlTheme, 10)
+      : cookieVal !== undefined
+        ? parseInt(cookieVal, 10)
+        : 0;
   if (theme === 1) return 'class="light-theme"';
   if (theme === 2) return 'class="amoled-theme"';
   return 'bgcolor="303338"';
@@ -1198,7 +1202,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
   // --- Remove item from cart ---
   if (subpath === 'cart/remove') {
     const cart = getCart(req);
-    const idx = parseInt(params.index);
+    const idx = parseInt(params.index, 10);
     if (!isNaN(idx) && idx >= 0 && idx < cart.items.length) {
       cart.items.splice(idx, 1);
     }
@@ -1332,7 +1336,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         checkoutData = JSON.parse(
           Buffer.from(decodeURIComponent(rawVal), 'base64').toString('utf-8')
         );
-        console.log(
+        console.info(
           '[place-order] checkout data found, items:',
           checkoutData &&
             checkoutData.cart &&
@@ -1419,7 +1423,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         keys.length <= 2 &&
         keys.every((k) => PIZZA_SAUCE_CODES.has(k));
       if (isStale) {
-        console.log(
+        console.info(
           '[place-order] stale sauce-only options detected for',
           item.code,
           '— resetting to {} so Dominos applies full recipe'
@@ -1433,7 +1437,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     });
 
     const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com';
-    console.log(
+    console.info(
       '[place-order] sending to',
       dominosHost,
       '| storeId:',
@@ -1443,7 +1447,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       '| country:',
       cart.country
     );
-    console.log('[place-order] products:', JSON.stringify(products));
+    console.info('[place-order] products:', JSON.stringify(products));
 
     // Normalize address via store-locator to get Street, StreetName, StreetNumber, City, PostalCode.
     // WiiLink uses the normalized Street/City/PostalCode from the API response in the payload.
@@ -1466,7 +1470,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       });
       const addrObj = addrResult && addrResult.data && addrResult.data.Address;
       const locatorStores = (addrResult && addrResult.data && addrResult.data.Stores) || [];
-      console.log(
+      console.info(
         '[place-order] store-locator HTTP=%s | Address=%s',
         addrResult && addrResult.status,
         JSON.stringify(addrObj)
@@ -1477,7 +1481,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       // the delivery zone.
       if (locatorStores.length > 0) {
         const nearestStoreId = String(locatorStores[0].StoreID);
-        console.log(
+        console.info(
           '[place-order] using nearest store for delivery address: %s (was: %s)',
           nearestStoreId,
           cart.storeId
@@ -1491,7 +1495,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         streetNumber = addrObj.StreetNumber || '';
         if (addrObj.City) normalizedCity = addrObj.City;
         if (addrObj.PostalCode) normalizedPostalCode = addrObj.PostalCode;
-        console.log(
+        console.info(
           '[place-order] address normalized via API: Street=%s StreetName=%s StreetNumber=%s City=%s PostalCode=%s',
           normalizedStreet,
           streetName,
@@ -1505,26 +1509,26 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         if (parsed) {
           streetNumber = parsed.number;
           streetName = parsed.name;
-          console.log(
+          console.info(
             '[place-order] address parsed from street string: StreetName=%s StreetNumber=%s',
             streetName,
             streetNumber
           );
         } else {
-          console.log(
+          console.info(
             '[place-order] address normalization: could not extract StreetName/StreetNumber from street=%s',
             street
           );
         }
       }
     } catch (e) {
-      console.log('[place-order] address normalization failed:', e && e.message);
+      console.info('[place-order] address normalization failed:', e && e.message);
       // Fallback: parse from raw street string
       const parsed = parseStreetParts(street);
       if (parsed) {
         streetNumber = parsed.number;
         streetName = parsed.name;
-        console.log(
+        console.info(
           '[place-order] address parsed (fallback): StreetName=%s StreetNumber=%s',
           streetName,
           streetNumber
@@ -1592,7 +1596,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
           },
           JSON.stringify(validatePayload)
         );
-        console.log(
+        console.info(
           `[place-order] validate-order step ${vStep + 1} HTTP status:`,
           vResult && vResult.status
         );
@@ -1614,7 +1618,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         // Log outer + Order status. Per WiiLink: AutoAddedOrderId/ServiceMethodNotAllowed at Order
         // level are informational. WiiLink does NOT check Status on validate steps; only on price-order.
         const vStatusItems = vOrder && vOrder.StatusItems;
-        console.log(
+        console.info(
           `[place-order] validate-order step ${vStep + 1} outer Status:`,
           vOuterStatus,
           '| Order Status:',
@@ -1650,7 +1654,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         },
         JSON.stringify(validatePayload)
       );
-      console.log('[place-order] price-order HTTP status:', priceResult && priceResult.status);
+      console.info('[place-order] price-order HTTP status:', priceResult && priceResult.status);
       const priceOrderData = priceResult && priceResult.data && priceResult.data.Order;
       const priceOuterStatus = priceResult && priceResult.data && priceResult.data.Status;
       const priceBadHttp = !priceResult || priceResult.status < 200 || priceResult.status >= 300;
@@ -1663,7 +1667,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         });
         return res.end();
       }
-      console.log(
+      console.info(
         '[place-order] price-order outer Status:',
         priceOuterStatus,
         '| Order Status:',
@@ -1696,7 +1700,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       // Update orderId from price-order response (WiiLink uses price-order OrderID for place-order)
       if (priceOrderData && priceOrderData.OrderID) {
         orderId = priceOrderData.OrderID;
-        console.log('[place-order] using price-order OrderID:', orderId);
+        console.info('[place-order] using price-order OrderID:', orderId);
       }
       // Use the priced total (Amounts.Customer) as the payment amount — this includes tax +
       // delivery surcharge and is the amount Domino's POS expects. Without this the order fails
@@ -1709,7 +1713,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
           ? priceOrderData.Amounts.Customer
           : null;
       if (pricedTotal !== null) {
-        console.log(
+        console.info(
           '[place-order] using priced total from price-order Amounts.Customer:',
           pricedTotal,
           '(cart subtotal was:',
@@ -1783,7 +1787,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     };
 
     // Step 4: Place the priced order.
-    console.log(
+    console.info(
       '[place-order] placing order: storeId=%s orderId=%s street=%s city=%s postalCode=%s streetName=%s streetNumber=%s',
       cart.storeId,
       orderId,
@@ -1793,7 +1797,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       streetName,
       streetNumber
     );
-    console.log('[place-order] place payload:', JSON.stringify(placePayload));
+    console.info('[place-order] place payload:', JSON.stringify(placePayload));
     let orderResult = null;
     try {
       orderResult = await dominosRequest(
@@ -1805,8 +1809,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         },
         JSON.stringify(placePayload)
       );
-      console.log('[place-order] HTTP status:', orderResult && orderResult.status);
-      console.log('[place-order] response:', JSON.stringify(orderResult && orderResult.data));
+      console.info('[place-order] HTTP status:', orderResult && orderResult.status);
+      console.info('[place-order] response:', JSON.stringify(orderResult && orderResult.data));
     } catch (e) {
       console.error('[place-order] network error:', e);
       res.writeHead(302, {
@@ -1860,7 +1864,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       });
       return res.end();
     }
-    console.log(
+    console.info(
       '[place-order] SUCCESS | products:',
       JSON.stringify(products_response.map((p) => ({ code: p.Code, status: p.Status }))),
       '| orderId:',

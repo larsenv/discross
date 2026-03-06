@@ -34,9 +34,9 @@ try {
   // Use HTTPS if keys are available
   options.key = fs.readFileSync('secrets/key.pem');
   options.cert = fs.readFileSync('secrets/cert.pem');
-  console.log('Found keys - using HTTPS!');
+  console.info('Found keys - using HTTPS!');
 } catch (err) {
-  console.log('No keys found - using HTTP!');
+  console.info('No keys found - using HTTP!');
 }
 
 const usinghttps = !!options.key;
@@ -72,7 +72,7 @@ const guestpage = require('./pages/guest.js');
 const guestsendpage = require('./pages/guest_send.js');
 const newspage = require('./pages/news.js');
 const weatherpage = require('./pages/weather.js');
-const currencypage = require('./pages/currency.js')
+const currencypage = require('./pages/currency.js');
 const stockspage = require('./pages/stocks.js');
 const searchpage = require('./pages/search.js');
 const foodpage = require('./pages/food.js');
@@ -474,7 +474,7 @@ server.on('request', async (req, res) => {
       } else if (args[1] === 'weather') {
         await weatherpage.processWeather(req, res);
       } else if (args[1] === 'currency') {
-        await currencypage.processCurrency(req, res)
+        await currencypage.processCurrency(req, res);
       } else if (args[1] === 'stocks') {
         await stockspage.processStocks(req, res);
       } else if (args[1] === 'search') {

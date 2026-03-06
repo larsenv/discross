@@ -39,7 +39,7 @@ exports.setHTTPS = function (ishttps) {
 };
 
 const db = new sqlite3('db/discross.db');
-console.log('Connected to the database.');
+console.info('Connected to the database.');
 
 function queryRun(sql, params = []) {
   return db.prepare(sql).run(...params);

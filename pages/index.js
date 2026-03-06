@@ -34,9 +34,9 @@ exports.processIndex = async function (bot, req, res, args) {
   // URL param takes priority over cookie
   const theme =
     urlTheme !== null
-      ? parseInt(urlTheme)
+      ? parseInt(urlTheme, 10)
       : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie)
+        ? parseInt(whiteThemeCookie, 10)
         : 0;
 
   // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
