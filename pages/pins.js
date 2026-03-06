@@ -119,8 +119,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
 
     let messagesHtml;
     if (pinnedMessages.length === 0) {
-      messagesHtml =
-        '<p style="color: #72767d; font-family: sans-serif;">No pinned messages in this channel.</p>';
+      messagesHtml = '<p style="color: #72767d; font-family: \'rodin\', Arial, Helvetica, sans-serif;">No pinned messages in this channel.</p>';
     } else {
       messagesHtml = await buildMessagesHtml({
         bot,
