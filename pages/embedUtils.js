@@ -10,6 +10,15 @@ const { strReplace, parseCookies } = require('./utils.js');
 const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
 
 /**
+ * Encode an external image URL for use with the /imageProxy/external/ route.
+ * @param {string} url - Raw image URL
+ * @returns {string} Proxy path ready to embed in HTML
+ */
+function proxyExternalImageUrl(url) {
+  return `/imageProxy/external/${Buffer.from(url).toString('base64')}`;
+}
+
+/**
  * Process emoji in rendered HTML text
  * @param {string} text - HTML text that may contain emoji codes
  * @param {number} imagesCookie - Cookie value indicating if images should be displayed
@@ -157,26 +166,18 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     embedHtml = strReplace(embedHtml, '{$EMBED_FIELDS}', fieldsHtml);
 
     // Process embed image (#29 - restore image rendering)
-    let imageHtml = '';
-    if (embed.image && imagesCookie === 1) {
-      const imageUrl = embed.image.url || embed.image.proxyURL;
-      // Route through imageProxy to convert to GIF format
-      const encodedImageUrl = Buffer.from(imageUrl).toString('base64');
-      const proxyUrl = `/imageProxy/external/${encodedImageUrl}`;
-      imageHtml = `<div style="margin-top: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 100%; max-height: 200px; border-radius: 4px; height: auto;" alt="Embed image"></div>`;
-    }
+    const imageHtml =
+      embed.image && imagesCookie === 1
+        ? `<div style="margin-top: 8px;"><img src="${escape(proxyExternalImageUrl(embed.image.url || embed.image.proxyURL))}" style="max-width: 100%; max-height: 200px; border-radius: 4px; height: auto;" alt="Embed image"></div>`
+        : '';
     embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
 
     // Process embed thumbnail (#29 - restore thumbnail rendering)
     // Thumbnail should be positioned BEFORE title/description so it floats to top-right
-    let thumbnailHtml = '';
-    if (embed.thumbnail && imagesCookie === 1) {
-      const thumbnailUrl = embed.thumbnail.url || embed.thumbnail.proxyURL;
-      // Route through imageProxy to convert to GIF format
-      const encodedThumbnailUrl = Buffer.from(thumbnailUrl).toString('base64');
-      const proxyUrl = `/imageProxy/external/${encodedThumbnailUrl}`;
-      thumbnailHtml = `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(proxyUrl)}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`;
-    }
+    const thumbnailHtml =
+      embed.thumbnail && imagesCookie === 1
+        ? `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(proxyExternalImageUrl(embed.thumbnail.url || embed.thumbnail.proxyURL))}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`
+        : '';
     embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', thumbnailHtml);
 
     // Process embed footer

@@ -3,6 +3,8 @@
  * Shared utility functions used across multiple page modules.
  */
 
+const https = require('https');
+
 /**
  * Replaces all occurrences of `needle` in `string` with `replacement`.
  * Built-in String.prototype.replace() only replaces the first occurrence.
@@ -210,6 +212,46 @@ async function resolveMentions(text, guild) {
   return result;
 }
 
+/**
+ * Make an HTTPS GET request following up to `maxRedirects` redirects.
+ * Resolves with `{ statusCode, body }` on success; rejects on network errors.
+ *
+ * @param {object} options - Node.js https.request options
+ * @param {number} maxRedirects - Maximum number of redirects to follow
+ * @returns {Promise<{statusCode: number, body: string}>}
+ */
+function httpsGet(options, maxRedirects) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      const status = res.statusCode;
+      if (status >= 300 && status < 400 && res.headers.location && maxRedirects > 0) {
+        res.resume(); // Discard body
+        let newLoc;
+        try {
+          const loc = new URL(res.headers.location);
+          newLoc = Object.assign({}, options, {
+            hostname: loc.hostname,
+            path: loc.pathname + loc.search,
+          });
+        } catch (e) {
+          // Relative redirect — keep existing hostname
+          newLoc = Object.assign({}, options, { path: res.headers.location });
+        }
+        return httpsGet(newLoc, maxRedirects - 1)
+          .then(resolve)
+          .catch(reject);
+      }
+      let body = '';
+      res.on('data', (chunk) => {
+        body += chunk;
+      });
+      res.on('end', () => resolve({ statusCode: status, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 module.exports = {
   strReplace,
   isValidSnowflake,
@@ -223,4 +265,5 @@ module.exports = {
   buildSessionParam,
   sanitizeGuestName,
   resolveMentions,
+  httpsGet,
 };

@@ -1,10 +1,9 @@
 'use strict';
 
 const fs = require('fs');
-const https = require('https');
 const escape = require('escape-html');
 
-const { strReplace, getPageThemeAttr } = require('./utils.js');
+const { strReplace, getPageThemeAttr, httpsGet } = require('./utils.js');
 
 const auth = require('../authentication.js');
 
@@ -72,41 +71,6 @@ const currency_template = fs
   .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
-
-/**
- * Make an HTTPS GET request, following up to maxRedirects redirects.
- * Resolves with { statusCode, body }.
- */
-function httpsGet(options, maxRedirects) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      const status = res.statusCode;
-      if (status >= 300 && status < 400 && res.headers.location && maxRedirects > 0) {
-        res.resume();
-        let newOptions;
-        try {
-          const loc = new URL(res.headers.location);
-          newOptions = Object.assign({}, options, {
-            hostname: loc.hostname,
-            path: loc.pathname + loc.search,
-          });
-        } catch (e) {
-          newOptions = Object.assign({}, options, { path: res.headers.location });
-        }
-        return httpsGet(newOptions, maxRedirects - 1)
-          .then(resolve)
-          .catch(reject);
-      }
-      let body = '';
-      res.on('data', (chunk) => {
-        body += chunk;
-      });
-      res.on('end', () => resolve({ statusCode: status, body }));
-    });
-    req.on('error', reject);
-    req.end();
-  });
-}
 
 /**
  * Return a date string N calendar days before today in YYYY-MM-DD format.

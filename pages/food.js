@@ -503,14 +503,11 @@ exports.handleGet = async function (bot, req, res, discordID) {
         const desc = escape((p.Description || '').slice(0, 120));
 
         // Pick lowest-price variant
-        let price = '';
+        const variantPrices = p.Variants?.length
+          ? p.Variants.map((v) => parseFloat((variants[v] || {}).Price || 0)).filter((v) => v > 0)
+          : [];
+        const price = variantPrices.length ? `$${Math.min(...variantPrices).toFixed(2)}` : '';
         const hasMultipleVariants = p.Variants && p.Variants.length > 1;
-        if (p.Variants && p.Variants.length) {
-          const prices = p.Variants.map((v) => parseFloat((variants[v] || {}).Price || 0)).filter(
-            (v) => v > 0
-          );
-          if (prices.length) price = `$${Math.min(...prices).toFixed(2)}`;
-        }
 
         const safeCode = escape(code);
         const safeName = escape(p.Name || code);

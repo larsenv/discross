@@ -59,17 +59,14 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
   }
 
   try {
-    let botMember, member;
-    try {
-      botMember = await chnl.guild.members.fetch(bot.client.user.id);
-    } catch {
+    const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
+    if (!botMember) {
       res.end('The bot is not in this server!');
       return;
     }
 
-    try {
-      member = await chnl.guild.members.fetch(discordID);
-    } catch {
+    const member = await chnl.guild.members.fetch(discordID).catch(() => null);
+    if (!member) {
       res.end('You are not in this server! Please join the server to view this channel.');
       return;
     }

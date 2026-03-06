@@ -127,13 +127,14 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
       botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true) &&
       botMember.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
 
-    let inputHtml = canSend
-      ? strReplace(TEMPLATE_INPUT, '{$COLOR}', boxColor)
-      : strReplace(TEMPLATE_INPUT_DISABLED, '{$COLOR}', boxColor);
-
-    // Replace channel name placeholder in input template
     const channelDisplayName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
-    inputHtml = strReplace(inputHtml, '{$CHANNEL_NAME}', escape(channelDisplayName));
+    const inputHtml = strReplace(
+      canSend
+        ? strReplace(TEMPLATE_INPUT, '{$COLOR}', boxColor)
+        : strReplace(TEMPLATE_INPUT_DISABLED, '{$COLOR}', boxColor),
+      '{$CHANNEL_NAME}',
+      escape(channelDisplayName)
+    );
 
     const messagesHtml = await buildMessagesHtml({
       bot,
