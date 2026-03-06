@@ -207,8 +207,8 @@ pre code { background: none; border: none; padding: 0; }
 .message-link { text-decoration: none; color: inherit; display: block; }
 .messagecontent, .messagecontent-font {
     color: #DCDCDF;
-    font-size: 14px;
-    line-height: 18px;
+    font-size: 17px;
+    line-height: 22px;
     word-wrap: break-word;
 }
 .messagecontent a { color: #00b0f4; }
@@ -1156,6 +1156,7 @@ html.page-server font[color="#dcddde"] {
 .news-article-image-wrap { margin: 14px 0; display: block; }
 .news-article-image { width: 100%; max-width: 480px; max-height: 320px; object-fit: cover; display: block; border-radius: 4px; }
 .news-article-caption { font-size: 12px; color: #72767d; display: block; margin-top: 4px; }
+.news-attribution { font-size: 12px; color: #72767d; margin-top: 16px; }
 
 /* Light theme overrides */
 .light-theme .news-card { background: #f2f3f5; border-color: #d0d2d6; }
