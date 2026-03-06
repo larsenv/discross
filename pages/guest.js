@@ -74,10 +74,8 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
   }
 
-  let botMember;
-  try {
-    botMember = await chnl.guild.members.fetch(bot.client.user.id);
-  } catch {
+  const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
+  if (!botMember) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });
     res.end('The bot is not in this server!');
     return;

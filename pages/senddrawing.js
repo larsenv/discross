@@ -14,11 +14,11 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     // Allow sending drawings with or without a message
     const channel = await bot.client.channels.fetch(parsedurl.channel);
 
-    let member;
-    try {
-      member = await channel.guild.members.fetch(discordID);
-    } catch (err) {
+    const member = await channel.guild.members.fetch(discordID).catch((err) => {
       console.error(`[sendDrawing] failed to fetch member:`, err);
+      return null;
+    });
+    if (!member) {
       res.writeHead(500, { 'Content-Type': 'text/html' });
       res.end(
         'Failed to verify user permissions. Please ensure you have access to this channel or try again later.'

@@ -171,7 +171,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
               await webhook.edit({ channel: channel.id });
             }
 
-            let cleanMessage = messageText
+            const cleanMessage = messageText
               ? messageText.replace(/\[Uploading:.*?\]/g, '').trim()
               : '';
 

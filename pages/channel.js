@@ -1112,13 +1112,11 @@ function buildInputHtml(botMember, member, chnl, boxColor) {
   const canSend = member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
 
   if (!canWebhook) {
-    let html = strReplace(TEMPLATES.inputDisabled, '{$COLOR}', boxColor);
-    html = strReplace(
-      html,
+    return strReplace(
+      strReplace(TEMPLATES.inputDisabled, '{$COLOR}', boxColor),
       "You don't have permission to send messages in this channel.",
       "Discross bot doesn't have the Manage Webhooks permission"
     );
-    return html;
   }
   if (canSend) {
     return strReplace(TEMPLATES.input, '{$COLOR}', boxColor);
@@ -1145,31 +1143,22 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
   const clientTimezone = getTimezoneFromIP(getClientIP(req));
 
-  let chnl;
-  try {
-    chnl = await bot.client.channels.fetch(args[2]);
-  } catch {
-    chnl = undefined;
-  }
+  const chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
   if (!chnl) {
     return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
   }
 
   try {
-    let botMember, member;
-
-    try {
-      botMember = await chnl.guild.members.fetch(bot.client.user.id);
-    } catch {
+    const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
+    if (!botMember) {
       res.writeHead(503, { 'Content-Type': 'text/plain' });
       res.end('The bot is not in this server!');
       return;
     }
 
-    try {
-      member = await chnl.guild.members.fetch(discordID);
-    } catch {
+    const member = await chnl.guild.members.fetch(discordID).catch(() => null);
+    if (!member) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end('You are not in this server! Please join the server to view this channel.');
       return;

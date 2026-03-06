@@ -25,11 +25,11 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         return;
       }
 
-      let member;
-      try {
-        member = await channel.guild.members.fetch(discordID);
-      } catch (err) {
+      const member = await channel.guild.members.fetch(discordID).catch((err) => {
         console.error('Failed to fetch member:', err);
+        return null;
+      });
+      if (!member) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end(
           'Failed to verify user permissions. Please ensure you have access to this channel or try again later.'
