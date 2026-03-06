@@ -493,10 +493,9 @@ function detectMention(item, member, discordID, isReply, replyData) {
 async function resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone) {
   try {
     const fwdMsg = await item.fetchReference();
-    let fwdMember = null;
-    if (!fwdMsg.author?.bot) {
-      fwdMember = await ensureMemberData(fwdMsg, chnl.guild, memberCache);
-    }
+    const fwdMember = fwdMsg.author?.bot
+      ? null
+      : await ensureMemberData(fwdMsg, chnl.guild, memberCache);
 
     const content = truncateText(fwdMsg.content, FORWARDED_CONTENT_MAX_LENGTH);
     let originHtml = '';

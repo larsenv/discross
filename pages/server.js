@@ -93,13 +93,13 @@ async function processServerChannels(server, member, response, sessionParam) {
     const discordID = member.id;
 
     // Fetch active threads for this server
-    let activeThreadsList = [];
-    try {
-      const activeThreadsResult = await server.channels.fetchActiveThreads();
-      activeThreadsList = [...activeThreadsResult.threads.values()];
-    } catch (err) {
-      console.error('Failed to fetch active threads:', err);
-    }
+    const activeThreadsList = await server.channels
+      .fetchActiveThreads()
+      .then((r) => [...r.threads.values()])
+      .catch((err) => {
+        console.error('Failed to fetch active threads:', err);
+        return [];
+      });
 
     // For each active thread, check if this specific user is a member.
     // fetchActiveThreads() only populates the bot's own membership in the cache,
@@ -135,17 +135,17 @@ async function processServerChannels(server, member, response, sessionParam) {
     );
     const categoriesSorted = categories.sort((a, b) => a.position - b.position);
 
+    // Helper: check if a channel should be shown in the channel list
+    const isDisplayableChannel = (channel) =>
+      channel.isTextBased() ||
+      channel.type === ChannelType.GuildVoice ||
+      channel.type === ChannelType.GuildForum ||
+      channel.type === ChannelType.GuildMedia;
+
     // Start with lone text channels (no category), voice channels, and forum/media channels
     let channelsSorted = [
       ...server.channels.cache
-        .filter(
-          (channel) =>
-            (channel.isTextBased() ||
-              channel.type === ChannelType.GuildVoice ||
-              channel.type === ChannelType.GuildForum ||
-              channel.type === ChannelType.GuildMedia) &&
-            !channel.parent
-        )
+        .filter((channel) => isDisplayableChannel(channel) && !channel.parent)
         .values(),
     ];
     channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
@@ -154,11 +154,7 @@ async function processServerChannels(server, member, response, sessionParam) {
       channelsSorted.push(category);
       channelsSorted = channelsSorted.concat(
         [...category.children.cache.sort((a, b) => a.position - b.position).values()].filter(
-          (channel) =>
-            channel.isTextBased() ||
-            channel.type === ChannelType.GuildVoice ||
-            channel.type === ChannelType.GuildForum ||
-            channel.type === ChannelType.GuildMedia
+          isDisplayableChannel
         )
       );
     });
