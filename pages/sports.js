@@ -139,6 +139,35 @@ function rowBgColor(stateType) {
   return BG_UPCOMING;
 }
 
+// Expand common ESPN shortDetail abbreviations that may be confusing
+function expandStatusDetail(text) {
+  if (!text) return text;
+  return text
+    .replace(/^Bot\b/, 'Bottom') // baseball: "Bot 7th" → "Bottom 7th"
+    .replace(/^End\b/, 'End of') // baseball: "End 5th" → "End of 5th"
+    .replace(/^Mid\b/, 'Mid-') // baseball: "Mid 3rd" → "Mid-3rd"
+    .replace(/^P(\d)\b/, 'Period $1') // hockey: "P2 14:22" → "Period 2 14:22"
+    .replace(/^OT\b/, 'Overtime') // all sports: "OT" → "Overtime"
+    .replace(/^HT\b/, 'Halftime') // soccer: "HT" → "Halftime"
+    .replace(/^FT\b/, 'Full Time'); // soccer: "FT" → "Full Time"
+}
+
+// Sort events: live (in) first, then upcoming (pre) by start time asc, then finished (post) by time desc
+function sortEvents(events) {
+  const stateOrder = { in: 0, pre: 1, post: 2 };
+  return [...events].sort((a, b) => {
+    const aState = (a.status && a.status.type && a.status.type.state) || 'pre';
+    const bState = (b.status && b.status.type && b.status.type.state) || 'pre';
+    const aOrder = stateOrder[aState] != null ? stateOrder[aState] : 1;
+    const bOrder = stateOrder[bState] != null ? stateOrder[bState] : 1;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    const aTime = new Date(a.date || 0).getTime();
+    const bTime = new Date(b.date || 0).getTime();
+    // Upcoming: earlier games first; live/finished: most recent first
+    return aState === 'pre' ? aTime - bTime : bTime - aTime;
+  });
+}
+
 function renderScoreboard(events, userTZ) {
   if (!events || events.length === 0) {
     return `<font ${FONT} color="#72767d">No games scheduled recently.</font><br>`;
@@ -158,7 +187,7 @@ function renderScoreboard(events, userTZ) {
 
     const status = event.status || {};
     const stateType = (status.type && status.type.state) || 'pre';
-    const statusDetail = (status.type && status.type.shortDetail) || '';
+    const statusDetail = expandStatusDetail((status.type && status.type.shortDetail) || '');
     const color = statusColor(stateType);
     const bgColor = rowBgColor(stateType);
     const isLast = i === events.length - 1;
@@ -182,7 +211,8 @@ function renderScoreboard(events, userTZ) {
 
     let gameTimeDisplay;
     if (stateType === 'in') {
-      gameTimeDisplay = escape(statusDetail);
+      // Status is already shown in the center column; show start time dimmed for context
+      gameTimeDisplay = escape(formatGameTime(competition.date || event.date, userTZ));
     } else if (stateType === 'post') {
       gameTimeDisplay = `Final &mdash; ${escape(formatGameTime(competition.date || event.date, userTZ))}`;
     } else {
@@ -208,7 +238,7 @@ function renderScoreboard(events, userTZ) {
       <font size="3" ${FONT} color="${homeColor}">${homeWeight}${homeName}${homeWeightEnd}</font>
     </td>
     <td style="padding:8px;white-space:nowrap;">
-      <font size="2" ${FONT} color="${color}">${gameTimeDisplay}</font>
+      <font size="2" ${FONT} color="${stateType === 'in' ? COLOR_FINAL : color}">${gameTimeDisplay}</font>
     </td>
   </tr>\n`;
   }
@@ -274,7 +304,7 @@ exports.processSports = async function processSports(req, res) {
             .slice(0, 8)
         : [];
 
-    const allEvents = [...todayEvents, ...yestEvents];
+    const allEvents = sortEvents([...todayEvents, ...yestEvents]);
     sportsHtml = renderScoreboard(allEvents, userTZ);
   } catch (err) {
     console.error('Sports API error:', err.message);
