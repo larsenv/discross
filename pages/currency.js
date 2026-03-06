@@ -214,9 +214,10 @@ function renderRatesTable(base, latestData, prevData, targets) {
 
   for (const code of targets) {
     if (code === base) continue;
-    const rate = latestRates[code] != null ? latestRates[code] : null;
+    const rate =
+      latestRates[code] !== null && latestRates[code] !== undefined ? latestRates[code] : null;
     if (rate === null) continue;
-    const prev = prevRates[code] != null ? prevRates[code] : null;
+    const prev = prevRates[code] !== null && prevRates[code] !== undefined ? prevRates[code] : null;
     const change = prev !== null ? rate - prev : null;
     const changePct = prev !== null && prev !== 0 ? ((rate - prev) / prev) * 100 : null;
     const decimals = rateDecimals(rate);

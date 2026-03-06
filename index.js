@@ -84,7 +84,7 @@ const STICKER_PROXY_PREFIX_LENGTH = '/imageProxy/sticker/'.length; // 20
 
 bot.startBot();
 
-const { strReplace, isValidSnowflake } = require('./pages/utils.js');
+const { strReplace, isValidSnowflake, parseCookies } = require('./pages/utils.js');
 
 // create a server object:
 const server = http.createServer(options);
@@ -577,10 +577,7 @@ server.on('request', async (req, res) => {
         let theme = 'dark';
         if (discordID) {
           const urlTheme = parsedurl.searchParams.get('theme');
-          const whiteThemeCookie = req.headers.cookie
-            ?.split('; ')
-            ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
-            ?.split('=')[1];
+          const { whiteThemeCookie } = parseCookies(req);
           const themeValue = urlTheme !== null ? urlTheme : whiteThemeCookie;
           if (themeValue === '1') {
             theme = 'light';

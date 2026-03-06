@@ -178,22 +178,28 @@ async function processServerChannels(server, member, response, sessionParam) {
             channelList += '</div>'; // Close previous category-channels div
           }
           currentCategoryId = item.id;
-          channelList += category_channel_template
-            .replace('{$CHANNEL_NAME}', escapedName)
-            .replace('{$CATEGORY_ID}', item.id);
+          channelList += strReplace(
+            strReplace(category_channel_template, '{$CHANNEL_NAME}', escapedName),
+            '{$CATEGORY_ID}',
+            item.id
+          );
         } else if (item.type === ChannelType.GuildForum || item.type === ChannelType.GuildMedia) {
           // Forum / media channels
-          channelList += forum_channel_template
-            .replace('{$CHANNEL_NAME}', escapedName)
-            .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
+          channelList += strReplace(
+            strReplace(forum_channel_template, '{$CHANNEL_NAME}', escapedName),
+            '{$CHANNEL_LINK}',
+            `../channels/${item.id}${sessionParam}`
+          );
         } else if (
           item.type === ChannelType.GuildAnnouncement ||
           item.type === ChannelType.GuildNews
         ) {
           // Use announcement template for announcement/news channels
-          channelList += announcement_channel_template
-            .replace('{$CHANNEL_NAME}', escapedName)
-            .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
+          channelList += strReplace(
+            strReplace(announcement_channel_template, '{$CHANNEL_NAME}', escapedName),
+            '{$CHANNEL_LINK}',
+            `../channels/${item.id}${sessionParam}`
+          );
         } else if (item.type === ChannelType.GuildVoice) {
           // Voice channels - check if they're locked (#27)
           const canSendMessages = member
@@ -201,20 +207,26 @@ async function processServerChannels(server, member, response, sessionParam) {
             .has(PermissionFlagsBits.SendMessages, true);
           if (!canSendMessages) {
             // Locked voice channel
-            channelList += locked_channel_template
-              .replace('{$CHANNEL_NAME}', escapedName)
-              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
+            channelList += strReplace(
+              strReplace(locked_channel_template, '{$CHANNEL_NAME}', escapedName),
+              '{$CHANNEL_LINK}',
+              `../channels/${item.id}${sessionParam}`
+            );
           } else {
             // Voice channel with text capability (#14)
-            channelList += voice_channel_template
-              .replace('{$CHANNEL_NAME}', escapedName)
-              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
+            channelList += strReplace(
+              strReplace(voice_channel_template, '{$CHANNEL_NAME}', escapedName),
+              '{$CHANNEL_LINK}',
+              `../channels/${item.id}${sessionParam}`
+            );
           }
         } else if (item.type === ChannelType.GuildStageVoice) {
           // Stage channels
-          channelList += voice_channel_template
-            .replace('{$CHANNEL_NAME}', escapedName)
-            .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
+          channelList += strReplace(
+            strReplace(voice_channel_template, '{$CHANNEL_NAME}', escapedName),
+            '{$CHANNEL_LINK}',
+            `../channels/${item.id}${sessionParam}`
+          );
         } else if (!isThread && item.isTextBased()) {
           // Text-based channels (threads are excluded since they are rendered under
           // their parent channel via the thread group block below)
@@ -227,19 +239,25 @@ async function processServerChannels(server, member, response, sessionParam) {
           const isRulesChannel = item.name.toLowerCase().includes('rule');
 
           if (isRulesChannel) {
-            channelList += rules_channel_template
-              .replace('{$CHANNEL_NAME}', escapedName)
-              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
+            channelList += strReplace(
+              strReplace(rules_channel_template, '{$CHANNEL_NAME}', escapedName),
+              '{$CHANNEL_LINK}',
+              `../channels/${item.id}${sessionParam}`
+            );
           } else if (!canSendMessages) {
             // Locked channel (#12)
-            channelList += locked_channel_template
-              .replace('{$CHANNEL_NAME}', escapedName)
-              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
+            channelList += strReplace(
+              strReplace(locked_channel_template, '{$CHANNEL_NAME}', escapedName),
+              '{$CHANNEL_LINK}',
+              `../channels/${item.id}${sessionParam}`
+            );
           } else {
             // Regular text channel
-            channelList += text_channel_template
-              .replace('{$CHANNEL_NAME}', escapedName)
-              .replace('{$CHANNEL_LINK}', `../channels/${item.id}${sessionParam}`);
+            channelList += strReplace(
+              strReplace(text_channel_template, '{$CHANNEL_NAME}', escapedName),
+              '{$CHANNEL_LINK}',
+              `../channels/${item.id}${sessionParam}`
+            );
           }
         }
 
@@ -249,12 +267,14 @@ async function processServerChannels(server, member, response, sessionParam) {
             .get(item.id)
             .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
           if (channelThreads.length > 0) {
-            channelList += thread_group_header_template.replace('{$CHANNEL_ID}', item.id);
+            channelList += strReplace(thread_group_header_template, '{$CHANNEL_ID}', item.id);
             channelThreads.forEach((thread) => {
               const threadEscapedName = escape(normalizeWeirdUnicode(thread.name));
-              channelList += thread_channel_template
-                .replace('{$CHANNEL_NAME}', threadEscapedName)
-                .replace('{$CHANNEL_LINK}', `../channels/${thread.id}${sessionParam}`);
+              channelList += strReplace(
+                strReplace(thread_channel_template, '{$CHANNEL_NAME}', threadEscapedName),
+                '{$CHANNEL_LINK}',
+                `../channels/${thread.id}${sessionParam}`
+              );
             });
             channelList += '</div>';
           }

@@ -334,8 +334,8 @@ function renderDiscordMarkdown(text) {
       }
       currentLevel = itemLevel;
 
-      let content = item.content;
-      let processedContent = resolveNested(md.renderInline(content));
+      const content = item.content;
+      const processedContent = resolveNested(md.renderInline(content));
       html += `<li>${processedContent}</li>`;
     });
 
