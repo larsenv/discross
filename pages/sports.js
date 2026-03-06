@@ -11,6 +11,14 @@ const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 // Fallback timezone when user cookie is absent or invalid
 const DEFAULT_TZ = 'America/New_York';
 
+// Game state colors (text + row background)
+const COLOR_LIVE = '#57f287'; // green text — in-progress game
+const COLOR_FINAL = '#72767d'; // grey text — finished game
+const COLOR_UPCOMING = '#dddddd'; // white text — scheduled game
+const BG_LIVE = '#1a2f22'; // dark green tint — in-progress row
+const BG_FINAL = '#25262b'; // slightly dimmer — finished row
+const BG_UPCOMING = '#2f3136'; // default dark — upcoming row
+
 const sports_template = fs
   .readFileSync('pages/templates/sports.html', 'utf-8')
   .split('{$COMMON_HEAD}')
@@ -104,6 +112,7 @@ function formatGameTime(dateStr, userTZ) {
     const d = new Date(dateStr);
     return d.toLocaleString('en-US', {
       weekday: 'short',
+      year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: 'numeric',
@@ -116,10 +125,18 @@ function formatGameTime(dateStr, userTZ) {
   }
 }
 
+// Text color for the status label and time column
 function statusColor(stateType) {
-  if (stateType === 'in') return '#57f287'; // green = live
-  if (stateType === 'post') return '#72767d'; // grey = final
-  return '#dddddd'; // pre = upcoming
+  if (stateType === 'in') return COLOR_LIVE;
+  if (stateType === 'post') return COLOR_FINAL;
+  return COLOR_UPCOMING;
+}
+
+// Row background color to visually distinguish game states
+function rowBgColor(stateType) {
+  if (stateType === 'in') return BG_LIVE;
+  if (stateType === 'post') return BG_FINAL;
+  return BG_UPCOMING;
 }
 
 function renderScoreboard(events, userTZ) {
@@ -143,8 +160,10 @@ function renderScoreboard(events, userTZ) {
     const stateType = (status.type && status.type.state) || 'pre';
     const statusDetail = (status.type && status.type.shortDetail) || '';
     const color = statusColor(stateType);
+    const bgColor = rowBgColor(stateType);
     const isLast = i === events.length - 1;
-    const borderStyle = isLast ? '' : ' style="border-bottom:1px solid #40444b;"';
+    const borderBottom = isLast ? '' : 'border-bottom:1px solid #40444b;';
+    const rowStyle = ` style="background-color:${bgColor};${borderBottom}"`;
 
     const homeName = escape((homeTeam && homeTeam.team && homeTeam.team.abbreviation) || '???');
     const awayName = escape((awayTeam && awayTeam.team && awayTeam.team.abbreviation) || '???');
@@ -172,7 +191,7 @@ function renderScoreboard(events, userTZ) {
 
     const statusLabel = stateType === 'in' ? escape(statusDetail) : stateType === 'post' ? 'Final' : '';
 
-    html += `  <tr${borderStyle}>
+    html += `  <tr${rowStyle}>
     <td style="padding:8px;width:52px;text-align:center;">
       <font size="3" ${FONT} color="${awayColor}">${awayWeight}${awayName}${awayWeightEnd}</font>
     </td>
@@ -189,7 +208,7 @@ function renderScoreboard(events, userTZ) {
       <font size="3" ${FONT} color="${homeColor}">${homeWeight}${homeName}${homeWeightEnd}</font>
     </td>
     <td style="padding:8px;white-space:nowrap;">
-      <font size="2" ${FONT} color="#72767d">${gameTimeDisplay}</font>
+      <font size="2" ${FONT} color="${color}">${gameTimeDisplay}</font>
     </td>
   </tr>\n`;
   }
