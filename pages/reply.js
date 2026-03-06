@@ -21,8 +21,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
       const channel = await bot.client.channels.fetch(parsedurl.searchParams.get('channel'));
       if (!channel) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.write('Channel not found');
-        res.end();
+        res.end('Channel not found');
         return;
       }
 
@@ -32,16 +31,15 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
       } catch (err) {
         console.error('Failed to fetch member:', err);
         res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.write(
+        res.end(
           'Failed to verify user permissions. Please ensure you have access to this channel or try again later.'
         );
-        res.end();
         return;
       }
 
       if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
-        res.write("You don't have permission to do that!");
-        res.end();
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end("You don't have permission to do that!");
         return;
       }
 
@@ -78,8 +76,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
       // Verify the reply message belongs to the channel to prevent reply spoofing
       if (reply_message.channelId !== channel.id) {
         res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.write('Reply message does not belong to this channel');
-        res.end();
+        res.end('Reply message does not belong to this channel');
         return;
       }
       let reply_message_content = reply_message.content;

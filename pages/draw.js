@@ -91,15 +91,13 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
       template = strReplace(template, '{$SESSION_PARAM}', sessionParam);
 
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.write(template);
-      res.end();
+      res.end(template);
     } else {
       return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
     }
   } catch (error) {
     console.error(error);
     res.writeHead(500, { 'Content-Type': 'text/html' });
-    res.write('An error occurred! Please try again later.<br>');
-    res.end();
+    res.end('An error occurred! Please try again later.<br>');
   }
 };

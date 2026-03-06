@@ -148,8 +148,7 @@ exports.processSetup2FA = async function (bot, req, res, args) {
 
   response = applyTheme(response, req);
   res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.write(response);
-  res.end();
+  res.end(response);
 };
 
 exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
@@ -208,8 +207,7 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
   response = applyTheme(response, req);
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.write(response);
-  res.end();
+  res.end(response);
 };
 
 exports.handleDisable2FA = async function (bot, req, res, body, discordID) {

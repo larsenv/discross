@@ -25,8 +25,7 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
     try {
       const iconData = await fs.promises.readFile(iconPath);
       res.writeHead(200, { 'Content-Type': 'image/gif', 'Cache-Control': 'public, max-age=86400' });
-      res.write(iconData);
-      res.end();
+      res.end(iconData);
       return;
     } catch (err) {
       console.error('Error reading icon file:', err);
@@ -64,8 +63,7 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
 
       // Serve the icon
       res.writeHead(200, { 'Content-Type': 'image/gif', 'Cache-Control': 'public, max-age=86400' });
-      res.write(gifBuffer);
-      res.end();
+      res.end(gifBuffer);
       return;
     }
   } catch (err) {
@@ -91,8 +89,7 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
 
     // Serve the placeholder
     res.writeHead(200, { 'Content-Type': 'image/gif', 'Cache-Control': 'public, max-age=86400' });
-    res.write(placeholderBuffer);
-    res.end();
+    res.end(placeholderBuffer);
   } catch (err) {
     console.error('Error generating placeholder icon:', err);
 

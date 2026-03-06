@@ -148,7 +148,7 @@ async function fetchLatestAndPrevRates(base) {
 }
 
 function formatRate(rate, decimals) {
-  if (rate == null) return '--';
+  if (rate === null) return '--';
   return rate.toLocaleString('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -156,25 +156,25 @@ function formatRate(rate, decimals) {
 }
 
 function formatChange(change, decimals) {
-  if (change == null) return '--';
+  if (change === null) return '--';
   const sign = change >= 0 ? '+' : '';
   return sign + change.toFixed(decimals);
 }
 
 function formatChangePct(pct) {
-  if (pct == null) return '--';
+  if (pct === null) return '--';
   const sign = pct >= 0 ? '+' : '';
   return sign + pct.toFixed(2) + '%';
 }
 
 function changeColor(change) {
-  if (change == null) return '#72767d';
+  if (change === null) return '#72767d';
   return change >= 0 ? '#57f287' : '#ed4245';
 }
 
 /** Choose decimal precision based on rate magnitude. */
 function rateDecimals(rate) {
-  if (rate == null) return 4;
+  if (rate === null) return 4;
   if (rate >= 100) return 2;
   if (rate >= 10) return 3;
   return 4;
@@ -201,10 +201,10 @@ function renderRatesTable(base, latestData, prevData, targets) {
   for (const code of targets) {
     if (code === base) continue;
     const rate = latestRates[code] != null ? latestRates[code] : null;
-    if (rate == null) continue;
+    if (rate === null) continue;
     const prev = prevRates[code] != null ? prevRates[code] : null;
-    const change = prev != null ? rate - prev : null;
-    const changePct = prev != null && prev !== 0 ? ((rate - prev) / prev) * 100 : null;
+    const change = prev !== null ? rate - prev : null;
+    const changePct = prev !== null && prev !== 0 ? ((rate - prev) / prev) * 100 : null;
     const decimals = rateDecimals(rate);
     const color = changeColor(change);
     const name = CURRENCY_NAMES[code] || code;

@@ -461,14 +461,14 @@ exports.checkAuth = async function (req, res, noRedirect) {
       return session;
     } else {
       if (!noRedirect) {
-        res.writeHead(301, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) });
+        res.writeHead(301, { Location: `/login.html?redirect=${encodeURIComponent(req.url)}` });
         res.end();
       }
       return false;
     }
   } else {
     if (!noRedirect) {
-      res.writeHead(303, { Location: '/login.html?redirect=' + encodeURIComponent(req.url) });
+      res.writeHead(303, { Location: `/login.html?redirect=${encodeURIComponent(req.url)}` });
       res.end();
     }
     return false;
@@ -493,44 +493,33 @@ exports.handleLoginRegister = async function (req, res, body) {
               redirectUrl.pathname + (redirectUrl.search || '') + (redirectUrl.hash || '');
           } catch (e) {}
           const sep = redirectBase.includes('?') ? '&' : '?';
-          const redirectPath =
-            redirectBase + sep + 'sessionID=' + encodeURIComponent(result.sessionID) + '#end';
+          const redirectPath = `${redirectBase}${sep}sessionID=${encodeURIComponent(result.sessionID)}#end`;
           res.writeHead(200, {
             'Set-Cookie': [
-              'sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : ''),
+              `sessionID=${result.sessionID}; path=/; HttpOnly${https ? '; Secure' : ''}`,
             ],
             Location: redirectPath,
             'Content-Type': 'text/html',
           });
-          res.write(
-            '<html><head><meta http-equiv="refresh" content="0; URL=' +
-              he.encode(redirectPath) +
-              '" /></head><body>Logged in. Click <a href="' +
-              he.encode(redirectPath) +
-              '">here</a> to continue</body></html>'
+          res.end(
+            `<html><head><meta http-equiv="refresh" content="0; URL=${he.encode(redirectPath)}" /></head><body>Logged in. Click <a href="${he.encode(redirectPath)}">here</a> to continue</body></html>`
           );
         } else {
-          const redirectPath =
-            '/server/?sessionID=' + encodeURIComponent(result.sessionID) + '#end';
+          const redirectPath = `/server/?sessionID=${encodeURIComponent(result.sessionID)}#end`;
           res.writeHead(200, {
             'Set-Cookie': [
-              'sessionID=' + result.sessionID + '; path=/; HttpOnly' + (https ? '; Secure' : ''),
+              `sessionID=${result.sessionID}; path=/; HttpOnly${https ? '; Secure' : ''}`,
             ],
             Location: redirectPath,
             'Content-Type': 'text/html',
           });
-          res.write(
-            '<html><head><meta http-equiv="refresh" content="0; URL=' +
-              he.encode(redirectPath) +
-              '" /></head><body>Logged in. Click <a href="' +
-              he.encode(redirectPath) +
-              '">here</a> to continue</body></html>'
+          res.end(
+            `<html><head><meta http-equiv="refresh" content="0; URL=${he.encode(redirectPath)}" /></head><body>Logged in. Click <a href="${he.encode(redirectPath)}">here</a> to continue</body></html>`
           );
         }
-        res.end();
       } else {
         res.writeHead(301, {
-          Location: '/login.html?errortext=' + encodeURIComponent(result.reason),
+          Location: `/login.html?errortext=${encodeURIComponent(result.reason)}`,
           'Content-Type': 'text/html',
         });
         res.end();
@@ -563,7 +552,7 @@ exports.handleLoginRegister = async function (req, res, body) {
         res.end();
       } else {
         res.writeHead(301, {
-          Location: '/register.html?errortext=' + encodeURIComponent(result.reason),
+          Location: `/register.html?errortext=${encodeURIComponent(result.reason)}`,
         });
         res.end();
       }

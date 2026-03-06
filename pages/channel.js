@@ -1236,8 +1236,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       );
       final = strReplace(final, '{$SESSION_ID}', urlSessionID);
       final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
-      res.write(final);
-      res.end();
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(final);
       return;
     }
 

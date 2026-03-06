@@ -163,7 +163,7 @@ function formatDateWithTimezone(date, timezone) {
   } catch (err) {
     // If timezone is invalid, fall back to default format
     console.error('Error formatting date with timezone:', err);
-    return date.toLocaleTimeString('en-US') + ' ' + date.toDateString();
+    return `${date.toLocaleTimeString('en-US')} ${date.toDateString()}`;
   }
 }
 
