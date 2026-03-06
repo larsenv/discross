@@ -3,7 +3,7 @@ const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { strReplace, buildSessionParam } = require('./utils.js');
+const { strReplace, resolveTheme, buildSessionParam } = require('./utils.js');
 const channel_template = fs
   .readFileSync('pages/templates/draw.html', 'utf-8')
   .split('{$COMMON_HEAD}')
@@ -34,28 +34,12 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
     imagesCookieForParam
   );
 
-  // URL param takes priority over cookie
-  const theme =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie, 10)
-        : 0;
-
-  let boxColor = '#222327';
-
-  // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
-  let template;
-  if (theme === 1) {
-    boxColor = '#ffffff';
-    template = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', 'class="light-theme"');
-  } else if (theme === 2) {
-    boxColor = '#141416';
-    template = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', 'class="amoled-theme"');
-  } else {
-    template = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', '');
-  }
-  template = strReplace(template, '{$COLOR}', boxColor);
+  const { boxColor, themeClass } = resolveTheme(req);
+  const template = strReplace(
+    strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass),
+    '{$COLOR}',
+    boxColor
+  );
 
   try {
     let chnl;

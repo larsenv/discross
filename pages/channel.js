@@ -24,6 +24,7 @@ const notFound = require('./notFound.js');
 const {
   strReplace,
   isBotReady,
+  resolveTheme,
   THEME_CONFIG,
   RANDOM_EMOJIS,
   buildSessionParam,
@@ -1088,26 +1089,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 };
 
 // ---------------------------------------------------------------------------
-// Theme helpers
+// Preferences helper
 // ---------------------------------------------------------------------------
-
-function resolveTheme(req) {
-  const parsedUrl = new URL(req.url, 'http://localhost');
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const cookieTheme = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-
-  const themeValue =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : cookieTheme !== undefined
-        ? parseInt(cookieTheme, 10)
-        : 0;
-
-  return THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
-}
 
 function resolvePreferences(req) {
   const parsedUrl = new URL(req.url, 'http://localhost');

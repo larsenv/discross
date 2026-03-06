@@ -80,7 +80,7 @@ function evictOldestCachedMember() {
   }
 }
 
-const { strReplace, isBotReady, buildSessionParam } = require('./utils.js');
+const { strReplace, isBotReady, getPageThemeAttr, buildSessionParam } = require('./utils.js');
 
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
@@ -480,30 +480,9 @@ async function fetchAndCacheMember(server, discordID) {
 }
 
 function applyUserPreferences(response, req) {
+  response = strReplace(response, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
+
   const parsedUrl = new URL(req.url, 'http://localhost');
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-
-  // URL param takes priority over cookie
-  const theme =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie, 10)
-        : 0;
-
-  // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
-  if (theme === 1) {
-    response = response.replace('{$WHITE_THEME_ENABLED}', 'class="light-theme"');
-  } else if (theme === 2) {
-    response = response.replace('{$WHITE_THEME_ENABLED}', 'class="amoled-theme"');
-  } else {
-    response = response.replace('{$WHITE_THEME_ENABLED}', 'bgcolor="303338"');
-  }
-
   const urlImages = parsedUrl.searchParams.get('images');
   const imagesCookie = req.headers.cookie
     ?.split('; ')
@@ -512,8 +491,8 @@ function applyUserPreferences(response, req) {
   const imagesEnabled =
     urlImages !== null ? urlImages === '1' : imagesCookie === '1' || imagesCookie === undefined; // Default to enabled (1) if not set
   response = imagesEnabled
-    ? response.replace('{$IMAGES_WARNING}', images_enabled_template)
-    : response.replace('{$IMAGES_WARNING}', no_images_warning_template);
+    ? strReplace(response, '{$IMAGES_WARNING}', images_enabled_template)
+    : strReplace(response, '{$IMAGES_WARNING}', no_images_warning_template);
 
   return response;
 }

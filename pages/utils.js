@@ -118,6 +118,32 @@ function getPageThemeAttr(req) {
 }
 
 /**
+ * Resolves the active theme config entry from URL params + cookies.
+ * Returns the full THEME_CONFIG entry (boxColor, authorText, replyText, themeClass)
+ * for the active theme: URL `?theme=` takes priority over `whiteThemeCookie` cookie.
+ *
+ * Used by channel, channel_reply, draw, guest, pins, and news page handlers.
+ *
+ * @param {object} req - Node.js IncomingMessage.
+ * @returns {{ boxColor: string, authorText: string, replyText: string, themeClass: string }}
+ */
+function resolveTheme(req) {
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlTheme = parsedUrl.searchParams.get('theme');
+  const cookieTheme = req.headers.cookie
+    ?.split('; ')
+    ?.find((c) => c.startsWith('whiteThemeCookie='))
+    ?.split('=')[1];
+  const themeValue =
+    urlTheme !== null
+      ? parseInt(urlTheme, 10)
+      : cookieTheme !== undefined
+        ? parseInt(cookieTheme, 10)
+        : 0;
+  return THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
+}
+
+/**
  * Builds the combined URL query string for session/theme/images link params.
  * Preference params (theme/images) are only included when the browser has not
  * set the corresponding cookie (i.e. the browser does not support cookies).
@@ -146,6 +172,7 @@ module.exports = {
   getBaseUrl,
   parseCookies,
   getPageThemeAttr,
+  resolveTheme,
   THEME_CONFIG,
   RANDOM_EMOJIS,
   buildSessionParam,
