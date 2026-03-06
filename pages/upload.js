@@ -32,10 +32,10 @@ exports.processUpload = async function processUpload(bot, req, res, discordID) {
 
   const template = strReplace(upload_template, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
 
-  let final = strReplace(template, '{$CHANNEL_ID}', escape(channelId));
-  final = strReplace(final, '{$CHANNEL_NAME}', escape(channelName));
-  final = strReplace(final, '{$SESSION_ID}', escape(urlSessionID));
-  final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
+  const withChannelId = strReplace(template, '{$CHANNEL_ID}', escape(channelId));
+  const withChannelName = strReplace(withChannelId, '{$CHANNEL_NAME}', escape(channelName));
+  const withSessionId = strReplace(withChannelName, '{$SESSION_ID}', escape(urlSessionID));
+  const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(final);

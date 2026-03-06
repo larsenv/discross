@@ -33,12 +33,10 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
     const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-    let processedmessage = convertEmoji(parsedurl.message || '');
+    const rawMsg = convertEmoji(parsedurl.message || '');
 
     // Process mentions only if there's a message
-    if (processedmessage) {
-      processedmessage = await resolveMentions(processedmessage, channel.guild);
-    }
+    const processedmessage = rawMsg ? await resolveMentions(rawMsg, channel.guild) : rawMsg;
 
     const base64Data = parsedurl.drawinginput;
 
