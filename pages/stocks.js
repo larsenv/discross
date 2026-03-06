@@ -5,7 +5,7 @@ const https = require('https');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace, THEME_CONFIG } = require('./utils.js');
+const { strReplace, getPageThemeAttr } = require('./utils.js');
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
@@ -325,12 +325,7 @@ exports.processStocks = async function processStocks(req, res) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const ticker = (parsedUrl.searchParams.get('ticker') || '').trim().toUpperCase();
 
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const themeValue = whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0;
-  const themeClass = THEME_CONFIG[themeValue]?.themeClass ?? '';
+  const themeClass = getPageThemeAttr(req);
 
   let stocksHtml = '';
 

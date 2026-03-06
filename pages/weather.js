@@ -6,7 +6,7 @@ const zlib = require('zlib');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace, THEME_CONFIG } = require('./utils.js');
+const { strReplace, getPageThemeAttr } = require('./utils.js');
 
 const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY;
 const ACCUWEATHER_HOST = 'api.accuweather.com';
@@ -364,19 +364,7 @@ exports.processWeather = async function processWeather(req, res) {
   } else if (city.trim()) {
     view = 'current';
   }
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const themeValue =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie, 10)
-        : 0;
-
-  const themeClass = THEME_CONFIG[themeValue]?.themeClass ?? '';
+  const themeClass = getPageThemeAttr(req);
   let navHtml = '';
 
   if (city.trim()) {

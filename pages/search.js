@@ -4,7 +4,7 @@ const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace, THEME_CONFIG } = require('./utils.js');
+const { strReplace, getPageThemeAttr } = require('./utils.js');
 
 const search_template = fs
   .readFileSync('pages/templates/search.html', 'utf-8')
@@ -29,17 +29,6 @@ exports.processSearch = async function processSearch(req, res) {
   const query = parsedUrl.searchParams.get('q') || '';
   const engine = parsedUrl.searchParams.get('engine') || 'frogfind';
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const themeValue =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie, 10)
-        : 0;
 
   // If a query is provided, redirect to the chosen search engine
   if (query.trim()) {
@@ -50,7 +39,7 @@ exports.processSearch = async function processSearch(req, res) {
     return;
   }
 
-  const themeClass = THEME_CONFIG[themeValue]?.themeClass ?? '';
+  const themeClass = getPageThemeAttr(req);
 
   const safeEngine = VALID_ENGINES.includes(engine) ? engine : 'frogfind';
 
