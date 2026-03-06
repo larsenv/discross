@@ -120,6 +120,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
           username: normalizeWeirdUnicode(member.displayName || member.user.tag),
           avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
           disableEveryone: true,
+          embeds: [{ footer: { text: 'Sent via Discross' } }],
         };
         if (channel.isThread()) {
           sendOptions.threadId = channel.id;
