@@ -14,7 +14,6 @@ const {
   isBotReady,
   parseCookies,
   resolveTheme,
-  THEME_CONFIG,
   RANDOM_EMOJIS,
   sanitizeGuestName,
 } = require('./utils.js');

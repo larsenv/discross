@@ -62,11 +62,10 @@ function processReactions(
 
         // Build the reaction HTML - skip if emoji couldn't be processed
         if (emojiHtml) {
-          let reactionHtml = reaction_template;
-          reactionHtml = strReplace(reactionHtml, '{$EMOJI}', emojiHtml);
-          reactionHtml = strReplace(reactionHtml, '{$COUNT}', count);
-          reactionHtml = strReplace(reactionHtml, '{$REACTION_BG}', backgroundColor);
-          reactionHtml = strReplace(reactionHtml, '{$REACTION_BORDER}', borderColor);
+          const withEmoji = strReplace(reaction_template, '{$EMOJI}', emojiHtml);
+          const withCount = strReplace(withEmoji, '{$COUNT}', count);
+          const withBg = strReplace(withCount, '{$REACTION_BG}', backgroundColor);
+          const reactionHtml = strReplace(withBg, '{$REACTION_BORDER}', borderColor);
 
           reactionsHtml += reactionHtml;
         }

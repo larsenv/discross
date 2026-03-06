@@ -12,7 +12,7 @@ const forgot_template = fs
 const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
 const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
 
-exports.processForgot = async function (bot, req, res, args) {
+exports.processForgot = function (bot, req, res, args) {
   const parsedurl = new URL(req.url, 'http://localhost');
   let response = forgot_template;
   response = strReplace(response, '{$MENU_OPTIONS}', logged_out_template);
