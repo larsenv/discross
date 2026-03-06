@@ -362,13 +362,9 @@ exports.processWeather = async function processWeather(req, res) {
   const rawView = parsedUrl.searchParams.get('view') || '';
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
   // Resolve view: use rawView if it matches a known view, otherwise default to 'current' when a city is set
-  let view = '';
-  if (VIEWS.some((v) => v.id === rawView)) {
-    view = rawView;
-  } else if (city.trim()) {
-    view = 'current';
-  }
+  const view = VIEWS.some((v) => v.id === rawView) ? rawView : city.trim() ? 'current' : '';
   const themeClass = getPageThemeAttr(req);
+  let weatherHtml = '';
   let navHtml = '';
 
   if (city.trim()) {

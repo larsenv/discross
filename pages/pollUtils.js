@@ -40,53 +40,38 @@ function processPoll(poll, imagesCookie) {
   if (!poll) return '';
 
   try {
-    let pollHtml = poll_template;
-
-    // Set the poll question
-    const question = poll.question?.text || 'Poll';
-    pollHtml = strReplace(pollHtml, '{$POLL_QUESTION}', escape(question));
-
     // Calculate total votes across all answers
-    let totalVotes = 0;
-    if (poll.answers && poll.answers.size > 0) {
-      poll.answers.forEach((answer) => {
-        totalVotes += answer.voteCount || 0;
-      });
-    }
+    const totalVotes =
+      poll.answers?.size > 0
+        ? Array.from(poll.answers.values()).reduce((sum, a) => sum + (a.voteCount || 0), 0)
+        : 0;
 
     // Process each answer
-    let answersHtml = '';
-    if (poll.answers && poll.answers.size > 0) {
-      poll.answers.forEach((answer) => {
-        let answerHtml = poll_answer_template;
-
-        // Calculate vote percentage
-        const voteCount = answer.voteCount || 0;
-        const votePercentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-
-        // Get answer text
-        const answerText = answer.text || '';
-        answerHtml = strReplace(answerHtml, '{$ANSWER_TEXT}', escape(answerText));
-
-        const emojiHtml = buildPollEmojiHtml(answer._emoji, imagesCookie);
-        answerHtml = strReplace(answerHtml, '{$ANSWER_EMOJI}', emojiHtml);
-
-        // Set vote count and percentage
-        answerHtml = strReplace(answerHtml, '{$VOTE_COUNT}', voteCount);
-        answerHtml = strReplace(answerHtml, '{$VOTE_PERCENTAGE}', votePercentage);
-
-        answersHtml += answerHtml;
-      });
-    } else {
-      answersHtml =
-        '<div style="color: #72767d; font-size: 14px; font-style: italic;">No answers available</div>';
-    }
-
-    pollHtml = strReplace(pollHtml, '{$POLL_ANSWERS}', answersHtml);
+    const answersHtml =
+      poll.answers?.size > 0
+        ? Array.from(poll.answers.values())
+            .map((answer) => {
+              const voteCount = answer.voteCount || 0;
+              const votePercentage =
+                totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+              const withText = strReplace(
+                poll_answer_template,
+                '{$ANSWER_TEXT}',
+                escape(answer.text || '')
+              );
+              const withEmoji = strReplace(
+                withText,
+                '{$ANSWER_EMOJI}',
+                buildPollEmojiHtml(answer._emoji, imagesCookie)
+              );
+              const withCount = strReplace(withEmoji, '{$VOTE_COUNT}', voteCount);
+              return strReplace(withCount, '{$VOTE_PERCENTAGE}', votePercentage);
+            })
+            .join('')
+        : '<div style="color: #72767d; font-size: 14px; font-style: italic;">No answers available</div>';
 
     // Create footer with poll metadata
-    const footerParts = [];
-    footerParts.push(`${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}`);
+    const footerParts = [`${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}`];
 
     if (poll.allowMultiselect) {
       footerParts.push('Multiple choice');
@@ -97,12 +82,16 @@ function processPoll(poll, imagesCookie) {
     if (poll.expiresTimestamp && poll.expiresTimestamp < now) {
       footerParts.push('Poll ended');
     } else if (poll.expiresTimestamp) {
-      const expiresDate = new Date(poll.expiresTimestamp);
-      footerParts.push(`Ends ${expiresDate.toLocaleDateString()}`);
+      footerParts.push(`Ends ${new Date(poll.expiresTimestamp).toLocaleDateString()}`);
     }
 
-    const footer = footerParts.join(' • ');
-    pollHtml = strReplace(pollHtml, '{$POLL_FOOTER}', escape(footer));
+    const withQuestion = strReplace(
+      poll_template,
+      '{$POLL_QUESTION}',
+      escape(poll.question?.text || 'Poll')
+    );
+    const withAnswers = strReplace(withQuestion, '{$POLL_ANSWERS}', answersHtml);
+    const pollHtml = strReplace(withAnswers, '{$POLL_FOOTER}', escape(footerParts.join(' • ')));
 
     return pollHtml;
   } catch (error) {

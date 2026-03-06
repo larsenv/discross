@@ -189,21 +189,18 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '')
       );
 
-      let final;
-      if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true)) {
-        final = strReplace(template, '{$INPUT}', input_disabled_template);
-        final = strReplace(final, '{$COLOR}', boxColor);
+      const noWebhooks = !botMember
+        .permissionsIn(chnl)
+        .has(PermissionFlagsBits.ManageWebhooks, true);
+      const canSend = member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
+      const inputTpl = noWebhooks || !canSend ? input_disabled_template : input_template;
+      let final = strReplace(strReplace(template, '{$INPUT}', inputTpl), '{$COLOR}', boxColor);
+      if (noWebhooks) {
         final = strReplace(
           final,
           "You don't have permission to send messages in this channel.",
           "Discross bot doesn't have the Manage Webhooks permission"
         );
-      } else if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
-        final = strReplace(template, '{$INPUT}', input_template);
-        final = strReplace(final, '{$COLOR}', boxColor);
-      } else {
-        final = strReplace(template, '{$INPUT}', input_disabled_template);
-        final = strReplace(final, '{$COLOR}', boxColor);
       }
 
       // Reply context: fetch and display the message being replied to
