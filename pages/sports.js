@@ -8,6 +8,9 @@ const auth = require('../authentication.js');
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
+// Fallback timezone when user cookie is absent or invalid
+const DEFAULT_TZ = 'America/New_York';
+
 const sports_template = fs
   .readFileSync('pages/templates/sports.html', 'utf-8')
   .split('{$COMMON_HEAD}')
@@ -19,12 +22,13 @@ function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement ?? '');
 }
 
+// NBA first — in full regular season; NFL last since it's off-season in early spring
 const SPORTS = [
-  { id: 'nfl', label: 'NFL', path: '/apis/site/v2/sports/football/nfl/scoreboard' },
   { id: 'nba', label: 'NBA', path: '/apis/site/v2/sports/basketball/nba/scoreboard' },
-  { id: 'mlb', label: 'MLB', path: '/apis/site/v2/sports/baseball/mlb/scoreboard' },
   { id: 'nhl', label: 'NHL', path: '/apis/site/v2/sports/hockey/nhl/scoreboard' },
+  { id: 'mlb', label: 'MLB', path: '/apis/site/v2/sports/baseball/mlb/scoreboard' },
   { id: 'soccer', label: 'Soccer', path: '/apis/site/v2/sports/soccer/usa.1/scoreboard' },
+  { id: 'nfl', label: 'NFL', path: '/apis/site/v2/sports/football/nfl/scoreboard' },
 ];
 
 const ESPN_HOST = 'site.api.espn.com';
@@ -69,16 +73,42 @@ function fetchJson(path) {
   });
 }
 
-function formatGameTime(dateStr) {
+// Returns a YYYYMMDD string for today + daysOffset in UTC
+function getDateString(daysOffset) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysOffset);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}${m}${day}`;
+}
+
+// Read and validate a timezone string from cookies; fall back to DEFAULT_TZ
+function getUserTZ(cookieHeader) {
+  if (!cookieHeader) return DEFAULT_TZ;
+  const match = cookieHeader.split('; ').find((c) => c.startsWith('userTZ='));
+  if (!match) return DEFAULT_TZ;
+  const raw = decodeURIComponent(match.split('=').slice(1).join('='));
+  // Validate: attempt to use it; Intl throws for unknown zones
+  try {
+    Intl.DateTimeFormat('en-US', { timeZone: raw });
+    return raw;
+  } catch (_) {
+    return DEFAULT_TZ;
+  }
+}
+
+function formatGameTime(dateStr, userTZ) {
   if (!dateStr) return '';
   try {
     const d = new Date(dateStr);
     return d.toLocaleString('en-US', {
-      month: 'short',
+      weekday: 'short',
+      month: 'long',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      timeZone: 'America/New_York',
+      timeZone: userTZ,
       timeZoneName: 'short',
     });
   } catch (_) {
@@ -92,13 +122,13 @@ function statusColor(stateType) {
   return '#dddddd'; // pre = upcoming
 }
 
-function renderScoreboard(data) {
-  const events = data && data.events;
+function renderScoreboard(events, userTZ) {
   if (!events || events.length === 0) {
     return `<font ${FONT} color="#72767d">No games scheduled recently.</font><br>`;
   }
 
-  let html = `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n`;
+  // 640px to accommodate full date/timezone strings (wider than stock/weather 580px)
+  let html = `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;border-collapse:collapse;">\n`;
 
   for (let i = 0; i < events.length; i++) {
     const event = events[i];
@@ -131,8 +161,16 @@ function renderScoreboard(data) {
     const awayWeight = awayWinner ? '<b>' : '';
     const awayWeightEnd = awayWinner ? '</b>' : '';
 
-    const gameTimeDisplay =
-      stateType === 'pre' ? formatGameTime(competition.date || event.date) : escape(statusDetail);
+    let gameTimeDisplay;
+    if (stateType === 'in') {
+      gameTimeDisplay = escape(statusDetail);
+    } else if (stateType === 'post') {
+      gameTimeDisplay = `Final &mdash; ${escape(formatGameTime(competition.date || event.date, userTZ))}`;
+    } else {
+      gameTimeDisplay = escape(formatGameTime(competition.date || event.date, userTZ));
+    }
+
+    const statusLabel = stateType === 'in' ? escape(statusDetail) : stateType === 'post' ? 'Final' : '';
 
     html += `  <tr${borderStyle}>
     <td style="padding:8px;width:52px;text-align:center;">
@@ -142,7 +180,7 @@ function renderScoreboard(data) {
       <font size="4" ${FONT} color="${awayColor}"><b>${awayScore}</b></font>
     </td>
     <td style="padding:8px;text-align:center;">
-      <font size="2" ${FONT} color="${color}">${escape(stateType === 'in' ? statusDetail : (stateType === 'post' ? 'Final' : ''))}</font>
+      <font size="2" ${FONT} color="${color}">${statusLabel}</font>
     </td>
     <td style="padding:8px;width:36px;text-align:center;">
       <font size="4" ${FONT} color="${homeColor}"><b>${homeScore}</b></font>
@@ -178,12 +216,15 @@ exports.processSports = async function processSports(req, res) {
   if (!discordID) return;
 
   const parsedUrl = new URL(req.url, 'http://localhost');
-  const sportId = parsedUrl.searchParams.get('sport') || 'nfl';
+  const sportId = parsedUrl.searchParams.get('sport') || 'nba';
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
 
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
+  const cookieHeader = req.headers.cookie || '';
+  const userTZ = getUserTZ(cookieHeader);
+
+  const whiteThemeCookie = cookieHeader
+    .split('; ')
+    .find((c) => c.startsWith('whiteThemeCookie='))
     ?.split('=')[1];
   const themeValue = whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0;
 
@@ -196,8 +237,26 @@ exports.processSports = async function processSports(req, res) {
 
   let sportsHtml = '';
   try {
-    const data = await fetchJson(sport.path);
-    sportsHtml = renderScoreboard(data);
+    const todayStr = getDateString(0);
+    const yestStr = getDateString(-1);
+
+    const [todayResult, yestResult] = await Promise.allSettled([
+      fetchJson(`${sport.path}?dates=${todayStr}`),
+      fetchJson(`${sport.path}?dates=${yestStr}`),
+    ]);
+
+    const todayEvents = todayResult.status === 'fulfilled' ? (todayResult.value?.events || []) : [];
+
+    // Include recently finished games from yesterday (cap at 8 to avoid a wall of scores)
+    const yestEvents =
+      yestResult.status === 'fulfilled'
+        ? (yestResult.value?.events || [])
+            .filter((e) => e?.status?.type?.state === 'post')
+            .slice(0, 8)
+        : [];
+
+    const allEvents = [...todayEvents, ...yestEvents];
+    sportsHtml = renderScoreboard(allEvents, userTZ);
   } catch (err) {
     console.error('Sports API error:', err.message);
     sportsHtml = `<font color="#ff4444" ${FONT}>Unable to load scores. Please try again later.</font><br>`;
