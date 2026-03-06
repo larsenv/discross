@@ -99,9 +99,9 @@ function fetchYahooQuote(symbol) {
     const close = meta.regularMarketPrice;
     if (!close) return null;
     const prevClose = meta.chartPreviousClose || meta.previousClose || null;
-    const change = prevClose != null ? close - prevClose : null;
+    const change = prevClose !== null ? close - prevClose : null;
     const changePct =
-      prevClose != null && prevClose !== 0 ? ((close - prevClose) / prevClose) * 100 : null;
+      prevClose !== null && prevClose !== 0 ? ((close - prevClose) / prevClose) * 100 : null;
     return {
       symbol: meta.symbol || symbol.toUpperCase(),
       regularMarketPrice: close,
@@ -217,24 +217,24 @@ function parseStooqHistory(symbol, csv) {
 }
 
 function formatPrice(price) {
-  if (price == null) return '--';
+  if (price === null) return '--';
   return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatChange(change) {
-  if (change == null) return '--';
+  if (change === null) return '--';
   const sign = change >= 0 ? '+' : '';
   return sign + change.toFixed(2);
 }
 
 function formatChangePct(pct) {
-  if (pct == null) return '--';
+  if (pct === null) return '--';
   const sign = pct >= 0 ? '+' : '';
   return sign + pct.toFixed(2) + '%';
 }
 
 function changeColor(change) {
-  if (change == null) return '#72767d';
+  if (change === null) return '#72767d';
   return change >= 0 ? '#57f287' : '#ed4245';
 }
 
@@ -245,12 +245,12 @@ function renderQuoteRow(quote) {
   const change = formatChange(quote.regularMarketChange);
   const changePct = formatChangePct(quote.regularMarketChangePercent);
   const color = changeColor(quote.regularMarketChange);
-  const dayOpen = quote.regularMarketOpen != null ? formatPrice(quote.regularMarketOpen) : '--';
+  const dayOpen = quote.regularMarketOpen !== null ? formatPrice(quote.regularMarketOpen) : '--';
   const dayHigh =
-    quote.regularMarketDayHigh != null ? formatPrice(quote.regularMarketDayHigh) : '--';
-  const dayLow = quote.regularMarketDayLow != null ? formatPrice(quote.regularMarketDayLow) : '--';
+    quote.regularMarketDayHigh !== null ? formatPrice(quote.regularMarketDayHigh) : '--';
+  const dayLow = quote.regularMarketDayLow !== null ? formatPrice(quote.regularMarketDayLow) : '--';
   const volume =
-    quote.regularMarketVolume != null ? quote.regularMarketVolume.toLocaleString('en-US') : '--';
+    quote.regularMarketVolume !== null ? quote.regularMarketVolume.toLocaleString('en-US') : '--';
 
   return `<table cellpadding="6" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;margin-bottom:20px;">
   <tr>

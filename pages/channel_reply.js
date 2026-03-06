@@ -174,8 +174,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         final = strReplace(final, '{$SESSION_ID}', urlSessionID);
         final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
 
-        res.write(final);
-        res.end();
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(final);
         return;
       }
 
@@ -265,15 +265,13 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
 
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.write(final);
-      res.end();
+      res.end(final);
     } else {
       return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
     }
   } catch (error) {
     console.error(error);
     res.writeHead(500, { 'Content-Type': 'text/html' });
-    res.write('An error occurred! Please try again later.');
-    res.end();
+    res.end('An error occurred! Please try again later.');
   }
 };

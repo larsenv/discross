@@ -107,8 +107,7 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
   if (!textToReplace && staticFileCache.has(filename)) {
     const data = staticFileCache.get(filename);
     res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
-    res.write(data);
-    return res.end();
+    return res.end(data);
   }
 
   fs.readFile(filename, function (err, data) {
@@ -123,7 +122,7 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
     }
     res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
     if (textToReplace && replacement) {
-      res.write(data.toString().replace(textToReplace, replacement));
+      res.end(data.toString().replace(textToReplace, replacement));
     } else {
       if (data.length <= STATIC_CACHE_MAX_BYTES) {
         if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
@@ -131,9 +130,9 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
         }
         staticFileCache.set(filename, data);
       }
-      res.write(data);
+      res.end(data);
     }
-    return res.end();
+    return;
   });
 }
 

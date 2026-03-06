@@ -16,7 +16,7 @@ exports.processRegister = async function (bot, req, res, args) {
   const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
   if (discordID) {
     res.writeHead(302, { Location: '/server/' });
-    res.write('Logged in! Click <a href="/server/">here</a> to continue.');
+    res.end('Logged in! Click <a href="/server/">here</a> to continue.');
   } else {
     const parsedurl = new URL(req.url, 'http://localhost');
     let response = register_template;
@@ -56,7 +56,7 @@ exports.processRegister = async function (bot, req, res, args) {
     } else {
       response = strReplace(response, '{$WHITE_THEME_ENABLED}', 'bgcolor="303338"');
     }
-    res.write(response);
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(response);
   }
-  res.end();
 };

@@ -51,6 +51,5 @@ exports.processForgot = async function (bot, req, res, args) {
   } else {
     response = strReplace(response, '{$WHITE_THEME_ENABLED}', 'bgcolor="303338"');
   }
-  res.write(response);
-  res.end();
+  res.end(response);
 };
