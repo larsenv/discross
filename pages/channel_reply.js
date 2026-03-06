@@ -6,7 +6,13 @@ const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../t
 const { buildMessagesHtml } = require('./channel');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { strReplace, isBotReady, RANDOM_EMOJIS, buildSessionParam } = require('./utils.js');
+const {
+  strReplace,
+  isBotReady,
+  resolveTheme,
+  RANDOM_EMOJIS,
+  buildSessionParam,
+} = require('./utils.js');
 
 // Templates for viewing messages in a channel (Reply Context)
 const channel_template = fs
@@ -84,29 +90,12 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     imagesCookieValue
   );
 
-  // URL param takes priority over cookie
-  const theme =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie, 10)
-        : 0;
-
-  // Colors default to dark/amoled theme; light theme overrides them
-  let boxColor = '#40444b';
-  let authorText = '#72767d';
-  let replyText = '#b5bac1';
-
-  if (theme === 1) {
-    boxColor = '#ffffff';
-    authorText = '#000000';
-    replyText = '#000000';
-  } else if (theme === 2) {
-    boxColor = '#141416';
-  }
-
-  const themeAttr = theme === 1 ? 'class="light-theme"' : theme === 2 ? 'class="amoled-theme"' : '';
-  let template = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeAttr);
+  // Resolve theme config; channel_reply uses a slightly lighter dark bg (#40444b)
+  // than the standard dark theme (#222327 in THEME_CONFIG[0])
+  const themeObj = resolveTheme(req);
+  const { authorText, replyText, themeClass } = themeObj;
+  const boxColor = themeObj.boxColor === '#222327' ? '#40444b' : themeObj.boxColor;
+  const template = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass);
 
   const imagesCookie =
     urlImages !== null

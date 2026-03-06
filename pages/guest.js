@@ -13,6 +13,7 @@ const {
   isValidSnowflake,
   isBotReady,
   parseCookies,
+  resolveTheme,
   THEME_CONFIG,
   RANDOM_EMOJIS,
 } = require('./utils.js');
@@ -32,22 +33,6 @@ const TEMPLATE_INPUT_DISABLED = fs.readFileSync(
   'pages/templates/channel/input_disabled.html',
   'utf-8'
 );
-
-function resolveTheme(req) {
-  const parsedUrl = new URL(req.url, 'http://localhost');
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const cookieTheme = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const themeValue =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : cookieTheme !== undefined
-        ? parseInt(cookieTheme, 10)
-        : 0;
-  return THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
-}
 
 // Strip non-printable / potentially dangerous characters from guest names
 function sanitizeGuestName(name) {
