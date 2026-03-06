@@ -34,18 +34,25 @@ const RT_BASE = "https://www.rottentomatoes.com";
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
-// Tab definitions: id, label, RT browse URL suffix
+// RT private API type identifiers for the browse endpoint
 const TABS = [
   {
     id: "movies_in_theaters",
     label: "In Theaters",
     url: "/browse/movies_in_theaters/",
+    apiType: "movies-in-theaters",
   },
-  { id: "movies_at_home", label: "At Home", url: "/browse/movies_at_home/" },
+  {
+    id: "movies_at_home",
+    label: "At Home",
+    url: "/browse/movies_at_home/",
+    apiType: "movies-at-home",
+  },
   {
     id: "tv",
     label: "TV Shows",
     url: "/browse/tv-series-streaming/",
+    apiType: "tv-series-browsing",
   },
 ];
 
@@ -126,6 +133,41 @@ async function fetchHtml(url) {
   return response.text();
 }
 
+// Try RT's private JSON API endpoint; returns null on failure
+async function tryFetchRTApi(apiType) {
+  const apiUrl = `${RT_BASE}/api/private/v2.0/browse?type=${encodeURIComponent(apiType)}&sortBy=most_popular&limit=50`;
+  try {
+    const response = await fetch(apiUrl, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        Accept: "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+// Normalise an item from RT's private API response
+function normalizeApiItem(x, isTv) {
+  const title = x.title || x.name || x.seriesTitle || "";
+  let url = x.url || x.mediaUrl || x.canonicalUrl || "";
+  if (url && !url.startsWith("http")) url = RT_BASE + url;
+  const year = x.year || x.releaseYear || "";
+  const criticsScore = parseScore(
+    x.tomatometer ?? x.criticsScore ?? x.tomatometerScore ?? null,
+  );
+  const audienceScore = parseScore(
+    x.audienceScore ?? x.popcornmeter ?? x.audiencescore ?? null,
+  );
+  const poster =
+    x.posterUri || x.posterUrl || x.thumbnail || x.image || x.poster || "";
+  return { title, url, year, criticsScore, audienceScore, poster };
+}
+
 // Strip HTML tags, collapse whitespace, and HTML-decode the result
 function stripHtml(html) {
   if (!html) return "";
@@ -164,7 +206,7 @@ function parseRTPage(html, isTv) {
 function tryParseEmbeddedJson(html, isTv) {
   const items = [];
 
-  // Look for <script type="application/json"> tags
+  // Look for <script type="application/json"> tags — this includes Next.js __NEXT_DATA__
   const scriptRe =
     /<script[^>]+type="application\/json"[^>]*>([\s\S]*?)<\/script>/gi;
   let m;
@@ -180,23 +222,31 @@ function tryParseEmbeddedJson(html, isTv) {
     if (found.length > 0) return found;
   }
 
-  // Also look for window.__data or window.rt_init_data in regular scripts
-  // Extract a bounded substring around the known key to avoid catastrophic backtracking
+  // Also look for common SSR/window data patterns in regular scripts
   const winKeys = [
+    "__NEXT_DATA__",
     "window.__data",
     "window.rt_init_data",
     "window.__RT_INITIAL_STATE__",
+    "window.__REACT_QUERY_STATE__",
+    "window.initialProps",
   ];
   for (const key of winKeys) {
     const keyIdx = html.indexOf(key);
     if (keyIdx === -1) continue;
-    // Only consider the next 50,000 chars after the key
-    const slice = html.slice(keyIdx, keyIdx + 50000);
+    // Only consider the next 200,000 chars after the key (NEXT_DATA can be large)
+    const slice = html.slice(keyIdx, keyIdx + 200000);
+    // For __NEXT_DATA__ the JSON follows `=` (as window var assignment) or is tag content
     const assignIdx = slice.indexOf("=");
-    if (assignIdx === -1) continue;
-    const jsonStart = slice.indexOf("{", assignIdx);
+    const jsonBraceIdx = slice.indexOf("{");
+    if (jsonBraceIdx === -1) continue;
+    // Use whichever comes first: { after = or bare {
+    const jsonStart =
+      assignIdx !== -1 && assignIdx < jsonBraceIdx
+        ? slice.indexOf("{", assignIdx)
+        : jsonBraceIdx;
     if (jsonStart === -1) continue;
-    // Find the matching closing brace
+    // Find the matching closing brace using a stack counter
     let depth = 0;
     let end = -1;
     for (let i = jsonStart; i < slice.length; i++) {
@@ -339,12 +389,19 @@ function parseHtmlTiles(html, isTv) {
       const tileStart = html.indexOf(marker, pos);
       if (tileStart === -1) break;
 
-      // Find the opening tag's end
+      // Walk back to include the opening < of the tag so ALL attributes
+      // (including scores that appear before data-qa) are in the block.
+      const tagOpenStart = html.lastIndexOf("<", tileStart);
+      // Find the end of the opening tag
       const tagEnd = html.indexOf(">", tileStart);
       if (tagEnd === -1) break;
 
-      // Extract a bounded block (3000 chars) from this tile's opening tag onward
-      const block = html.slice(tileStart, Math.min(html.length, tagEnd + 3000));
+      // Extract a bounded block (3000 chars) from the tag's opening < onward
+      const blockStart = tagOpenStart === -1 ? tileStart : tagOpenStart;
+      const block = html.slice(
+        blockStart,
+        Math.min(html.length, blockStart + 3000),
+      );
       const item = extractTileItem(block, isTv);
       if (item && item.title && item.url && !seen.has(item.url)) {
         seen.add(item.url);
@@ -450,15 +507,19 @@ function extractTileItem(block, isTv) {
   const yearMatch = block.match(/\b(19|20)\d{2}\b/);
   const year = yearMatch ? yearMatch[0] : "";
 
-  // Critics score — try multiple attribute name patterns RT uses
+  // Critics score — try multiple attribute name patterns RT uses, including
+  // attributes that may be on the opening tag (before data-qa) now that the
+  // block starts from the tag's < rather than from data-qa itself.
   const CRITICS_RE = [
-    /tomatometerscore\s*=\s*["']?(\d+)/i,
-    /criticsscore\s*=\s*["']?(\d+)/i,
-    /criticsScore\s*=\s*["']?(\d+)/i,
-    /tomatometer\s*=\s*["'](\d+)["']/i,
-    /"tomatometer"\s*:\s*(\d+)/,
-    /"criticsScore"\s*:\s*(\d+)/,
-    /percentage\s*=\s*["']?(\d+)/i,
+    /tomatometerscore\s*=\s*["']?(\d+)/i, // RT web component attribute
+    /criticsscore\s*=\s*["']?(\d+)/i, // lowercase variant
+    /criticsScore\s*=\s*["']?(\d+)/i, // camelCase variant
+    /tomatometer\s*=\s*["'](\d+)["']/i, // short attribute name
+    /<score-icon-critic[^>]+percentage\s*=\s*["']?(\d+)/i, // inner component
+    /<score-pairs[^>]+tomatometerscore\s*=\s*["']?(\d+)/i, // score-pairs component
+    /"tomatometer"\s*:\s*(\d+)/, // inline JSON
+    /"criticsScore"\s*:\s*(\d+)/, // inline JSON camelCase
+    /percentage\s*=\s*["']?(\d+)/i, // generic percentage (last resort)
   ];
   let criticsScore = null;
   for (const re of CRITICS_RE) {
@@ -471,11 +532,13 @@ function extractTileItem(block, isTv) {
 
   // Audience score — try multiple patterns
   const AUDIENCE_RE = [
-    /audiencescore\s*=\s*["']?(\d+)/i,
-    /audienceScore\s*=\s*["']?(\d+)/i,
-    /popcornmeter\s*=\s*["']?(\d+)/i,
-    /"audienceScore"\s*:\s*(\d+)/,
-    /"popcornmeter"\s*:\s*(\d+)/,
+    /audiencescore\s*=\s*["']?(\d+)/i, // RT web component attribute
+    /audienceScore\s*=\s*["']?(\d+)/i, // camelCase variant
+    /popcornmeter\s*=\s*["']?(\d+)/i, // RT's popcornmeter attribute
+    /<score-icon-audience[^>]+percentage\s*=\s*["']?(\d+)/i, // inner component
+    /<score-pairs[^>]+audiencescore\s*=\s*["']?(\d+)/i, // score-pairs component
+    /"audienceScore"\s*:\s*(\d+)/, // inline JSON
+    /"popcornmeter"\s*:\s*(\d+)/, // inline JSON
   ];
   let audienceScore = null;
   for (const re of AUDIENCE_RE) {
@@ -602,8 +665,28 @@ exports.processMovies = async function processMovies(req, res, discordID) {
 
   let moviesHtml;
   try {
-    const html = await fetchHtml(RT_BASE + tab.url);
-    const items = parseRTPage(html, isTv);
+    let items = [];
+
+    // Strategy 0: try RT's private JSON API first (most reliable, no HTML parsing)
+    const apiData = await tryFetchRTApi(tab.apiType);
+    if (apiData) {
+      // The API may return {results:[...]} or a bare array
+      const raw = Array.isArray(apiData)
+        ? apiData
+        : (apiData.results ?? apiData.data ?? apiData.items ?? []);
+      if (Array.isArray(raw) && raw.length > 0) {
+        items = raw
+          .map((x) => normalizeApiItem(x, isTv))
+          .filter((x) => x.title && x.url)
+          .slice(0, 30);
+      }
+    }
+
+    // Fall back to HTML scraping if the API didn't return items
+    if (items.length === 0) {
+      const html = await fetchHtml(RT_BASE + tab.url);
+      items = parseRTPage(html, isTv);
+    }
 
     if (items.length === 0) {
       moviesHtml =
