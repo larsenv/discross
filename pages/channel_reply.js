@@ -6,7 +6,7 @@ const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../t
 const { buildMessagesHtml } = require('./channel');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { strReplace, isBotReady, RANDOM_EMOJIS } = require('./utils.js');
+const { strReplace, isBotReady, RANDOM_EMOJIS, buildSessionParam } = require('./utils.js');
 
 // Templates for viewing messages in a channel (Reply Context)
 const channel_template = fs
@@ -76,13 +76,13 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
   // Build combined URL params for links — only include preference params when the
   // corresponding cookie is absent (i.e. the browser doesn't support cookies)
-  const linkParamParts = [];
-  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && whiteThemeCookie === undefined)
-    linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && imagesCookieValue === undefined)
-    linkParamParts.push('images=' + encodeURIComponent(urlImages));
-  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+  const sessionParam = buildSessionParam(
+    urlSessionID,
+    urlTheme,
+    whiteThemeCookie,
+    urlImages,
+    imagesCookieValue
+  );
 
   // URL param takes priority over cookie
   const theme =

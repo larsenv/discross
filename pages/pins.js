@@ -6,7 +6,7 @@ const { buildMessagesHtml } = require('./channel');
 const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { strReplace, isBotReady, THEME_CONFIG } = require('./utils.js');
+const { strReplace, isBotReady, THEME_CONFIG, buildSessionParam } = require('./utils.js');
 
 const channel_template = fs
   .readFileSync('pages/templates/pins.html', 'utf-8')
@@ -28,13 +28,13 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
     ?.find((c) => c.startsWith('images='))
     ?.split('=')[1];
 
-  const linkParamParts = [];
-  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && whiteThemeCookie === undefined)
-    linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && imagesCookieValue === undefined)
-    linkParamParts.push('images=' + encodeURIComponent(urlImages));
-  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+  const sessionParam = buildSessionParam(
+    urlSessionID,
+    urlTheme,
+    whiteThemeCookie,
+    urlImages,
+    imagesCookieValue
+  );
 
   const themeValue =
     urlTheme !== null
@@ -100,7 +100,8 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
 
     let messagesHtml;
     if (pinnedMessages.length === 0) {
-      messagesHtml = '<p style="color: #72767d; font-family: \'rodin\', Arial, Helvetica, sans-serif;">No pinned messages in this channel.</p>';
+      messagesHtml =
+        '<p style="color: #72767d; font-family: \'rodin\', Arial, Helvetica, sans-serif;">No pinned messages in this channel.</p>';
     } else {
       messagesHtml = await buildMessagesHtml({
         bot,

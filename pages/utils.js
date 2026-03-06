@@ -90,6 +90,28 @@ const THEME_CONFIG = {
 /** Random emoji codepoints used in the channel input area. */
 const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
 
+/**
+ * Builds the combined URL query string for session/theme/images link params.
+ * Preference params (theme/images) are only included when the browser has not
+ * set the corresponding cookie (i.e. the browser does not support cookies).
+ *
+ * @param {string} urlSessionID - Session ID from URL params.
+ * @param {string|null} urlTheme - Theme value from URL params (null if absent).
+ * @param {string|undefined} cookieTheme - whiteThemeCookie value (undefined if absent).
+ * @param {string|null} urlImages - Images preference from URL params (null if absent).
+ * @param {string|undefined} cookieImages - images cookie value (undefined if absent).
+ * @returns {string} Query string (e.g. "?sessionID=abc&theme=1") or empty string.
+ */
+function buildSessionParam(urlSessionID, urlTheme, cookieTheme, urlImages, cookieImages) {
+  const parts = [];
+  if (urlSessionID) parts.push('sessionID=' + encodeURIComponent(urlSessionID));
+  if (urlTheme !== null && cookieTheme === undefined)
+    parts.push('theme=' + encodeURIComponent(urlTheme));
+  if (urlImages !== null && cookieImages === undefined)
+    parts.push('images=' + encodeURIComponent(urlImages));
+  return parts.length ? '?' + parts.join('&') : '';
+}
+
 module.exports = {
   strReplace,
   isValidSnowflake,
@@ -98,4 +120,5 @@ module.exports = {
   parseCookies,
   THEME_CONFIG,
   RANDOM_EMOJIS,
+  buildSessionParam,
 };
