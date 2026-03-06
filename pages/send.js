@@ -3,7 +3,7 @@ const discord = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { strReplace, isValidSnowflake, isBotReady } = require('./utils.js');
+const { strReplace, isValidSnowflake, isBotReady, resolveMentions } = require('./utils.js');
 
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
   const proto = req.socket?.encrypted ? 'https' : 'http';
@@ -62,30 +62,10 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
       const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-      let processedmessage = convertEmoji(query.message || '');
-      const regex = /@([^#]{2,32}#\d{4})/g;
-      let m;
-      do {
-        m = regex.exec(processedmessage);
-        if (m) {
-          let mentioneduser = channel.guild.members.cache.find(
-            (member) => member.user.tag === m[1]
-          );
-          if (!mentioneduser) {
-            try {
-              mentioneduser = (await channel.guild.members.fetch()).find(
-                (member) => member.user.tag === m[1]
-              );
-            } catch (err) {
-              console.error('Failed to fetch members for mention:', err);
-              // Continue without resolving the mention
-            }
-          }
-          if (mentioneduser) {
-            processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
-          }
-        }
-      } while (m);
+      let processedmessage = await resolveMentions(
+        convertEmoji(query.message || ''),
+        channel.guild
+      );
 
       // Handle reply if reply_message_id is present
       if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {

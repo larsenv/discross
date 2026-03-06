@@ -165,6 +165,49 @@ function buildSessionParam(urlSessionID, urlTheme, cookieTheme, urlImages, cooki
   return parts.length ? '?' + parts.join('&') : '';
 }
 
+/**
+ * Strips non-printable / potentially dangerous characters from a Discord guest name.
+ *
+ * @param {string} name - Raw input name.
+ * @returns {string} Sanitized name (max 32 chars, only printable Unicode).
+ */
+function sanitizeGuestName(name) {
+  if (!name || typeof name !== 'string') return '';
+  return name
+    .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '')
+    .trim()
+    .slice(0, 32);
+}
+
+/**
+ * Resolves @User#1234 mention tags in a message to proper Discord <@id> mentions.
+ * Falls back gracefully (skips unresolvable mentions) and never throws.
+ *
+ * @param {string} text - Message text (after emoji conversion).
+ * @param {import('discord.js').Guild} guild - The Discord guild to resolve members in.
+ * @returns {Promise<string>} Text with @User#1234 patterns replaced by <@id> mention syntax.
+ */
+async function resolveMentions(text, guild) {
+  const regex = /@([^#]{2,32}#\d{4})/g;
+  let result = text;
+  // Collect matches upfront so we iterate the original match list even as `result` changes.
+  const matches = [...result.matchAll(regex)];
+  for (const m of matches) {
+    let mentioneduser = guild.members.cache.find((member) => member.user.tag === m[1]);
+    if (!mentioneduser) {
+      try {
+        mentioneduser = (await guild.members.fetch()).find((member) => member.user.tag === m[1]);
+      } catch (err) {
+        console.error('Failed to fetch members for mention:', err);
+      }
+    }
+    if (mentioneduser) {
+      result = strReplace(result, m[0], `<@${mentioneduser.id}>`);
+    }
+  }
+  return result;
+}
+
 module.exports = {
   strReplace,
   isValidSnowflake,
@@ -176,4 +219,6 @@ module.exports = {
   THEME_CONFIG,
   RANDOM_EMOJIS,
   buildSessionParam,
+  sanitizeGuestName,
+  resolveMentions,
 };
