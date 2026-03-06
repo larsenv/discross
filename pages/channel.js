@@ -706,7 +706,12 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
   // Forwarded metadata
   if (isForwarded) {
     html = html.replace('{$FORWARDED_AUTHOR}',  escape(forwardData.author));
-    html = html.replace('{$FORWARDED_CONTENT}', forwardData.content);
+    const contentBlock = forwardData.content
+      ? `<table cellpadding="0" cellspacing="0" width="100%" class="forwarded-content-wrapper" style="padding:8px;margin-bottom:4px"><tr><td>` +
+        `<font class="messagecontent-font" style="font-size:14px" face="rodin,sans-serif">${forwardData.content}</font>` +
+        `</td></tr></table>`
+      : '';
+    html = html.replace('{$FORWARDED_CONTENT_BLOCK}', contentBlock);
     html = html.replace('{$FORWARDED_DATE}',    forwardData.date);
     html = html.replace('{$FORWARDED_EMBEDS}',  forwardData.embeds ?? '');
     html = html.replace('{$FORWARDED_ORIGIN}',  forwardData.origin ?? '');
