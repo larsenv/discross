@@ -6,7 +6,13 @@ const { buildMessagesHtml } = require('./channel');
 const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { strReplace, isBotReady, THEME_CONFIG, buildSessionParam } = require('./utils.js');
+const {
+  strReplace,
+  isBotReady,
+  parseCookies,
+  resolveTheme,
+  buildSessionParam,
+} = require('./utils.js');
 
 const channel_template = fs
   .readFileSync('pages/templates/pins.html', 'utf-8')
@@ -19,14 +25,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const imagesCookieValue = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('images='))
-    ?.split('=')[1];
+  const { whiteThemeCookie, images: imagesCookieValue } = parseCookies(req);
 
   const sessionParam = buildSessionParam(
     urlSessionID,
@@ -36,13 +35,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
     imagesCookieValue
   );
 
-  const themeValue =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie, 10)
-        : 0;
-  const theme = THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
+  const theme = resolveTheme(req);
   const { authorText, replyText } = theme;
 
   const imagesCookie =

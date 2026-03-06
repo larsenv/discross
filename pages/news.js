@@ -6,7 +6,7 @@ const he = require('he');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText } = require('./emojiUtils');
-const { strReplace, THEME_CONFIG, buildSessionParam } = require('./utils.js');
+const { strReplace, parseCookies, resolveTheme, buildSessionParam } = require('./utils.js');
 
 const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
 
@@ -75,14 +75,7 @@ function resolvePrefs(req) {
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const imagesCookieValue = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('images='))
-    ?.split('=')[1];
+  const { whiteThemeCookie, images: imagesCookieValue } = parseCookies(req);
 
   const sessionParam = buildSessionParam(
     urlSessionID,
@@ -92,13 +85,7 @@ function resolvePrefs(req) {
     imagesCookieValue
   );
 
-  const themeValue =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie, 10)
-        : 0;
-  const theme = THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
+  const theme = resolveTheme(req);
   const imagesCookie =
     urlImages !== null
       ? parseInt(urlImages, 10)
@@ -106,7 +93,7 @@ function resolvePrefs(req) {
         ? parseInt(imagesCookieValue, 10)
         : 1;
 
-  return { urlSessionID, sessionParam, theme, themeValue, imagesCookie, parsedUrl };
+  return { urlSessionID, sessionParam, theme, imagesCookie, parsedUrl };
 }
 
 async function fetchHtml(url) {
@@ -379,8 +366,7 @@ function parseArticlePage(html, showImages) {
 }
 
 exports.processNews = async function processNews(req, res, args, discordID) {
-  const { urlSessionID, sessionParam, theme, themeValue, parsedUrl, imagesCookie } =
-    resolvePrefs(req);
+  const { urlSessionID, sessionParam, theme, parsedUrl, imagesCookie } = resolvePrefs(req);
   const timezone = getTimezoneFromIP(getClientIP(req));
 
   // Sanitise tag: allow letters, digits, hyphens (AP News topic format)
@@ -406,8 +392,8 @@ exports.processNews = async function processNews(req, res, args, discordID) {
     let sessionHidden = '';
     if (urlSessionID)
       sessionHidden += `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">`;
-    if (themeValue !== 0)
-      sessionHidden += `<input type="hidden" name="theme" value="${escape(String(themeValue))}">`;
+    if (theme.themeValue !== 0)
+      sessionHidden += `<input type="hidden" name="theme" value="${theme.themeValue}">`;
 
     let final = strReplace(news_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
     final = strReplace(final, '{$TAG_DISPLAY}', displayTag);

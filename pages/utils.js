@@ -140,7 +140,7 @@ function resolveTheme(req) {
       : cookieTheme !== undefined
         ? parseInt(cookieTheme, 10)
         : 0;
-  return THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
+  return { ...(THEME_CONFIG[themeValue] ?? THEME_CONFIG[0]), themeValue };
 }
 
 /**
