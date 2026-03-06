@@ -28,7 +28,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
   );
 
   const { boxColor, themeClass } = resolveTheme(req);
-  const template = strReplace(
+  let template = strReplace(
     strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass),
     '{$COLOR}',
     boxColor
