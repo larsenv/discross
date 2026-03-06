@@ -251,22 +251,25 @@ pre code { background: none; border: none; padding: 0; }
 .embed {
     margin-top: 8px;
     max-width: 520px;
-    display: flex;
+    display: table;
+    width: 100%;
 }
 .embed-color-bar {
+    display: table-cell;
     width: 4px;
     background-color: #474851;
     border-radius: 4px 0 0 4px;
-    flex-shrink: 0;
+    vertical-align: top;
 }
 .embed-content {
+    display: table-cell;
     background-color: #252529;
     border: 1px solid #474851;
     border-left: none;
     border-radius: 0 4px 4px 0;
     padding: 8px 12px;
-    flex-grow: 1;
-    min-width: 0;
+    vertical-align: top;
+    width: 100%;
     overflow-wrap: break-word;
     word-wrap: break-word;
 }
@@ -1291,22 +1294,23 @@ select.food-input,
 }
 
 .food-input-row {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-box-align: end;
-    -webkit-align-items: flex-end;
-    align-items: flex-end;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
 }
 
 .food-input-row .food-input {
-    flex: 1;
+    display: table-cell;
+    width: 100%;
+    vertical-align: bottom;
 }
 
 .food-input-row .food-btn {
-    margin-left: 10px;
-    -webkit-flex-shrink: 0;
-    flex-shrink: 0;
+    display: table-cell;
+    vertical-align: bottom;
+    width: 1%;
+    white-space: nowrap;
+    padding-left: 10px;
 }
 
 a.food-btn,
@@ -1407,11 +1411,10 @@ a.food-btn:hover,
 }
 /* Tip selector */
 .food-tip-row {
-    display: flex;
-    flex-wrap: wrap;
     margin-top: 6px;
 }
 .food-tip-row label {
+    display: inline-block;
     margin-right: 8px;
     margin-bottom: 8px;
 }
@@ -1477,14 +1480,8 @@ a.food-btn:hover,
     font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
-/* Menu tabs — display:inline-block + margin is the base fallback;
-   flex upgrades the layout on browsers that support it. */
+/* Menu tabs — inline-block layout for maximum compatibility */
 .food-tabs {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-flex-wrap: wrap;
-    flex-wrap: wrap;
     margin-bottom: 20px;
 }
 
@@ -1524,15 +1521,8 @@ a.food-tab-active:hover,
     color: #ffffff !important;
 }
 
-/* Menu items grid — inline-block is the base fallback; flex wraps on modern browsers */
+/* Menu items grid — inline-block layout for maximum compatibility */
 .food-items-grid {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-flex-wrap: wrap;
-    -ms-flex-wrap: wrap;
-    flex-wrap: wrap;
 }
 
 .food-item-card {
@@ -1623,61 +1613,82 @@ a.food-tab-active:hover,
 
 /* Checkout */
 .food-checkout-grid {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-flex-wrap: wrap;
-    flex-wrap: wrap;
-    -webkit-align-items: flex-start;
-    align-items: flex-start;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
 }
 .food-checkout-grid > *:first-child {
+    display: table-cell;
     width: 300px;
-    margin-right: 20px;
-    margin-bottom: 16px;
+    padding-right: 20px;
+    padding-bottom: 16px;
+    vertical-align: top;
 }
 .food-checkout-grid > *:last-child {
-    -webkit-flex: 1;
-    flex: 1;
-    min-width: 280px;
+    display: table-cell;
+    vertical-align: top;
 }
 
 .food-form-row {
-    display: flex;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
     margin-bottom: 14px;
 }
-.food-form-row > * + * {
-    margin-left: 12px;
+.food-form-row > * {
+    display: table-cell;
+    vertical-align: top;
+    padding-left: 12px;
+}
+.food-form-row > *:first-child {
+    padding-left: 0;
 }
 
 .food-form-group {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    display: table-cell;
+    vertical-align: top;
 }
 
 .food-form-group-sm {
-    flex: 0 0 100px;
+    width: 100px;
 }
 
 .food-summary-item {
-    display: flex;
-    justify-content: space-between;
+    display: table;
+    width: 100%;
     padding: 6px 0;
     border-bottom: 1px solid #3a3d42;
     font-size: 0.9rem;
     color: #dddddd;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
+.food-summary-item > span:first-child {
+    display: table-cell;
+    width: 100%;
+}
+.food-summary-item > span:last-child {
+    display: table-cell;
+    white-space: nowrap;
+    padding-left: 8px;
+}
 
 .food-summary-total {
-    display: flex;
-    justify-content: space-between;
+    display: table;
+    width: 100%;
     padding: 10px 0 0 0;
     font-size: 1rem;
     font-weight: 600;
     color: #dddddd;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+}
+.food-summary-total > *:first-child {
+    display: table-cell;
+    width: 100%;
+}
+.food-summary-total > *:last-child {
+    display: table-cell;
+    white-space: nowrap;
+    padding-left: 8px;
 }
 
 /* Verify */
@@ -1700,30 +1711,18 @@ a.food-tab-active:hover,
 
 /* Tracker */
 .food-tracker-bar {
-    display: flex;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
 }
 
 .food-tracker-step {
-    flex: 1;
+    display: table-cell;
     text-align: center;
     position: relative;
     padding-bottom: 8px;
+    vertical-align: top;
 }
-
-.food-tracker-step::before {
-    content: '';
-    display: block;
-    height: 3px;
-    background: #3a3d42;
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    right: -50%;
-    z-index: 0;
-}
-
-.food-tracker-step:last-child::before { display: none; }
-
 .food-tracker-dot {
     width: 24px;
     height: 24px;
@@ -1736,7 +1735,6 @@ a.food-tab-active:hover,
 
 .food-tracker-step-done .food-tracker-dot { background: #248046; }
 .food-tracker-step-active .food-tracker-dot { background: #5865f2; }
-.food-tracker-step-done::before { background: #248046; }
 
 .food-tracker-label {
     font-size: 0.78rem;
@@ -1755,23 +1753,28 @@ a.food-tab-active:hover,
 }
 
 .food-receipt-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+    display: table;
+    width: 100%;
     margin-bottom: 8px;
 }
-
 .food-receipt-store {
+    display: table-cell;
     font-weight: 600;
     color: #dddddd;
     font-size: 1rem;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+    vertical-align: baseline;
+    width: 100%;
 }
 
 .food-receipt-date {
+    display: table-cell;
     font-size: 0.82rem;
     color: #b5bac1;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+    vertical-align: baseline;
+    white-space: nowrap;
+    padding-left: 8px;
 }
 
 .food-receipt-items {
@@ -1782,22 +1785,21 @@ a.food-tab-active:hover,
 }
 
 .food-receipt-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: table;
+    width: 100%;
 }
 
 .food-receipt-total {
+    display: table-cell;
     font-weight: 600;
     color: #dddddd;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
+    vertical-align: middle;
+    text-align: right;
 }
 
 /* Back nav row */
 .food-back-row {
-    display: flex;
-    -webkit-align-items: center;
-    align-items: center;
     margin-bottom: 16px;
 }
 .food-back-row > * + * {
@@ -1896,31 +1898,36 @@ a.food-tab-active:hover,
 
 /* Responsive */
 @media (max-width: 720px) {
-    .food-checkout-grid > *:first-child {
+    .food-checkout-grid,
+    .food-checkout-grid > *:first-child,
+    .food-checkout-grid > *:last-child {
+        display: block;
         width: 100%;
-        margin-right: 0;
+        padding-right: 0;
     }
-    .food-form-row {
-        -webkit-flex-direction: column;
-        flex-direction: column;
+    .food-form-row,
+    .food-form-row > * {
+        display: block;
+        width: 100%;
+        padding-left: 0;
     }
     .food-form-row > * + * {
-        margin-left: 0;
         margin-top: 12px;
     }
     .food-form-group-sm {
-        -webkit-flex: 1;
-        flex: 1;
+        width: 100%;
     }
     .food-item-card {
         width: calc(50% - 12px);
         min-width: 150px;
     }
     .food-tracker-bar {
-        -webkit-flex-direction: column;
-        flex-direction: column;
+        display: block;
     }
-    .food-tracker-step::before { display: none; }
+    .food-tracker-step {
+        display: block;
+        padding-bottom: 12px;
+    }
 }
 
 /* Syntax highlighting - atom-one-dark theme */

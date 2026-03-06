@@ -178,7 +178,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     // Process embed footer
     let footerHtml = '';
     if (embed.footer || embed.timestamp) {
-      footerHtml = '<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">';
+      footerHtml = '<div style="margin-top: 8px; font-size: 12px; color: #72767d;">';
       if (embed.footer) {
         footerHtml += `<span>${escape(normalizeWeirdUnicode(embed.footer.text))}</span>`;
       }

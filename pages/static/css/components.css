@@ -155,19 +155,23 @@ pre code { background: none; border: none; padding: 0; }
 .embed { 
   margin-top: 8px; 
   max-width: 520px;
-  display: flex;
+  display: table;
+  width: 100%;
 }
 .embed-color-bar {
+  display: table-cell;
   width: 4px;
   border-radius: 4px 0 0 4px;
-  flex-shrink: 0;
+  vertical-align: top;
 }
 .embed-content {
+  display: table-cell;
   background-color: #2f3136;
   border: 1px solid #202225;
   border-radius: 0 4px 4px 0;
   padding: 8px 12px;
-  flex: 1;
+  vertical-align: top;
+  width: 100%;
 }
 
 /* Reactions */
