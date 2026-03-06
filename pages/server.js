@@ -1,3 +1,4 @@
+'use strict';
 const fs = require('fs');
 const escape = require('escape-html');
 const UAParser = require('ua-parser-js');
@@ -538,8 +539,6 @@ function createServerHTML(server, member, imagesCookie, sessionParam) {
   let serverName = server.name;
   // Remove custom emoji <:name:id> and <a:name:id>
   serverName = serverName.replace(/<a?:[^:]+:\d+>/g, '');
-  // Remove unicode emoji
-  const emojiRegex = require('./twemojiRegex').regex;
   serverName = serverName.replace(emojiRegex, '');
   serverName = serverName.trim();
 

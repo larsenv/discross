@@ -1,3 +1,4 @@
+'use strict';
 const https = require('https');
 
 exports.fileProxy = async function fileProxy(res, URL) {

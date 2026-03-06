@@ -1,3 +1,4 @@
+'use strict';
 exports.toggleImages = async function toggleImages(req, res) {
   try {
     const parsedUrl = new URL(req.url, 'http://localhost');

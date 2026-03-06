@@ -1,3 +1,4 @@
+'use strict';
 const fs = require('fs');
 const escape = require('escape-html');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');

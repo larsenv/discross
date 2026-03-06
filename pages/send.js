@@ -1,5 +1,4 @@
-const auth = require('../authentication.js');
-const bot = require('../bot.js');
+'use strict';
 const discord = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');

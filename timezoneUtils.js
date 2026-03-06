@@ -1,3 +1,4 @@
+'use strict';
 const geoip = require('geoip-lite');
 
 // Constants for date/time calculations

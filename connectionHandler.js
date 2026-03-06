@@ -1,3 +1,4 @@
+'use strict';
 const WebSocket = require('ws');
 
 const sockets = [];
@@ -18,9 +19,7 @@ function processMessage(isAuthed, listenChannel, message) {
   const action = message[0];
   const params = message.slice(action.length + 1, message.length);
   if (action === 'AUTH') {
-    if (params === 'authpls') {
-      sendToAll('Authed!');
-    }
+    isAuthed = true;
   } else if (action === 'LISTEN') {
     // IMPORTANT TODO: Check channel permissions
     listenChannel = params;

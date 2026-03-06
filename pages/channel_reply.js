@@ -1,3 +1,4 @@
+'use strict';
 const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { getDisplayName } = require('./memberUtils');
@@ -58,6 +59,8 @@ const date_separator_template = fs.readFileSync(
   'utf-8'
 );
 
+const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
+
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
@@ -100,6 +103,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     boxColor = '#ffffff';
     authorText = '#000000';
     replyText = '#000000';
+  } else if (theme === 2) {
+    boxColor = '#141416';
   }
 
   const themeAttr = theme === 1 ? 'class="light-theme"' : theme === 2 ? 'class="amoled-theme"' : '';
@@ -260,9 +265,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         return notFound.serve404(req, res, 'Invalid message to reply to.', '/', 'Back to Home');
       }
 
-      const randomEmoji = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'][
-        Math.floor(Math.random() * 7)
-      ];
+      const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
       final = strReplace(final, '{$RANDOM_EMOJI}', randomEmoji);
       final = strReplace(final, '{$CHANNEL_NAME}', normalizeWeirdUnicode(chnl.name));
       final = strReplace(final, '{$MESSAGES}', response);

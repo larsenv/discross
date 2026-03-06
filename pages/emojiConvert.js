@@ -1,3 +1,4 @@
+'use strict';
 const { emojify } = require('discord-emoji-converter');
 
 // Fitzpatrick skin-tone modifier characters for :skin-tone-2: through :skin-tone-6:

@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Shared utilities for message processing
  */

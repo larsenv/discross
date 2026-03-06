@@ -1,3 +1,4 @@
+'use strict';
 const bcrypt = require('bcrypt');
 const sqlite3 = require('better-sqlite3');
 const { v4: uuidv4 } = require('uuid');
@@ -145,7 +146,7 @@ exports.checkSession = async function (sessionID) {
   return match ? match.discordID : false;
 };
 
-exports.logout = async function (discordID) {
+exports.logout = function (discordID) {
   queryRun('DELETE FROM sessions WHERE discordID=?', [discordID]);
 };
 
