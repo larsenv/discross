@@ -460,7 +460,7 @@ server.on('request', async (req, res) => {
     } else if (args[1] === 'movies') {
       const discordID = await auth.checkAuth(req, res)
       if (discordID) {
-        await moviespage.processMovies(req, res)
+        await moviespage.processMovies(req, res, discordID)
       }
     } else if (args[1] === 'food') {
       const discordID = await auth.checkAuth(req, res)
