@@ -91,6 +91,33 @@ const THEME_CONFIG = {
 const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
 
 /**
+ * Resolves the HTML attribute value for the `{$WHITE_THEME_ENABLED}` template placeholder,
+ * reading the `theme` URL param first, then the `whiteThemeCookie` cookie as fallback.
+ * Returns `class="light-theme"` (1), `class="amoled-theme"` (2), or `bgcolor="303338"` (dark/default).
+ *
+ * Used by simple/auth pages (login, register, forgot, terms, privacy, index, notFound, food).
+ *
+ * @param {object} req - Node.js IncomingMessage.
+ * @returns {string}
+ */
+function getPageThemeAttr(req) {
+  const parsedurl = new URL(req.url, 'http://localhost');
+  const urlTheme = parsedurl.searchParams.get('theme');
+  const cookieHeader = req.headers.cookie || '';
+  const cookieTheme = cookieHeader.split('; ').find((c) => c.startsWith('whiteThemeCookie='));
+  const cookieVal = cookieTheme ? cookieTheme.split('=')[1] : undefined;
+  const theme =
+    urlTheme !== null
+      ? parseInt(urlTheme, 10)
+      : cookieVal !== undefined
+        ? parseInt(cookieVal, 10)
+        : 0;
+  if (theme === 1) return 'class="light-theme"';
+  if (theme === 2) return 'class="amoled-theme"';
+  return 'bgcolor="303338"';
+}
+
+/**
  * Builds the combined URL query string for session/theme/images link params.
  * Preference params (theme/images) are only included when the browser has not
  * set the corresponding cookie (i.e. the browser does not support cookies).
@@ -118,6 +145,7 @@ module.exports = {
   isBotReady,
   getBaseUrl,
   parseCookies,
+  getPageThemeAttr,
   THEME_CONFIG,
   RANDOM_EMOJIS,
   buildSessionParam,
