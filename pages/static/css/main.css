@@ -1168,6 +1168,68 @@ html.page-server font[color="#dcddde"] {
 .amoled-theme .news-card { background: #141416; border-color: #2b2c30; }
 
 /* ================================================================
+   25c. MOVIES PAGE (Rotten Tomatoes viewer)
+   ================================================================ */
+
+/* Tab bar */
+.movie-tabs { margin: 12px 0 8px 0; }
+.movie-tab {
+    display: inline-block;
+    padding: 6px 14px;
+    margin-right: 4px;
+    background: #2f3136;
+    border: 1px solid #3a3c40;
+    border-radius: 4px;
+    color: #dcddde;
+    text-decoration: none;
+    font-family: 'rodin', Arial, Helvetica, sans-serif;
+    font-size: 14px;
+}
+a.movie-tab { color: #dcddde; }
+.movie-tab-active { background: #5865f2; border-color: #5865f2; }
+a.movie-tab-active { color: #ffffff; }
+
+/* Movie card — single column, block display */
+.movie-card {
+    border: 1px solid #3a3c40;
+    border-radius: 8px;
+    margin: 12px 0;
+    overflow: hidden;
+    background: #222327;
+    max-width: 480px;
+}
+.movie-card-poster { display: block; }
+.movie-card-img { width: 100%; max-width: 100px; max-height: 148px; object-fit: cover; display: block; }
+.movie-card-body { padding: 10px; }
+.movie-card-title { font-size: 16px; display: block; margin-bottom: 6px; }
+.movie-card-scores { font-size: 13px; margin-bottom: 6px; display: block; }
+.movie-score-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 3px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+    vertical-align: middle;
+}
+.movie-score-label { font-size: 12px; color: #b5bac1; vertical-align: middle; }
+.movie-rt-btn { margin-top: 6px; padding: 5px 14px; font-size: 13px; }
+.movie-empty { color: #72767d; font-family: sans-serif; }
+.movie-attribution { font-size: 12px; color: #72767d; margin-top: 16px; }
+
+/* Light theme overrides */
+.light-theme .movie-tab { background: #e6e8eb; border-color: #c7ccd1; color: #23272a; }
+.light-theme a.movie-tab { color: #23272a; }
+.light-theme .movie-tab-active { background: #5865f2; border-color: #5865f2; }
+.light-theme a.movie-tab-active { color: #ffffff; }
+.light-theme .movie-card { background: #f2f3f5; border-color: #d0d2d6; }
+.light-theme .movie-score-label { color: #4f5660; }
+
+/* AMOLED theme overrides */
+.amoled-theme .movie-card { background: #141416; border-color: #2b2c30; }
+.amoled-theme .movie-tab { background: #0a0a0a; border-color: #2b2c30; }
+
+/* ================================================================
    26. @font-face — placed last for IE1/IE2 compatibility
        (old browsers stop parsing on unknown @ rules; normal rules above
         are all applied before reaching this point)
