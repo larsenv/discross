@@ -2,16 +2,14 @@
 const discord = require('discord.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { strReplace } = require('./utils.js');
+const { resolveMentions } = require('./utils.js');
 
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
   try {
-    let parsedurl;
-    if (urlQuery === null) {
-      parsedurl = Object.fromEntries(new URL(req.url, 'http://localhost').searchParams);
-    } else {
-      parsedurl = urlQuery;
-    }
+    const parsedurl =
+      urlQuery !== null
+        ? urlQuery
+        : Object.fromEntries(new URL(req.url, 'http://localhost').searchParams);
 
     // Allow sending drawings with or without a message
     const channel = await bot.client.channels.fetch(parsedurl.channel);
@@ -39,29 +37,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
     // Process mentions only if there's a message
     if (processedmessage) {
-      const regex = /@([^#]{2,32}#\d{4})/g;
-      let m;
-      do {
-        m = regex.exec(processedmessage);
-        if (m) {
-          let mentioneduser = channel.guild.members.cache.find(
-            (member) => member.user.tag === m[1]
-          );
-          if (!mentioneduser) {
-            try {
-              mentioneduser = (await channel.guild.members.fetch()).find(
-                (member) => member.user.tag === m[1]
-              );
-            } catch (err) {
-              console.error('Failed to fetch members for mention:', err);
-              // Continue without resolving the mention
-            }
-          }
-          if (mentioneduser) {
-            processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
-          }
-        }
-      } while (m);
+      processedmessage = await resolveMentions(processedmessage, channel.guild);
     }
 
     const base64Data = parsedurl.drawinginput;

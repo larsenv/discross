@@ -4,7 +4,7 @@ const fs = require('fs');
 const https = require('https');
 const escape = require('escape-html');
 
-const { strReplace, THEME_CONFIG } = require('./utils.js');
+const { strReplace, getPageThemeAttr } = require('./utils.js');
 
 const auth = require('../authentication.js');
 
@@ -249,12 +249,7 @@ exports.processCurrency = async function processCurrency(req, res) {
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
   const sessionSuffix = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const themeValue = whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0;
-  const themeClass = THEME_CONFIG[themeValue]?.themeClass ?? '';
+  const themeClass = getPageThemeAttr(req);
 
   let currencyHtml = '';
 

@@ -5,7 +5,7 @@ const { formatDateWithTimezone } = require('../timezoneUtils');
 const fs = require('fs');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText, cacheCustomEmoji } = require('./emojiUtils');
-const { strReplace } = require('./utils.js');
+const { strReplace, parseCookies } = require('./utils.js');
 
 const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
 
@@ -56,18 +56,12 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
  * @returns {string} HTML string representing all embeds
  */
 function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTimezone = null) {
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
+  const cookies = parseCookies(req);
+  const themeValue = parseInt(cookies.whiteThemeCookie, 10) || 0;
 
   // Apply theme colors: 1=light, otherwise dark/amoled
-  let embedHead = '#ffffff';
-  let embedText = '#dcddde';
-  if (whiteThemeCookie === '1') {
-    embedHead = '#000000';
-    embedText = '#000000';
-  }
+  const embedHead = themeValue === 1 ? '#000000' : '#ffffff';
+  const embedText = themeValue === 1 ? '#000000' : '#dcddde';
 
   if (!embeds || embeds.length === 0) {
     return '';
