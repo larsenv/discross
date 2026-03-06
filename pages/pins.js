@@ -52,12 +52,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
     return;
   }
 
-  let chnl;
-  try {
-    chnl = await bot.client.channels.fetch(args[2]);
-  } catch {
-    chnl = undefined;
-  }
+  const chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
   if (!chnl) {
     return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');

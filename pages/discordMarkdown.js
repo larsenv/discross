@@ -72,12 +72,9 @@ function escapeHtml(text) {
 function highlightCode(code, lang) {
   if (!lang) return escapeHtml(code);
   try {
-    let raw;
-    if (hljs.getLanguage(lang)) {
-      raw = hljs.highlight(code, { language: lang }).value;
-    } else {
-      raw = hljs.highlightAuto(code).value;
-    }
+    const raw = hljs.getLanguage(lang)
+      ? hljs.highlight(code, { language: lang }).value
+      : hljs.highlightAuto(code).value;
     return applyInlineStyles(raw);
   } catch (e) {
     return escapeHtml(code);

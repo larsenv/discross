@@ -108,12 +108,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       return;
     }
 
-    let chnl;
-    try {
-      chnl = await bot.client.channels.fetch(args[2]);
-    } catch (err) {
-      chnl = undefined;
-    }
+    const chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
     if (chnl) {
       let botMember, member;

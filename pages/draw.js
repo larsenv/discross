@@ -35,18 +35,11 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
   );
 
   try {
-    let chnl;
-    let botMember;
-    let member;
-    try {
-      chnl = await bot.client.channels.fetch(args[2]);
-    } catch (err) {
-      chnl = undefined;
-    }
+    const chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
     if (chnl) {
-      botMember = await chnl.guild.members.fetch(bot.client.user.id);
-      member = await chnl.guild.members.fetch(discordID);
+      const botMember = await chnl.guild.members.fetch(bot.client.user.id);
+      const member = await chnl.guild.members.fetch(discordID);
 
       if (
         !member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) ||

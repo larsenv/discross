@@ -68,12 +68,7 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     return;
   }
 
-  let chnl;
-  try {
-    chnl = await bot.client.channels.fetch(channelId);
-  } catch {
-    chnl = undefined;
-  }
+  const chnl = await bot.client.channels.fetch(channelId).catch(() => undefined);
 
   if (!chnl) {
     return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
