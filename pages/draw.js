@@ -3,7 +3,7 @@ const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { strReplace, resolveTheme, buildSessionParam } = require('./utils.js');
+const { strReplace, parseCookies, resolveTheme, buildSessionParam } = require('./utils.js');
 const channel_template = fs
   .readFileSync('pages/templates/draw.html', 'utf-8')
   .split('{$COMMON_HEAD}')
@@ -15,14 +15,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const imagesCookieForParam = req.headers.cookie
-    ?.split('; ')
-    ?.find((cookie) => cookie.startsWith('images='))
-    ?.split('=')[1];
+  const { whiteThemeCookie, images: imagesCookieForParam } = parseCookies(req);
 
   // Build combined URL params for links — only include preference params when the
   // corresponding cookie is absent (i.e. the browser doesn't support cookies)

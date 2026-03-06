@@ -16,25 +16,13 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
  * @returns {string} Display name to show
  */
 function getDisplayName(member, author) {
-  let name;
-  if (member && member.nickname) {
-    // Server nickname (guild nickname) first
-    name = member.nickname;
-  } else if (member && member.user && member.user.globalName) {
-    // Discord global name (from user object)
-    name = member.user.globalName;
-  } else if (member && member.user && member.user.username) {
-    name = member.user.username;
-  } else if (member) {
-    // Fallback to member display name
-    name = member.displayName;
-  } else if (author && author.globalName) {
-    // For webhooks or when no member data, use author data
-    name = author.globalName;
-  } else if (author && author.username) {
-    name = author.username;
-  }
-
+  const name =
+    (member && member.nickname) ||
+    (member && member.user && member.user.globalName) ||
+    (member && member.user && member.user.username) ||
+    (member && member.displayName) ||
+    (author && author.globalName) ||
+    (author && author.username);
   return normalizeWeirdUnicode(name || 'Unknown User');
 }
 

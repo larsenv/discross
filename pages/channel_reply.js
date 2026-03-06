@@ -9,6 +9,7 @@ const notFound = require('./notFound.js');
 const {
   strReplace,
   isBotReady,
+  parseCookies,
   resolveTheme,
   RANDOM_EMOJIS,
   buildSessionParam,
@@ -71,14 +72,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const imagesCookieValue = req.headers.cookie
-    ?.split('; ')
-    ?.find((cookie) => cookie.startsWith('images='))
-    ?.split('=')[1];
+  const { whiteThemeCookie, images: imagesCookieValue } = parseCookies(req);
 
   // Build combined URL params for links — only include preference params when the
   // corresponding cookie is absent (i.e. the browser doesn't support cookies)

@@ -24,6 +24,7 @@ const notFound = require('./notFound.js');
 const {
   strReplace,
   isBotReady,
+  parseCookies,
   resolveTheme,
   THEME_CONFIG,
   RANDOM_EMOJIS,
@@ -1098,14 +1099,7 @@ function resolvePreferences(req) {
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  const cookieImages = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('images='))
-    ?.split('=')[1];
-  const cookieTheme = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
+  const { images: cookieImages, whiteThemeCookie: cookieTheme } = parseCookies(req);
 
   const imagesCookie =
     urlImages !== null
