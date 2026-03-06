@@ -80,7 +80,13 @@ function evictOldestCachedMember() {
   }
 }
 
-const { strReplace, isBotReady, getPageThemeAttr, buildSessionParam } = require('./utils.js');
+const {
+  strReplace,
+  isBotReady,
+  getPageThemeAttr,
+  buildSessionParam,
+  parseCookies,
+} = require('./utils.js');
 
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
@@ -265,10 +271,10 @@ async function processServerChannels(server, member, response, sessionParam) {
     }
 
     // Replace the channel list in the response
-    response = response.replace('{$CHANNEL_LIST}', channelList);
+    response = strReplace(response, '{$CHANNEL_LIST}', channelList);
   } catch (err) {
     console.error('Error processing server channels:', err);
-    response = response.replace('{$CHANNEL_LIST}', sync_warning_template);
+    response = strReplace(response, '{$CHANNEL_LIST}', sync_warning_template);
   }
 
   return response;
@@ -292,14 +298,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     const urlImages = parsedUrl.searchParams.get('images');
 
     // Read cookies up front to decide whether URL params need to be propagated
-    const whiteThemeCookieForParam = req.headers.cookie
-      ?.split('; ')
-      ?.find((cookie) => cookie.startsWith('whiteThemeCookie='))
-      ?.split('=')[1];
-    const imagesCookieForParam = req.headers.cookie
-      ?.split('; ')
-      ?.find((cookie) => cookie.startsWith('images='))
-      ?.split('=')[1];
+    const { whiteThemeCookie: whiteThemeCookieForParam, images: imagesCookieForParam } =
+      parseCookies(req);
 
     // Build combined URL params for links — only include preference params when the
     // corresponding cookie is absent (i.e. the browser doesn't support cookies)
@@ -339,15 +339,11 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
           // Construct server list HTML if the member is valid
           if (member && member.user) {
-            const imagesCookieValue = req.headers.cookie
-              ?.split('; ')
-              ?.find((cookie) => cookie.startsWith('images='))
-              ?.split('=')[1];
             const imagesCookie =
               urlImages !== null
                 ? parseInt(urlImages, 10)
-                : imagesCookieValue !== undefined
-                  ? parseInt(imagesCookieValue, 10)
+                : imagesCookieForParam !== undefined
+                  ? parseInt(imagesCookieForParam, 10)
                   : 1;
             const serverHTML = createServerHTML(server, member, imagesCookie, sessionParam);
             serverList += serverHTML;
@@ -370,7 +366,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       }
     });
 
-    let response = server_template.replace('{$SERVER_LIST}', serverList);
+    let response = strReplace(server_template, '{$SERVER_LIST}', serverList);
 
     // syncNeeded already parsed via parsedUrl above
     const syncNeeded = parsedUrl.searchParams.get('sync_needed');
@@ -380,7 +376,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       const targetServer = bot.client.guilds.cache.get(args[2]);
       await lock.acquire(discordID, async () => {
         if (targetServer) {
-          response = response.replace(
+          response = strReplace(
+            response,
             '{$DISCORD_NAME}',
             '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' +
               escape(normalizeWeirdUnicode(targetServer.name)) +
@@ -390,36 +387,32 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           if (member) {
             response = await processServerChannels(targetServer, member, response, sessionParam);
           } else {
-            response = response.replace('{$CHANNEL_LIST}', sync_warning_template);
+            response = strReplace(response, '{$CHANNEL_LIST}', sync_warning_template);
           }
         } else {
-          response = response.replace('{$DISCORD_NAME}', '');
+          response = strReplace(response, '{$DISCORD_NAME}', '');
         }
       });
     } else {
       // If no specific server is selected, choose template based on whether user has servers
       if (serverList.trim() === '') {
         // No servers available, show full authentication banner
-        response = response.replace('{$CHANNEL_LIST}', sync_warning_template);
+        response = strReplace(response, '{$CHANNEL_LIST}', sync_warning_template);
       } else if (syncNeeded === 'true' || serversDeleted > 0) {
         // Show sync warning if explicitly requested or servers were deleted due to sync issues
-        response = response.replace('{$CHANNEL_LIST}', sync_warning_template);
+        response = strReplace(response, '{$CHANNEL_LIST}', sync_warning_template);
       } else {
         // User has servers and they seem synced, show simple server selection
-        response = response.replace('{$CHANNEL_LIST}', server_list_only_template);
+        response = strReplace(response, '{$CHANNEL_LIST}', server_list_only_template);
       }
-      response = response.replace('{$DISCORD_NAME}', '');
+      response = strReplace(response, '{$DISCORD_NAME}', '');
     }
 
-    const imagesCookieValue = req.headers.cookie
-      ?.split('; ')
-      ?.find((cookie) => cookie.startsWith('images='))
-      ?.split('=')[1];
     const imagesCookie =
       urlImages !== null
         ? parseInt(urlImages, 10)
-        : imagesCookieValue !== undefined
-          ? parseInt(imagesCookieValue, 10)
+        : imagesCookieForParam !== undefined
+          ? parseInt(imagesCookieForParam, 10)
           : 1;
 
     // Handle theme and images preferences
@@ -429,7 +422,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       const unicode_emoji_matches = [...response.match?.(emojiRegex)];
       unicode_emoji_matches.forEach((match) => {
         const output = unicodeToTwemojiCode(match);
-        response = response.replace(
+        response = strReplace(
+          response,
           match,
           `<img src="/resources/twemoji/${output}.gif" width="22" height="22" style="width: 6%;vertical-align:top;" alt="emoji">`
         );
@@ -442,7 +436,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     if (custom_emoji_matches[0] && imagesCookie === 1)
       custom_emoji_matches.forEach(async (match) => {
         // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replace(
+        response = strReplace(
+          response,
           match[0],
           `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? 'gif' : 'png'}" width="22" height="22" style="width: 6%;"  alt="emoji">`
         ); // Make it smaller if inline
@@ -484,10 +479,7 @@ function applyUserPreferences(response, req) {
 
   const parsedUrl = new URL(req.url, 'http://localhost');
   const urlImages = parsedUrl.searchParams.get('images');
-  const imagesCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((cookie) => cookie.startsWith('images='))
-    ?.split('=')[1];
+  const { images: imagesCookie } = parseCookies(req);
   const imagesEnabled =
     urlImages !== null ? urlImages === '1' : imagesCookie === '1' || imagesCookie === undefined; // Default to enabled (1) if not set
   response = imagesEnabled
@@ -509,11 +501,11 @@ function createServerHTML(server, member, imagesCookie, sessionParam) {
   serverHTML = strReplace(serverHTML, '{$SERVER_URL}', './' + server.id + (sessionParam || ''));
 
   // Always strip emoji from server name to prevent twemoji rendering inside the name text
-  let serverName = server.name;
-  // Remove custom emoji <:name:id> and <a:name:id>
-  serverName = serverName.replace(/<a?:[^:]+:\d+>/g, '');
-  serverName = serverName.replace(emojiRegex, '');
-  serverName = serverName.trim();
+  // Remove custom emoji <:name:id> and <a:name:id>, then unicode emoji, then trim
+  const serverName = server.name
+    .replace(/<a?:[^:]+:\d+>/g, '')
+    .replace(emojiRegex, '')
+    .trim();
 
   serverHTML = strReplace(serverHTML, '{$SERVER_NAME}', escape(normalizeWeirdUnicode(serverName)));
   return serverHTML;

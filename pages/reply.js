@@ -59,16 +59,13 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         res.end('Reply message does not belong to this channel');
         return;
       }
-      let reply_message_content = reply_message.content;
-
+      const rawReplyContent = reply_message.content
+        .replace(/<@!?(\d+)>/g, '@user')
+        .replace(/<@&(\d+)>/g, '@role')
+        .replace(/<#(\d+)>/g, '#channel');
       // #38: Escape mentions in reply content to prevent ping issues
-      reply_message_content = reply_message_content.replace(/<@!?(\d+)>/g, '@user');
-      reply_message_content = reply_message_content.replace(/<@&(\d+)>/g, '@role');
-      reply_message_content = reply_message_content.replace(/<#(\d+)>/g, '#channel');
-
-      if (reply_message_content.length > 30) {
-        reply_message_content = reply_message_content.substring(0, 30) + '...';
-      }
+      const reply_message_content =
+        rawReplyContent.length > 30 ? rawReplyContent.substring(0, 30) + '...' : rawReplyContent;
 
       // #39: Get proper member name for reply
       let author_name = reply_message.author.username;

@@ -31,16 +31,10 @@ function processReactions(
         const isSuperReaction = reaction.burst_colors && reaction.burst_colors.length > 0;
 
         // Set background and border colors
-        let backgroundColor, borderColor;
-        if (isSuperReaction) {
-          // Super reactions have a different background
-          backgroundColor = 'rgba(88, 101, 242, 0.15)'; // Purple-ish tint for super reactions
-          borderColor = 'rgba(88, 101, 242, 0.4)';
-        } else {
-          // Normal reactions
-          backgroundColor = 'rgba(79, 84, 92, 0.16)';
-          borderColor = 'rgba(79, 84, 92, 0.24)';
-        }
+        const backgroundColor = isSuperReaction
+          ? 'rgba(88, 101, 242, 0.15)'
+          : 'rgba(79, 84, 92, 0.16)';
+        const borderColor = isSuperReaction ? 'rgba(88, 101, 242, 0.4)' : 'rgba(79, 84, 92, 0.24)';
 
         let emojiHtml = '';
 
