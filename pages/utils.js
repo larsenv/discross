@@ -34,8 +34,10 @@ function isValidSnowflake(id) {
  */
 function isBotReady(bot) {
   return (
-    bot != null &&
-    bot.client != null &&
+    bot !== null &&
+    bot !== undefined &&
+    bot.client !== null &&
+    bot.client !== undefined &&
     (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime)
   );
 }

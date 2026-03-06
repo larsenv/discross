@@ -645,7 +645,7 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
       author: getDisplayName(replyMember, replyUser),
       authorId: replyUser?.id,
       authorColor: getMemberColor(replyMember),
-      mentionsPing: item.mentions?.repliedUser != null,
+      mentionsPing: item.mentions?.repliedUser !== null && item.mentions?.repliedUser !== undefined,
       content: replyContent,
     };
   } catch (err) {
@@ -970,49 +970,23 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     state.lastmessagedate = item.createdAt;
 
     // Resolve forward / reply metadata
-    let isForwarded = false;
-    let forwardData = {};
-    if (item.reference?.type === MessageReferenceType.Forward) {
-      const data = await resolveForwardData(
-        item,
-        chnl,
-        bot,
-        discordID,
-        memberCache,
-        clientTimezone
-      );
-      if (data) {
-        isForwarded = true;
-        forwardData = data;
-      }
-    }
+    const fwdData =
+      item.reference?.type === MessageReferenceType.Forward
+        ? await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone)
+        : null;
+    const isForwarded = fwdData !== null;
+    const forwardData = fwdData ?? {};
 
-    let isReply = false;
-    let replyData = {};
-    if (item.reference && !isForwarded) {
-      const data = await resolveReplyData(
-        item,
-        chnl,
-        memberCache,
-        bot,
-        imagesCookie,
-        animationsCookie
-      );
-      if (data) {
-        isReply = true;
-        replyData = data;
-      }
-    }
+    const rplyData =
+      item.reference && !isForwarded
+        ? await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie)
+        : null;
+    const isReply = rplyData !== null;
+    const replyData = rplyData ?? {};
 
-    let isInteraction = false;
-    let interactionData = {};
-    if (item.interaction) {
-      const data = await resolveInteractionData(item, chnl, memberCache);
-      if (data) {
-        isInteraction = true;
-        interactionData = data;
-      }
-    }
+    const intData = item.interaction ? await resolveInteractionData(item, chnl, memberCache) : null;
+    const isInteraction = intData !== null;
+    const interactionData = intData ?? {};
 
     let messagetext = await renderMessageContent(item, context);
 

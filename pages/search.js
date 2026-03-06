@@ -29,10 +29,10 @@ exports.processSearch = async function processSearch(req, res) {
   const query = parsedUrl.searchParams.get('q') || '';
   const engine = parsedUrl.searchParams.get('engine') || 'frogfind';
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
+  const safeEngine = VALID_ENGINES.includes(engine) ? engine : 'frogfind';
 
   // If a query is provided, redirect to the chosen search engine
   if (query.trim()) {
-    const safeEngine = VALID_ENGINES.includes(engine) ? engine : 'frogfind';
     const searchUrl = SEARCH_ENGINES[safeEngine] + encodeURIComponent(query.trim());
     res.writeHead(302, { Location: searchUrl });
     res.end();
@@ -40,8 +40,6 @@ exports.processSearch = async function processSearch(req, res) {
   }
 
   const themeClass = getPageThemeAttr(req);
-
-  const safeEngine = VALID_ENGINES.includes(engine) ? engine : 'frogfind';
 
   let response = strReplace(search_template, '{$WHITE_THEME_ENABLED}', themeClass);
   response = strReplace(

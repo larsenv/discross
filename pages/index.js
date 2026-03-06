@@ -14,16 +14,13 @@ const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.ht
 
 exports.processIndex = async function (bot, req, res, args) {
   const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
-  let response;
-  if (discordID) {
-    response = strReplace(
-      index_template,
-      '{$MENU_OPTIONS}',
-      strReplace(logged_in_template, '{$USER}', escape(await auth.getUsername(discordID)))
-    );
-  } else {
-    response = strReplace(index_template, '{$MENU_OPTIONS}', logged_out_template);
-  }
-  response = strReplace(response, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
+  const menuOptions = discordID
+    ? strReplace(logged_in_template, '{$USER}', escape(await auth.getUsername(discordID)))
+    : logged_out_template;
+  const response = strReplace(
+    strReplace(index_template, '{$MENU_OPTIONS}', menuOptions),
+    '{$WHITE_THEME_ENABLED}',
+    getPageThemeAttr(req)
+  );
   res.end(response);
 };
