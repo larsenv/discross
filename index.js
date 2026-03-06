@@ -72,6 +72,7 @@ const guestsendpage = require('./pages/guest_send.js')
 const newspage = require('./pages/news.js')
 const weatherpage = require('./pages/weather.js')
 const stockspage = require('./pages/stocks.js')
+const sportspage = require('./pages/sports.js')
 const searchpage = require('./pages/search.js')
 const foodpage = require('./pages/food.js')
 const notFound = require('./pages/notFound.js')
@@ -454,6 +455,8 @@ server.on('request', async (req, res) => {
       await weatherpage.processWeather(req, res)
     } else if (args[1] === 'stocks') {
       await stockspage.processStocks(req, res)
+    } else if (args[1] === 'sports') {
+      await sportspage.processSports(req, res)
     } else if (args[1] === 'search') {
       await searchpage.processSearch(req, res)
     } else if (args[1] === 'food') {
