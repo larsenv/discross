@@ -308,6 +308,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
           }
         } else {
           response = response.replace("{$DISCORD_NAME}", "");
+          response = response.replace("{$CHANNEL_LIST}", "Invalid channel!");
         }
       });
     } else {
