@@ -52,12 +52,7 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
       await fs.promises.mkdir(iconDir, { recursive: true });
 
       // Convert to GIF and save
-      let gifBuffer;
-      if (iconUrl.endsWith('.gif')) {
-        gifBuffer = buffer;
-      } else {
-        gifBuffer = await sharp(buffer).gif().toBuffer();
-      }
+      const gifBuffer = iconUrl.endsWith('.gif') ? buffer : await sharp(buffer).gif().toBuffer();
 
       await fs.promises.writeFile(iconPath, gifBuffer);
 

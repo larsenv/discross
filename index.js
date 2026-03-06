@@ -233,14 +233,12 @@ server.on('request', async (req, res) => {
           }
         })();
       } else if (parsedurl === '/senddrawing') {
-        senddrawingAsync(req, res, body)
-          .then(() => {})
-          .catch((err) => {
-            console.error(err);
-            if (sentryEnabled) Sentry.captureException(err);
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end('Internal Server Error');
-          });
+        senddrawingAsync(req, res, body).catch((err) => {
+          console.error(err);
+          if (sentryEnabled) Sentry.captureException(err);
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end('Internal Server Error');
+        });
       } else if (parsedurl === '/changepassword') {
         (async () => {
           const discordID = await auth.checkAuth(req, res, true);
