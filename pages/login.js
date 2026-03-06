@@ -29,19 +29,10 @@ exports.processLogin = async function (bot, req, res, args) {
           strReplace(escape(rawErrorText), '\n', '<br>')
         )
       : '';
-    const response = strReplace(
-      strReplace(
-        strReplace(
-          strReplace(login_template, '{$MENU_OPTIONS}', logged_out_template),
-          '{$REDIRECT_URL}',
-          redirectUrl
-        ),
-        '{$ERROR}',
-        errorHtml
-      ),
-      '{$WHITE_THEME_ENABLED}',
-      getPageThemeAttr(req)
-    );
+    const withMenuOptions = strReplace(login_template, '{$MENU_OPTIONS}', logged_out_template);
+    const withRedirect = strReplace(withMenuOptions, '{$REDIRECT_URL}', redirectUrl);
+    const withError = strReplace(withRedirect, '{$ERROR}', errorHtml);
+    const response = strReplace(withError, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);
   }

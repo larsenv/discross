@@ -179,19 +179,13 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
       .join('') +
     '</table>';
 
-  const response = strReplace(
-    strReplace(
-      strReplace(
-        backup_codes_template,
-        '{$MENU_OPTIONS}',
-        strReplace(logged_in_template, '{$USER}', escape(username || ''))
-      ),
-      '{$BACKUP_CODES_LIST}',
-      codesHtml
-    ),
-    '{$WHITE_THEME_ENABLED}',
-    getPageThemeAttr(req)
+  const withMenuOptions = strReplace(
+    backup_codes_template,
+    '{$MENU_OPTIONS}',
+    strReplace(logged_in_template, '{$USER}', escape(username || ''))
   );
+  const withBackupCodes = strReplace(withMenuOptions, '{$BACKUP_CODES_LIST}', codesHtml);
+  const response = strReplace(withBackupCodes, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);

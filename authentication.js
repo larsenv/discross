@@ -475,13 +475,15 @@ exports.handleLoginRegister = async function (req, res, body) {
           // Strip any stale sessionID from the redirect URL — if the user was redirected here
           // with an expired sessionID in the URL, appending the new one without removing the old
           // one results in duplicate params and searchParams.get() returning the stale value.
-          let redirectBase = params.redirect;
-          try {
-            const redirectUrl = new URL(redirectBase, 'http://localhost');
-            redirectUrl.searchParams.delete('sessionID');
-            redirectBase =
-              redirectUrl.pathname + (redirectUrl.search || '') + (redirectUrl.hash || '');
-          } catch (e) {}
+          const redirectBase = (() => {
+            try {
+              const redirectUrl = new URL(params.redirect, 'http://localhost');
+              redirectUrl.searchParams.delete('sessionID');
+              return redirectUrl.pathname + (redirectUrl.search || '') + (redirectUrl.hash || '');
+            } catch {
+              return params.redirect;
+            }
+          })();
           const sep = redirectBase.includes('?') ? '&' : '?';
           const redirectPath = `${redirectBase}${sep}sessionID=${encodeURIComponent(result.sessionID)}#end`;
           res.writeHead(200, {

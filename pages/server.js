@@ -143,17 +143,16 @@ async function processServerChannels(server, member, response, sessionParam) {
       channel.type === ChannelType.GuildMedia;
 
     // Start with lone text channels (no category), voice channels, and forum/media channels
-    let channelsSorted = [
+    const channelsSorted = [
       ...server.channels.cache
         .filter((channel) => isDisplayableChannel(channel) && !channel.parent)
         .values(),
-    ];
-    channelsSorted = channelsSorted.sort((a, b) => a.position - b.position);
+    ].sort((a, b) => a.position - b.position);
 
     categoriesSorted.forEach((category) => {
-      channelsSorted.push(category);
-      channelsSorted = channelsSorted.concat(
-        [...category.children.cache.sort((a, b) => a.position - b.position).values()].filter(
+      channelsSorted.push(
+        category,
+        ...[...category.children.cache.sort((a, b) => a.position - b.position).values()].filter(
           isDisplayableChannel
         )
       );

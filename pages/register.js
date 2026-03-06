@@ -27,15 +27,9 @@ exports.processRegister = async function (bot, req, res, args) {
           strReplace(escape(rawErrorText), '\n', '<br>')
         )
       : '';
-    const response = strReplace(
-      strReplace(
-        strReplace(register_template, '{$MENU_OPTIONS}', logged_out_template),
-        '{$ERROR}',
-        errorHtml
-      ),
-      '{$WHITE_THEME_ENABLED}',
-      getPageThemeAttr(req)
-    );
+    const withMenuOptions = strReplace(register_template, '{$MENU_OPTIONS}', logged_out_template);
+    const withError = strReplace(withMenuOptions, '{$ERROR}', errorHtml);
+    const response = strReplace(withError, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);
   }
