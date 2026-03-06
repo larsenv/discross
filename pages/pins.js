@@ -6,23 +6,7 @@ const { buildMessagesHtml } = require('./channel');
 const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { strReplace } = require('./utils.js');
-
-const THEME_CONFIG = {
-  0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
-  1: {
-    boxColor: '#ffffff',
-    authorText: '#000000',
-    replyText: '#000000',
-    themeClass: 'class="light-theme"',
-  },
-  2: {
-    boxColor: '#141416',
-    authorText: '#72767d',
-    replyText: '#b5bac1',
-    themeClass: 'class="amoled-theme"',
-  },
-};
+const { strReplace, isBotReady, THEME_CONFIG } = require('./utils.js');
 
 const channel_template = fs
   .readFileSync('pages/templates/pins.html', 'utf-8')
@@ -69,10 +53,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
         : 1;
   const clientTimezone = getTimezoneFromIP(getClientIP(req));
 
-  const isReady =
-    bot?.client &&
-    (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-  if (!isReady) {
+  if (!isBotReady(bot)) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });
     res.end("The bot isn't connected, try again in a moment");
     return;

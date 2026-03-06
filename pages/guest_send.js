@@ -4,18 +4,7 @@ const auth = require('../authentication.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { isValidSnowflake } = require('./utils.js');
-
-function parseCookies(req) {
-  const cookiedict = {};
-  const cookies = req.headers.cookie;
-  cookies &&
-    cookies.split(';').forEach(function (cookie) {
-      const parts = cookie.split('=');
-      cookiedict[parts.shift().trim()] = decodeURIComponent(parts.join('='));
-    });
-  return cookiedict;
-}
+const { isValidSnowflake, isBotReady, parseCookies, getBaseUrl } = require('./utils.js');
 
 // Strip non-printable / potentially dangerous characters from guest names
 function sanitizeGuestName(name) {
@@ -34,10 +23,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
   const rawName = parsedUrl.searchParams.get('guest_name') || cookies.guest_name || '';
   const guestName = sanitizeGuestName(rawName);
 
-  const baseUrl =
-    (req.socket && req.socket.encrypted ? 'https' : 'http') +
-    '://' +
-    (req.headers.host || 'localhost');
+  const baseUrl = getBaseUrl(req);
 
   // Validate channel id
   if (!isValidSnowflake(channelId)) {
@@ -61,11 +47,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
   }
 
   // Check bot is ready
-  const clientIsReady =
-    bot &&
-    bot.client &&
-    (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-  if (!clientIsReady) {
+  if (!isBotReady(bot)) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });
     res.end("The bot isn't connected, try again in a moment");
     return;

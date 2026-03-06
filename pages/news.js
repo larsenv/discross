@@ -6,7 +6,7 @@ const he = require('he');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText } = require('./emojiUtils');
-const { strReplace } = require('./utils.js');
+const { strReplace, THEME_CONFIG } = require('./utils.js');
 
 const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
 
@@ -19,12 +19,6 @@ const article_template = fs
   .readFileSync('pages/templates/news_article.html', 'utf-8')
   .split('{$COMMON_HEAD}')
   .join(head_partial);
-
-const THEME_CONFIG = {
-  0: { themeClass: '' },
-  1: { themeClass: 'class="light-theme"' },
-  2: { themeClass: 'class="amoled-theme"' },
-};
 
 const AP_BASE = 'https://apnews.com';
 const DEFAULT_TOPIC = 'apf-topnews';

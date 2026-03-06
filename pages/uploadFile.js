@@ -6,6 +6,7 @@ const bot = require('../bot.js');
 const discord = require('discord.js');
 const { Buffer } = require('buffer');
 const { formidable } = require('formidable');
+const { isBotReady } = require('./utils.js');
 
 // Upload file to transfer.notkiska.pw and return the URL
 async function uploadToTransfer(filePath, filename) {
@@ -108,17 +109,12 @@ const lock = new AsyncLock();
 exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
   try {
     await lock.acquire(discordID, async () => {
-      const clientIsReady =
-        bot &&
-        bot.client &&
-        (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-
       // Detect if this is a traditional form submission (for older browsers like 3DS)
       // Check for explicit query parameter
       const parsedUrl = new URL(req.url, 'http://localhost');
       const isTraditionalSubmission = parsedUrl.searchParams.get('traditional') === 'true';
 
-      if (!clientIsReady) {
+      if (!isBotReady(bot)) {
         if (isTraditionalSubmission) {
           res.writeHead(503, { 'Content-Type': 'text/html' });
           res.end("<script>alert('Bot is not connected'); history.back();</script>");

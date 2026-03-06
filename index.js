@@ -3,7 +3,6 @@ require('./instrument.js');
 require('dotenv').config({ quiet: true });
 const path = require('path');
 const fs = require('fs');
-const querystring = require('querystring');
 const mime = require('mime-types').lookup;
 const { SnowTransfer } = require('snowtransfer');
 const bot = require('./bot.js');
@@ -149,8 +148,8 @@ async function senddrawingAsync(req, res, body) {
     return;
   }
 
-  // Use querystring module to handle large base64 data
-  const urlQuery = querystring.parse(body);
+  // Use URLSearchParams to handle large base64 data
+  const urlQuery = Object.fromEntries(new URLSearchParams(body));
 
   if (!urlQuery || !urlQuery.drawinginput) {
     console.error('Error: senddrawingAsync - drawinginput not found in parsed URL query');

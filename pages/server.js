@@ -80,7 +80,7 @@ function evictOldestCachedMember() {
   }
 }
 
-const { strReplace } = require('./utils.js');
+const { strReplace, isBotReady } = require('./utils.js');
 
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
@@ -278,15 +278,11 @@ exports.processServer = async function (bot, req, res, args, discordID) {
   try {
     let serverList = '';
     let serversDeleted = 0; // Track if servers were deleted due to sync issues
-    const clientIsReady =
-      bot &&
-      bot.client &&
-      (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
+    const clientIsReady = isBotReady(bot);
 
     if (!clientIsReady) {
       res.writeHead(503, { 'Content-Type': 'text/plain' });
-      res.write("The bot isn't connected, try again in a moment");
-      res.end();
+      res.end("The bot isn't connected, try again in a moment");
       return;
     }
 
@@ -319,9 +315,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     await lock.acquire(discordID, async () => {
       const data = auth.dbQueryAll('SELECT * FROM servers WHERE discordID=?', [discordID]);
 
-      for (let serverData of data) {
+      for (const serverData of data) {
         const serverID = serverData.serverID;
-        let server = bot.client.guilds.cache.get(serverID);
+        const server = bot.client.guilds.cache.get(serverID);
 
         if (server) {
           let member = cachedMembers[discordID]?.[server.id];
@@ -349,9 +345,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
               ?.split('=')[1];
             const imagesCookie =
               urlImages !== null
-                ? parseInt(urlImages)
+                ? parseInt(urlImages, 10)
                 : imagesCookieValue !== undefined
-                  ? parseInt(imagesCookieValue)
+                  ? parseInt(imagesCookieValue, 10)
                   : 1;
             const serverHTML = createServerHTML(server, member, imagesCookie, sessionParam);
             serverList += serverHTML;
@@ -421,9 +417,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       ?.split('=')[1];
     const imagesCookie =
       urlImages !== null
-        ? parseInt(urlImages)
+        ? parseInt(urlImages, 10)
         : imagesCookieValue !== undefined
-          ? parseInt(imagesCookieValue)
+          ? parseInt(imagesCookieValue, 10)
           : 1;
 
     // Handle theme and images preferences
@@ -496,9 +492,9 @@ function applyUserPreferences(response, req) {
   // URL param takes priority over cookie
   const theme =
     urlTheme !== null
-      ? parseInt(urlTheme)
+      ? parseInt(urlTheme, 10)
       : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie)
+        ? parseInt(whiteThemeCookie, 10)
         : 0;
 
   // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
