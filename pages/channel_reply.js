@@ -89,7 +89,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const themeObj = resolveTheme(req);
   const { authorText, replyText, themeClass } = themeObj;
   const boxColor = themeObj.boxColor === '#222327' ? '#40444b' : themeObj.boxColor;
-  const template = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass);
+  let template = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass);
 
   const imagesCookie =
     urlImages !== null
@@ -220,10 +220,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       const reply_message_id = args[3];
       try {
         const message = await chnl.messages.fetch(reply_message_id);
-        let message_content = message.content;
-        if (message_content.length > 30) {
-          message_content = message.content.substring(0, 30) + '...';
-        }
+        const message_content =
+          message.content.length > 30 ? message.content.substring(0, 30) + '...' : message.content;
 
         let author;
         try {

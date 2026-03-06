@@ -79,17 +79,10 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     // Process embed author
     let authorHtml = '';
     if (embed.author) {
-      // Create the author text span
-      let content = `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(normalizeWeirdUnicode(embed.author.name))}</span>`;
-
-      // If URL exists, wrap the content in an anchor tag
-      if (embed.author.url) {
-        authorHtml = `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${content}</a>`;
-      } else {
-        authorHtml = content;
-      }
-
-      // REMOVED: authorHtml += '</div>'; (This was the bug closing the container early)
+      const content = `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(normalizeWeirdUnicode(embed.author.name))}</span>`;
+      authorHtml = embed.author.url
+        ? `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${content}</a>`
+        : content;
     }
     embedHtml = strReplace(embedHtml, '{$EMBED_AUTHOR}', authorHtml);
 

@@ -77,7 +77,7 @@ function processReactions(
     });
 
     if (reactionsHtml) {
-      return reactions_template.replace('{$REACTIONS}', reactionsHtml);
+      return strReplace(reactions_template, '{$REACTIONS}', reactionsHtml);
     }
 
     return '';

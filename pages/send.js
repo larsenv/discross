@@ -75,10 +75,10 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
           if (reply_message.channelId !== channel.id) {
             throw new Error('Reply message does not belong to this channel');
           }
-          let reply_message_content = reply_message.content;
-          if (reply_message_content.length > 30) {
-            reply_message_content = `${reply_message_content.substring(0, 30)}...`;
-          }
+          const reply_message_content =
+            reply_message.content.length > 30
+              ? `${reply_message.content.substring(0, 30)}...`
+              : reply_message.content;
           const author_id = reply_message.author.id;
           const author_mention = `<@${author_id}>`;
 

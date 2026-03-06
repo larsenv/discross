@@ -211,9 +211,11 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
       imageUrls.push(url);
     } else {
       // File download card
-      let card = tmpl_file_download;
-      card = card.replace('{$FILE_NAME}', truncateFileName(attachment.name));
-      card = card.replace('{$FILE_SIZE}', formatFileSize(attachment.size));
+      const card = strReplace(
+        strReplace(tmpl_file_download, '{$FILE_NAME}', truncateFileName(attachment.name)),
+        '{$FILE_SIZE}',
+        formatFileSize(attachment.size)
+      );
       messagetext += card;
       if (!isVideo || imagesCookie !== 1) {
         messagetext = strReplace(messagetext, '{$FILE_LINK}', url);
@@ -378,7 +380,8 @@ function renderKnownMentions(messagetext, item, tmpl_mention) {
 
   item.mentions.members.forEach((user) => {
     if (!user) return;
-    const pill = tmpl_mention.replace(
+    const pill = strReplace(
+      tmpl_mention,
       '{$USERNAME}',
       escape('@' + normalizeWeirdUnicode(user.displayName))
     );
@@ -417,12 +420,13 @@ async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_men
   return messagetext.replace(/&lt;@!?(\d{17,19})&gt;/g, (match, userId) => {
     const resolved = memberCache.get(userId) ?? chnl.guild.members.cache.get(userId);
     if (resolved) {
-      return tmpl_mention.replace(
+      return strReplace(
+        tmpl_mention,
         '{$USERNAME}',
         escape('@' + normalizeWeirdUnicode(getDisplayName(resolved, resolved.user)))
       );
     }
-    return tmpl_mention.replace('{$USERNAME}', '@unknown-user');
+    return strReplace(tmpl_mention, '{$USERNAME}', '@unknown-user');
   });
 }
 
@@ -454,11 +458,15 @@ function renderEveryoneMentions(messagetext, item, tmpl_mention) {
     messagetext = strReplace(
       messagetext,
       '@everyone',
-      tmpl_mention.replace('{$USERNAME}', '@everyone')
+      strReplace(tmpl_mention, '{$USERNAME}', '@everyone')
     );
   }
   if (messagetext.includes('@here')) {
-    messagetext = strReplace(messagetext, '@here', tmpl_mention.replace('{$USERNAME}', '@here'));
+    messagetext = strReplace(
+      messagetext,
+      '@here',
+      strReplace(tmpl_mention, '{$USERNAME}', '@here')
+    );
   }
   return messagetext;
 }
@@ -750,20 +758,22 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
 
   // Wrap in appropriate outer template
   if (isContinuationBlock && !isForwarded && !lastMentioned) {
-    html = templates.messageContinuation.replace('{$MESSAGE_CONTENT}', html);
+    html = strReplace(templates.messageContinuation, '{$MESSAGE_CONTENT}', html);
   } else if (isForwarded && lastMentioned) {
-    html = templates.messageForwardedMentioned.replace('{$MESSAGE_CONTENT}', html);
+    html = strReplace(templates.messageForwardedMentioned, '{$MESSAGE_CONTENT}', html);
   } else if (isForwarded) {
-    html = templates.messageForwarded.replace('{$MESSAGE_CONTENT}', html);
+    html = strReplace(templates.messageForwarded, '{$MESSAGE_CONTENT}', html);
   } else if (lastMentioned) {
-    html = templates.messageMentioned.replace('{$MESSAGE_CONTENT}', html);
-    html = html.replace(
+    html = strReplace(templates.messageMentioned, '{$MESSAGE_CONTENT}', html);
+    html = strReplace(
+      html,
       '{$MESSAGE_REPLY_LINK}',
       channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)'
     );
   } else {
-    html = templates.message.replace('{$MESSAGE_CONTENT}', html);
-    html = html.replace(
+    html = strReplace(templates.message, '{$MESSAGE_CONTENT}', html);
+    html = strReplace(
+      html,
       '{$MESSAGE_REPLY_LINK}',
       channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)'
     );
@@ -771,10 +781,10 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
 
   // Forwarded metadata
   if (isForwarded) {
-    html = html.replace('{$FORWARDED_AUTHOR}', escape(forwardData.author));
-    html = html.replace('{$FORWARDED_CONTENT}', forwardData.content);
-    html = html.replace('{$FORWARDED_DATE}', forwardData.date);
-    html = html.replace('{$FORWARDED_ORIGIN}', forwardData.origin ?? '');
+    html = strReplace(html, '{$FORWARDED_AUTHOR}', escape(forwardData.author));
+    html = strReplace(html, '{$FORWARDED_CONTENT}', forwardData.content);
+    html = strReplace(html, '{$FORWARDED_DATE}', forwardData.date);
+    html = strReplace(html, '{$FORWARDED_ORIGIN}', forwardData.origin ?? '');
   }
 
   const displayName = getDisplayName(lastmember, lastauthor);
@@ -785,7 +795,7 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
       ? buildInteractionIndicator(lastInteractionData, replyText)
       : '';
 
-  html = html.replace('{$MESSAGE_AUTHOR}', escape(displayName));
+  html = strReplace(html, '{$MESSAGE_AUTHOR}', escape(displayName));
   html = strReplace(html, '{$AUTHOR_COLOR}', authorColor);
   html = strReplace(html, '{$REPLY_INDICATOR}', replyIndicator);
   html = strReplace(html, '{$PING_INDICATOR}', '');
@@ -951,7 +961,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
     // Date separator
     if (clientTimezone && areDifferentDays(item.createdAt, state.lastmessagedate, clientTimezone)) {
-      const sep = templates.dateSeparator.replace(
+      const sep = strReplace(
+        templates.dateSeparator,
         '{$DATE_SEPARATOR}',
         formatDateSeparator(item.createdAt, clientTimezone)
       );
@@ -1018,8 +1029,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       state.lastReply;
 
     messagetext = startsNewGroup
-      ? templates.firstMessageContent.replace('{$MESSAGE_TEXT}', messagetext)
-      : templates.mergedMessageContent.replace('{$MESSAGE_TEXT}', messagetext);
+      ? strReplace(templates.firstMessageContent, '{$MESSAGE_TEXT}', messagetext)
+      : strReplace(templates.mergedMessageContent, '{$MESSAGE_TEXT}', messagetext);
 
     // Track whether this is the first message of a continuation block (same author,
     // recent, no reply) — used by flushMessageGroup to omit the author header.
