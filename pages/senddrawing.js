@@ -1,7 +1,5 @@
-const auth = require('../authentication.js');
-const bot = require('../bot.js');
+'use strict';
 const discord = require('discord.js');
-const { Buffer } = require('buffer');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
 const { strReplace } = require('./utils.js');

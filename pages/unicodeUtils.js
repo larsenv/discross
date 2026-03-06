@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Normalize "weird" Unicode characters to their ASCII/Latin equivalents,
  * while preserving legitimate foreign language characters (CJK, Arabic, Hebrew, etc.)

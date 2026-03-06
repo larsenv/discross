@@ -1,4 +1,4 @@
-const fs = require('fs');
+'use strict';
 const Discord = require('discord.js');
 
 const auth = require('./authentication.js');

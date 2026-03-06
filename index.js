@@ -1,3 +1,4 @@
+'use strict';
 require('./instrument.js');
 require('dotenv').config({ quiet: true });
 const path = require('path');

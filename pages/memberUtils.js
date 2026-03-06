@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Shared utilities for member data and role color handling
  * This module consolidates member-related functions to ensure consistency

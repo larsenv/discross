@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Shared utility functions used across multiple page modules.
  */

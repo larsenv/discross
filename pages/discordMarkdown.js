@@ -1,3 +1,4 @@
+'use strict';
 const md = require('markdown-it')({
   breaks: true,
   linkify: true,

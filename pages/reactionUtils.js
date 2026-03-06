@@ -1,3 +1,4 @@
+'use strict';
 // Shared utility functions for processing and rendering reactions
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
 const { strReplace } = require('./utils.js');

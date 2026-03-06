@@ -1,3 +1,4 @@
+'use strict';
 const sqlite3 = require('better-sqlite3');
 const emojiRegex = require('./twemojiRegex').regex;
 

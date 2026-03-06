@@ -1,3 +1,4 @@
+'use strict';
 exports.toggleTheme = async function toggleTheme(req, res) {
   try {
     const parsedUrl = new URL(req.url, 'http://localhost');

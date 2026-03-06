@@ -1,5 +1,4 @@
-const auth = require('../authentication.js');
-const bot = require('../bot.js');
+'use strict';
 const discord = require('discord.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
@@ -8,7 +7,10 @@ const { strReplace } = require('./utils.js');
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
   try {
     const parsedurl = new URL(req.url, 'http://localhost');
-    if (parsedurl.searchParams.get('message') !== '') {
+    if (
+      parsedurl.searchParams.get('message') !== null &&
+      parsedurl.searchParams.get('message') !== ''
+    ) {
       // Check if bot is connected
       const clientIsReady =
         bot &&
@@ -76,7 +78,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         }
       } while (m);
 
-      let reply_message = await channel.messages.fetch(
+      const reply_message = await channel.messages.fetch(
         parsedurl.searchParams.get('reply_message_id')
       );
       // Verify the reply message belongs to the channel to prevent reply spoofing
