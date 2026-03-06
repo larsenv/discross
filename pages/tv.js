@@ -157,17 +157,40 @@ function parseLineups(html) {
   var lineups = [];
   var seen = new Set();
 
-  // Look for links pointing to /tv-listings/{lineup} (not stations/, sports/, movies, whats-on, or a date).
-  // The negative lookahead `(?!stations\/|sports\/|movies|whats-on)` filters out non-lineup paths.
-  // Capture group 1 captures the lineup slug/ID path after /tv-listings/.
-  var linkRegex = /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/((?!stations\/|sports\/|movies|whats-on)[^"?#\s]+)"/gi;
+  // Known TVPassport category/navigation path prefixes that are NOT provider lineups.
+  // We check startsWith(prefix + '/') to match sub-paths (e.g. 'sports/EPL'),
+  // lineupPath === prefix for exact matches (e.g. 'sports'), and
+  // startsWith(prefix + '-') for hyphenated variants (e.g. 'whats-on-today').
+  var SKIP_PREFIXES = [
+    'stations', 'sports', 'movies', 'whats-on', 'fall-tv', 'search',
+    'my-passport', 'register', 'hauth', 'sitemap', 'resource',
+  ];
+
+  // Look for any /tv-listings/{path} href and post-filter
+  var linkRegex = /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/([^"?#\s]+)"/gi;
   var m;
   while ((m = linkRegex.exec(html)) !== null) {
     var lineupPath = m[1].replace(/\/$/, '');
-    // Skip paths that are purely a date or contain sports/movies
+
+    // Skip known non-provider paths (exact match, sub-path, or hyphenated variant)
+    var skip = false;
+    for (var j = 0; j < SKIP_PREFIXES.length; j++) {
+      var prefix = SKIP_PREFIXES[j];
+      if (
+        lineupPath === prefix ||
+        lineupPath.startsWith(prefix + '/') ||
+        lineupPath.startsWith(prefix + '-')
+      ) {
+        skip = true;
+        break;
+      }
+    }
+    if (skip) continue;
+
+    // Skip bare date paths or paths ending with a date
     if (/^\d{4}-\d{2}-\d{2}$/.test(lineupPath)) continue;
-    // Skip if it ends with a date segment
     if (/\/\d{4}-\d{2}-\d{2}$/.test(lineupPath)) continue;
+
     if (seen.has(lineupPath)) continue;
 
     // Find the link text — look within the surrounding 300 chars
