@@ -21,7 +21,13 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
 const emojiRegex = require('./twemojiRegex').regex;
 const notFound = require('./notFound.js');
-const { strReplace, isBotReady, THEME_CONFIG, RANDOM_EMOJIS } = require('./utils.js');
+const {
+  strReplace,
+  isBotReady,
+  THEME_CONFIG,
+  RANDOM_EMOJIS,
+  buildSessionParam,
+} = require('./utils.js');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -1125,13 +1131,13 @@ function resolvePreferences(req) {
         ? parseInt(cookieImages, 10)
         : 1;
 
-  const linkParamParts = [];
-  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && cookieTheme === undefined)
-    linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && cookieImages === undefined)
-    linkParamParts.push('images=' + encodeURIComponent(urlImages));
-  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+  const sessionParam = buildSessionParam(
+    urlSessionID,
+    urlTheme,
+    cookieTheme,
+    urlImages,
+    cookieImages
+  );
 
   return { urlSessionID, imagesCookie, sessionParam };
 }

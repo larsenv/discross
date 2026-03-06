@@ -80,7 +80,7 @@ function evictOldestCachedMember() {
   }
 }
 
-const { strReplace, isBotReady } = require('./utils.js');
+const { strReplace, isBotReady, buildSessionParam } = require('./utils.js');
 
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
@@ -303,13 +303,13 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
     // Build combined URL params for links — only include preference params when the
     // corresponding cookie is absent (i.e. the browser doesn't support cookies)
-    const linkParamParts = [];
-    if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-    if (urlTheme !== null && whiteThemeCookieForParam === undefined)
-      linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-    if (urlImages !== null && imagesCookieForParam === undefined)
-      linkParamParts.push('images=' + encodeURIComponent(urlImages));
-    const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+    const sessionParam = buildSessionParam(
+      urlSessionID,
+      urlTheme,
+      whiteThemeCookieForParam,
+      urlImages,
+      imagesCookieForParam
+    );
 
     // Acquire lock for this user to prevent race conditions where users might see other users' servers
     await lock.acquire(discordID, async () => {
