@@ -77,13 +77,15 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     embedHtml = strReplace(embedHtml, '{$EMBED_COLOR}', embedColor);
 
     // Process embed author
-    let authorHtml = '';
-    if (embed.author) {
-      const content = `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(normalizeWeirdUnicode(embed.author.name))}</span>`;
-      authorHtml = embed.author.url
-        ? `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${content}</a>`
-        : content;
-    }
+    const authorContent = embed.author
+      ? `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(normalizeWeirdUnicode(embed.author.name))}</span>`
+      : '';
+    const authorHtml =
+      embed.author && authorContent
+        ? embed.author.url
+          ? `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${authorContent}</a>`
+          : authorContent
+        : '';
     embedHtml = strReplace(embedHtml, '{$EMBED_AUTHOR}', authorHtml);
 
     // Process embed title

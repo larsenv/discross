@@ -529,46 +529,30 @@ function createServerHTML(server, member, imagesCookie, sessionParam) {
 }
 
 function addUserAgentDisplay(response, req) {
-  // Parse user agent
   const userAgent = req.headers['user-agent'] || '';
   const parser = new UAParser(userAgent);
   const uaResult = parser.getResult();
 
-  // Create user agent display string
-  let userAgentDisplay = '';
-  if (uaResult.browser.name || uaResult.os.name) {
-    const browserName = escape(uaResult.browser.name || '');
-    const browserVersion = escape(uaResult.browser.version || '');
-    const osName = escape(uaResult.os.name || '');
-    const osVersion = escape(uaResult.os.version || '');
-    const deviceVendor = escape(uaResult.device.vendor || '');
-    const deviceModel = escape(uaResult.device.model || '');
+  const browserName = escape(uaResult.browser.name || '');
+  const browserVersion = escape(uaResult.browser.version || '');
+  const osName = escape(uaResult.os.name || '');
+  const osVersion = escape(uaResult.os.version || '');
+  const deviceVendor = escape(uaResult.device.vendor || '');
+  const deviceModel = escape(uaResult.device.model || '');
 
-    const browserInfo = browserName
-      ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}`
+  const browserInfo = browserName
+    ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}`
+    : '';
+  const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
+  const deviceInfo =
+    deviceVendor || deviceModel
+      ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})`
       : '';
-    const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
-    const deviceInfo =
-      deviceVendor || deviceModel
-        ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})`
-        : '';
 
-    // Build display text based on what information is available
-    if (browserInfo && osInfo) {
-      const displayText = `Platform: ${browserInfo} on ${osInfo}${deviceInfo}`;
-      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
-    } else if (browserInfo) {
-      const displayText = `Platform: ${browserInfo}${deviceInfo}`;
-      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
-    } else if (osInfo) {
-      const displayText = `Platform: ${osInfo}${deviceInfo}`;
-      userAgentDisplay = `<font color="#aaaaaa" size="2">${displayText}</font>`;
-    }
-    // If neither browserInfo nor osInfo, userAgentDisplay remains empty
-  }
+  const platform = browserInfo && osInfo ? `${browserInfo} on ${osInfo}` : browserInfo || osInfo;
+  const userAgentDisplay = platform
+    ? `<font color="#aaaaaa" size="2">Platform: ${platform}${deviceInfo}</font>`
+    : '';
 
-  // Add user agent display to response using strReplace for consistency
-  response = strReplace(response, '{$USER_AGENT}', userAgentDisplay);
-
-  return response;
+  return strReplace(response, '{$USER_AGENT}', userAgentDisplay);
 }

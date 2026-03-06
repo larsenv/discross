@@ -574,17 +574,10 @@ server.on('request', async (req, res) => {
         const iconHash = iconFilename.replace('.gif', '');
 
         // Determine theme from URL param (takes priority) or cookie
-        let theme = 'dark';
-        if (discordID) {
-          const urlTheme = parsedurl.searchParams.get('theme');
-          const { whiteThemeCookie } = parseCookies(req);
-          const themeValue = urlTheme !== null ? urlTheme : whiteThemeCookie;
-          if (themeValue === '1') {
-            theme = 'light';
-          } else if (themeValue === '2') {
-            theme = 'amoled';
-          }
-        }
+        const urlTheme = discordID ? parsedurl.searchParams.get('theme') : null;
+        const { whiteThemeCookie } = discordID ? parseCookies(req) : {};
+        const themeValue = urlTheme ?? whiteThemeCookie ?? null;
+        const theme = themeValue === '1' ? 'light' : themeValue === '2' ? 'amoled' : 'dark';
 
         await handleServerIcon(bot, res, serverID, iconHash, theme);
       } else {
