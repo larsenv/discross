@@ -6,7 +6,7 @@ const zlib = require('zlib');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace } = require('./utils.js');
+const { strReplace, THEME_CONFIG } = require('./utils.js');
 
 const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY;
 const ACCUWEATHER_HOST = 'api.accuweather.com';
@@ -376,14 +376,7 @@ exports.processWeather = async function processWeather(req, res) {
         ? parseInt(whiteThemeCookie, 10)
         : 0;
 
-  let themeClass = '';
-  if (themeValue === 1) {
-    themeClass = 'class="light-theme"';
-  } else if (themeValue === 2) {
-    themeClass = 'class="amoled-theme"';
-  }
-
-  let weatherHtml = '';
+  const themeClass = THEME_CONFIG[themeValue]?.themeClass ?? '';
   let navHtml = '';
 
   if (city.trim()) {
