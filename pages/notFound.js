@@ -12,7 +12,7 @@ const template404 = fs
 function getThemeAttr(req) {
   const cookie = req.headers.cookie || '';
   const c = cookie.split('; ').find((x) => x.startsWith('whiteThemeCookie='));
-  const val = c ? parseInt(c.split('=')[1]) : 0;
+  const val = c ? parseInt(c.split('=')[1], 10) : 0;
   if (val === 1) return 'class="light-theme"';
   if (val === 2) return 'class="amoled-theme"';
   return 'bgcolor="303338"';

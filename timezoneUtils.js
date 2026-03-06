@@ -102,9 +102,9 @@ function getDateComponentsInTimezone(date, timezone) {
     _dateFormatterCache.set(timezone, formatter);
   }
   const parts = formatter.formatToParts(date);
-  const year = parseInt(parts.find((p) => p.type === 'year').value);
-  const month = parseInt(parts.find((p) => p.type === 'month').value); // 1-indexed (1-12)
-  const day = parseInt(parts.find((p) => p.type === 'day').value);
+  const year = parseInt(parts.find((p) => p.type === 'year').value, 10);
+  const month = parseInt(parts.find((p) => p.type === 'month').value, 10); // 1-indexed (1-12)
+  const day = parseInt(parts.find((p) => p.type === 'day').value, 10);
   return { year, month, day };
 }
 

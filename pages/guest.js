@@ -181,7 +181,7 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     });
 
     const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
-    const refreshUrl = channelId + '?random=' + Math.random();
+    const refreshUrl = `${channelId}?random=${Math.random()}`;
 
     let page = strReplace(TEMPLATE_CHANNEL, '{$WHITE_THEME_ENABLED}', theme.themeClass);
     page = strReplace(page, '{$CHANNEL_ID}', escape(channelId));
