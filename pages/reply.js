@@ -105,6 +105,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
           username: member.displayName || member.user.tag,
           avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
           disableEveryone: true,
+          embeds: [{ footer: { text: 'Sent via Discross' } }],
         });
 
         bot.addToCache(message);

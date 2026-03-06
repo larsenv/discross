@@ -209,7 +209,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             const message = await webhook.send({
               content: transferUrl,
               username: member.displayName || member.user.tag,
-              avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL
+              avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
+              embeds: [{ footer: { text: 'Sent via Discross' } }],
             });
 
             bot.addToCache(message);
