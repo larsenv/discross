@@ -2,7 +2,7 @@
 const fs = require('fs');
 const escape = require('escape-html');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
-const { strReplace, isValidSnowflake, isBotReady } = require('./utils.js');
+const { strReplace, isValidSnowflake, isBotReady, getPageThemeAttr } = require('./utils.js');
 
 const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
 const upload_template = fs
@@ -31,28 +31,9 @@ exports.processUpload = async function processUpload(bot, req, res, discordID) {
     // Use channel ID as fallback name
   }
 
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const theme =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie, 10)
-        : 0;
-
   const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
-  let template = upload_template;
-  if (theme === 1) {
-    template = strReplace(template, '{$WHITE_THEME_ENABLED}', 'class="light-theme"');
-  } else if (theme === 2) {
-    template = strReplace(template, '{$WHITE_THEME_ENABLED}', 'class="amoled-theme"');
-  } else {
-    template = strReplace(template, '{$WHITE_THEME_ENABLED}', '');
-  }
+  const template = strReplace(upload_template, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
 
   let final = strReplace(template, '{$CHANNEL_ID}', escape(channelId));
   final = strReplace(final, '{$CHANNEL_NAME}', escape(channelName));
