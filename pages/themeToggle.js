@@ -25,14 +25,8 @@ exports.toggleTheme = async function toggleTheme(req, res) {
           : 0;
 
     // Cycle through themes: 0 (dark) -> 1 (light) -> 2 (amoled) -> 0 (dark)
-    let nextTheme = 0;
-    if (currentTheme === 0) {
-      nextTheme = 1; // dark -> light
-    } else if (currentTheme === 1) {
-      nextTheme = 2; // light -> amoled
-    } else if (currentTheme === 2) {
-      nextTheme = 0; // amoled -> dark
-    }
+    const NEXT_THEME = [1, 2, 0];
+    const nextTheme = NEXT_THEME[currentTheme] ?? 0;
 
     const referer = req.headers.referer || '/server/';
     const refererUrl = new URL(referer, 'http://dummy.local');

@@ -2,7 +2,7 @@
 const discord = require('discord.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { strReplace, isBotReady } = require('./utils.js');
+const { strReplace, isBotReady, resolveMentions } = require('./utils.js');
 
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
   try {
@@ -45,30 +45,10 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
       const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-      let processedmessage = convertEmoji(parsedurl.searchParams.get('message') || '');
-      const regex = /@([^#]{2,32}#\d{4})/g;
-      let m;
-      do {
-        m = regex.exec(processedmessage);
-        if (m) {
-          let mentioneduser = channel.guild.members.cache.find(
-            (member) => member.user.tag === m[1]
-          );
-          if (!mentioneduser) {
-            try {
-              mentioneduser = (await channel.guild.members.fetch()).find(
-                (member) => member.user.tag === m[1]
-              );
-            } catch (err) {
-              console.error('Failed to fetch members for mention:', err);
-              // Continue without resolving the mention
-            }
-          }
-          if (mentioneduser) {
-            processedmessage = strReplace(processedmessage, m[0], `<@${mentioneduser.id}>`);
-          }
-        }
-      } while (m);
+      let processedmessage = await resolveMentions(
+        convertEmoji(parsedurl.searchParams.get('message') || ''),
+        channel.guild
+      );
 
       const reply_message = await channel.messages.fetch(
         parsedurl.searchParams.get('reply_message_id')
@@ -99,19 +79,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         // Use username if member fetch fails
       }
 
-      processedmessage =
-        '> Replying to ' +
-        reply_message_content +
-        ' from ' +
-        author_name +
-        ': [jump](https://discord.com/channels/' +
-        channel.guild.id +
-        '/' +
-        channel.id +
-        '/' +
-        reply_message.id +
-        ')\n' +
-        processedmessage;
+      processedmessage = `> Replying to ${reply_message_content} from ${author_name}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
 
       const message = await webhook.send({
         content: processedmessage,

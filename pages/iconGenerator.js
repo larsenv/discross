@@ -75,33 +75,19 @@ async function generatePlaceholderIcon(serverName, theme = 'dark') {
   const size = 128;
 
   // Determine background and text colors based on theme
-  let bgColor, textColor;
-  if (theme === 'light') {
-    bgColor = '#f0f0f0'; // Light gray background
-    textColor = '#333333'; // Dark text
-  } else if (theme === 'amoled') {
-    bgColor = '#000000'; // Pure black background
-    textColor = '#ffffff'; // White text
-  } else {
-    // Default dark theme
-    bgColor = '#2c2f33'; // Discord-like dark gray
-    textColor = '#ffffff'; // White text
-  }
+  const ICON_THEME_COLORS = {
+    light: { bgColor: '#f0f0f0', textColor: '#333333' },
+    amoled: { bgColor: '#000000', textColor: '#ffffff' },
+  };
+  const { bgColor, textColor } = ICON_THEME_COLORS[theme] ?? {
+    bgColor: '#2c2f33',
+    textColor: '#ffffff',
+  };
 
-  // Calculate font size based on acronym length
-  // Shorter acronyms get bigger font, longer ones get smaller
-  let fontSize;
-  if (acronym.length === 1) {
-    fontSize = 64;
-  } else if (acronym.length === 2) {
-    fontSize = 48;
-  } else if (acronym.length === 3) {
-    fontSize = 40;
-  } else if (acronym.length <= 5) {
-    fontSize = 32;
-  } else {
-    fontSize = 24;
-  }
+  // Calculate font size based on acronym length (shorter acronyms get bigger font)
+  // Lengths 4 and 5 both map to 32px (same tier in the original if/else)
+  const FONT_SIZES = [64, 48, 40, 32, 32];
+  const fontSize = FONT_SIZES[acronym.length - 1] ?? 24;
 
   // Create SVG with text
   const svg = `

@@ -87,7 +87,7 @@ function processPoll(poll, imagesCookie) {
     pollHtml = strReplace(pollHtml, '{$POLL_ANSWERS}', answersHtml);
 
     // Create footer with poll metadata
-    let footerParts = [];
+    const footerParts = [];
     footerParts.push(`${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}`);
 
     if (poll.allowMultiselect) {

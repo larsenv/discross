@@ -4,16 +4,13 @@ const auth = require('../authentication.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { isValidSnowflake, isBotReady, parseCookies, getBaseUrl } = require('./utils.js');
-
-// Strip non-printable / potentially dangerous characters from guest names
-function sanitizeGuestName(name) {
-  if (!name || typeof name !== 'string') return '';
-  return name
-    .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '')
-    .trim()
-    .slice(0, 32);
-}
+const {
+  isValidSnowflake,
+  isBotReady,
+  parseCookies,
+  getBaseUrl,
+  sanitizeGuestName,
+} = require('./utils.js');
 
 exports.guestSend = async function guestSend(bot, req, res) {
   const parsedUrl = new URL(req.url, 'http://localhost');

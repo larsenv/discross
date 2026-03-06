@@ -16,6 +16,7 @@ const {
   resolveTheme,
   THEME_CONFIG,
   RANDOM_EMOJIS,
+  sanitizeGuestName,
 } = require('./utils.js');
 const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 
@@ -33,15 +34,6 @@ const TEMPLATE_INPUT_DISABLED = fs.readFileSync(
   'pages/templates/channel/input_disabled.html',
   'utf-8'
 );
-
-// Strip non-printable / potentially dangerous characters from guest names
-function sanitizeGuestName(name) {
-  if (!name || typeof name !== 'string') return '';
-  return name
-    .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '')
-    .trim()
-    .slice(0, 32);
-}
 
 exports.processGuestName = async function processGuestName(req, res) {
   const parsedUrl = new URL(req.url, 'http://localhost');
