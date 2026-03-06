@@ -51,12 +51,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
   }
 
   // Fetch channel
-  let channel;
-  try {
-    channel = await bot.client.channels.fetch(channelId);
-  } catch {
-    channel = null;
-  }
+  const channel = await bot.client.channels.fetch(channelId).catch(() => null);
   if (!channel) {
     res.writeHead(302, { Location: baseUrl + '/' });
     res.end();

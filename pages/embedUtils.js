@@ -89,25 +89,23 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     embedHtml = strReplace(embedHtml, '{$EMBED_AUTHOR}', authorHtml);
 
     // Process embed title
-    let titleHtml = '';
-    if (embed.title) {
-      titleHtml = `<div style="font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">`;
-      if (embed.url) {
-        titleHtml += `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${escape(normalizeWeirdUnicode(embed.title))}</a>`;
-      } else {
-        titleHtml += escape(normalizeWeirdUnicode(embed.title));
-      }
-      titleHtml += '</div>';
-    }
+    const titleContent = embed.title
+      ? embed.url
+        ? `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${escape(normalizeWeirdUnicode(embed.title))}</a>`
+        : escape(normalizeWeirdUnicode(embed.title))
+      : '';
+    const titleHtml = titleContent
+      ? `<div style="font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">${titleContent}</div>`
+      : '';
     embedHtml = strReplace(embedHtml, '{$EMBED_TITLE}', titleHtml);
 
     // Process embed description with emoji support (#11)
-    let descriptionHtml = '';
-    if (embed.description) {
-      const renderedMarkdown = renderDiscordMarkdown(embed.description);
-      const withEmoji = processEmojiInHTML(renderedMarkdown, imagesCookie, animationsCookie);
-      descriptionHtml = `<div style="font-size: 14px; color: #${embedText}; margin-bottom: 8px; white-space: pre-wrap;">${withEmoji}</div>`;
-    }
+    const processedDescription = embed.description
+      ? processEmojiInHTML(renderDiscordMarkdown(embed.description), imagesCookie, animationsCookie)
+      : null;
+    const descriptionHtml = processedDescription
+      ? `<div style="font-size: 14px; color: #${embedText}; margin-bottom: 8px; white-space: pre-wrap;">${processedDescription}</div>`
+      : '';
     embedHtml = strReplace(embedHtml, '{$EMBED_DESCRIPTION}', descriptionHtml);
 
     // Process embed fields with emoji support (#11)

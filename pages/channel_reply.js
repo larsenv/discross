@@ -141,16 +141,14 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         template = strReplace(template, '{$SERVER_ID}', chnl.guild.id);
         template = strReplace(template, '{$CHANNEL_ID}', chnl.id);
 
-        let final;
-        if (member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)) {
-          final = strReplace(template, '{$INPUT}', input_template);
-        } else {
-          final = strReplace(template, '{$INPUT}', input_disabled_template);
-        }
-        final = strReplace(final, '{$COLOR}', boxColor);
-        final = strReplace(final, '{$MESSAGES}', no_message_history_template);
-        final = strReplace(final, '{$SESSION_ID}', urlSessionID);
-        final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
+        const inputTpl = member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)
+          ? input_template
+          : input_disabled_template;
+        const withInput = strReplace(template, '{$INPUT}', inputTpl);
+        const withColor = strReplace(withInput, '{$COLOR}', boxColor);
+        const withMessages = strReplace(withColor, '{$MESSAGES}', no_message_history_template);
+        const withSessionId = strReplace(withMessages, '{$SESSION_ID}', urlSessionID);
+        const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
 
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(final);
@@ -218,13 +216,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         const message_content =
           message.content.length > 30 ? message.content.substring(0, 30) + '...' : message.content;
 
-        let author;
-        try {
-          const replyMember = await chnl.guild.members.fetch(message.author.id);
-          author = getDisplayName(replyMember, message.author);
-        } catch {
-          author = getDisplayName(null, message.author);
-        }
+        const author = await chnl.guild.members
+          .fetch(message.author.id)
+          .then((replyMember) => getDisplayName(replyMember, message.author))
+          .catch(() => getDisplayName(null, message.author));
 
         final = strReplace(final, '{$REPLY_MESSAGE_ID}', reply_message_id);
         final = strReplace(final, '{$REPLY_MESSAGE_AUTHOR}', author);

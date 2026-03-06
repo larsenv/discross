@@ -21,15 +21,12 @@ exports.processUpload = async function processUpload(bot, req, res, discordID) {
     return;
   }
 
-  let channelName = channelId;
-  try {
-    if (isBotReady(bot)) {
-      const chnl = await bot.client.channels.fetch(channelId);
-      if (chnl && chnl.name) channelName = normalizeWeirdUnicode(chnl.name);
-    }
-  } catch (err) {
-    // Use channel ID as fallback name
-  }
+  const channelName = isBotReady(bot)
+    ? await bot.client.channels
+        .fetch(channelId)
+        .then((chnl) => (chnl?.name ? normalizeWeirdUnicode(chnl.name) : channelId))
+        .catch(() => channelId)
+    : channelId;
 
   const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
