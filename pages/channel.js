@@ -435,7 +435,7 @@ function detectMention(item, member, discordID, isReply, replyData) {
 // Forward data resolution
 // ---------------------------------------------------------------------------
 
-async function resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone) {
+async function resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone, req, imagesCookie, animationsCookie) {
   try {
     const fwdMsg = await item.fetchReference();
     let fwdMember = null;
@@ -470,11 +470,14 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
       }
     } catch { originHtml = ''; }
 
+    const embedsHtml = renderEmbeds('', fwdMsg, req, imagesCookie, animationsCookie, clientTimezone);
+
     return {
       author: getDisplayName(fwdMember, fwdMsg.author),
       content: renderDiscordMarkdown(content),
       date: formatDateWithTimezone(fwdMsg.createdAt, clientTimezone),
       origin: originHtml,
+      embeds: embedsHtml,
     };
   } catch {
     return null;
@@ -687,6 +690,7 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
     html = html.replace('{$FORWARDED_AUTHOR}',  escape(forwardData.author));
     html = html.replace('{$FORWARDED_CONTENT}', forwardData.content);
     html = html.replace('{$FORWARDED_DATE}',    forwardData.date);
+    html = html.replace('{$FORWARDED_EMBEDS}',  forwardData.embeds ?? '');
     html = html.replace('{$FORWARDED_ORIGIN}',  forwardData.origin ?? '');
   }
 
@@ -835,7 +839,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     let isForwarded = false;
     let forwardData = {};
     if (item.reference?.type === MessageReferenceType.Forward) {
-      const data = await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone);
+      const data = await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone, req, imagesCookie, animationsCookie);
       if (data) { isForwarded = true; forwardData = data; }
     }
 
