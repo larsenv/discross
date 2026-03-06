@@ -67,6 +67,11 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Prevent blue borders around linked images in IE4/IE5/IE6/Netscape 4 */
+a img {
+  border: 0;
+}
+
 /* Tables */
 table {
   padding-bottom: 5px;
