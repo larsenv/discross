@@ -2,7 +2,6 @@
 const { strReplace } = require('./utils.js');
 const fs = require('fs');
 const escape = require('escape-html');
-const { parse } = require('querystring');
 const auth = require('../authentication.js');
 
 const changepassword_template = fs
@@ -21,9 +20,9 @@ function applyTheme(response, req) {
     ?.split('=')[1];
   const theme =
     urlTheme !== null
-      ? parseInt(urlTheme)
+      ? parseInt(urlTheme, 10)
       : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie)
+        ? parseInt(whiteThemeCookie, 10)
         : 0;
   if (theme === 1) {
     return strReplace(response, '{$WHITE_THEME_ENABLED}', 'class="light-theme"');
@@ -116,7 +115,7 @@ exports.processChangePassword = async function (bot, req, res, args) {
 };
 
 exports.handleChangePassword = async function (bot, req, res, body, discordID) {
-  const params = parse(body);
+  const params = Object.fromEntries(new URLSearchParams(body));
 
   const parsedUrl = new URL(req.url, 'http://localhost');
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';

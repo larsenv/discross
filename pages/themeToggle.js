@@ -10,7 +10,7 @@ exports.toggleTheme = async function toggleTheme(req, res) {
 
     // URL param takes priority over cookie for determining current theme
     // Validate URL param is a valid theme value (0, 1, or 2)
-    let parsedUrlTheme = urlTheme !== null ? parseInt(urlTheme) : null;
+    let parsedUrlTheme = urlTheme !== null ? parseInt(urlTheme, 10) : null;
     if (
       parsedUrlTheme !== null &&
       (isNaN(parsedUrlTheme) || parsedUrlTheme < 0 || parsedUrlTheme > 2)
@@ -21,7 +21,7 @@ exports.toggleTheme = async function toggleTheme(req, res) {
       parsedUrlTheme !== null
         ? parsedUrlTheme
         : whiteThemeCookie !== undefined
-          ? parseInt(whiteThemeCookie)
+          ? parseInt(whiteThemeCookie, 10)
           : 0;
 
     // Cycle through themes: 0 (dark) -> 1 (light) -> 2 (amoled) -> 0 (dark)

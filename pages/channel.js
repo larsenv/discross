@@ -21,7 +21,7 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
 const emojiRegex = require('./twemojiRegex').regex;
 const notFound = require('./notFound.js');
-const { strReplace } = require('./utils.js');
+const { strReplace, isBotReady, THEME_CONFIG, RANDOM_EMOJIS } = require('./utils.js');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -58,24 +58,6 @@ const SYSTEM_MESSAGE_TEXT = {
   39: 'reported a false alarm',
   46: 'Poll ended',
 };
-
-const THEME_CONFIG = {
-  0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
-  1: {
-    boxColor: '#ffffff',
-    authorText: '#000000',
-    replyText: '#000000',
-    themeClass: 'class="light-theme"',
-  },
-  2: {
-    boxColor: '#141416',
-    authorText: '#72767d',
-    replyText: '#b5bac1',
-    themeClass: 'class="amoled-theme"',
-  },
-};
-
-const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
 
 // ---------------------------------------------------------------------------
 // Template loading
@@ -1188,10 +1170,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   const template = strReplace(TEMPLATES.channel, '{$WHITE_THEME_ENABLED}', theme.themeClass);
   const { authorText, replyText, boxColor } = theme;
 
-  const isReady =
-    bot?.client &&
-    (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-  if (!isReady) {
+  if (!isBotReady(bot)) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });
     res.end("The bot isn't connected, try again in a moment");
     return;
@@ -1216,6 +1195,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     try {
       botMember = await chnl.guild.members.fetch(bot.client.user.id);
     } catch {
+      res.writeHead(503, { 'Content-Type': 'text/plain' });
       res.end('The bot is not in this server!');
       return;
     }
@@ -1223,6 +1203,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     try {
       member = await chnl.guild.members.fetch(discordID);
     } catch {
+      res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end('You are not in this server! Please join the server to view this channel.');
       return;
     }
@@ -1232,6 +1213,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true);
 
     if (!canView) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end("You (or the bot) don't have permission to do that!");
       return;
     }

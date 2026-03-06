@@ -2,7 +2,7 @@
 const discord = require('discord.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { strReplace } = require('./utils.js');
+const { strReplace, isBotReady } = require('./utils.js');
 
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
   try {
@@ -12,15 +12,9 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
       parsedurl.searchParams.get('message') !== ''
     ) {
       // Check if bot is connected
-      const clientIsReady =
-        bot &&
-        bot.client &&
-        (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-
-      if (!clientIsReady) {
+      if (!isBotReady(bot)) {
         res.writeHead(503, { 'Content-Type': 'text/plain' });
-        res.write("The bot isn't connected, try again in a moment");
-        res.end();
+        res.end("The bot isn't connected, try again in a moment");
         return;
       }
 

@@ -2,7 +2,6 @@
 const fs = require('fs');
 const https = require('https');
 const escape = require('escape-html');
-const querystring = require('querystring');
 const crypto = require('crypto');
 
 const auth = require('../authentication.js');
@@ -1094,7 +1093,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
   let params = {};
   try {
-    params = querystring.parse(body);
+    params = Object.fromEntries(new URLSearchParams(body));
   } catch (e) {}
 
   // Session + cart/checkout state for Wii U URL-based fallback

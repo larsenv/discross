@@ -33,9 +33,9 @@ exports.processTerms = async function (bot, req, res, args) {
 
   const theme =
     urlTheme !== null
-      ? parseInt(urlTheme)
+      ? parseInt(urlTheme, 10)
       : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie)
+        ? parseInt(whiteThemeCookie, 10)
         : 0;
 
   if (theme === 1) {

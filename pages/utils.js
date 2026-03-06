@@ -26,4 +26,76 @@ function isValidSnowflake(id) {
   return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
 }
 
-module.exports = { strReplace, isValidSnowflake };
+/**
+ * Returns true if the Discord bot client is ready to serve requests.
+ *
+ * @param {object} bot - The bot module object.
+ * @returns {boolean}
+ */
+function isBotReady(bot) {
+  return (
+    bot != null &&
+    bot.client != null &&
+    (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime)
+  );
+}
+
+/**
+ * Constructs the base URL (scheme + host) from an incoming HTTP request.
+ *
+ * @param {object} req - Node.js IncomingMessage.
+ * @returns {string}
+ */
+function getBaseUrl(req) {
+  const scheme = req.socket && req.socket.encrypted ? 'https' : 'http';
+  return scheme + '://' + (req.headers.host || 'localhost');
+}
+
+/**
+ * Parses the Cookie header of a request into a plain object.
+ *
+ * @param {object} req - Node.js IncomingMessage.
+ * @returns {Record<string, string>}
+ */
+function parseCookies(req) {
+  const result = {};
+  const raw = req.headers.cookie;
+  if (!raw) return result;
+  raw.split(';').forEach((cookie) => {
+    const parts = cookie.split('=');
+    result[parts.shift().trim()] = decodeURIComponent(parts.join('='));
+  });
+  return result;
+}
+
+/**
+ * Theme configuration for dark (0), light (1), and AMOLED (2) themes.
+ */
+const THEME_CONFIG = {
+  0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
+  1: {
+    boxColor: '#ffffff',
+    authorText: '#000000',
+    replyText: '#000000',
+    themeClass: 'class="light-theme"',
+  },
+  2: {
+    boxColor: '#141416',
+    authorText: '#72767d',
+    replyText: '#b5bac1',
+    themeClass: 'class="amoled-theme"',
+  },
+};
+
+/** Random emoji codepoints used in the channel input area. */
+const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
+
+module.exports = {
+  strReplace,
+  isValidSnowflake,
+  isBotReady,
+  getBaseUrl,
+  parseCookies,
+  THEME_CONFIG,
+  RANDOM_EMOJIS,
+};

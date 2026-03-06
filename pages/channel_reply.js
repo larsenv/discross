@@ -6,7 +6,7 @@ const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../t
 const { buildMessagesHtml } = require('./channel');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { strReplace } = require('./utils.js');
+const { strReplace, isBotReady, RANDOM_EMOJIS } = require('./utils.js');
 
 // Templates for viewing messages in a channel (Reply Context)
 const channel_template = fs
@@ -59,8 +59,6 @@ const date_separator_template = fs.readFileSync(
   'utf-8'
 );
 
-const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
-
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
@@ -89,9 +87,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   // URL param takes priority over cookie
   const theme =
     urlTheme !== null
-      ? parseInt(urlTheme)
+      ? parseInt(urlTheme, 10)
       : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie)
+        ? parseInt(whiteThemeCookie, 10)
         : 0;
 
   // Colors default to dark/amoled theme; light theme overrides them
@@ -112,24 +110,18 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
   const imagesCookie =
     urlImages !== null
-      ? parseInt(urlImages)
+      ? parseInt(urlImages, 10)
       : imagesCookieValue !== undefined
-        ? parseInt(imagesCookieValue)
+        ? parseInt(imagesCookieValue, 10)
         : 1;
 
   const clientIP = getClientIP(req);
   const clientTimezone = getTimezoneFromIP(clientIP);
 
   try {
-    const clientIsReady =
-      bot &&
-      bot.client &&
-      (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-
-    if (!clientIsReady) {
+    if (!isBotReady(bot)) {
       res.writeHead(503, { 'Content-Type': 'text/plain' });
-      res.write("The bot isn't connected, try again in a moment");
-      res.end();
+      res.end("The bot isn't connected, try again in a moment");
       return;
     }
 
@@ -145,16 +137,16 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       try {
         botMember = await chnl.guild.members.fetch(bot.client.user.id);
       } catch (err) {
-        res.write('The bot is not in this server!');
-        res.end();
+        res.writeHead(503, { 'Content-Type': 'text/plain' });
+        res.end('The bot is not in this server!');
         return;
       }
 
       try {
         member = await chnl.guild.members.fetch(discordID);
       } catch (err) {
-        res.write('You are not in this server! Please join the server to view this channel.');
-        res.end();
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('You are not in this server! Please join the server to view this channel.');
         return;
       }
 
@@ -162,8 +154,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         !member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) ||
         !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)
       ) {
-        res.write("You (or the bot) don't have permission to do that!");
-        res.end();
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end("You (or the bot) don't have permission to do that!");
         return;
       }
 
@@ -244,7 +236,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       // Reply context: fetch and display the message being replied to
       const reply_message_id = args[3];
       try {
-        let message = await chnl.messages.fetch(reply_message_id);
+        const message = await chnl.messages.fetch(reply_message_id);
         let message_content = message.content;
         if (message_content.length > 30) {
           message_content = message.content.substring(0, 30) + '...';

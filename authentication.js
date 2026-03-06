@@ -2,7 +2,6 @@
 const bcrypt = require('bcrypt');
 const sqlite3 = require('better-sqlite3');
 const { v4: uuidv4 } = require('uuid');
-const { parse } = require('querystring');
 const he = require('he'); // Encodes HTML attributes
 const otplib = require('otplib');
 const qrcode = require('qrcode');
@@ -478,7 +477,7 @@ exports.checkAuth = async function (req, res, noRedirect) {
 
 exports.handleLoginRegister = async function (req, res, body) {
   if (req.url === '/login') {
-    const params = parse(body);
+    const params = Object.fromEntries(new URLSearchParams(body));
     if (params.username && params.password) {
       const result = await exports.login(params.username, params.password, params.totp_code);
       if (result.status === 'success') {
@@ -538,7 +537,7 @@ exports.handleLoginRegister = async function (req, res, body) {
       }
     }
   } else if (req.url === '/register') {
-    const params = parse(body);
+    const params = Object.fromEntries(new URLSearchParams(body));
     if (params.username && params.password && params.confirm && params.token) {
       if (params.confirm !== params.password) {
         res.writeHead(301, {
@@ -573,7 +572,7 @@ exports.handleLoginRegister = async function (req, res, body) {
       res.end();
     }
   } else if (req.url === '/forgot') {
-    const params = parse(body);
+    const params = Object.fromEntries(new URLSearchParams(body));
     if (params.token) {
       const id = await exports.checkVerificationCode(params.token);
       if (!id) {

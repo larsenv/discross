@@ -37,9 +37,9 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
   // URL param takes priority over cookie
   const theme =
     urlTheme !== null
-      ? parseInt(urlTheme)
+      ? parseInt(urlTheme, 10)
       : whiteThemeCookie !== undefined
-        ? parseInt(whiteThemeCookie)
+        ? parseInt(whiteThemeCookie, 10)
         : 0;
 
   let boxColor = '#222327';
@@ -75,8 +75,8 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         !member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) ||
         !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)
       ) {
-        res.write("You (or the bot) don't have permission to do that!");
-        res.end();
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end("You (or the bot) don't have permission to do that!");
         return;
       }
 

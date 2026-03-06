@@ -8,26 +8,15 @@ const auth = require('../authentication.js');
 const notFound = require('./notFound.js');
 const { buildMessagesHtml } = require('./channel.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
-const { strReplace, isValidSnowflake } = require('./utils.js');
+const {
+  strReplace,
+  isValidSnowflake,
+  isBotReady,
+  parseCookies,
+  THEME_CONFIG,
+  RANDOM_EMOJIS,
+} = require('./utils.js');
 const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
-
-const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
-
-const THEME_CONFIG = {
-  0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
-  1: {
-    boxColor: '#ffffff',
-    authorText: '#000000',
-    replyText: '#000000',
-    themeClass: 'class="light-theme"',
-  },
-  2: {
-    boxColor: '#141416',
-    authorText: '#72767d',
-    replyText: '#b5bac1',
-    themeClass: 'class="amoled-theme"',
-  },
-};
 
 function loadTemplate(filePath) {
   return fs
@@ -43,17 +32,6 @@ const TEMPLATE_INPUT_DISABLED = fs.readFileSync(
   'pages/templates/channel/input_disabled.html',
   'utf-8'
 );
-
-function parseCookies(req) {
-  const cookiedict = {};
-  const cookies = req.headers.cookie;
-  cookies &&
-    cookies.split(';').forEach(function (cookie) {
-      const parts = cookie.split('=');
-      cookiedict[parts.shift().trim()] = decodeURIComponent(parts.join('='));
-    });
-  return cookiedict;
-}
 
 function resolveTheme(req) {
   const parsedUrl = new URL(req.url, 'http://localhost');
@@ -108,10 +86,7 @@ exports.processGuestName = async function processGuestName(req, res) {
 exports.processGuestChannel = async function processGuestChannel(bot, req, res, channelId) {
   const theme = resolveTheme(req);
 
-  const isReady =
-    bot?.client &&
-    (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime);
-  if (!isReady) {
+  if (!isBotReady(bot)) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });
     res.end("The bot isn't connected, try again in a moment");
     return;
