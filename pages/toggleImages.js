@@ -1,12 +1,11 @@
 'use strict';
+const { parseCookies } = require('./utils.js');
+
 exports.toggleImages = async function toggleImages(req, res) {
   try {
     const parsedUrl = new URL(req.url, 'http://localhost');
     const urlImages = parsedUrl.searchParams.get('images');
-    const imagesCookie = req.headers.cookie
-      ?.split('; ')
-      ?.find((cookie) => cookie.startsWith('images='))
-      ?.split('=')[1];
+    const { images: imagesCookie } = parseCookies(req);
 
     // URL param takes priority over cookie for determining current images state
     // Validate URL param is a valid images value (0 or 1)
