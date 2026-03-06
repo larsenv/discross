@@ -470,7 +470,11 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
       }
     } catch { originHtml = ''; }
 
-    const embedsHtml = renderEmbeds('', fwdMsg, req, imagesCookie, animationsCookie, clientTimezone);
+    // Prefer snapshot embeds when fwdMsg.embeds is empty (snapshot is always present
+    // and doesn't require an extra API call for the embed data).
+    const snapshotMsg = item.messageSnapshots?.first();
+    const embedsSource = fwdMsg.embeds?.length ? fwdMsg : (snapshotMsg ?? fwdMsg);
+    const embedsHtml = renderEmbeds('', embedsSource, req, imagesCookie, animationsCookie, clientTimezone);
 
     return {
       author: getDisplayName(fwdMember, fwdMsg.author),
@@ -480,7 +484,21 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
       embeds: embedsHtml,
     };
   } catch {
-    return null;
+    // fetchReference() failed (e.g. message deleted, channel inaccessible).
+    // Fall back to the message snapshot so we can still display the forwarded content.
+    const snapshotMsg = item.messageSnapshots?.first();
+    if (!snapshotMsg) return null;
+
+    const content = truncateText(snapshotMsg.content ?? '', FORWARDED_CONTENT_MAX_LENGTH);
+    const embedsHtml = renderEmbeds('', snapshotMsg, req, imagesCookie, animationsCookie, clientTimezone);
+
+    return {
+      author: getDisplayName(null, snapshotMsg.author) || '',
+      content: renderDiscordMarkdown(content),
+      date: snapshotMsg.createdAt ? formatDateWithTimezone(snapshotMsg.createdAt, clientTimezone) : '',
+      origin: '',
+      embeds: embedsHtml,
+    };
   }
 }
 
@@ -792,6 +810,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     lastMentioned: false,
     lastReply: false,
     lastReplyData: {},
+    lastForwarded: false,
     lastInteraction: false,
     lastInteractionData: {},
     isContinuationBlock: false,
@@ -810,9 +829,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     !state.lastauthor ||
     !isSameAuthor(state.lastmember, state.lastauthor, null, item.author) ||
     item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
-    (item.reference && item.reference.type !== MessageReferenceType.Forward) ||
+    !!item.reference ||
     state.lastReply ||
-    state.lastInteraction;
+    state.lastInteraction ||
+    state.lastForwarded;
 
   const processItem = async (item) => {
     // Flush the previous group when the author changes or this is the sentinel call
@@ -890,7 +910,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     const isSystem = !isNormalMessage(item.type);
     const visibleText = messagetext.replace(/<img\b[^>]*>/gi, 'x').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
-    if (!isSystem && visibleText.length === 0 &&
+    if (!isSystem && !isForwarded && visibleText.length === 0 &&
         !item.attachments?.size && !item.embeds?.length && !item.stickers?.size) {
       return; // nothing to show
     }
@@ -910,6 +930,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     state.lastMentioned     = isMentioned;
     state.lastReply         = isReply;
     state.lastReplyData     = replyData;
+    state.lastForwarded     = isForwarded;
     state.lastInteraction   = isInteraction;
     state.lastInteractionData = interactionData;
     state.currentmessage += messagetext;
