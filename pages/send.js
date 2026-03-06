@@ -3,12 +3,10 @@ const discord = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { strReplace, isValidSnowflake, isBotReady, resolveMentions } = require('./utils.js');
+const { isValidSnowflake, isBotReady, getBaseUrl, resolveMentions } = require('./utils.js');
 
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
-  const proto = req.socket?.encrypted ? 'https' : 'http';
-  const host = req.headers.host || `localhost:${req.socket?.localPort ?? 80}`;
-  const baseUrl = `${proto}://${host}`;
+  const baseUrl = getBaseUrl(req);
   try {
     const parsedurl = new URL(req.url, 'http://localhost');
     const query = Object.fromEntries(parsedurl.searchParams);
@@ -32,13 +30,10 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       }
 
       // Attempt to fetch channel, handle failures gracefully
-      let channel;
-      try {
-        channel = await bot.client.channels.fetch(channelId);
-      } catch (err) {
+      const channel = await bot.client.channels.fetch(channelId).catch((err) => {
         console.error('Channel fetch error:', err);
-        channel = null;
-      }
+        return null;
+      });
 
       if (!channel) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -47,13 +42,10 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       }
 
       // Attempt to fetch member and check permissions
-      let member;
-      try {
-        member = await channel.guild.members.fetch(discordID);
-      } catch (err) {
+      const member = await channel.guild.members.fetch(discordID).catch((err) => {
         console.error('Member fetch error:', err);
-        member = null;
-      }
+        return null;
+      });
 
       if (!member || !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
         res.end("You don't have permission to do that!");

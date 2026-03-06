@@ -2,7 +2,7 @@
 const discord = require('discord.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { strReplace, isBotReady, resolveMentions } = require('./utils.js');
+const { isBotReady, resolveMentions } = require('./utils.js');
 
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
   try {

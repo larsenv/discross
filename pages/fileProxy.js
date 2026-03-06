@@ -9,7 +9,7 @@ exports.fileProxy = async function fileProxy(res, URL) {
       proxyRes.on('data', (chunk) => {
         chunks.push(chunk);
       });
-      proxyRes.on('end', async () => {
+      proxyRes.on('end', () => {
         const buffer = Buffer.concat(chunks);
         res.writeHead(proxyRes.statusCode, {
           'Content-Type': 'application/octet-stream',
