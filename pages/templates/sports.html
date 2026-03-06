@@ -4,6 +4,12 @@
 <head>
   {$COMMON_HEAD}
   <title>Discross - Sports</title>
+  <script>
+    try {
+      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz) document.cookie = 'userTZ=' + encodeURIComponent(tz) + '; path=/; max-age=604800';
+    } catch (e) {}
+  </script>
 </head>
 
 <body style="margin: 0;" {$WHITE_THEME_ENABLED}>
@@ -36,7 +42,7 @@
             {$NAV_BUTTONS}
             {$SPORTS_CONTENT}
             <br><br>
-            <font size="2" color="#72767d">Scores provided by <a href="https://www.espn.com/" style="color: #5865f2;">ESPN</a></font>
+            <font size="2" color="#72767d">Scores data provided by <a href="https://www.espn.com/" style="color: #5865f2;">ESPN</a></font>
           </font>
         </td>
       </tr>
