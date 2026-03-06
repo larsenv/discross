@@ -29,8 +29,9 @@ function strReplace(string, needle, replacement) {
   return string.split(needle).join(replacement ?? '');
 }
 
-// Make an HTTPS GET request, following up to maxRedirects redirects.
-function httpsGet(options, maxRedirects) {
+// Make an HTTPS request (GET or POST), following up to maxRedirects redirects.
+// After a POST redirect, follow the redirect with a GET (standard browser POST-back behaviour).
+function httpsRequest(options, postBody, maxRedirects) {
   if (maxRedirects === undefined) maxRedirects = 5;
   return new Promise(function (resolve, reject) {
     var req = https.request(options, function (res) {
@@ -44,12 +45,17 @@ function httpsGet(options, maxRedirects) {
             hostname: loc.hostname,
             path: loc.pathname + loc.search,
             method: 'GET',
-            headers: options.headers,
+            headers: Object.assign({}, options.headers),
           };
+          delete newOptions.headers['Content-Length'];
+          delete newOptions.headers['Content-Type'];
         } catch (e) {
-          newOptions = Object.assign({}, options, { path: res.headers.location });
+          newOptions = Object.assign({}, options, { path: res.headers.location, method: 'GET' });
+          delete newOptions.headers['Content-Length'];
+          delete newOptions.headers['Content-Type'];
         }
-        return httpsGet(newOptions, maxRedirects - 1).then(resolve).catch(reject);
+        // After a redirect always use GET (no body)
+        return httpsRequest(newOptions, null, maxRedirects - 1).then(resolve).catch(reject);
       }
       var chunks = [];
       res.on('data', function (chunk) { chunks.push(chunk); });
@@ -59,11 +65,38 @@ function httpsGet(options, maxRedirects) {
     });
     req.on('error', reject);
     req.setTimeout(25000, function () { req.destroy(new Error('Request timed out')); });
+    if (postBody) {
+      req.write(postBody);
+    }
     req.end();
   });
 }
 
+// Convenience wrappers
+function httpsGet(options, maxRedirects) {
+  return httpsRequest(options, null, maxRedirects);
+}
+
 var BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+// POST to a TVPassport form endpoint (application/x-www-form-urlencoded), following any redirect as a GET.
+function fetchPost(path, formData, cookie) {
+  var body = formData;
+  return httpsRequest({
+    hostname: TVPASSPORT_HOST,
+    path: path,
+    method: 'POST',
+    headers: {
+      'User-Agent': BROWSER_UA,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(body),
+      'Referer': 'https://www.tvpassport.com/lineups',
+      'Cookie': cookie,
+    },
+  }, body);
+}
 
 // Fetch a TVPassport session cookie.
 async function fetchCookie() {
@@ -151,60 +184,31 @@ function stripTags(str) {
   return str.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-// Parse providers/lineups from TVPassport /lineups?zip={zip} HTML.
+// Parse providers/lineups from TVPassport /index.php/lineups POST response HTML.
+// Provider links use the format /lineups/set/{lineupId} (optionally followed by ?lineupname=...).
 // Returns array of {name, lineupId} objects.
 function parseLineups(html) {
   var lineups = [];
   var seen = new Set();
 
-  // Known TVPassport category/navigation path prefixes that are NOT provider lineups.
-  // We check startsWith(prefix + '/') to match sub-paths (e.g. 'sports/EPL'),
-  // lineupPath === prefix for exact matches (e.g. 'sports'), and
-  // startsWith(prefix + '-') for hyphenated variants (e.g. 'whats-on-today').
-  var SKIP_PREFIXES = [
-    'stations', 'sports', 'movies', 'whats-on', 'fall-tv', 'search',
-    'my-passport', 'register', 'hauth', 'sitemap', 'resource',
-  ];
-
-  // Look for any /tv-listings/{path} href and post-filter
-  var linkRegex = /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/([^"?#\s]+)"/gi;
+  // Match hrefs pointing to /lineups/set/{lineupId} (capturing the bare lineupId before any ? or &).
+  // Handles both double-quoted and single-quoted href attributes.
+  var linkRegex = /href=["']?(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/lineups\/set\/([^"'?&\s]+)/gi;
   var m;
   while ((m = linkRegex.exec(html)) !== null) {
-    var lineupPath = m[1].replace(/\/$/, '');
+    var lineupId = m[1];
+    if (!lineupId || seen.has(lineupId)) continue;
 
-    // Skip known non-provider paths (exact match, sub-path, or hyphenated variant)
-    var skip = false;
-    for (var j = 0; j < SKIP_PREFIXES.length; j++) {
-      var prefix = SKIP_PREFIXES[j];
-      if (
-        lineupPath === prefix ||
-        lineupPath.startsWith(prefix + '/') ||
-        lineupPath.startsWith(prefix + '-')
-      ) {
-        skip = true;
-        break;
-      }
-    }
-    if (skip) continue;
-
-    // Skip bare date paths or paths ending with a date
-    if (/^\d{4}-\d{2}-\d{2}$/.test(lineupPath)) continue;
-    if (/\/\d{4}-\d{2}-\d{2}$/.test(lineupPath)) continue;
-
-    if (seen.has(lineupPath)) continue;
-
-    // Find the link text — look within the surrounding 300 chars
+    // Find the link's visible text — look in the 400 chars after the href
     var before = m.index;
     var after = before + m[0].length;
-    var context = html.substring(Math.max(0, before - 10), after + 300);
-    // Match the text content of the anchor tag
+    var context = html.substring(Math.max(0, before - 10), after + 400);
     var textMatch = context.match(/>[^<\n]{2,80}</);
-    var name = textMatch ? he.decode(stripTags(textMatch[0])).trim() : lineupPath;
-    // Remove empty or very short names
-    if (!name || name.length < 2) name = lineupPath;
+    var name = textMatch ? he.decode(stripTags(textMatch[0])).trim() : lineupId;
+    if (!name || name.length < 2) name = lineupId;
 
-    seen.add(lineupPath);
-    lineups.push({ name: name, lineupId: lineupPath });
+    seen.add(lineupId);
+    lineups.push({ name: name, lineupId: lineupId });
   }
 
   return lineups;
@@ -431,12 +435,16 @@ async function serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessi
   var cleanZip = zip.replace(/[^a-zA-Z0-9 \-]/g, '').trim();
   if (cleanZip) {
     if (lineup) {
-      // Step 2: fetch channel grid for selected lineup
-      var cleanLineup = lineup.replace(/[^a-zA-Z0-9_\-\/]/g, '');
+      // Step 2: fetch channel grid for selected lineup.
+      // TVPassport lineup pages live at /lineups/set/{lineupId}?tz=America/New_York
+      var cleanLineup = lineup.replace(/[^a-zA-Z0-9_\-]/g, '');
       if (cleanLineup) {
         try {
           var cookie = await fetchCookie();
-          var lineupResult = await fetchPage('/tv-listings/' + cleanLineup + '/' + date, cookie);
+          var lineupResult = await fetchPage(
+            '/lineups/set/' + cleanLineup + '?tz=America%2FNew_York',
+            cookie
+          );
           if (lineupResult.statusCode === 200) {
             var channels = parseLineupChannels(lineupResult.body, date);
             if (channels.length > 0) {
@@ -455,10 +463,15 @@ async function serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessi
         }
       }
     } else {
-      // Step 1: fetch provider/lineup list for ZIP
+      // Step 1: POST the ZIP to TVPassport's lineup search endpoint to get the provider list.
+      // TVPassport uses a form POST to /index.php/lineups with postalCode=ZIP.
       try {
         var cookie = await fetchCookie();
-        var lineupsResult = await fetchPage('/lineups?zip=' + encodeURIComponent(cleanZip), cookie);
+        var lineupsResult = await fetchPost(
+          '/index.php/lineups',
+          'postalCode=' + encodeURIComponent(cleanZip),
+          cookie
+        );
         if (lineupsResult.statusCode === 200) {
           var lineupList = parseLineups(lineupsResult.body);
           if (lineupList.length === 0) {
