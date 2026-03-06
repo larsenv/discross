@@ -389,11 +389,12 @@ exports.processNews = async function processNews(req, res, args, discordID) {
         ? cards.join('\n')
         : '<p class="news-empty">No articles found for this category.</p>';
 
-    let sessionHidden = '';
-    if (urlSessionID)
-      sessionHidden += `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">`;
-    if (theme.themeValue !== 0)
-      sessionHidden += `<input type="hidden" name="theme" value="${theme.themeValue}">`;
+    const sessionHidden = [
+      urlSessionID ? `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">` : '',
+      theme.themeValue !== 0
+        ? `<input type="hidden" name="theme" value="${theme.themeValue}">`
+        : '',
+    ].join('');
 
     let final = strReplace(news_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
     final = strReplace(final, '{$TAG_DISPLAY}', displayTag);
