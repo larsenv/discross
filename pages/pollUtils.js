@@ -6,6 +6,30 @@ const { strReplace } = require('./utils.js');
 const poll_template = fs.readFileSync('pages/templates/message/poll.html', 'utf-8');
 const poll_answer_template = fs.readFileSync('pages/templates/message/poll_answer.html', 'utf-8');
 
+function buildPollEmojiHtml(emoji, imagesCookie) {
+  if (!emoji) return '';
+  if (emoji.id && imagesCookie === 1) {
+    const extension = emoji.animated ? 'gif' : 'png';
+    return `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
+  }
+  if (emoji.name && imagesCookie === 1) {
+    const codePoints = [];
+    for (let i = 0; i < emoji.name.length; i++) {
+      const code = emoji.name.codePointAt(i);
+      if (code) {
+        codePoints.push(code.toString(16));
+        if (code > 0xffff) i++;
+      }
+    }
+    const emojiCode = codePoints.join('-');
+    return `<img src="/resources/twemoji/${emojiCode}.gif" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
+  }
+  if (emoji.name) {
+    return `<span style="font-size: 20px;">${emoji.name}</span>`;
+  }
+  return '';
+}
+
 /**
  * Process a poll and render it as HTML
  * @param {Poll} poll - The Discord.js Poll object
@@ -44,33 +68,7 @@ function processPoll(poll, imagesCookie) {
         const answerText = answer.text || '';
         answerHtml = strReplace(answerHtml, '{$ANSWER_TEXT}', escape(answerText));
 
-        // Handle emoji if present
-        let emojiHtml = '';
-        if (answer._emoji) {
-          const emoji = answer._emoji;
-          if (emoji.id && imagesCookie === 1) {
-            // Custom emoji
-            const isAnimated = emoji.animated || false;
-            const extension = isAnimated ? 'gif' : 'png';
-            emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
-          } else if (emoji.name && imagesCookie === 1) {
-            // Unicode emoji - convert to twemoji
-            const codePoints = [];
-            for (let i = 0; i < emoji.name.length; i++) {
-              const code = emoji.name.codePointAt(i);
-              if (code) {
-                codePoints.push(code.toString(16));
-                // Skip low surrogate if this was a high surrogate
-                if (code > 0xffff) i++;
-              }
-            }
-            const emojiCode = codePoints.join('-');
-            emojiHtml = `<img src="/resources/twemoji/${emojiCode}.gif" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
-          } else if (emoji.name) {
-            // Fallback to unicode emoji text
-            emojiHtml = `<span style="font-size: 20px;">${emoji.name}</span>`;
-          }
-        }
+        const emojiHtml = buildPollEmojiHtml(answer._emoji, imagesCookie);
         answerHtml = strReplace(answerHtml, '{$ANSWER_EMOJI}', emojiHtml);
 
         // Set vote count and percentage

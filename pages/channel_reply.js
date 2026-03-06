@@ -111,18 +111,15 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     const chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
     if (chnl) {
-      let botMember, member;
-      try {
-        botMember = await chnl.guild.members.fetch(bot.client.user.id);
-      } catch (err) {
+      const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
+      if (!botMember) {
         res.writeHead(503, { 'Content-Type': 'text/plain' });
         res.end('The bot is not in this server!');
         return;
       }
 
-      try {
-        member = await chnl.guild.members.fetch(discordID);
-      } catch (err) {
+      const member = await chnl.guild.members.fetch(discordID).catch(() => null);
+      if (!member) {
         res.writeHead(403, { 'Content-Type': 'text/plain' });
         res.end('You are not in this server! Please join the server to view this channel.');
         return;
