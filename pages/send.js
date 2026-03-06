@@ -6,10 +6,9 @@ const { getOrCreateWebhook } = require('./webhookCache');
 const { strReplace, isValidSnowflake, isBotReady } = require('./utils.js');
 
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
-  const baseUrl =
-    (req.socket && req.socket.encrypted ? 'https' : 'http') +
-    '://' +
-    (req.headers.host || 'localhost:' + ((req.socket && req.socket.localPort) || 80));
+  const proto = req.socket?.encrypted ? 'https' : 'http';
+  const host = req.headers.host || `localhost:${req.socket?.localPort ?? 80}`;
+  const baseUrl = `${proto}://${host}`;
   try {
     const parsedurl = new URL(req.url, 'http://localhost');
     const query = Object.fromEntries(parsedurl.searchParams);
@@ -28,8 +27,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       // Validate channel id format early
       if (!channelId || !isValidSnowflake(channelId)) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.write('Invalid channel!');
-        res.end();
+        res.end('Invalid channel!');
         return;
       }
 
@@ -44,8 +42,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
       if (!channel) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.write('Invalid channel!');
-        res.end();
+        res.end('Invalid channel!');
         return;
       }
 
@@ -59,8 +56,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
       }
 
       if (!member || !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
-        res.write("You don't have permission to do that!");
-        res.end();
+        res.end("You don't have permission to do that!");
         return;
       }
 
@@ -101,7 +97,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
           }
           let reply_message_content = reply_message.content;
           if (reply_message_content.length > 30) {
-            reply_message_content = reply_message_content.substring(0, 30) + '...';
+            reply_message_content = `${reply_message_content.substring(0, 30)}...`;
           }
           const author_id = reply_message.author.id;
           const author_mention = `<@${author_id}>`;
@@ -129,12 +125,12 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
     // redirect back to the channel (use the provided channel id if available)
     const redirectChannel = parsedurl.searchParams.get('channel') || args?.[2] || '';
     const sessionID = parsedurl.searchParams.get('sessionID') || '';
-    const sessionPart = sessionID ? '?sessionID=' + encodeURIComponent(sessionID) : '';
-    res.writeHead(302, { Location: baseUrl + '/channels/' + redirectChannel + sessionPart });
+    const sessionPart = sessionID ? `?sessionID=${encodeURIComponent(sessionID)}` : '';
+    res.writeHead(302, { Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}` });
     res.end();
   } catch (err) {
     console.error('Error sending message:', err);
-    res.writeHead(302, { Location: baseUrl + '/server/' });
+    res.writeHead(302, { Location: `${baseUrl}/server/` });
     res.end();
   }
 };

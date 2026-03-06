@@ -47,7 +47,7 @@ client.on('messageCreate', async function (msg) {
   if (msg.content === '^connect') {
     try {
       await msg.author.send(
-        'Verification code:\n`' + (await auth.createVerificationCode(msg.author.id)) + '`'
+        `Verification code:\n\`${await auth.createVerificationCode(msg.author.id)}\``
       );
       await msg.reply('You have been sent a direct message with your verification code.');
     } catch (e) {
@@ -85,7 +85,7 @@ client.on('messageCreate', async function (msg) {
 
 // Auto-sync server membership when GuildMembers intent is enabled
 if (guildMembersIntentEnabled) {
-  client.on('guildMemberAdd', async (member) => {
+  client.on('guildMemberAdd', (member) => {
     // Only add the server if the user is a registered Discross user
     const user = auth.dbQuerySingle('SELECT discordID FROM users WHERE discordID=?', [
       member.user.id,
@@ -97,7 +97,7 @@ if (guildMembersIntentEnabled) {
     }
   });
 
-  client.on('guildMemberRemove', async (member) => {
+  client.on('guildMemberRemove', (member) => {
     auth.dbQueryRun('DELETE FROM servers WHERE serverID=? AND discordID=?', [
       member.guild.id,
       member.user.id,

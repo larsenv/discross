@@ -33,8 +33,8 @@ exports.startWsServer = function (server) {
     const index = sockets.length;
     sockets.push(ws);
     listenChannels.push('');
-    console.log('A client connected.');
-    console.log(sockets.length + ' clients are now connected.');
+    console.info('A client connected.');
+    console.info(`${sockets.length} clients are now connected.`);
     let isAuthed = false;
     let listenChannel = '';
 
@@ -46,13 +46,13 @@ exports.startWsServer = function (server) {
     });
 
     ws.on('close', function close() {
-      console.log('A client disconnected.');
+      console.info('A client disconnected.');
       const index = sockets.indexOf(ws);
       if (index > -1) {
         sockets.splice(index, 1);
         listenChannels.splice(index, 1);
       }
-      console.log(sockets.length + ' clients are now connected.');
+      console.info(`${sockets.length} clients are now connected.`);
     });
   });
 };

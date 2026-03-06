@@ -102,7 +102,7 @@ function iconImg(code, size) {
 
 function buildNavButtons(city, activeView, urlSessionID) {
   const cityEnc = encodeURIComponent(city);
-  const sessionSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '';
+  const sessionSuffix = urlSessionID ? `&sessionID=${encodeURIComponent(urlSessionID)}` : '';
   let html = '<table cellpadding="0" cellspacing="0"><tr>\n';
   for (const v of VIEWS) {
     const cls = v.id === activeView ? 'discross-button' : 'discross-button secondary';

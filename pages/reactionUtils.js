@@ -70,7 +70,7 @@ function processReactions(
         if (emojiHtml) {
           let reactionHtml = reaction_template;
           reactionHtml = strReplace(reactionHtml, '{$EMOJI}', emojiHtml);
-          reactionHtml = strReplace(reactionHtml, '{$COUNT}', count.toString());
+          reactionHtml = strReplace(reactionHtml, '{$COUNT}', count);
           reactionHtml = strReplace(reactionHtml, '{$REACTION_BG}', backgroundColor);
           reactionHtml = strReplace(reactionHtml, '{$REACTION_BORDER}', borderColor);
 

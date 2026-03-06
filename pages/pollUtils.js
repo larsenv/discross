@@ -74,8 +74,8 @@ function processPoll(poll, imagesCookie) {
         answerHtml = strReplace(answerHtml, '{$ANSWER_EMOJI}', emojiHtml);
 
         // Set vote count and percentage
-        answerHtml = strReplace(answerHtml, '{$VOTE_COUNT}', voteCount.toString());
-        answerHtml = strReplace(answerHtml, '{$VOTE_PERCENTAGE}', votePercentage.toString());
+        answerHtml = strReplace(answerHtml, '{$VOTE_COUNT}', voteCount);
+        answerHtml = strReplace(answerHtml, '{$VOTE_PERCENTAGE}', votePercentage);
 
         answersHtml += answerHtml;
       });

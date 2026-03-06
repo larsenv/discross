@@ -22,16 +22,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     } catch (err) {
       console.error(`[sendDrawing] failed to fetch member:`, err);
       res.writeHead(500, { 'Content-Type': 'text/html' });
-      res.write(
+      res.end(
         'Failed to verify user permissions. Please ensure you have access to this channel or try again later.'
       );
-      res.end();
       return;
     }
 
     if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
-      res.write("You don't have permission to do that!");
-      res.end();
+      res.end("You don't have permission to do that!");
       return;
     }
 
@@ -72,8 +70,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     if (!base64Data || base64Data.trim() === '') {
       console.error('[sendDrawing] Error processing image: Input Buffer is empty');
       res.writeHead(400, { 'Content-Type': 'text/html' });
-      res.write('No drawing data provided. Please draw something before sending.');
-      res.end();
+      res.end('No drawing data provided. Please draw something before sending.');
       return;
     }
 
@@ -84,8 +81,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     if (!base64Image || base64Image.trim() === '') {
       console.error('[sendDrawing] Error processing image: Base64 data is empty after split');
       res.writeHead(400, { 'Content-Type': 'text/html' });
-      res.write('Invalid drawing data format. Please try again.');
-      res.end();
+      res.end('Invalid drawing data format. Please try again.');
       return;
     }
 
@@ -95,8 +91,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     if (!imageBuffer || imageBuffer.length === 0) {
       console.error('[sendDrawing] Error processing image: Generated buffer is empty');
       res.writeHead(400, { 'Content-Type': 'text/html' });
-      res.write('Failed to process drawing data. Please try again.');
-      res.end();
+      res.end('Failed to process drawing data. Please try again.');
       return;
     }
 
@@ -125,7 +120,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
   } catch (err) {
     console.error(`[sendDrawing] Error:`, err);
     res.writeHead(500, { 'Content-Type': 'text/html' });
-    res.write('An error occurred! Please try again later.<br>');
-    res.end();
+    res.end('An error occurred! Please try again later.<br>');
   }
 };

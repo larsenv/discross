@@ -189,7 +189,9 @@ function parseOptions(params) {
   let defaultsMap = {}; // code → amount string
   try {
     if (params.default_options) defaultsMap = JSON.parse(params.default_options);
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[parseOptions] Failed to parse default_options:', e.message);
+  }
 
   const options = {};
   let hasFormFields = false;
@@ -757,7 +759,9 @@ exports.handleGet = async function (bot, req, res, discordID) {
         let items = [];
         try {
           items = JSON.parse(order.items_json);
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[orders] Failed to parse items_json for order:', order.id, e.message);
+        }
         const itemsList = items.map((i) => `${escape(i.name || i.code)} ×${i.qty || 1}`).join(', ');
         ordersHtml += `<div class="food-receipt-card">
   <div class="food-receipt-header">
@@ -1094,7 +1098,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
   let params = {};
   try {
     params = Object.fromEntries(new URLSearchParams(body));
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[food] Failed to parse request body:', e.message);
+  }
 
   // Session + cart/checkout state for Wii U URL-based fallback
   const urlSessionID = params.sessionID || parsedurl.searchParams.get('sessionID') || '';
