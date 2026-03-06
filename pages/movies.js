@@ -224,7 +224,7 @@ function tryParseEmbeddedJson(html, isTv) {
 
 // Recursively search JSON for movie/TV item arrays
 function extractItemsFromJson(data, isTv, depth) {
-  if (!data || typeof data !== "object" || (depth || 0) > 6) return [];
+  if (!data || typeof data !== "object" || (depth || 0) > 10) return [];
 
   // Check if data itself is an array of items
   if (Array.isArray(data)) {
@@ -232,8 +232,13 @@ function extractItemsFromJson(data, isTv, depth) {
       (x) =>
         x &&
         typeof x === "object" &&
-        (x.title || x.name) &&
-        (x.url || x.vanity || x.mediaUrl || x.slug),
+        (x.title || x.name || x.seriesTitle || x.movieTitle) &&
+        (x.url ||
+          x.vanity ||
+          x.mediaUrl ||
+          x.canonicalUrl ||
+          x.slug ||
+          x.emsId),
     );
     if (scored.length >= 2) {
       return scored
@@ -251,29 +256,55 @@ function extractItemsFromJson(data, isTv, depth) {
   return [];
 }
 
+// Parse a raw score value (int, float-as-number, or string) to an integer
+function parseScore(v) {
+  if (v == null) return null;
+  if (typeof v === "number") return isNaN(v) ? null : Math.round(v);
+  if (typeof v === "string") {
+    const n = parseInt(v, 10);
+    return isNaN(n) ? null : n;
+  }
+  if (typeof v === "object") {
+    // e.g. {score: 85}, {value: 85}, {percentage: 85}
+    return parseScore(v.score ?? v.value ?? v.percentage ?? null);
+  }
+  return null;
+}
+
 function normalizeJsonItem(x, isTv) {
-  const title = x.title || x.name || "";
-  let url = x.url || x.mediaUrl || "";
+  const title = x.title || x.name || x.seriesTitle || x.movieTitle || "";
+  let url = x.url || x.mediaUrl || x.canonicalUrl || "";
   if (!url && x.vanity) {
     url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.vanity}`;
   }
   if (!url && x.slug) {
     url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.slug}`;
   }
+  if (!url && x.emsId) {
+    url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.emsId}`;
+  }
   if (url && !url.startsWith("http")) url = RT_BASE + url;
-  const year = x.year || x.releaseYear || "";
-  const criticsScore =
-    x.tomatometer != null
-      ? x.tomatometer
-      : x.criticsScore != null
-        ? x.criticsScore
-        : (x.rottenTomatoes?.tomatometer ?? null);
-  const audienceScore =
-    x.audienceScore != null
-      ? x.audienceScore
-      : x.popcornmeter != null
-        ? x.popcornmeter
-        : null;
+  const year = x.year || x.releaseYear || x.premiereYear || "";
+
+  const criticsScore = parseScore(
+    x.tomatometer ??
+      x.criticsScore ??
+      x.tomatometerScore ??
+      x.tomatoScore ??
+      x.scores?.tomatometer ??
+      x.scores?.criticsScore ??
+      x.rottenTomatoes?.tomatometer ??
+      null,
+  );
+  const audienceScore = parseScore(
+    x.audienceScore ??
+      x.popcornmeter ??
+      x.audiencescore ??
+      x.scores?.audience ??
+      x.scores?.audienceScore ??
+      null,
+  );
+
   const poster =
     x.posterUri ||
     x.image ||
@@ -281,6 +312,8 @@ function normalizeJsonItem(x, isTv) {
     x.thumbnail ||
     x.posterImage ||
     x.poster ||
+    x.posterSrc ||
+    x.img ||
     "";
   return { title, url, year, criticsScore, audienceScore, poster };
 }
@@ -325,7 +358,9 @@ function parseHtmlTiles(html, isTv) {
 
   // If above didn't work, try anchor-based tile parsing (bounded per anchor)
   if (items.length === 0) {
-    const linkPrefix = isTv ? "/tv/" : "/m/";
+    const hrefRe = isTv
+      ? /href="(\/(tv|show)\/[^"#?]+)"/
+      : /href="(\/m\/[^"#?]+)"/;
     let pos = 0;
     while (pos < html.length) {
       const anchorStart = html.indexOf("<a ", pos);
@@ -333,8 +368,8 @@ function parseHtmlTiles(html, isTv) {
       const tagEnd = html.indexOf(">", anchorStart);
       if (tagEnd === -1) break;
       const tag = html.slice(anchorStart, tagEnd + 1);
-      const hrefMatch = tag.match(/href="(\/(?:tv|m)\/[^"#?]+)"/);
-      if (!hrefMatch || !hrefMatch[1].startsWith(linkPrefix)) {
+      const hrefMatch = tag.match(hrefRe);
+      if (!hrefMatch) {
         pos = tagEnd + 1;
         continue;
       }
@@ -360,8 +395,20 @@ function parseHtmlTiles(html, isTv) {
       }
       seen.add(url);
       const poster = extractPosterFromBlock(block);
-      const scoreMatch = block.match(/criticsScore[=:]["']?(\d+)/i);
-      const criticsScore = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
+      // Try multiple score attribute patterns
+      let criticsScore = null;
+      for (const re of [
+        /tomatometerscore\s*=\s*["']?(\d+)/i,
+        /criticsscore\s*=\s*["']?(\d+)/i,
+        /criticsScore\s*=\s*["']?(\d+)/i,
+        /"tomatometer"\s*:\s*(\d+)/,
+      ]) {
+        const sm = block.match(re);
+        if (sm) {
+          criticsScore = parseInt(sm[1], 10);
+          break;
+        }
+      }
       items.push({
         title,
         url,
@@ -392,10 +439,10 @@ function extractTileItem(block, isTv) {
   const title = titleMatch ? stripHtml(titleMatch[1]).trim() : "";
   if (!title) return null;
 
-  // URL
-  const urlMatch = block.match(
-    isTv ? /href="(\/tv\/[^"#?]+)"/ : /href="(\/m\/[^"#?]+)"/,
-  );
+  // URL — for TV also accept /show/ paths; allow dots and slashes in slugs
+  const urlMatch = isTv
+    ? block.match(/href="(\/(tv|show)\/[^"#?]+)"/)
+    : block.match(/href="(\/m\/[^"#?]+)"/);
   if (!urlMatch) return null;
   const url = RT_BASE + urlMatch[1];
 
@@ -403,13 +450,41 @@ function extractTileItem(block, isTv) {
   const yearMatch = block.match(/\b(19|20)\d{2}\b/);
   const year = yearMatch ? yearMatch[0] : "";
 
-  // Critics score
-  const scoreMatch = block.match(/criticsScore[=:]["']?\s*(\d+)/i);
-  const criticsScore = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
+  // Critics score — try multiple attribute name patterns RT uses
+  const CRITICS_RE = [
+    /tomatometerscore\s*=\s*["']?(\d+)/i,
+    /criticsscore\s*=\s*["']?(\d+)/i,
+    /criticsScore\s*=\s*["']?(\d+)/i,
+    /tomatometer\s*=\s*["'](\d+)["']/i,
+    /"tomatometer"\s*:\s*(\d+)/,
+    /"criticsScore"\s*:\s*(\d+)/,
+    /percentage\s*=\s*["']?(\d+)/i,
+  ];
+  let criticsScore = null;
+  for (const re of CRITICS_RE) {
+    const m = block.match(re);
+    if (m) {
+      criticsScore = parseInt(m[1], 10);
+      break;
+    }
+  }
 
-  // Audience score
-  const audMatch = block.match(/audienceScore[=:]["']?\s*(\d+)/i);
-  const audienceScore = audMatch ? parseInt(audMatch[1], 10) : null;
+  // Audience score — try multiple patterns
+  const AUDIENCE_RE = [
+    /audiencescore\s*=\s*["']?(\d+)/i,
+    /audienceScore\s*=\s*["']?(\d+)/i,
+    /popcornmeter\s*=\s*["']?(\d+)/i,
+    /"audienceScore"\s*:\s*(\d+)/,
+    /"popcornmeter"\s*:\s*(\d+)/,
+  ];
+  let audienceScore = null;
+  for (const re of AUDIENCE_RE) {
+    const m = block.match(re);
+    if (m) {
+      audienceScore = parseInt(m[1], 10);
+      break;
+    }
+  }
 
   // Poster
   const poster = extractPosterFromBlock(block);
@@ -431,9 +506,10 @@ function extractPosterFromBlock(block) {
 function parseFallbackLinks(html, isTv) {
   const items = [];
   const seen = new Set();
+  // Allow dots and forward-slashes in slugs; TV can be /tv/ or /show/
   const pattern = isTv
-    ? /href="(\/tv\/[a-z0-9_-]+)"/gi
-    : /href="(\/m\/[a-z0-9_-]+)"/gi;
+    ? /href="(\/(tv|show)\/[a-z0-9._/-]+)"/gi
+    : /href="(\/m\/[a-z0-9._/-]+)"/gi;
   let m;
   while ((m = pattern.exec(html)) !== null) {
     const url = RT_BASE + m[1];
@@ -443,7 +519,7 @@ function parseFallbackLinks(html, isTv) {
     const start = Math.max(0, m.index - 500);
     const end = Math.min(html.length, m.index + 500);
     const nearby = html.slice(start, end);
-    const slug = m[1].replace(isTv ? "/tv/" : "/m/", "").replace(/-/g, " ");
+    const slug = m[1].replace(/^\/(tv|show|m)\//, "").replace(/-/g, " ");
     const title = slug
       .split(" ")
       .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
