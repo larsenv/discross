@@ -107,7 +107,8 @@ function parseListings(html) {
   var sectionHtml = html.slice(sectionIdx);
 
   // Match each list-group-item opening tag (which holds all data attributes).
-  var itemTagRegex = /<[a-z]+[^>]+class="list-group-item"[^>]*>/gi;
+  // Use \b to match list-group-item as a word boundary to handle extra CSS classes.
+  var itemTagRegex = /<[a-z]+(?:\s+[^>]*?)?\bclass="[^"]*\blist-group-item\b[^"]*"[^>]*>/gi;
   var m;
   while ((m = itemTagRegex.exec(sectionHtml)) !== null) {
     var tagHtml = m[0];
@@ -131,6 +132,7 @@ function formatTime(timeStr) {
   var timePart = timeStr.split(' ')[1];
   if (!timePart) return '';
   var parts = timePart.split(':');
+  if (parts.length < 2) return '';
   var h = parseInt(parts[0], 10);
   var m = parseInt(parts[1], 10);
   if (isNaN(h) || isNaN(m)) return '';
