@@ -779,21 +779,24 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
   })();
 
   // Forwarded metadata
-  if (isForwarded) {
-    html = html.replace('{$FORWARDED_AUTHOR}',  escape(forwardData.author));
-    const contentBlock = forwardData.content
+  const contentBlock =
+    isForwarded && forwardData.content
       ? `<table cellpadding="0" cellspacing="0" width="100%" class="forwarded-content-wrapper" style="padding:8px;margin-bottom:4px"><tr><td>` +
         `<font class="messagecontent-font" style="font-size:14px" face="rodin,sans-serif">${forwardData.content}</font>` +
         `</td></tr></table>`
       : '';
-    html = html.replace('{$FORWARDED_CONTENT_BLOCK}', contentBlock);
-    html = html.replace('{$FORWARDED_DATE}',    forwardData.date);
-    html = html.replace('{$FORWARDED_EMBEDS}',  forwardData.embeds ?? '');
-    html = html.replace('{$FORWARDED_ORIGIN}',  forwardData.origin ?? '');
-  }
+  const afterForwarded = isForwarded
+    ? [
+        ['{$FORWARDED_AUTHOR}', escape(forwardData.author)],
+        ['{$FORWARDED_CONTENT_BLOCK}', contentBlock],
+        ['{$FORWARDED_DATE}', forwardData.date],
+        ['{$FORWARDED_EMBEDS}', forwardData.embeds ?? ''],
+        ['{$FORWARDED_ORIGIN}', forwardData.origin ?? ''],
+      ].reduce((acc, [k, v]) => strReplace(acc, k, v), baseHtml)
+    : baseHtml;
 
-  const displayName  = getDisplayName(lastmember, lastauthor);
-  const authorColor  = getMemberColor(lastmember, authorText);
+  const displayName = getDisplayName(lastmember, lastauthor);
+  const authorColor = getMemberColor(lastmember, authorText);
   const replyIndicator = lastReply
     ? buildReplyIndicator(lastReplyData, replyText)
     : lastInteraction
@@ -971,28 +974,25 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     state.lastmessagedate = item.createdAt;
 
     // Resolve forward / reply metadata
-    let isForwarded = false;
-    let forwardData = {};
-    if (item.reference?.type === MessageReferenceType.Forward) {
-      const data = await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone, req, imagesCookie, animationsCookie);
-      if (data) { isForwarded = true; forwardData = data; }
-    }
+    const fwdData =
+      item.reference?.type === MessageReferenceType.Forward
+        ? await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone, req, imagesCookie, animationsCookie)
+        : null;
+    const isForwarded = fwdData !== null;
+    const forwardData = fwdData ?? {};
 
-    let isReply = false;
-    let replyData = {};
-    if (item.reference && !isForwarded) {
-      const data = await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie);
-      if (data) { isReply = true; replyData = data; }
-    }
+    const rplyData =
+      item.reference && !isForwarded
+        ? await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie)
+        : null;
+    const isReply = rplyData !== null;
+    const replyData = rplyData ?? {};
 
-    let isInteraction = false;
-    let interactionData = {};
-    if (item.interaction) {
-      const data = await resolveInteractionData(item, chnl, memberCache);
-      if (data) { isInteraction = true; interactionData = data; }
-    }
+    const intData = item.interaction ? await resolveInteractionData(item, chnl, memberCache) : null;
+    const isInteraction = intData !== null;
+    const interactionData = intData ?? {};
 
-    let messagetext = await renderMessageContent(item, context);
+    const rawText = await renderMessageContent(item, context);
 
     const isMentioned = detectMention(item, member, discordID, isReply, replyData);
 
@@ -1031,7 +1031,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
     // System message handling
     const isSystem = !isNormalMessage(item.type);
-    const visibleText = messagetext.replace(/<img\b[^>]*>/gi, 'x').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const visibleText = rawText.replace(/<img\b[^>]*>/gi, 'x').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
     if (!isSystem && !isForwarded && visibleText.length === 0 &&
         !item.attachments?.size && !item.embeds?.length && !item.stickers?.size) {
