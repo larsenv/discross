@@ -235,13 +235,15 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
   const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
   const articleUrl = `/news/${encodeURIComponent(slug)}${sessionParam}`;
 
-  let imageHtml = '';
-  if (showImages && imageUrl) {
-    const proxied = proxyImageUrl(imageUrl);
-    const alt = escapeContent(imageAlt || title, showImages);
-    const caption = escapeContent(imageCaption || '', showImages);
-    imageHtml = `<div class="news-card-image-wrap"><img src="${proxied}" alt="${alt}" class="news-card-image">${caption ? `<br><span class="news-card-caption">${caption}</span>` : ''}</div>`;
-  }
+  const imageHtml =
+    showImages && imageUrl
+      ? (() => {
+          const proxied = proxyImageUrl(imageUrl);
+          const alt = escapeContent(imageAlt || title, showImages);
+          const caption = escapeContent(imageCaption || '', showImages);
+          return `<div class="news-card-image-wrap"><img src="${proxied}" alt="${alt}" class="news-card-image">${caption ? `<br><span class="news-card-caption">${caption}</span>` : ''}</div>`;
+        })()
+      : '';
 
   return `<div class="news-card">
   ${imageHtml}

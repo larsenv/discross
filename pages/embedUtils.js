@@ -30,28 +30,28 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
     return text;
   }
 
-  let result = text;
-
   // Process unicode emojis (twemoji) — cached via emojiUtils, always GIF
-  result = processUnicodeEmojiInText(result, 20, '1.25em');
+  const withUnicode = processUnicodeEmojiInText(text, 20, '1.25em');
 
   // Process custom emoji (HTML escaped format from markdown)
   const customEmojiMatches = [
-    ...result.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g),
+    ...withUnicode.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g),
   ];
-  customEmojiMatches.forEach((match) => {
+  // Cache emoji metadata first (side effect), then transform string (pure reduce)
+  for (const match of customEmojiMatches) {
+    const emojiId = match[4];
+    if (emojiId) cacheCustomEmoji(emojiId, match[3], !!match[2]);
+  }
+  const result = customEmojiMatches.reduce((acc, match) => {
     const animated = !!match[2]; // 'a' means animated
     const emojiId = match[4];
-    const emojiName = match[3];
-    if (emojiId) {
-      const emojiExt = animated && animationsCookie === 1 ? 'gif' : 'png';
-      cacheCustomEmoji(emojiId, emojiName, animated);
-      result = result.replace(
-        match[0],
-        `<img src="/imageProxy/emoji/${emojiId}.${emojiExt}" width="20" height="20" style="width: 1.25em; height: 1.25em; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`
-      );
-    }
-  });
+    if (!emojiId) return acc;
+    const emojiExt = animated && animationsCookie === 1 ? 'gif' : 'png';
+    return acc.replace(
+      match[0],
+      `<img src="/imageProxy/emoji/${emojiId}.${emojiExt}" width="20" height="20" style="width: 1.25em; height: 1.25em; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`
+    );
+  }, withUnicode);
 
   return result;
 }

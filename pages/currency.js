@@ -220,33 +220,38 @@ exports.processCurrency = async function processCurrency(req, res) {
 
   const themeClass = getPageThemeAttr(req);
 
-  let currencyHtml = '';
+  const prefix = inputWasNormalized
+    ? `<font color="#e3a84a" ${FONT}><i>Invalid currency code entered. Showing results for &ldquo;${escape(base)}&rdquo; instead.</i></font><br><br>`
+    : '';
 
-  if (inputWasNormalized) {
-    currencyHtml += `<font color="#e3a84a" ${FONT}><i>Invalid currency code entered. Showing results for &ldquo;${escape(base)}&rdquo; instead.</i></font><br><br>`;
-  }
+  const currencyHtml = await (async () => {
+    try {
+      // Fetch latest and previous trading day rates in a single range request.
+      // The 14-day window is robust across weekends and public holidays.
+      const { latestData, prevData } = await fetchLatestAndPrevRates(base).catch(() => ({
+        latestData: null,
+        prevData: null,
+      }));
 
-  try {
-    // Fetch latest and previous trading day rates in a single range request.
-    // The 14-day window is robust across weekends and public holidays.
-    const { latestData, prevData } = await fetchLatestAndPrevRates(base).catch(() => ({
-      latestData: null,
-      prevData: null,
-    }));
-
-    if (!latestData) {
-      currencyHtml += `<font color="#ff4444" ${FONT}>No data found for base currency &ldquo;${escape(base)}&rdquo;. Please enter a valid 3-letter currency code (e.g. USD, EUR, GBP).</font><br>`;
-    } else {
+      if (!latestData) {
+        return (
+          prefix +
+          `<font color="#ff4444" ${FONT}>No data found for base currency &ldquo;${escape(base)}&rdquo;. Please enter a valid 3-letter currency code (e.g. USD, EUR, GBP).</font><br>`
+        );
+      }
       // Use all available target currencies or our default list
       const availableCodes = Object.keys(latestData.rates || {}).sort();
       const targets =
         base === 'USD' ? DEFAULT_TARGETS.filter((c) => availableCodes.includes(c)) : availableCodes;
-      currencyHtml = renderRatesTable(base, latestData, prevData, targets);
+      return prefix + renderRatesTable(base, latestData, prevData, targets);
+    } catch (err) {
+      console.error('Currency API error:', err.message);
+      return (
+        prefix +
+        `<font color="#ff4444" ${FONT}>Unable to fetch currency data. Please try again later.</font><br>`
+      );
     }
-  } catch (err) {
-    console.error('Currency API error:', err.message);
-    currencyHtml += `<font color="#ff4444" ${FONT}>Unable to fetch currency data. Please try again later.</font><br>`;
-  }
+  })();
 
   const menuOptions = strReplace(
     logged_in_template,

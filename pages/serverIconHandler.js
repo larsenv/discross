@@ -34,15 +34,13 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
 
   // Icon doesn't exist locally, try to fetch from Discord CDN
   try {
-    // Try animated GIF first
-    let iconUrl = `https://cdn.discordapp.com/icons/${serverID}/a_${iconHash}.gif?size=128`;
-    let response = await fetch(iconUrl);
-
-    if (!response.ok) {
-      // Try static PNG
-      iconUrl = `https://cdn.discordapp.com/icons/${serverID}/${iconHash}.png?size=128`;
-      response = await fetch(iconUrl);
-    }
+    // Try animated GIF first, then fall back to static PNG
+    const gifUrl = `https://cdn.discordapp.com/icons/${serverID}/a_${iconHash}.gif?size=128`;
+    const pngUrl = `https://cdn.discordapp.com/icons/${serverID}/${iconHash}.png?size=128`;
+    const gifResponse = await fetch(gifUrl);
+    const [iconUrl, response] = gifResponse.ok
+      ? [gifUrl, gifResponse]
+      : [pngUrl, await fetch(pngUrl)];
 
     if (response.ok) {
       const arrayBuffer = await response.arrayBuffer();

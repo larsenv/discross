@@ -54,31 +54,31 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
       const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-      let processedmessage = await resolveMentions(
-        convertEmoji(query.message || ''),
-        channel.guild
-      );
+      const resolvedMsg = await resolveMentions(convertEmoji(query.message || ''), channel.guild);
 
       // Handle reply if reply_message_id is present
-      if (query.reply_message_id && isValidSnowflake(query.reply_message_id)) {
-        try {
-          const reply_message = await channel.messages.fetch(query.reply_message_id);
-          // Verify the reply message belongs to the channel to prevent reply spoofing
-          if (reply_message.channelId !== channel.id) {
-            throw new Error('Reply message does not belong to this channel');
-          }
-          const reply_message_content =
-            reply_message.content.length > 30
-              ? `${reply_message.content.substring(0, 30)}...`
-              : reply_message.content;
-          const author_id = reply_message.author.id;
-          const author_mention = `<@${author_id}>`;
-
-          processedmessage = `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
-        } catch (err) {
-          console.error('Failed to reply:', err);
-        }
-      }
+      const processedmessage =
+        query.reply_message_id && isValidSnowflake(query.reply_message_id)
+          ? await (async () => {
+              try {
+                const reply_message = await channel.messages.fetch(query.reply_message_id);
+                // Verify the reply message belongs to the channel to prevent reply spoofing
+                if (reply_message.channelId !== channel.id) {
+                  throw new Error('Reply message does not belong to this channel');
+                }
+                const reply_message_content =
+                  reply_message.content.length > 30
+                    ? `${reply_message.content.substring(0, 30)}...`
+                    : reply_message.content;
+                const author_id = reply_message.author.id;
+                const author_mention = `<@${author_id}>`;
+                return `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${resolvedMsg}`;
+              } catch (err) {
+                console.error('Failed to reply:', err);
+                return resolvedMsg;
+              }
+            })()
+          : resolvedMsg;
 
       const sendOptions = {
         content: processedmessage,
