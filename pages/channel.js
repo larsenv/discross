@@ -490,7 +490,7 @@ function detectMention(item, member, discordID, isReply, replyData) {
 // Forward data resolution
 // ---------------------------------------------------------------------------
 
-async function resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone) {
+async function resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone, req, imagesCookie, animationsCookie) {
   try {
     const fwdMsg = await item.fetchReference();
     const fwdMember = fwdMsg.author?.bot
@@ -517,14 +517,35 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
       return `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
     })().catch(() => '');
 
+    // Prefer snapshot embeds when fwdMsg.embeds is empty (snapshot is always present
+    // and doesn't require an extra API call for the embed data).
+    const snapshotMsg = item.messageSnapshots?.first();
+    const embedsSource = fwdMsg.embeds?.length ? fwdMsg : (snapshotMsg ?? fwdMsg);
+    const embedsHtml = renderEmbeds('', embedsSource, req, imagesCookie, animationsCookie, clientTimezone);
+
     return {
       author: getDisplayName(fwdMember, fwdMsg.author),
       content: renderDiscordMarkdown(content),
       date: formatDateWithTimezone(fwdMsg.createdAt, clientTimezone),
       origin: originHtml,
+      embeds: embedsHtml,
     };
   } catch {
-    return null;
+    // fetchReference() failed (e.g. message deleted, channel inaccessible).
+    // Fall back to the message snapshot so we can still display the forwarded content.
+    const snapshotMsg = item.messageSnapshots?.first();
+    if (!snapshotMsg) return null;
+
+    const content = truncateText(snapshotMsg.content ?? '', FORWARDED_CONTENT_MAX_LENGTH);
+    const embedsHtml = renderEmbeds('', snapshotMsg, req, imagesCookie, animationsCookie, clientTimezone);
+
+    return {
+      author: getDisplayName(null, snapshotMsg.author) || '',
+      content: renderDiscordMarkdown(content),
+      date: snapshotMsg.createdAt ? formatDateWithTimezone(snapshotMsg.createdAt, clientTimezone) : '',
+      origin: '',
+      embeds: embedsHtml,
+    };
   }
 }
 
@@ -758,17 +779,21 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
   })();
 
   // Forwarded metadata
-  const afterForwarded = isForwarded
-    ? [
-        ['{$FORWARDED_AUTHOR}', escape(forwardData.author)],
-        ['{$FORWARDED_CONTENT}', forwardData.content],
-        ['{$FORWARDED_DATE}', forwardData.date],
-        ['{$FORWARDED_ORIGIN}', forwardData.origin ?? ''],
-      ].reduce((acc, [k, v]) => strReplace(acc, k, v), baseHtml)
-    : baseHtml;
+  if (isForwarded) {
+    html = html.replace('{$FORWARDED_AUTHOR}',  escape(forwardData.author));
+    const contentBlock = forwardData.content
+      ? `<table cellpadding="0" cellspacing="0" width="100%" class="forwarded-content-wrapper" style="padding:8px;margin-bottom:4px"><tr><td>` +
+        `<font class="messagecontent-font" style="font-size:14px" face="rodin,sans-serif">${forwardData.content}</font>` +
+        `</td></tr></table>`
+      : '';
+    html = html.replace('{$FORWARDED_CONTENT_BLOCK}', contentBlock);
+    html = html.replace('{$FORWARDED_DATE}',    forwardData.date);
+    html = html.replace('{$FORWARDED_EMBEDS}',  forwardData.embeds ?? '');
+    html = html.replace('{$FORWARDED_ORIGIN}',  forwardData.origin ?? '');
+  }
 
-  const displayName = getDisplayName(lastmember, lastauthor);
-  const authorColor = getMemberColor(lastmember, authorText);
+  const displayName  = getDisplayName(lastmember, lastauthor);
+  const authorColor  = getMemberColor(lastmember, authorText);
   const replyIndicator = lastReply
     ? buildReplyIndicator(lastReplyData, replyText)
     : lastInteraction
@@ -889,6 +914,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     lastMentioned: false,
     lastReply: false,
     lastReplyData: {},
+    lastForwarded: false,
     lastInteraction: false,
     lastInteractionData: {},
     isContinuationBlock: false,
@@ -914,9 +940,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     !state.lastauthor ||
     !isSameAuthor(state.lastmember, state.lastauthor, null, item.author) ||
     item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
-    (item.reference && item.reference.type !== MessageReferenceType.Forward) ||
+    !!item.reference ||
     state.lastReply ||
-    state.lastInteraction;
+    state.lastInteraction ||
+    state.lastForwarded;
 
   const processItem = async (item) => {
     // Flush the previous group when the author changes or this is the sentinel call
@@ -944,25 +971,28 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     state.lastmessagedate = item.createdAt;
 
     // Resolve forward / reply metadata
-    const fwdData =
-      item.reference?.type === MessageReferenceType.Forward
-        ? await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone)
-        : null;
-    const isForwarded = fwdData !== null;
-    const forwardData = fwdData ?? {};
+    let isForwarded = false;
+    let forwardData = {};
+    if (item.reference?.type === MessageReferenceType.Forward) {
+      const data = await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone, req, imagesCookie, animationsCookie);
+      if (data) { isForwarded = true; forwardData = data; }
+    }
 
-    const rplyData =
-      item.reference && !isForwarded
-        ? await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie)
-        : null;
-    const isReply = rplyData !== null;
-    const replyData = rplyData ?? {};
+    let isReply = false;
+    let replyData = {};
+    if (item.reference && !isForwarded) {
+      const data = await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie);
+      if (data) { isReply = true; replyData = data; }
+    }
 
-    const intData = item.interaction ? await resolveInteractionData(item, chnl, memberCache) : null;
-    const isInteraction = intData !== null;
-    const interactionData = intData ?? {};
+    let isInteraction = false;
+    let interactionData = {};
+    if (item.interaction) {
+      const data = await resolveInteractionData(item, chnl, memberCache);
+      if (data) { isInteraction = true; interactionData = data; }
+    }
 
-    const rawText = await renderMessageContent(item, context);
+    let messagetext = await renderMessageContent(item, context);
 
     const isMentioned = detectMention(item, member, discordID, isReply, replyData);
 
@@ -1001,19 +1031,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
     // System message handling
     const isSystem = !isNormalMessage(item.type);
-    const visibleText = withReactions
-      .replace(/<img\b[^>]*>/gi, 'x')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    const visibleText = messagetext.replace(/<img\b[^>]*>/gi, 'x').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
-    if (
-      !isSystem &&
-      visibleText.length === 0 &&
-      !item.attachments?.size &&
-      !item.embeds?.length &&
-      !item.stickers?.size
-    ) {
+    if (!isSystem && !isForwarded && visibleText.length === 0 &&
+        !item.attachments?.size && !item.embeds?.length && !item.stickers?.size) {
       return; // nothing to show
     }
 
@@ -1023,16 +1044,17 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         : withReactions;
 
     // Advance state
-    state.lastauthor = item.author;
-    state.lastmember = currentMember;
-    state.lastdate = item.createdAt;
-    state.messageid = item.id;
-    state.isForwarded = isForwarded;
-    state.forwardData = forwardData;
-    state.lastMentioned = isMentioned;
-    state.lastReply = isReply;
-    state.lastReplyData = replyData;
-    state.lastInteraction = isInteraction;
+    state.lastauthor        = item.author;
+    state.lastmember        = currentMember;
+    state.lastdate          = item.createdAt;
+    state.messageid         = item.id;
+    state.isForwarded       = isForwarded;
+    state.forwardData       = forwardData;
+    state.lastMentioned     = isMentioned;
+    state.lastReply         = isReply;
+    state.lastReplyData     = replyData;
+    state.lastForwarded     = isForwarded;
+    state.lastInteraction   = isInteraction;
     state.lastInteractionData = interactionData;
     state.currentmessage += messagetext;
   };

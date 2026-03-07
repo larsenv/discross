@@ -402,7 +402,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             response = strReplace(response, '{$CHANNEL_LIST}', sync_warning_template);
           }
         } else {
-          response = strReplace(response, '{$DISCORD_NAME}', '');
+          response = response.replace("{$DISCORD_NAME}", "");
+          response = response.replace("{$CHANNEL_LIST}", "Invalid channel!");
         }
       });
     } else {
