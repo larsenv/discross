@@ -75,7 +75,8 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
   if (!embeds || embeds.length === 0) {
     return '';
   }
-const embedsHtml = embeds
+
+  const embedsHtml = embeds
     .map((embed) => {
       // Set embed color (default to #202225 if not present)
       const embedColor = embed.color ? `#${embed.color.toString(16).padStart(6, '0')}` : '#202225';
