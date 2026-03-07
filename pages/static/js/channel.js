@@ -214,14 +214,15 @@ function uploadFile(file) {
 
 // Theme-aware hover color helper
 // Use className.indexOf instead of classList.contains for IE8/Opera 9.x compatibility
+// Use solid colors as primary values so IE8 (which doesn't support rgba) still shows hover
 function getHoverColor() {
     var cn = document.body.className;
     if (cn.indexOf('light-theme') !== -1) {
-        return 'rgba(0, 0, 0, 0.08)';
+        return '#ebebeb';
     } else if (cn.indexOf('amoled-theme') !== -1) {
-        return 'rgba(255, 255, 255, 0.08)';
+        return '#222';
     } else {
-        return 'rgba(255, 255, 255, 0.06)';
+        return '#444';
     }
 }
 
