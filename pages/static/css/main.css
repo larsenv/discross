@@ -1876,25 +1876,28 @@ a.food-tab-active:hover,
 }
 .light-theme .food-item-price { color: #323339; }
 .light-theme .food-store-card { background: #f2f3f5; }
-.light-theme .food-tab { background: #e3e5e8; color: #4f5660 !important; border-color: #d4d7dc; }
+.light-theme .food-tab { background: #e3e5e8; color: #3a414b !important; border-color: #d4d7dc; }
 .light-theme .food-tab:hover { background: #d4d7dc; color: #323339 !important; }
 .light-theme .food-tab-active, .light-theme a.food-tab-active { background: #5865f2 !important; color: #ffffff !important; border-color: #5865f2 !important; }
 .light-theme .food-summary-item { color: #323339; border-bottom-color: #d4d7dc; }
 .light-theme .food-summary-total { color: #323339; }
-.light-theme .food-cart-th { color: #4f5660; border-bottom-color: #d4d7dc; }
+.light-theme .food-cart-th { color: #3a414b; border-bottom-color: #d4d7dc; }
 .light-theme .food-cart-name,
 .light-theme .food-cart-price { color: #323339; }
-.light-theme .food-cart-qty { color: #4f5660; }
+.light-theme .food-cart-qty { color: #3a414b; }
 .light-theme .food-receipt-card { background: #f2f3f5; }
 .light-theme .food-receipt-store { color: #323339; }
 .light-theme .food-receipt-date,
-.light-theme .food-receipt-items { color: #4f5660; }
+.light-theme .food-receipt-items { color: #3a414b; }
 .light-theme .food-receipt-total { color: #323339; }
-.light-theme .food-back-link { color: #4f5660; }
+.light-theme .food-back-link { color: #3a414b; }
 .light-theme .food-back-link:hover { color: #323339; }
-.light-theme .food-store-label { color: #4f5660; }
-.light-theme .food-label { color: #4f5660; }
-.light-theme .food-store-wait { color: #4f5660; }
+.light-theme .food-store-label { color: #3a414b; }
+.light-theme .food-label { color: #3a414b; }
+.light-theme .food-store-wait { color: #3a414b; }
+.light-theme .food-tracker-label { color: #3a414b; }
+.light-theme .food-tracker-step-active .food-tracker-label { color: #1a1d23; }
+
 .amoled-theme .food-card { background: #0a0a0c; }
 .amoled-theme .food-item-card { background: #0f0f12; border-color: #1e1e22; }
 .amoled-theme .food-store-card { background: #0a0a0c; }
