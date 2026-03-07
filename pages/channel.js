@@ -498,35 +498,24 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
       : await ensureMemberData(fwdMsg, chnl.guild, memberCache);
 
     const content = truncateText(fwdMsg.content, FORWARDED_CONTENT_MAX_LENGTH);
-    let originHtml = '';
 
-    try {
+    const originHtml = await (async () => {
       const snowflakeRe = /^\d{17,19}$/;
-      if (fwdMsg.guildId && snowflakeRe.test(fwdMsg.channelId) && snowflakeRe.test(fwdMsg.id)) {
-        const fwdChannel = fwdMsg.channel ?? bot.client.channels.cache.get(fwdMsg.channelId);
-        if (fwdChannel) {
-          const timeDisplay = formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone);
-          const jumpLink = `/channels/${fwdMsg.channelId}/${fwdMsg.id}`;
-          const chanLink = `<a href="${jumpLink}" class="forwarded-label" style="text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
-
-          if (fwdMsg.guildId === chnl.guild.id) {
-            originHtml = `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${chanLink}</font>`;
-          } else {
-            const otherGuild = bot.client.guilds.cache.get(fwdMsg.guildId);
-            if (otherGuild) {
-              try {
-                await otherGuild.members.fetch(discordID);
-                originHtml = `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
-              } catch {
-                /* user not in that guild */
-              }
-            }
-          }
-        }
+      if (!fwdMsg.guildId || !snowflakeRe.test(fwdMsg.channelId) || !snowflakeRe.test(fwdMsg.id))
+        return '';
+      const fwdChannel = fwdMsg.channel ?? bot.client.channels.cache.get(fwdMsg.channelId);
+      if (!fwdChannel) return '';
+      const timeDisplay = formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone);
+      const jumpLink = `/channels/${fwdMsg.channelId}/${fwdMsg.id}`;
+      const chanLink = `<a href="${jumpLink}" class="forwarded-label" style="text-decoration:none">#${escape(normalizeWeirdUnicode(fwdChannel.name))} &bull; ${timeDisplay}</a>`;
+      if (fwdMsg.guildId === chnl.guild.id) {
+        return `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${chanLink}</font>`;
       }
-    } catch {
-      originHtml = '';
-    }
+      const otherGuild = bot.client.guilds.cache.get(fwdMsg.guildId);
+      if (!otherGuild) return '';
+      await otherGuild.members.fetch(discordID);
+      return `<font class="forwarded-label" style="font-size:12px" face="rodin,sans-serif">${escape(normalizeWeirdUnicode(otherGuild.name))} &gt; ${chanLink}</font>`;
+    })().catch(() => '');
 
     return {
       author: getDisplayName(fwdMember, fwdMsg.author),
@@ -628,17 +617,29 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
       }
     }
 
-    let replyContent = '';
-    if (replyMessage?.content) {
-      let flat = replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim();
-      // Resolve mentions/channels in raw text before truncation so they are never cut in half
-      flat = await resolveRawMentionsForPreview(flat, replyMessage, memberCache, chnl, bot);
-      // Strip block-level quote markers (>>> and >) so they don't render as
-      // full blockquote embeds inside the reply preview — show them as plain > text
-      flat = flat.replace(/^(>>?>?\s*)+/, '');
-      replyContent = renderDiscordMarkdown(truncateText(flat, REPLY_CONTENT_MAX_LENGTH));
-      replyContent = renderEmojis(replyContent, replyMessage, imagesCookie, animationsCookie);
-    }
+    const replyContent = replyMessage?.content
+      ? await (async () => {
+          const trimmedFlat = replyMessage.content
+            .replace(/\r?\n/g, ' ')
+            .replace(/  +/g, ' ')
+            .trim();
+          // Resolve mentions/channels in raw text before truncation so they are never cut in half
+          const resolvedFlat = await resolveRawMentionsForPreview(
+            trimmedFlat,
+            replyMessage,
+            memberCache,
+            chnl,
+            bot
+          );
+          // Strip block-level quote markers (>>> and >) so they don't render as
+          // full blockquote embeds inside the reply preview — show them as plain > text
+          const cleanFlat = resolvedFlat.replace(/^(>>?>?\s*)+/, '');
+          const rawContent = renderDiscordMarkdown(
+            truncateText(cleanFlat, REPLY_CONTENT_MAX_LENGTH)
+          );
+          return renderEmojis(rawContent, replyMessage, imagesCookie, animationsCookie);
+        })()
+      : '';
 
     return {
       author: getDisplayName(replyMember, replyUser),
@@ -824,41 +825,36 @@ async function renderMessageContent(item, context) {
     templates,
   } = context;
 
-  let messagetext = renderDiscordMarkdown(item.content);
-
-  messagetext = renderEmojis(messagetext, item, imagesCookie, animationsCookie);
-  messagetext = renderAttachments(messagetext, item, imagesCookie, templates.fileDownload);
-  messagetext = renderStickers(messagetext, item, imagesCookie, animationsCookie);
-  messagetext = renderEmbeds(
-    messagetext,
+  const withMarkdown = renderDiscordMarkdown(item.content);
+  const withEmojis = renderEmojis(withMarkdown, item, imagesCookie, animationsCookie);
+  const withAttachments = renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload);
+  const withStickers = renderStickers(withAttachments, item, imagesCookie, animationsCookie);
+  const withEmbeds = renderEmbeds(
+    withStickers,
     item,
     req,
     imagesCookie,
     animationsCookie,
     clientTimezone
   );
-
-  if (item?.poll) {
-    messagetext += processPoll(item.poll, imagesCookie);
-  }
-
-  messagetext = renderKnownMentions(messagetext, item, templates.mention);
-  messagetext = await resolveRemainingMentions(messagetext, chnl, memberCache, templates.mention);
-  messagetext = await resolveChannelMentions(messagetext, bot, chnl);
-  messagetext = renderEveryoneMentions(messagetext, item, templates.mention);
+  const withPoll = item?.poll ? withEmbeds + processPoll(item.poll, imagesCookie) : withEmbeds;
+  const withKnownMentions = renderKnownMentions(withPoll, item, templates.mention);
+  const withRemainingMentions = await resolveRemainingMentions(
+    withKnownMentions,
+    chnl,
+    memberCache,
+    templates.mention
+  );
+  const withChannelMentions = await resolveChannelMentions(withRemainingMentions, bot, chnl);
+  const withEveryoneMentions = renderEveryoneMentions(withChannelMentions, item, templates.mention);
 
   // Role mentions (second pass — catches any remaining after the member pass)
-  item.mentions?.roles?.forEach((role) => {
-    if (role) {
-      messagetext = strReplace(
-        messagetext,
-        `&lt;@&amp;${role.id}&gt;`,
-        roleMentionPill(role, templates.mention)
-      );
-    }
-  });
+  const withRoleMentions = (item.mentions?.roles || []).reduce((text, role) => {
+    if (!role) return text;
+    return strReplace(text, `&lt;@&amp;${role.id}&gt;`, roleMentionPill(role, templates.mention));
+  }, withEveryoneMentions);
 
-  return messagetext;
+  return withRoleMentions;
 }
 
 // ---------------------------------------------------------------------------
@@ -986,7 +982,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     const isInteraction = intData !== null;
     const interactionData = intData ?? {};
 
-    let messagetext = await renderMessageContent(item, context);
+    const rawText = await renderMessageContent(item, context);
 
     const isMentioned = detectMention(item, member, discordID, isReply, replyData);
 
@@ -999,9 +995,9 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       isInteraction ||
       state.lastReply;
 
-    messagetext = startsNewGroup
-      ? strReplace(templates.firstMessageContent, '{$MESSAGE_TEXT}', messagetext)
-      : strReplace(templates.mergedMessageContent, '{$MESSAGE_TEXT}', messagetext);
+    const wrappedText = startsNewGroup
+      ? strReplace(templates.firstMessageContent, '{$MESSAGE_TEXT}', rawText)
+      : strReplace(templates.mergedMessageContent, '{$MESSAGE_TEXT}', rawText);
 
     // Track whether this is the first message of a continuation block (same author,
     // recent, no reply) — used by flushMessageGroup to omit the author header.
@@ -1021,11 +1017,11 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       hasEmbeds && reactionsHtml
         ? reactionsHtml.replace('class="reactions"', 'class="reactions embed-reactions"')
         : reactionsHtml;
-    messagetext = strReplace(messagetext, '{$MESSAGE_REACTIONS}', finalReactionsHtml);
+    const withReactions = strReplace(wrappedText, '{$MESSAGE_REACTIONS}', finalReactionsHtml);
 
     // System message handling
     const isSystem = !isNormalMessage(item.type);
-    const visibleText = messagetext
+    const visibleText = withReactions
       .replace(/<img\b[^>]*>/gi, 'x')
       .replace(/<[^>]*>/g, ' ')
       .replace(/\s+/g, ' ')
@@ -1041,10 +1037,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       return; // nothing to show
     }
 
-    if (isSystem && visibleText.length === 0) {
-      const systemText = SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action';
-      messagetext = `<font style="font-size:14px;color:${authorText};font-style:italic;" face="rodin,sans-serif">${systemText}</font>`;
-    }
+    const messagetext =
+      isSystem && visibleText.length === 0
+        ? `<font style="font-size:14px;color:${authorText};font-style:italic;" face="rodin,sans-serif">${SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action'}</font>`
+        : withReactions;
 
     // Advance state
     state.lastauthor = item.author;
@@ -1181,15 +1177,15 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
     // No message history permission
     if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
-      let final = strReplace(baseTemplate, '{$INPUT}', inputHtml);
-      final = strReplace(final, '{$MESSAGES}', TEMPLATES.noMessageHistory);
-      final = strReplace(
-        final,
+      const withInput = strReplace(baseTemplate, '{$INPUT}', inputHtml);
+      const withMessages = strReplace(withInput, '{$MESSAGES}', TEMPLATES.noMessageHistory);
+      const withName = strReplace(
+        withMessages,
         '{$CHANNEL_NAME}',
         (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
       );
-      final = strReplace(final, '{$SESSION_ID}', urlSessionID);
-      final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
+      const withSessionId = strReplace(withName, '{$SESSION_ID}', urlSessionID);
+      const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(final);
       return;
@@ -1230,17 +1226,17 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       Math.random() +
       (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
 
-    let final = strReplace(baseTemplate, '{$REFRESH_URL}', refreshUrl);
-    final = strReplace(final, '{$INPUT}', inputHtml);
-    final = strReplace(final, '{$RANDOM_EMOJI}', randomEmoji);
-    final = strReplace(
-      final,
+    const withRefreshUrl = strReplace(baseTemplate, '{$REFRESH_URL}', refreshUrl);
+    const withInput = strReplace(withRefreshUrl, '{$INPUT}', inputHtml);
+    const withEmoji = strReplace(withInput, '{$RANDOM_EMOJI}', randomEmoji);
+    const withName = strReplace(
+      withEmoji,
       '{$CHANNEL_NAME}',
       (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
     );
-    final = strReplace(final, '{$MESSAGES}', messagesHtml);
-    final = strReplace(final, '{$SESSION_ID}', urlSessionID);
-    final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
+    const withMessages = strReplace(withName, '{$MESSAGES}', messagesHtml);
+    const withSessionId = strReplace(withMessages, '{$SESSION_ID}', urlSessionID);
+    const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);

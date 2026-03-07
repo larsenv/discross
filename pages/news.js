@@ -396,12 +396,12 @@ exports.processNews = async function processNews(req, res, args, discordID) {
         : '',
     ].join('');
 
-    let final = strReplace(news_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    final = strReplace(final, '{$TAG_DISPLAY}', displayTag);
-    final = strReplace(final, '{$TAG_VALUE}', tagInputValue);
-    final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
-    final = strReplace(final, '{$SESSION_HIDDEN}', sessionHidden);
-    final = strReplace(final, '{$NEWS_ITEMS}', newsItemsHtml);
+    const withTheme = strReplace(news_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
+    const withTag = strReplace(withTheme, '{$TAG_DISPLAY}', displayTag);
+    const withTagValue = strReplace(withTag, '{$TAG_VALUE}', tagInputValue);
+    const withSessionParam = strReplace(withTagValue, '{$SESSION_PARAM}', sessionParam);
+    const withSessionHidden = strReplace(withSessionParam, '{$SESSION_HIDDEN}', sessionHidden);
+    const final = strReplace(withSessionHidden, '{$NEWS_ITEMS}', newsItemsHtml);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);
@@ -441,13 +441,13 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     const bylinesEscaped = bylines ? `${escapeContent(bylines, imagesCookie !== 0)} - ` : '';
     const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
 
-    let final = strReplace(article_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    final = strReplace(final, '{$HEADLINE}', headlineEscaped);
-    final = strReplace(final, '{$BYLINE}', bylinesEscaped);
-    final = strReplace(final, '{$DATE}', dateStr);
-    final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
-    final = strReplace(final, '{$LEAD_IMAGE}', leadImageHtml);
-    final = strReplace(final, '{$ARTICLE_CONTENT}', contentHtml);
+    const withTheme = strReplace(article_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
+    const withHeadline = strReplace(withTheme, '{$HEADLINE}', headlineEscaped);
+    const withByline = strReplace(withHeadline, '{$BYLINE}', bylinesEscaped);
+    const withDate = strReplace(withByline, '{$DATE}', dateStr);
+    const withSessionParam = strReplace(withDate, '{$SESSION_PARAM}', sessionParam);
+    const withLeadImage = strReplace(withSessionParam, '{$LEAD_IMAGE}', leadImageHtml);
+    const final = strReplace(withLeadImage, '{$ARTICLE_CONTENT}', contentHtml);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);

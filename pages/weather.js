@@ -270,11 +270,9 @@ function renderToday(daily) {
   const dayPrecip = today.Day?.PrecipitationProbability ?? '--';
   const nightPrecip = today.Night?.PrecipitationProbability ?? '--';
 
-  let html = '';
-  if (headline) {
-    html += `<font size="3" ${FONT} color="#b5bac1"><i>${headline}</i></font><br><br>\n`;
-  }
-  html += `<table cellpadding="6" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">
+  const html =
+    (headline ? `<font size="3" ${FONT} color="#b5bac1"><i>${headline}</i></font><br><br>\n` : '') +
+    `<table cellpadding="6" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">
   <tr style="border-bottom:1px solid #40444b;">
     <td style="padding:8px;width:36px;">${iconImg(dayIcon, 32)}</td>
     <td style="padding:8px;"><font size="3" ${FONT} color="#72767d">Day</font> &mdash; <font ${FONT} color="#dddddd">${dayPhrase}</font><br><font size="2" ${FONT} color="#72767d">Precip: ${dayPrecip}%</font></td>
@@ -298,28 +296,31 @@ function renderHourly(hourly) {
       );
     return `<font color="#ff4444" ${FONT}>Hourly forecast unavailable for this location.</font><br>`;
   }
-  let html = `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n`;
-  for (const hour of hourly.data) {
-    const time = formatHour(hour.DateTime);
-    const tempF = hour.Temperature?.Value ?? '--';
-    const tempC = fToC(tempF);
-    const phrase = escape(hour.IconPhrase || '');
-    const iconCode = hour.WeatherIcon || 1;
-    const precipProb = hour.PrecipitationProbability ?? '--';
-    const windMph = hour.Wind?.Speed?.Value;
-    const windKmh =
-      windMph !== null && windMph !== undefined ? (windMph * MPH_TO_KMH).toFixed(1) : null;
-    const windStr =
-      windMph !== null && windMph !== undefined
-        ? ` &mdash; Wind: ${windMph} mph / ${windKmh} km/h`
-        : '';
-    html += `  <tr style="border-bottom:1px solid #40444b;">
+  const html =
+    `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n` +
+    hourly.data
+      .map((hour) => {
+        const time = formatHour(hour.DateTime);
+        const tempF = hour.Temperature?.Value ?? '--';
+        const tempC = fToC(tempF);
+        const phrase = escape(hour.IconPhrase || '');
+        const iconCode = hour.WeatherIcon || 1;
+        const precipProb = hour.PrecipitationProbability ?? '--';
+        const windMph = hour.Wind?.Speed?.Value;
+        const windKmh =
+          windMph !== null && windMph !== undefined ? (windMph * MPH_TO_KMH).toFixed(1) : null;
+        const windStr =
+          windMph !== null && windMph !== undefined
+            ? ` &mdash; Wind: ${windMph} mph / ${windKmh} km/h`
+            : '';
+        return `  <tr style="border-bottom:1px solid #40444b;">
     <td style="padding:6px 8px;white-space:nowrap;width:70px;"><font size="2" ${FONT} color="#b5bac1">${time}</font></td>
     <td style="padding:6px 4px;width:28px;">${iconImg(iconCode, 24)}</td>
     <td style="padding:6px 8px;"><font ${FONT} color="#dddddd">${tempF}&deg;F / ${tempC}&deg;C</font><br><font size="2" ${FONT} color="#72767d">${phrase}${windStr} &mdash; Precip: ${precipProb}%</font></td>
   </tr>\n`;
-  }
-  html += `</table>\n`;
+      })
+      .join('') +
+    `</table>\n`;
   return html;
 }
 
@@ -332,24 +333,25 @@ function renderDaily(daily) {
       );
     return `<font color="#ff4444" ${FONT}>5-day forecast unavailable for this location.</font><br>`;
   }
-  let html = `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n`;
-  daily.data.DailyForecasts.forEach((day, i) => {
-    const isLast = i === daily.data.DailyForecasts.length - 1;
-    const dayLabel = i === 0 ? 'Today' : formatDay(day.Date);
-    const highF = day.Temperature?.Maximum?.Value ?? '--';
-    const lowF = day.Temperature?.Minimum?.Value ?? '--';
-    const highC = fToC(highF);
-    const lowC = fToC(lowF);
-    const dayIcon = day.Day?.Icon || 1;
-    const dayPhrase = escape(day.Day?.IconPhrase || '');
-    html += `  <tr${isLast ? '' : ' style="border-bottom:1px solid #40444b;"'}>
+  const html =
+    `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n` +
+    daily.data.DailyForecasts.map((day, i) => {
+      const isLast = i === daily.data.DailyForecasts.length - 1;
+      const dayLabel = i === 0 ? 'Today' : formatDay(day.Date);
+      const highF = day.Temperature?.Maximum?.Value ?? '--';
+      const lowF = day.Temperature?.Minimum?.Value ?? '--';
+      const highC = fToC(highF);
+      const lowC = fToC(lowF);
+      const dayIcon = day.Day?.Icon || 1;
+      const dayPhrase = escape(day.Day?.IconPhrase || '');
+      return `  <tr${isLast ? '' : ' style="border-bottom:1px solid #40444b;"'}>
     <td style="padding:8px;white-space:nowrap;width:80px;"><font size="2" ${FONT} color="#b5bac1"><b>${dayLabel}</b></font></td>
     <td style="padding:8px;width:32px;">${iconImg(dayIcon, 24)}</td>
     <td style="padding:8px;"><font ${FONT} color="#dddddd">${dayPhrase}</font></td>
     <td style="padding:8px;" align="right"><font ${FONT} color="#dddddd"><b>${highF}&deg;F / ${highC}&deg;C</b></font><br><font size="2" ${FONT} color="#72767d">${lowF}&deg;F / ${lowC}&deg;C</font></td>
   </tr>\n`;
-  });
-  html += `</table>\n`;
+    }).join('') +
+    `</table>\n`;
   return html;
 }
 
@@ -446,16 +448,17 @@ exports.processWeather = async function processWeather(req, res) {
     }
   }
 
-  let response = strReplace(weather_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  response = strReplace(
-    response,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(await auth.getUsername(discordID)))
+  const menuOptions = strReplace(
+    logged_in_template,
+    '{$USER}',
+    escape(await auth.getUsername(discordID))
   );
-  response = strReplace(response, '{$CITY_VALUE}', escape(city));
-  response = strReplace(response, '{$NAV_BUTTONS}', navHtml);
-  response = strReplace(response, '{$WEATHER_CONTENT}', weatherHtml);
-  response = strReplace(response, '{$SESSION_ID}', escape(urlSessionID));
+  const withTheme = strReplace(weather_template, '{$WHITE_THEME_ENABLED}', themeClass);
+  const withMenu = strReplace(withTheme, '{$MENU_OPTIONS}', menuOptions);
+  const withCity = strReplace(withMenu, '{$CITY_VALUE}', escape(city));
+  const withNav = strReplace(withCity, '{$NAV_BUTTONS}', navHtml);
+  const withContent = strReplace(withNav, '{$WEATHER_CONTENT}', weatherHtml);
+  const response = strReplace(withContent, '{$SESSION_ID}', escape(urlSessionID));
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
