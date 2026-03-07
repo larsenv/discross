@@ -752,38 +752,29 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
     isContinuationBlock,
   } = state;
 
-  let html = currentmessage;
+  const replyLink = channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)';
 
   // Wrap in appropriate outer template
-  if (isContinuationBlock && !isForwarded && !lastMentioned) {
-    html = strReplace(templates.messageContinuation, '{$MESSAGE_CONTENT}', html);
-  } else if (isForwarded && lastMentioned) {
-    html = strReplace(templates.messageForwardedMentioned, '{$MESSAGE_CONTENT}', html);
-  } else if (isForwarded) {
-    html = strReplace(templates.messageForwarded, '{$MESSAGE_CONTENT}', html);
-  } else if (lastMentioned) {
-    html = strReplace(templates.messageMentioned, '{$MESSAGE_CONTENT}', html);
-    html = strReplace(
-      html,
-      '{$MESSAGE_REPLY_LINK}',
-      channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)'
-    );
-  } else {
-    html = strReplace(templates.message, '{$MESSAGE_CONTENT}', html);
-    html = strReplace(
-      html,
-      '{$MESSAGE_REPLY_LINK}',
-      channelId ? `/channels/${channelId}/${messageid}` : 'javascript:void(0)'
-    );
-  }
+  const withContent = (tmpl) => strReplace(tmpl, '{$MESSAGE_CONTENT}', currentmessage);
+  const withReplyLink = (tmpl) => strReplace(tmpl, '{$MESSAGE_REPLY_LINK}', replyLink);
+  const baseHtml = (() => {
+    if (isContinuationBlock && !isForwarded && !lastMentioned)
+      return withContent(templates.messageContinuation);
+    if (isForwarded && lastMentioned) return withContent(templates.messageForwardedMentioned);
+    if (isForwarded) return withContent(templates.messageForwarded);
+    if (lastMentioned) return withReplyLink(withContent(templates.messageMentioned));
+    return withReplyLink(withContent(templates.message));
+  })();
 
   // Forwarded metadata
-  if (isForwarded) {
-    html = strReplace(html, '{$FORWARDED_AUTHOR}', escape(forwardData.author));
-    html = strReplace(html, '{$FORWARDED_CONTENT}', forwardData.content);
-    html = strReplace(html, '{$FORWARDED_DATE}', forwardData.date);
-    html = strReplace(html, '{$FORWARDED_ORIGIN}', forwardData.origin ?? '');
-  }
+  const afterForwarded = isForwarded
+    ? [
+        ['{$FORWARDED_AUTHOR}', escape(forwardData.author)],
+        ['{$FORWARDED_CONTENT}', forwardData.content],
+        ['{$FORWARDED_DATE}', forwardData.date],
+        ['{$FORWARDED_ORIGIN}', forwardData.origin ?? ''],
+      ].reduce((acc, [k, v]) => strReplace(acc, k, v), baseHtml)
+    : baseHtml;
 
   const displayName = getDisplayName(lastmember, lastauthor);
   const authorColor = getMemberColor(lastmember, authorText);
@@ -793,18 +784,16 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
       ? buildInteractionIndicator(lastInteractionData, replyText)
       : '';
 
-  html = strReplace(html, '{$MESSAGE_AUTHOR}', escape(displayName));
-  html = strReplace(html, '{$AUTHOR_COLOR}', authorColor);
-  html = strReplace(html, '{$REPLY_INDICATOR}', replyIndicator);
-  html = strReplace(html, '{$PING_INDICATOR}', '');
-  html = strReplace(
-    html,
+  const withAuthor = strReplace(afterForwarded, '{$MESSAGE_AUTHOR}', escape(displayName));
+  const withAuthorColor = strReplace(withAuthor, '{$AUTHOR_COLOR}', authorColor);
+  const withReplyIndicator = strReplace(withAuthorColor, '{$REPLY_INDICATOR}', replyIndicator);
+  const withPingIndicator = strReplace(withReplyIndicator, '{$PING_INDICATOR}', '');
+  const withDate = strReplace(
+    withPingIndicator,
     '{$MESSAGE_DATE}',
     formatDateWithTimezone(lastdate, state.clientTimezone)
   );
-  html = strReplace(html, '{$TAG}', he.encode(JSON.stringify(`<@${lastauthor.id}>`)));
-
-  return html;
+  return strReplace(withDate, '{$TAG}', he.encode(JSON.stringify(`<@${lastauthor.id}>`)));
 }
 
 // ---------------------------------------------------------------------------
