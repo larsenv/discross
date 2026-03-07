@@ -244,7 +244,7 @@ function renderDiscordMarkdown(text) {
   text = processedLines.join('\n');
 
   // Step 4: Markdown Render
-  let result = md.renderInline(text);
+  const inlineRendered = md.renderInline(text);
 
   // Helper to resolve nested formatting
   function resolveNested(str) {
@@ -274,25 +274,25 @@ function renderDiscordMarkdown(text) {
   }
 
   // Restore Nested items
-  result = resolveNested(result);
+  const withNestedFormatting = resolveNested(inlineRendered);
 
   // Step 5: Restore Blocks
 
   // Restore Headers
-  result = result.replace(/§§HEADER(\d+)§§/g, function (m, i) {
+  const withHeaders = withNestedFormatting.replace(/§§HEADER(\d+)§§/g, function (m, i) {
     const h = headerPlaceholders[parseInt(i, 10)];
     const content = resolveNested(md.renderInline(h.content));
     return `<h${h.level}>${content}</h${h.level}>`;
   });
 
   // Restore Subtext
-  result = result.replace(/§§SUBTEXT(\d+)§§/g, function (m, i) {
+  const withSubtext = withHeaders.replace(/§§SUBTEXT(\d+)§§/g, function (m, i) {
     const content = resolveNested(md.renderInline(subtextPlaceholders[parseInt(i, 10)]));
     return `<small class="subtext">${content}</small>`;
   });
 
   // Restore Blockquotes
-  result = result.replace(/§§BLOCKQUOTE(\d+)§§/g, function (m, i) {
+  const withBlockquotes = withSubtext.replace(/§§BLOCKQUOTE(\d+)§§/g, function (m, i) {
     const lines = blockQuotePlaceholders[parseInt(i, 10)];
     const processed = lines
       .map((l) => {
@@ -305,7 +305,7 @@ function renderDiscordMarkdown(text) {
   });
 
   // Restore Lists
-  result = result.replace(/§§BULLETLIST(\d+)§§/g, function (m, i) {
+  const withBulletLists = withBlockquotes.replace(/§§BULLETLIST(\d+)§§/g, function (m, i) {
     const items = bulletListPlaceholders[parseInt(i, 10)];
     let html = '';
     let currentLevel = 0;
@@ -345,11 +345,11 @@ function renderDiscordMarkdown(text) {
   });
 
   // Restore Code
-  result = result.replace(/§§CODEINLINE(\d+)§§/g, (m, i) => {
+  const withInlineCode = withBulletLists.replace(/§§CODEINLINE(\d+)§§/g, (m, i) => {
     return `<code>${escapeHtml(codePlaceholders[parseInt(i, 10)].content)}</code>`;
   });
 
-  result = result.replace(/§§CODEBLOCK(\d+)§§/g, (m, i) => {
+  const withCodeBlocks = withInlineCode.replace(/§§CODEBLOCK(\d+)§§/g, (m, i) => {
     const item = codePlaceholders[parseInt(i, 10)];
     const lang = item.lang || '';
     const highlightedCode = highlightCode(item.content, lang);
@@ -360,12 +360,10 @@ function renderDiscordMarkdown(text) {
   // Replace discord.com channel/message jump links with local Discross paths.
   // The message content sent to Discord keeps the discord.com URL (for Discord clients),
   // but when rendered on the Discross frontend we convert them so "jump" navigates locally.
-  result = result.replace(
+  return withCodeBlocks.replace(
     /<a\s+href="https:\/\/discord\.com\/channels\/\d{16,20}\/(\d{16,20})\/(\d{16,20})"/gi,
     '<a href="/channels/$1/$2"'
   );
-
-  return result;
 }
 
 module.exports = { renderDiscordMarkdown };

@@ -89,7 +89,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const themeObj = resolveTheme(req);
   const { authorText, replyText, themeClass } = themeObj;
   const boxColor = themeObj.boxColor === '#222327' ? '#40444b' : themeObj.boxColor;
-  let template = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass);
+  const baseTemplate = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass);
 
   const imagesCookie =
     urlImages !== null
@@ -135,13 +135,13 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       }
 
       if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
-        template = strReplace(template, '{$SERVER_ID}', chnl.guild.id);
-        template = strReplace(template, '{$CHANNEL_ID}', chnl.id);
+        const withServerId = strReplace(baseTemplate, '{$SERVER_ID}', chnl.guild.id);
+        const withChannelId = strReplace(withServerId, '{$CHANNEL_ID}', chnl.id);
 
         const inputTpl = member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)
           ? input_template
           : input_disabled_template;
-        const withInput = strReplace(template, '{$INPUT}', inputTpl);
+        const withInput = strReplace(withChannelId, '{$INPUT}', inputTpl);
         const withColor = strReplace(withInput, '{$COLOR}', boxColor);
         const withMessages = strReplace(withColor, '{$MESSAGES}', no_message_history_template);
         const withSessionId = strReplace(withMessages, '{$SESSION_ID}', urlSessionID);
@@ -178,10 +178,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         },
       });
 
-      template = strReplace(template, '{$SERVER_ID}', chnl.guild.id);
-      template = strReplace(template, '{$CHANNEL_ID}', chnl.id);
-      template = strReplace(
-        template,
+      const withServerId = strReplace(baseTemplate, '{$SERVER_ID}', chnl.guild.id);
+      const withChannelId = strReplace(withServerId, '{$CHANNEL_ID}', chnl.id);
+      const template = strReplace(
+        withChannelId,
         '{$REFRESH_URL}',
         chnl.id +
           '?random=' +
@@ -194,14 +194,18 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         .has(PermissionFlagsBits.ManageWebhooks, true);
       const canSend = member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
       const inputTpl = noWebhooks || !canSend ? input_disabled_template : input_template;
-      let final = strReplace(strReplace(template, '{$INPUT}', inputTpl), '{$COLOR}', boxColor);
-      if (noWebhooks) {
-        final = strReplace(
-          final,
-          "You don't have permission to send messages in this channel.",
-          "Discross bot doesn't have the Manage Webhooks permission"
-        );
-      }
+      const withInputAndColor = strReplace(
+        strReplace(template, '{$INPUT}', inputTpl),
+        '{$COLOR}',
+        boxColor
+      );
+      const afterWebhookCheck = noWebhooks
+        ? strReplace(
+            withInputAndColor,
+            "You don't have permission to send messages in this channel.",
+            "Discross bot doesn't have the Manage Webhooks permission"
+          )
+        : withInputAndColor;
 
       // Reply context: fetch and display the message being replied to
       const reply_message_id = args[3];
@@ -215,22 +219,29 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           .then((replyMember) => getDisplayName(replyMember, message.author))
           .catch(() => getDisplayName(null, message.author));
 
-        final = strReplace(final, '{$REPLY_MESSAGE_ID}', reply_message_id);
-        final = strReplace(final, '{$REPLY_MESSAGE_AUTHOR}', author);
-        final = strReplace(final, '{$REPLY_MESSAGE_CONTENT}', message_content);
+        const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
+        const withReplyId = strReplace(afterWebhookCheck, '{$REPLY_MESSAGE_ID}', reply_message_id);
+        const withReplyAuthor = strReplace(withReplyId, '{$REPLY_MESSAGE_AUTHOR}', author);
+        const withReplyContent = strReplace(
+          withReplyAuthor,
+          '{$REPLY_MESSAGE_CONTENT}',
+          message_content
+        );
+        const withEmoji = strReplace(withReplyContent, '{$RANDOM_EMOJI}', randomEmoji);
+        const withChannelName = strReplace(
+          withEmoji,
+          '{$CHANNEL_NAME}',
+          normalizeWeirdUnicode(chnl.name)
+        );
+        const withMessages = strReplace(withChannelName, '{$MESSAGES}', response);
+        const withSessionId = strReplace(withMessages, '{$SESSION_ID}', urlSessionID);
+        const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(final);
       } catch (err) {
         return notFound.serve404(req, res, 'Invalid message to reply to.', '/', 'Back to Home');
       }
-
-      const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
-      final = strReplace(final, '{$RANDOM_EMOJI}', randomEmoji);
-      final = strReplace(final, '{$CHANNEL_NAME}', normalizeWeirdUnicode(chnl.name));
-      final = strReplace(final, '{$MESSAGES}', response);
-      final = strReplace(final, '{$SESSION_ID}', urlSessionID);
-      final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
-
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(final);
     } else {
       return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
     }

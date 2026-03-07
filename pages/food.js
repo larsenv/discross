@@ -173,12 +173,14 @@ function isSecure(req) {
 // sets to "0" are included as {"1/1":"0"} (explicit removal) so Dominos knows to
 // remove that topping rather than re-adding the product default.
 function parseOptions(params) {
-  let defaultsMap = {}; // code → amount string
-  try {
-    if (params.default_options) defaultsMap = JSON.parse(params.default_options);
-  } catch (e) {
-    console.warn('[parseOptions] Failed to parse default_options:', e.message);
-  }
+  const defaultsMap = (() => {
+    try {
+      return params.default_options ? JSON.parse(params.default_options) : {};
+    } catch (e) {
+      console.warn('[parseOptions] Failed to parse default_options:', e.message);
+      return {};
+    }
+  })();
 
   const options = {};
   let hasFormFields = false;

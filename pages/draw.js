@@ -28,7 +28,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
   );
 
   const { boxColor, themeClass } = resolveTheme(req);
-  let template = strReplace(
+  const baseTemplate = strReplace(
     strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass),
     '{$COLOR}',
     boxColor
@@ -50,18 +50,19 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         return;
       }
 
-      template = strReplace(template, '{$SERVER_ID}', chnl.guild.id);
-      template = strReplace(template, '{$CHANNEL_ID}', chnl.id);
-      template = strReplace(
-        template,
+      const withServerId = strReplace(baseTemplate, '{$SERVER_ID}', chnl.guild.id);
+      const withChannelId = strReplace(withServerId, '{$CHANNEL_ID}', chnl.id);
+
+      const template = strReplace(
+        withChannelId,
         '{$CHANNEL_NAME}',
         (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
       );
-      template = strReplace(template, '{$SESSION_ID}', urlSessionID);
-      template = strReplace(template, '{$SESSION_PARAM}', sessionParam);
+      const withSessionId = strReplace(template, '{$SESSION_ID}', urlSessionID);
+      const finalTemplate = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
 
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(template);
+      res.end(finalTemplate);
     } else {
       return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
     }
