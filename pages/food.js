@@ -376,15 +376,14 @@ exports.handleGet = async function (bot, req, res, discordID) {
             .map((s) => {
               const city = escape(s.City || '');
               const storeId = escape(String(s.StoreID || ''));
-              const wait =
-                s.ServiceMethodEstimatedWaitMinutes && s.ServiceMethodEstimatedWaitMinutes.Delivery
-                  ? escape(
-                      s.ServiceMethodEstimatedWaitMinutes.Delivery.Min +
-                        '-' +
-                        s.ServiceMethodEstimatedWaitMinutes.Delivery.Max +
-                        ' min'
-                    )
-                  : '';
+              const wait = s.ServiceMethodEstimatedWaitMinutes?.Delivery
+                ? escape(
+                    s.ServiceMethodEstimatedWaitMinutes.Delivery.Min +
+                      '-' +
+                      s.ServiceMethodEstimatedWaitMinutes.Delivery.Max +
+                      ' min'
+                  )
+                : '';
               const addrLines = (s.AddressDescription || '')
                 .split('\n')
                 .map((l) => escape(l))
@@ -492,7 +491,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         // Try to reverse-map variant to product
         for (const pCode of Object.keys(products)) {
           const p = products[pCode];
-          if (p.Variants && p.Variants.includes(item.code)) {
+          if (p.Variants?.includes(item.code)) {
             cartQtyByProduct[pCode] = (cartQtyByProduct[pCode] || 0) + (item.qty || 1);
           }
         }
@@ -527,7 +526,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
               const btnLabel = inCart > 0 ? `Customize (${inCart} in cart)` : 'Customize / Add';
               return `<a href="${customizeUrl}" class="food-btn food-btn-sm">${escape(btnLabel)}</a>`;
             }
-            const singleVariant = (p.Variants && p.Variants[0]) || code;
+            const singleVariant = p.Variants?.[0] || code;
             const inCartSingle = cartQtyByVariant[singleVariant] || 0;
             const btnLabel =
               inCartSingle > 0 ? `Add to Cart (${inCartSingle} in cart)` : 'Add to Cart';
@@ -840,11 +839,11 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
     const custCart = getCart(req);
     const custCartCount = (custCart.items || []).reduce((s, i) => s + (i.qty || 1), 0);
-    let html = strReplace(templates.customize, '{$WHITE_THEME_ENABLED}', theme);
-    html = strReplace(html, '{$CART_COUNT}', String(custCartCount));
-    html = strReplace(html, '{$STORE_ID}', escape(storeId));
-    html = strReplace(html, '{$COUNTRY}', escape(country));
-    html = strReplace(html, '{$BACK_URL}', escape(backUrl));
+    const custTheme = strReplace(templates.customize, '{$WHITE_THEME_ENABLED}', theme);
+    const custWithCount = strReplace(custTheme, '{$CART_COUNT}', String(custCartCount));
+    const custWithStore = strReplace(custWithCount, '{$STORE_ID}', escape(storeId));
+    const custWithCountry = strReplace(custWithStore, '{$COUNTRY}', escape(country));
+    let html = strReplace(custWithCountry, '{$BACK_URL}', escape(backUrl));
 
     if (menuData) {
       const products = menuData.Products || {};
@@ -955,8 +954,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
         // For specialty pizzas (empty AvailableToppings): build full recipe from Tags.DefaultToppings
         // and Tags.DefaultSides per WiiLink's AddItem. v.Options only has the sauce code; the full
         // default recipe (sauce + cheese + toppings) lives in Tags.DefaultToppings.
-        const defaultToppingsStr = (v.Tags && v.Tags.DefaultToppings) || '';
-        const defaultSidesStr = (v.Tags && v.Tags.DefaultSides) || '';
+        const defaultToppingsStr = v.Tags?.DefaultToppings || '';
+        const defaultSidesStr = v.Tags?.DefaultSides || '';
         const tagDefaults = {};
         for (const part of defaultToppingsStr.split(',')) {
           const eqIdx = part.indexOf('=');
@@ -971,11 +970,11 @@ exports.handleGet = async function (bot, req, res, discordID) {
         // Used when a topping code exists in toppingDict but has no portion info in AvailableToppings
         const DEFAULT_PORTIONS = ['0', '1'];
 
-        let toppingsSection = '';
-        if (finalCodeSet.size > 0 && Object.keys(toppingDict).length > 0) {
-          const { sauces, toppings: toppingList } = classifyToppings(toppingDict, finalCodeSet);
+        const toppingsSection = (() => {
+          if (finalCodeSet.size > 0 && Object.keys(toppingDict).length > 0) {
+            const { sauces, toppings: toppingList } = classifyToppings(toppingDict, finalCodeSet);
 
-          toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add${persistentParam}">
+            let result = `<div class="food-card"><form method="POST" action="/food/cart/add${persistentParam}">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
   <input type="hidden" name="country" value="${escape(country)}">
   <input type="hidden" name="code" value="${escape(variantCode)}">
@@ -985,77 +984,78 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <input type="hidden" name="default_options" value="${escape(JSON.stringify(normalizedDefaults))}">
 <font face="'rodin', Arial, Helvetica, sans-serif" color="#aaaaaa"><i>Default toppings, sauce, and cheese are pre-selected below. Adjust as needed.</i></font><br><br>`;
 
-          if (sauces.length > 0) {
-            toppingsSection += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Sauce</b></font><br><br>`;
-            for (const s of sauces) {
-              // Use normalizedDefaults so portion key variants (1/2, 2/4, etc.) are handled
-              const defaultAmt = normalizedDefaults[s.code] || '0';
-              const rawPortions = portions.get(s.code) || DEFAULT_PORTIONS;
-              const portionSet = new Set(rawPortions);
-              if (defaultAmt !== '0') portionSet.add(defaultAmt);
-              const portionList = Array.from(portionSet).sort(
-                (a, b) => parseFloat(a) - parseFloat(b)
-              );
-              const optHtml = portionList
-                .map((p) => {
-                  const label = PORTION_LABELS[p] || p;
-                  const sel = p === defaultAmt ? ' selected' : '';
-                  return `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
-                })
-                .join('');
-              toppingsSection += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
+            if (sauces.length > 0) {
+              result += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Sauce</b></font><br><br>`;
+              for (const s of sauces) {
+                // Use normalizedDefaults so portion key variants (1/2, 2/4, etc.) are handled
+                const defaultAmt = normalizedDefaults[s.code] || '0';
+                const rawPortions = portions.get(s.code) || DEFAULT_PORTIONS;
+                const portionSet = new Set(rawPortions);
+                if (defaultAmt !== '0') portionSet.add(defaultAmt);
+                const portionList = Array.from(portionSet).sort(
+                  (a, b) => parseFloat(a) - parseFloat(b)
+                );
+                const optHtml = portionList
+                  .map((p) => {
+                    const label = PORTION_LABELS[p] || p;
+                    const sel = p === defaultAmt ? ' selected' : '';
+                    return `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
+                  })
+                  .join('');
+                result += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
   ${escape(s.name)}: <select name="sauce_${escape(s.code)}" style="background:#222327;color:#dddddd;border:none;border-radius:4px;padding:2px 4px">
 ${optHtml}
   </select>
 </div>`;
+              }
+              result += '<br>';
             }
-            toppingsSection += '<br>';
-          }
 
-          if (toppingList.length > 0) {
-            toppingsSection += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Toppings</b></font><br><br>`;
-            for (const t of toppingList) {
-              // Use normalizedDefaults so portion key variants (1/2, 2/4, etc.) are handled
-              const defaultAmt = normalizedDefaults[t.code] || '0';
-              // Get allowed portion values for this topping; DEFAULT_PORTIONS used when no
-              // portion info was present in AvailableToppings for this code
-              const rawPortions = portions.get(t.code) || DEFAULT_PORTIONS;
-              // Ensure the default amount is present in the list; insert at correct numeric position
-              const portionSet = new Set(rawPortions);
-              if (defaultAmt !== '0') portionSet.add(defaultAmt);
-              const portionList = Array.from(portionSet).sort(
-                (a, b) => parseFloat(a) - parseFloat(b)
-              );
-              // Build select options with labels
-              const optHtml = portionList
-                .map((p) => {
-                  const label = PORTION_LABELS[p] || p;
-                  const sel = p === defaultAmt ? ' selected' : '';
-                  return `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
-                })
-                .join('');
-              toppingsSection += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
+            if (toppingList.length > 0) {
+              result += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Toppings</b></font><br><br>`;
+              for (const t of toppingList) {
+                // Use normalizedDefaults so portion key variants (1/2, 2/4, etc.) are handled
+                const defaultAmt = normalizedDefaults[t.code] || '0';
+                // Get allowed portion values for this topping; DEFAULT_PORTIONS used when no
+                // portion info was present in AvailableToppings for this code
+                const rawPortions = portions.get(t.code) || DEFAULT_PORTIONS;
+                // Ensure the default amount is present in the list; insert at correct numeric position
+                const portionSet = new Set(rawPortions);
+                if (defaultAmt !== '0') portionSet.add(defaultAmt);
+                const portionList = Array.from(portionSet).sort(
+                  (a, b) => parseFloat(a) - parseFloat(b)
+                );
+                // Build select options with labels
+                const optHtml = portionList
+                  .map((p) => {
+                    const label = PORTION_LABELS[p] || p;
+                    const sel = p === defaultAmt ? ' selected' : '';
+                    return `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
+                  })
+                  .join('');
+                result += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
   ${escape(t.name)}: <select name="topping_${escape(t.code)}" style="background:#222327;color:#dddddd;border:none;border-radius:4px;padding:2px 4px">
 ${optHtml}
   </select>
 </div>`;
+              }
+              result += '<br>';
             }
-            toppingsSection += '<br>';
-          }
 
-          toppingsSection += `  <div style="margin-top:16px">
+            result += `  <div style="margin-top:16px">
     <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : ''}</button>
     &#160;&#160;
     <a href="${escape(backUrl)}" class="food-btn food-btn-secondary">Cancel</a>
   </div>
 </form></div>`;
-        } else {
+            return result;
+          }
           // No AvailableToppings (specialty pizza) — direct add form.
           // Per WiiLink's AddItem: send Options built from Tags.DefaultToppings/DefaultSides
           // so the full recipe (sauce + cheese + toppings) is included. Sending {} (no options)
           // or partial options (e.g. just the sauce) can cause OptionExclusivityViolated or
           // an incomplete order that the store may not process correctly.
-          toppingsSection = `<div class="food-card"><form method="POST" action="/food/cart/add${persistentParam}">
+          return `<div class="food-card"><form method="POST" action="/food/cart/add${persistentParam}">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
   <input type="hidden" name="country" value="${escape(country)}">
   <input type="hidden" name="code" value="${escape(variantCode)}">
@@ -1069,7 +1069,7 @@ ${optHtml}
     <a href="${escape(backUrl)}" class="food-btn food-btn-secondary">Cancel</a>
   </div>
 </form></div>`;
-        }
+        })();
         html = strReplace(html, '{$TOPPINGS_SECTION}', toppingsSection);
       }
     } else {
@@ -1349,10 +1349,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
           const parsed = JSON.parse(
             Buffer.from(decodeURIComponent(rawVal), 'base64').toString('utf-8')
           );
-          console.info(
-            '[place-order] checkout data found, items:',
-            parsed && parsed.cart && parsed.cart.items && parsed.cart.items.length
-          );
+          console.info('[place-order] checkout data found, items:', parsed?.cart?.items?.length);
           return parsed;
         } else {
           console.error('[place-order] no pizzaCheckout cookie or URL param found');
@@ -1482,11 +1479,11 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(fullAddress)}&s=&a=`,
         method: 'GET',
       });
-      const addrObj = addrResult && addrResult.data && addrResult.data.Address;
-      const locatorStores = (addrResult && addrResult.data && addrResult.data.Stores) || [];
+      const addrObj = addrResult?.data?.Address;
+      const locatorStores = addrResult?.data?.Stores ?? [];
       console.info(
         '[place-order] store-locator HTTP=%s | Address=%s',
-        addrResult && addrResult.status,
+        addrResult?.status,
         JSON.stringify(addrObj)
       );
       // Use the nearest store for this delivery address from the locator results.
@@ -1536,7 +1533,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         }
       }
     } catch (e) {
-      console.info('[place-order] address normalization failed:', e && e.message);
+      console.info('[place-order] address normalization failed:', e?.message);
       // Fallback: parse from raw street string
       const parsed = parseStreetParts(street);
       if (parsed) {
@@ -1600,52 +1597,32 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // OrderID and proceed regardless of API Status.
     let orderId = '';
     for (let vStep = 0; vStep < 2; vStep++) {
-      let vResult = null;
-      try {
-        vResult = await dominosRequest(
-          {
-            hostname: dominosHost,
-            path: '/power/validate-order',
-            method: 'POST',
-          },
-          JSON.stringify(validatePayload)
-        );
-        console.info(
-          `[place-order] validate-order step ${vStep + 1} HTTP status:`,
-          vResult && vResult.status
-        );
-        const vOrder = vResult && vResult.data && vResult.data.Order;
-        const vOuterStatus = vResult && vResult.data && vResult.data.Status;
-        const vBadHttp = !vResult || vResult.status < 200 || vResult.status >= 300;
-        if (vBadHttp) {
-          console.error(
-            `[place-order] validate-order step ${vStep + 1} HTTP error:`,
-            vResult && vResult.status
-          );
-          res.writeHead(302, {
-            Location: persistRedirect('/food/checkout', [
-              'error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.'),
-            ]),
-          });
-          return res.end();
-        }
-        // Log outer + Order status. Per WiiLink: AutoAddedOrderId/ServiceMethodNotAllowed at Order
-        // level are informational. WiiLink does NOT check Status on validate steps; only on price-order.
-        const vStatusItems = vOrder && vOrder.StatusItems;
-        console.info(
-          `[place-order] validate-order step ${vStep + 1} outer Status:`,
-          vOuterStatus,
-          '| Order Status:',
-          vOrder && vOrder.Status,
-          '| StatusItems:',
-          JSON.stringify(vStatusItems),
-          '(continuing per WiiLink flow)'
-        );
-        // Save/update the OrderID for subsequent calls
-        orderId = (vOrder && vOrder.OrderID) || orderId;
-        validatePayload.Order.OrderID = orderId;
-      } catch (e) {
+      const vResult = await dominosRequest(
+        {
+          hostname: dominosHost,
+          path: '/power/validate-order',
+          method: 'POST',
+        },
+        JSON.stringify(validatePayload)
+      ).catch((e) => {
         console.error(`[place-order] validate-order step ${vStep + 1} network error:`, e);
+        res.writeHead(302, {
+          Location: persistRedirect('/food/checkout', [
+            'error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.'),
+          ]),
+        });
+        res.end();
+        return null;
+      });
+      if (vResult === null) return; // response already sent in .catch()
+      console.info(`[place-order] validate-order step ${vStep + 1} HTTP status:`, vResult?.status);
+      const vOrder = vResult?.data?.Order;
+      const vOuterStatus = vResult?.data?.Status;
+      if (vResult.status < 200 || vResult.status >= 300) {
+        console.error(
+          `[place-order] validate-order step ${vStep + 1} HTTP error:`,
+          vResult?.status
+        );
         res.writeHead(302, {
           Location: persistRedirect('/food/checkout', [
             'error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.'),
@@ -1653,96 +1630,106 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         });
         return res.end();
       }
+      // Log outer + Order status. Per WiiLink: AutoAddedOrderId/ServiceMethodNotAllowed at Order
+      // level are informational. WiiLink does NOT check Status on validate steps; only on price-order.
+      const vStatusItems = vOrder?.StatusItems;
+      console.info(
+        `[place-order] validate-order step ${vStep + 1} outer Status:`,
+        vOuterStatus,
+        '| Order Status:',
+        vOrder?.Status,
+        '| StatusItems:',
+        JSON.stringify(vStatusItems),
+        '(continuing per WiiLink flow)'
+      );
+      // Save/update the OrderID for subsequent calls
+      orderId = vOrder?.OrderID || orderId;
+      validatePayload.Order.OrderID = orderId;
     }
 
     // Step 2: price-order — retrieves final price with Amounts populated.
     // Per WiiLink's GetPrice: checks outer Status (0 or 1 = success, else fail).
     validatePayload.Order.metaData = { orderFunnel: 'payments' };
-    let pricedTotal = null; // set from Amounts.Customer in price-order response
-    try {
-      const priceResult = await dominosRequest(
-        {
-          hostname: dominosHost,
-          path: '/power/price-order',
-          method: 'POST',
-        },
-        JSON.stringify(validatePayload)
-      );
-      console.info('[place-order] price-order HTTP status:', priceResult && priceResult.status);
-      const priceOrderData = priceResult && priceResult.data && priceResult.data.Order;
-      const priceOuterStatus = priceResult && priceResult.data && priceResult.data.Status;
-      const priceBadHttp = !priceResult || priceResult.status < 200 || priceResult.status >= 300;
-      if (priceBadHttp) {
-        console.error('[place-order] price-order HTTP error:', priceResult && priceResult.status);
-        res.writeHead(302, {
-          Location: persistRedirect('/food/checkout', [
-            'error=' + encodeURIComponent('Failed to price order. Please try again.'),
-          ]),
-        });
-        return res.end();
-      }
-      console.info(
-        '[place-order] price-order outer Status:',
-        priceOuterStatus,
-        '| Order Status:',
-        priceOrderData && priceOrderData.Status,
-        '| StatusItems:',
-        JSON.stringify(priceOrderData && priceOrderData.StatusItems)
-      );
-      // Per WiiLink: Status 0 or 1 = success; anything else (e.g. -1) means the store cannot
-      // process this order (e.g. ServiceMethodNotAllowed = store doesn't deliver to this address).
-      if (priceOuterStatus !== 0 && priceOuterStatus !== 1) {
-        const priceTopItems =
-          (priceResult && priceResult.data && priceResult.data.StatusItems) || [];
-        const priceErrMsg =
-          priceTopItems
-            .map((s) => s.Message)
-            .filter(Boolean)
-            .join(' ') ||
-          "This isn't the closest location - the selected store may not deliver to your address. Please go back to store search and choose the nearest store.";
-        console.error(
-          '[place-order] price-order failed: outer Status:',
-          priceOuterStatus,
-          '| top-level StatusItems:',
-          JSON.stringify(priceTopItems)
-        );
-        res.writeHead(302, {
-          Location: persistRedirect('/food/checkout', ['error=' + encodeURIComponent(priceErrMsg)]),
-        });
-        return res.end();
-      }
-      // Update orderId from price-order response (WiiLink uses price-order OrderID for place-order)
-      if (priceOrderData && priceOrderData.OrderID) {
-        orderId = priceOrderData.OrderID;
-        console.info('[place-order] using price-order OrderID:', orderId);
-      }
-      // Use the priced total (Amounts.Customer) as the payment amount — this includes tax +
-      // delivery surcharge and is the amount Domino's POS expects. Without this the order fails
-      // with "Amount paid is insufficient" (PosOrderIncomplete). Fall back to cartTotal if the
-      // Amounts field is absent (e.g. on an error response that still returned Status 0/1).
-      pricedTotal =
-        priceOrderData &&
-        priceOrderData.Amounts &&
-        typeof priceOrderData.Amounts.Customer === 'number'
-          ? priceOrderData.Amounts.Customer
-          : null;
-      if (pricedTotal !== null) {
-        console.info(
-          '[place-order] using priced total from price-order Amounts.Customer:',
-          pricedTotal,
-          '(cart subtotal was:',
-          cartTotal,
-          ')'
-        );
-      }
-    } catch (e) {
+    const priceResult = await dominosRequest(
+      {
+        hostname: dominosHost,
+        path: '/power/price-order',
+        method: 'POST',
+      },
+      JSON.stringify(validatePayload)
+    ).catch((e) => {
       console.error('[place-order] price-order network error:', e);
       res.writeHead(302, {
         Location: persistRedirect('/food/checkout', [
           'error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.'),
         ]),
       });
+      res.end();
+      return null;
+    });
+    if (priceResult === null) return; // response already sent in .catch()
+    console.info('[place-order] price-order HTTP status:', priceResult?.status);
+    const priceOrderData = priceResult?.data?.Order;
+    const priceOuterStatus = priceResult?.data?.Status;
+    if (priceResult.status < 200 || priceResult.status >= 300) {
+      console.error('[place-order] price-order HTTP error:', priceResult?.status);
+      res.writeHead(302, {
+        Location: persistRedirect('/food/checkout', [
+          'error=' + encodeURIComponent('Failed to price order. Please try again.'),
+        ]),
+      });
       return res.end();
+    }
+    console.info(
+      '[place-order] price-order outer Status:',
+      priceOuterStatus,
+      '| Order Status:',
+      priceOrderData?.Status,
+      '| StatusItems:',
+      JSON.stringify(priceOrderData?.StatusItems)
+    );
+    // Per WiiLink: Status 0 or 1 = success; anything else (e.g. -1) means the store cannot
+    // process this order (e.g. ServiceMethodNotAllowed = store doesn't deliver to this address).
+    if (priceOuterStatus !== 0 && priceOuterStatus !== 1) {
+      const priceTopItems = priceResult?.data?.StatusItems ?? [];
+      const priceErrMsg =
+        priceTopItems
+          .map((s) => s.Message)
+          .filter(Boolean)
+          .join(' ') ||
+        "This isn't the closest location - the selected store may not deliver to your address. Please go back to store search and choose the nearest store.";
+      console.error(
+        '[place-order] price-order failed: outer Status:',
+        priceOuterStatus,
+        '| top-level StatusItems:',
+        JSON.stringify(priceTopItems)
+      );
+      res.writeHead(302, {
+        Location: persistRedirect('/food/checkout', ['error=' + encodeURIComponent(priceErrMsg)]),
+      });
+      return res.end();
+    }
+    // Update orderId from price-order response (WiiLink uses price-order OrderID for place-order)
+    if (priceOrderData?.OrderID) {
+      orderId = priceOrderData.OrderID;
+      console.info('[place-order] using price-order OrderID:', orderId);
+    }
+    // Use the priced total (Amounts.Customer) as the payment amount — this includes tax +
+    // delivery surcharge and is the amount Domino's POS expects. Without this the order fails
+    // with "Amount paid is insufficient" (PosOrderIncomplete). Fall back to cartTotal if the
+    // Amounts field is absent (e.g. on an error response that still returned Status 0/1).
+    const pricedTotal =
+      priceOrderData?.Amounts && typeof priceOrderData.Amounts.Customer === 'number'
+        ? priceOrderData.Amounts.Customer
+        : null;
+    if (pricedTotal !== null) {
+      console.info(
+        '[place-order] using priced total from price-order Amounts.Customer:',
+        pricedTotal,
+        '(cart subtotal was:',
+        cartTotal,
+        ')'
+      );
     }
 
     // Step 3: Build the place-order payload from scratch per WiiLink's PlaceOrder function.
@@ -1812,36 +1799,34 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       streetNumber
     );
     console.info('[place-order] place payload:', JSON.stringify(placePayload));
-    let orderResult = null;
-    try {
-      orderResult = await dominosRequest(
-        {
-          hostname: dominosHost,
-          path: '/power/place-order',
-          method: 'POST',
-          headers: { 'DPZ-Source': 'DSSPlaceOrder' },
-        },
-        JSON.stringify(placePayload)
-      );
-      console.info('[place-order] HTTP status:', orderResult && orderResult.status);
-      console.info('[place-order] response:', JSON.stringify(orderResult && orderResult.data));
-    } catch (e) {
+    const orderResult = await dominosRequest(
+      {
+        hostname: dominosHost,
+        path: '/power/place-order',
+        method: 'POST',
+        headers: { 'DPZ-Source': 'DSSPlaceOrder' },
+      },
+      JSON.stringify(placePayload)
+    ).catch((e) => {
       console.error('[place-order] network error:', e);
       res.writeHead(302, {
         Location: persistRedirect('/food/checkout', [
           'error=' + encodeURIComponent('Failed to connect to Dominos. Please try again.'),
         ]),
       });
-      return res.end();
-    }
+      res.end();
+      return null;
+    });
+    if (orderResult === null) return; // response already sent in .catch()
+    console.info('[place-order] HTTP status:', orderResult?.status);
+    console.info('[place-order] response:', JSON.stringify(orderResult?.data));
 
-    const orderData = orderResult && orderResult.data && orderResult.data.Order;
-    const topLevelStatus = orderResult && orderResult.data && orderResult.data.Status;
-    const topLevelStatusItems =
-      (orderResult && orderResult.data && orderResult.data.StatusItems) || [];
-    const badHttpStatus = !orderResult || orderResult.status < 200 || orderResult.status >= 300;
-    const products_response = (orderData && orderData.Products) || [];
-    const orderStatusItems = (orderData && orderData.StatusItems) || [];
+    const orderData = orderResult?.data?.Order;
+    const topLevelStatus = orderResult?.data?.Status;
+    const topLevelStatusItems = orderResult?.data?.StatusItems ?? [];
+    const badHttpStatus = orderResult.status < 200 || orderResult.status >= 300;
+    const products_response = orderData?.Products ?? [];
+    const orderStatusItems = orderData?.StatusItems ?? [];
     const hasProductErrors = products_response.some((p) => (p.Status || 0) < 0);
     // Per WiiLink's PlaceOrder: Status 0 or 1 = success. Also check for "Failure" code in
     // top-level StatusItems as a secondary indicator. ServiceMethodNotAllowed/AutoAddedOrderId
@@ -1861,11 +1846,11 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         'Order failed. Please check your details and try again.';
       console.error(
         '[place-order] FAILED | HTTP:',
-        orderResult && orderResult.status,
+        orderResult?.status,
         '| top-level Status:',
         topLevelStatus,
         '| Order Status:',
-        orderData && orderData.Status,
+        orderData?.Status,
         '| OrderStatusItems:',
         JSON.stringify(orderStatusItems),
         '| top-level StatusItems:',
@@ -1882,7 +1867,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
       '[place-order] SUCCESS | products:',
       JSON.stringify(products_response.map((p) => ({ code: p.Code, status: p.Status }))),
       '| orderId:',
-      orderData && orderData.OrderID
+      orderData?.OrderID
     );
 
     const storeId = cart.storeId || '';
@@ -1898,9 +1883,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         ? pricedTotal
         : cartTotal > 0
           ? cartTotal
-          : parseFloat(
-              (orderData.Amounts && (orderData.Amounts.Payment || orderData.Amounts.Total)) || 0
-            );
+          : parseFloat(orderData.Amounts?.Payment || orderData.Amounts?.Total || 0);
 
     // Save receipt — no PII (no address/name/phone/email)
     auth.dbQueryRun(
