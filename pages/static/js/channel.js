@@ -143,6 +143,12 @@ function openFileUpload() {
 }
 
 function handleFileSelect(input) {
+    // File upload requires fetch and FormData — not available in IE8/Opera 9.x
+    if (!window.fetch || !window.FormData) {
+        alert('File upload requires a more modern browser. Please use a text message instead.');
+        input.value = '';
+        return;
+    }
     if (input.files && input.files[0]) {
         var file = input.files[0];
         var maxSize = 249 * 1024 * 1024; // 249MB limit for transfer.whalebone.io
@@ -168,6 +174,11 @@ function uploadFile(file) {
     formData.append('file', file);
     formData.append('channel', document.getElementById('channel').value);
     formData.append('message', ''); // No message content, just the file URL
+
+    function resetInput() {
+        var fi = document.getElementById('fileUpload');
+        if (fi) fi.value = '';
+    }
     
     // Show uploading indicator
     var messageInput = document.getElementById('message');
@@ -185,6 +196,7 @@ function uploadFile(file) {
         return response.json();
     })
     .then(function(data) {
+        resetInput();
         if (data.success) {
             // Clear message box before refreshing
             if (messageInput) {
@@ -201,14 +213,12 @@ function uploadFile(file) {
         }
     })
     .catch(function(error) {
+        resetInput();
         alert('Upload failed: ' + error);
         if (messageInput) {
             messageInput.value = originalValue;
             messageInput.disabled = false;
         }
-    })
-    .finally(function() {
-        document.getElementById('fileUpload').value = '';
     });
 }
 
