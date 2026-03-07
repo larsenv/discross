@@ -106,7 +106,7 @@ body.light-theme,
 .light-theme #emoji {
     background: #f9f9f9 !important;
     border-color: #e3e5e8 !important;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    /* box-shadow removed: not supported in IE8 */
 }
 
 .light-theme .reaction {
