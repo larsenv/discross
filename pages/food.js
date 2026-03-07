@@ -183,12 +183,13 @@ function parseOptions(params) {
   })();
 
   const options = {};
-  let hasFormFields = false;
+  const hasFormFields = Object.keys(params).some(
+    (key) => key.startsWith('topping_') || key.startsWith('sauce_')
+  );
   for (const key of Object.keys(params)) {
     const isTopping = key.startsWith('topping_');
     const isSauce = key.startsWith('sauce_');
     if (isTopping || isSauce) {
-      hasFormFields = true;
       const prefix = isTopping ? 'topping_' : 'sauce_';
       const code = key.slice(prefix.length).replace(/[^a-zA-Z0-9]/g, '');
       const amount = params[key];
@@ -270,23 +271,22 @@ function parseAvailableToppings(rawAvailToppings) {
 // Sauce = Tags.Sauce only (WiiLink approach, avoids wrong classification for non-pizza items).
 // Returns { sauces: [{code, name}], toppings: [{code, name}] }
 function classifyToppings(toppingDict, codeSet) {
-  const sauces = [];
-  const toppings = [];
-  for (const code of Object.keys(toppingDict)) {
-    if (!codeSet.has(code)) continue;
-    const t = toppingDict[code];
-    if (!t || typeof t !== 'object') continue;
-    const name = (t.Name && String(t.Name).trim()) || code;
-    const tags = t.Tags || {};
-    // WiiLink: only classify as sauce if Tags.Sauce is set
-    const isSauce = !!tags.Sauce;
-    if (isSauce) {
-      sauces.push({ code, name });
-    } else {
-      toppings.push({ code, name });
-    }
-  }
-  return { sauces, toppings };
+  return Object.keys(toppingDict).reduce(
+    (acc, code) => {
+      if (!codeSet.has(code)) return acc;
+      const t = toppingDict[code];
+      if (!t || typeof t !== 'object') return acc;
+      const name = (t.Name && String(t.Name).trim()) || code;
+      // WiiLink: only classify as sauce if Tags.Sauce is set
+      if (!!(t.Tags || {}).Sauce) {
+        acc.sauces.push({ code, name });
+      } else {
+        acc.toppings.push({ code, name });
+      }
+      return acc;
+    },
+    { sauces: [], toppings: [] }
+  );
 }
 
 // =============================================================================
@@ -448,10 +448,9 @@ exports.handleGet = async function (bot, req, res, discordID) {
       const allCategories = foodSection.Categories || [];
 
       // Build a code->category map
-      const categoryByCode = {};
-      for (const cat of allCategories) {
-        if (cat && cat.Code) categoryByCode[cat.Code] = cat;
-      }
+      const categoryByCode = Object.fromEntries(
+        allCategories.filter((cat) => cat?.Code).map((cat) => [cat.Code, cat])
+      );
 
       const selectedCat = category || (allCategories[0] && allCategories[0].Code) || '';
 
@@ -481,21 +480,19 @@ exports.handleGet = async function (bot, req, res, discordID) {
       const variants = menuData.Variants || {};
 
       // Build a map of variant code → qty already in cart
-      const cartQtyByVariant = {};
-      for (const item of cart.items || []) {
-        cartQtyByVariant[item.code] = (cartQtyByVariant[item.code] || 0) + (item.qty || 1);
-      }
+      const cartQtyByVariant = (cart.items || []).reduce((acc, item) => {
+        acc[item.code] = (acc[item.code] || 0) + (item.qty || 1);
+        return acc;
+      }, {});
       // Also build a map of product code → total qty in cart (across all variants)
-      const cartQtyByProduct = {};
-      for (const item of cart.items || []) {
-        // Try to reverse-map variant to product
+      const cartQtyByProduct = (cart.items || []).reduce((acc, item) => {
         for (const pCode of Object.keys(products)) {
-          const p = products[pCode];
-          if (p.Variants?.includes(item.code)) {
-            cartQtyByProduct[pCode] = (cartQtyByProduct[pCode] || 0) + (item.qty || 1);
+          if (products[pCode].Variants?.includes(item.code)) {
+            acc[pCode] = (acc[pCode] || 0) + (item.qty || 1);
           }
         }
-      }
+        return acc;
+      }, {});
 
       const rawItemsHtml = productCodes
         .flatMap((code) => {
@@ -940,31 +937,35 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
         // Build a normalized defaults map (code → amount string) for the hidden field.
         // Normalises portion keys (1/1, 1/2, 2/4, etc.) to a plain amount string for the form.
-        const normalizedDefaults = {};
-        for (const [code, portionObj] of Object.entries(defaultOptions)) {
-          // Prefer '1/1' (full pizza), then any other portion key; fall back to '1'
-          const vals = portionObj && Object.values(portionObj);
-          const amt =
-            (portionObj && (portionObj['1/1'] || portionObj['1/2'] || portionObj['2/4'])) ||
-            (vals && vals[0]) ||
-            '1';
-          if (amt !== undefined && amt !== null) normalizedDefaults[code] = String(amt);
-        }
+        const normalizedDefaults = Object.fromEntries(
+          Object.entries(defaultOptions).map(([code, portionObj]) => {
+            // Prefer '1/1' (full pizza), then any other portion key; fall back to '1'
+            const vals = portionObj && Object.values(portionObj);
+            const amt =
+              (portionObj && (portionObj['1/1'] || portionObj['1/2'] || portionObj['2/4'])) ||
+              (vals && vals[0]) ||
+              '1';
+            return [code, String(amt)];
+          })
+        );
 
         // For specialty pizzas (empty AvailableToppings): build full recipe from Tags.DefaultToppings
         // and Tags.DefaultSides per WiiLink's AddItem. v.Options only has the sauce code; the full
         // default recipe (sauce + cheese + toppings) lives in Tags.DefaultToppings.
         const defaultToppingsStr = v.Tags?.DefaultToppings || '';
         const defaultSidesStr = v.Tags?.DefaultSides || '';
-        const tagDefaults = {};
-        for (const part of defaultToppingsStr.split(',')) {
-          const eqIdx = part.indexOf('=');
-          if (eqIdx > 0) tagDefaults[part.slice(0, eqIdx)] = part.slice(eqIdx + 1);
-        }
-        for (const part of defaultSidesStr.split(',')) {
-          const eqIdx = part.indexOf('=');
-          if (eqIdx > 0) tagDefaults[part.slice(0, eqIdx)] = part.slice(eqIdx + 1);
-        }
+        // Parse "CODE=value,CODE=value" strings into {code: value} objects
+        const parseKvStr = (str) =>
+          Object.fromEntries(
+            str
+              .split(',')
+              .map((part) => {
+                const eqIdx = part.indexOf('=');
+                return eqIdx > 0 ? [part.slice(0, eqIdx), part.slice(eqIdx + 1)] : null;
+              })
+              .filter(Boolean)
+          );
+        const tagDefaults = { ...parseKvStr(defaultToppingsStr), ...parseKvStr(defaultSidesStr) };
 
         const PORTION_LABELS = { 0: 'None', 0.5: 'Light', 1: 'Normal', 1.5: 'Extra' };
         // Used when a topping code exists in toppingDict but has no portion info in AvailableToppings
@@ -974,7 +975,46 @@ exports.handleGet = async function (bot, req, res, discordID) {
           if (finalCodeSet.size > 0 && Object.keys(toppingDict).length > 0) {
             const { sauces, toppings: toppingList } = classifyToppings(toppingDict, finalCodeSet);
 
-            let result = `<div class="food-card"><form method="POST" action="/food/cart/add${persistentParam}">
+            // Helper: build one sauce/topping row (select element) given a topping entry
+            const buildToppingRow = (item, inputName) => {
+              // Use normalizedDefaults so portion key variants (1/2, 2/4, etc.) are handled
+              const defaultAmt = normalizedDefaults[item.code] || '0';
+              const rawPortions = portions.get(item.code) || DEFAULT_PORTIONS;
+              const portionSet = new Set(rawPortions);
+              if (defaultAmt !== '0') portionSet.add(defaultAmt);
+              const portionList = Array.from(portionSet).sort(
+                (a, b) => parseFloat(a) - parseFloat(b)
+              );
+              const optHtml = portionList
+                .map((p) => {
+                  const label = PORTION_LABELS[p] || p;
+                  const sel = p === defaultAmt ? ' selected' : '';
+                  return `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
+                })
+                .join('');
+              return `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
+  ${escape(item.name)}: <select name="${inputName}_${escape(item.code)}" style="background:#222327;color:#dddddd;border:none;border-radius:4px;padding:2px 4px">
+${optHtml}
+  </select>
+</div>`;
+            };
+
+            const sauceSection =
+              sauces.length > 0
+                ? `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Sauce</b></font><br><br>` +
+                  sauces.map((s) => buildToppingRow(s, 'sauce')).join('') +
+                  '<br>'
+                : '';
+            const toppingSection =
+              toppingList.length > 0
+                ? `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Toppings</b></font><br><br>` +
+                  // Get allowed portion values for each topping; DEFAULT_PORTIONS used when no
+                  // portion info was present in AvailableToppings for this code
+                  toppingList.map((t) => buildToppingRow(t, 'topping')).join('') +
+                  '<br>'
+                : '';
+
+            return `<div class="food-card"><form method="POST" action="/food/cart/add${persistentParam}">
   <input type="hidden" name="storeId" value="${escape(storeId)}">
   <input type="hidden" name="country" value="${escape(country)}">
   <input type="hidden" name="code" value="${escape(variantCode)}">
@@ -982,73 +1022,12 @@ exports.handleGet = async function (bot, req, res, discordID) {
   <input type="hidden" name="price" value="${vPrice.toFixed(2)}">
   <input type="hidden" name="redirect" value="${escape(backUrl)}">
   <input type="hidden" name="default_options" value="${escape(JSON.stringify(normalizedDefaults))}">
-<font face="'rodin', Arial, Helvetica, sans-serif" color="#aaaaaa"><i>Default toppings, sauce, and cheese are pre-selected below. Adjust as needed.</i></font><br><br>`;
-
-            if (sauces.length > 0) {
-              result += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Sauce</b></font><br><br>`;
-              for (const s of sauces) {
-                // Use normalizedDefaults so portion key variants (1/2, 2/4, etc.) are handled
-                const defaultAmt = normalizedDefaults[s.code] || '0';
-                const rawPortions = portions.get(s.code) || DEFAULT_PORTIONS;
-                const portionSet = new Set(rawPortions);
-                if (defaultAmt !== '0') portionSet.add(defaultAmt);
-                const portionList = Array.from(portionSet).sort(
-                  (a, b) => parseFloat(a) - parseFloat(b)
-                );
-                const optHtml = portionList
-                  .map((p) => {
-                    const label = PORTION_LABELS[p] || p;
-                    const sel = p === defaultAmt ? ' selected' : '';
-                    return `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
-                  })
-                  .join('');
-                result += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
-  ${escape(s.name)}: <select name="sauce_${escape(s.code)}" style="background:#222327;color:#dddddd;border:none;border-radius:4px;padding:2px 4px">
-${optHtml}
-  </select>
-</div>`;
-              }
-              result += '<br>';
-            }
-
-            if (toppingList.length > 0) {
-              result += `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Toppings</b></font><br><br>`;
-              for (const t of toppingList) {
-                // Use normalizedDefaults so portion key variants (1/2, 2/4, etc.) are handled
-                const defaultAmt = normalizedDefaults[t.code] || '0';
-                // Get allowed portion values for this topping; DEFAULT_PORTIONS used when no
-                // portion info was present in AvailableToppings for this code
-                const rawPortions = portions.get(t.code) || DEFAULT_PORTIONS;
-                // Ensure the default amount is present in the list; insert at correct numeric position
-                const portionSet = new Set(rawPortions);
-                if (defaultAmt !== '0') portionSet.add(defaultAmt);
-                const portionList = Array.from(portionSet).sort(
-                  (a, b) => parseFloat(a) - parseFloat(b)
-                );
-                // Build select options with labels
-                const optHtml = portionList
-                  .map((p) => {
-                    const label = PORTION_LABELS[p] || p;
-                    const sel = p === defaultAmt ? ' selected' : '';
-                    return `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
-                  })
-                  .join('');
-                result += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
-  ${escape(t.name)}: <select name="topping_${escape(t.code)}" style="background:#222327;color:#dddddd;border:none;border-radius:4px;padding:2px 4px">
-${optHtml}
-  </select>
-</div>`;
-              }
-              result += '<br>';
-            }
-
-            result += `  <div style="margin-top:16px">
+<font face="'rodin', Arial, Helvetica, sans-serif" color="#aaaaaa"><i>Default toppings, sauce, and cheese are pre-selected below. Adjust as needed.</i></font><br><br>${sauceSection}${toppingSection}  <div style="margin-top:16px">
     <button type="submit" class="food-btn food-btn-large">Add to Cart${vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : ''}</button>
     &#160;&#160;
     <a href="${escape(backUrl)}" class="food-btn food-btn-secondary">Cancel</a>
   </div>
 </form></div>`;
-            return result;
           }
           // No AvailableToppings (specialty pizza) — direct add form.
           // Per WiiLink's AddItem: send Options built from Tags.DefaultToppings/DefaultSides
