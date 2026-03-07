@@ -1,26 +1,57 @@
+// IE8/Opera 9.x-compatible element sibling traversal helpers.
+// nextElementSibling and previousElementSibling are IE9+ only.
+function nextElemSibling(el) {
+    var s = el.nextSibling;
+    while (s && s.nodeType !== 1) { s = s.nextSibling; }
+    return s;
+}
+function prevElemSibling(el) {
+    var s = el.previousSibling;
+    while (s && s.nodeType !== 1) { s = s.previousSibling; }
+    return s;
+}
+
+// classList-compatible helpers for IE8/Opera 9.x which lack classList.
+function hasClass(el, cls) {
+    return (' ' + el.className + ' ').indexOf(' ' + cls + ' ') !== -1;
+}
+function addClass(el, cls) {
+    if (!hasClass(el, cls)) {
+        el.className = (el.className + ' ' + cls).replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+    }
+}
+function removeClass(el, cls) {
+    var re = new RegExp('(^|\\s)' + cls + '(\\s|$)', 'g');
+    el.className = el.className.replace(re, ' ').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+}
+function toggleClass(el, cls) {
+    if (hasClass(el, cls)) { removeClass(el, cls); return false; }
+    addClass(el, cls); return true;
+}
+
 // Category collapse/expand functionality (#17)
 function toggleCategory(element) {
     const arrow = element.querySelector('.category-arrow');
     // Find the category-channels div - it should be a sibling after potentially a BR
-    let categoryDiv = null;
-    let sibling = element.nextElementSibling;
-    
+    var categoryDiv = null;
+    var sibling = nextElemSibling(element);
+
     // Skip over BR tags to find the category-channels div
     while (sibling) {
-        if (sibling.classList && sibling.classList.contains('category-channels')) {
+        if (hasClass(sibling, 'category-channels')) {
             categoryDiv = sibling;
             break;
         }
-        sibling = sibling.nextElementSibling;
+        sibling = nextElemSibling(sibling);
     }
-    
+
     if (categoryDiv) {
-        const isCollapsed = categoryDiv.classList.toggle('collapsed');
+        var isCollapsed = toggleClass(categoryDiv, 'collapsed');
         if (arrow) {
             arrow.src = isCollapsed ? '/resources/twemoji/25b6.gif' : '/resources/twemoji/1f53d.gif';
             arrow.alt = isCollapsed ? '>' : 'v';
         }
-        
+
         // Store state in localStorage
         try {
             const categoryId = categoryDiv.id;
@@ -35,20 +66,20 @@ function toggleCategory(element) {
 
 // Thread group collapse/expand functionality
 function toggleThreads(element) {
-    const arrow = element.querySelector('.thread-arrow');
-    let threadDiv = null;
-    let sibling = element.nextElementSibling;
+    var arrow = element.querySelector('.thread-arrow');
+    var threadDiv = null;
+    var sibling = nextElemSibling(element);
 
     while (sibling) {
-        if (sibling.classList && sibling.classList.contains('thread-channels')) {
+        if (hasClass(sibling, 'thread-channels')) {
             threadDiv = sibling;
             break;
         }
-        sibling = sibling.nextElementSibling;
+        sibling = nextElemSibling(sibling);
     }
 
     if (threadDiv) {
-        const isCollapsed = threadDiv.classList.toggle('collapsed');
+        var isCollapsed = toggleClass(threadDiv, 'collapsed');
         if (arrow) {
             arrow.src = isCollapsed ? '/resources/twemoji/25b6.gif' : '/resources/twemoji/1f53d.gif';
             arrow.alt = isCollapsed ? '>' : 'v';
@@ -73,10 +104,10 @@ window.onload = function() {
             const cat = categories[i];
             const state = localStorage.getItem(cat.id);
             if (state === 'collapsed') {
-                cat.classList.add('collapsed');
-                
+                addClass(cat, 'collapsed');
+
                 // Find the previous category link to update arrow
-                let prevSibling = cat.previousElementSibling;
+                var prevSibling = prevElemSibling(cat);
                 while (prevSibling) {
                     if (prevSibling.tagName === 'A' && prevSibling.onclick) {
                         const arrow = prevSibling.querySelector('.category-arrow');
@@ -86,7 +117,7 @@ window.onload = function() {
                             break;
                         }
                     }
-                    prevSibling = prevSibling.previousElementSibling;
+                    prevSibling = prevElemSibling(prevSibling);
                 }
             }
         }
@@ -96,9 +127,9 @@ window.onload = function() {
             const tg = threadGroups[tgIndex];
             const tgState = localStorage.getItem(tg.id);
             if (tgState === 'collapsed') {
-                tg.classList.add('collapsed');
+                addClass(tg, 'collapsed');
 
-                let prevElement = tg.previousElementSibling;
+                var prevElement = prevElemSibling(tg);
                 while (prevElement) {
                     if (prevElement.tagName === 'A' && prevElement.onclick) {
                         const tArrow = prevElement.querySelector('.thread-arrow');
@@ -108,7 +139,7 @@ window.onload = function() {
                             break;
                         }
                     }
-                    prevElement = prevElement.previousElementSibling;
+                    prevElement = prevElemSibling(prevElement);
                 }
             }
         }
