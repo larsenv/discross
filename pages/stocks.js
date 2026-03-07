@@ -156,11 +156,8 @@ function parseStooqHistory(symbol, csv) {
   const volume = volumeIdx !== -1 ? parseInt(latest[volumeIdx], 10) : NaN;
 
   // Use previous close (prior trading day) for daily change, fall back to open
-  let prevClose = null;
-  if (previous) {
-    const pc = parseFloat(previous[closeIdx]);
-    if (!isNaN(pc)) prevClose = pc;
-  }
+  const pc = previous ? parseFloat(previous[closeIdx]) : NaN;
+  const prevClose = !isNaN(pc) ? pc : null;
   const basePrice = prevClose !== null ? prevClose : !isNaN(open) ? open : null;
 
   const change = basePrice !== null ? close - basePrice : null;
@@ -252,32 +249,33 @@ function renderQuoteRow(quote) {
 }
 
 function renderTopIndices(quotes) {
-  let html = `<font size="4" ${FONT} color="#dddddd"><b>Major Indices</b></font><br><br>\n`;
-  html += `<table cellpadding="4" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n`;
-  html += `  <tr style="border-bottom:2px solid #40444b;">
-    <td><font size="2" ${FONT} color="#72767d"><b>Index</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Price</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Change</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>% Change</b></font></td>
-  </tr>\n`;
-
-  for (const quote of quotes) {
-    if (!quote) continue;
-    const sym = quote.symbol.toLowerCase();
-    const name = escape(DISPLAY_NAMES[sym] || quote.symbol || '');
-    const price = formatPrice(quote.regularMarketPrice);
-    const change = formatChange(quote.regularMarketChange);
-    const changePct = formatChangePct(quote.regularMarketChangePercent);
-    const color = changeColor(quote.regularMarketChange);
-    html += `  <tr style="border-bottom:1px solid #40444b;">
+  const rows = quotes
+    .filter((quote) => !!quote)
+    .map((quote) => {
+      const sym = quote.symbol.toLowerCase();
+      const name = escape(DISPLAY_NAMES[sym] || quote.symbol || '');
+      const price = formatPrice(quote.regularMarketPrice);
+      const change = formatChange(quote.regularMarketChange);
+      const changePct = formatChangePct(quote.regularMarketChangePercent);
+      const color = changeColor(quote.regularMarketChange);
+      return `  <tr style="border-bottom:1px solid #40444b;">
     <td><font size="3" ${FONT} color="#dddddd">${name}</font></td>
     <td><font size="3" ${FONT} color="#dddddd">$${price}</font></td>
     <td><font size="3" ${FONT} color="${color}">${change}</font></td>
     <td><font size="3" ${FONT} color="${color}">${changePct}</font></td>
   </tr>\n`;
-  }
-
-  html += `</table>\n`;
+    });
+  const html =
+    `<font size="4" ${FONT} color="#dddddd"><b>Major Indices</b></font><br><br>\n` +
+    `<table cellpadding="4" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n` +
+    `  <tr style="border-bottom:2px solid #40444b;">
+    <td><font size="2" ${FONT} color="#72767d"><b>Index</b></font></td>
+    <td><font size="2" ${FONT} color="#72767d"><b>Price</b></font></td>
+    <td><font size="2" ${FONT} color="#72767d"><b>Change</b></font></td>
+    <td><font size="2" ${FONT} color="#72767d"><b>% Change</b></font></td>
+  </tr>\n` +
+    rows.join('') +
+    `</table>\n`;
   return html;
 }
 
@@ -290,49 +288,41 @@ exports.processStocks = async function processStocks(req, res) {
 
   const themeClass = getPageThemeAttr(req);
 
-  let stocksHtml = '';
-
-  try {
+  const stocksHtml = await (async () => {
     if (ticker) {
       const safeTicker = ticker.slice(0, TICKER_MAX_LENGTH);
       const quote = await fetchYahooQuote(safeTicker);
-
-      if (!quote) {
-        stocksHtml = `<font color="#ff4444" ${FONT}>No data found for &ldquo;${escape(safeTicker)}&rdquo;. Please check the ticker symbol and try again.</font><br>`;
-      } else {
-        stocksHtml = renderQuoteRow(quote);
-      }
-    } else {
-      // Fetch all top indices in parallel
-      const results = await Promise.allSettled(TOP_SYMBOLS.map((sym) => fetchStooqHistory(sym)));
-      const quotes = results
-        .filter((r) => r.status === 'fulfilled' && r.value !== null)
-        .map((r) => r.value);
-
-      if (quotes.length === 0) {
-        stocksHtml = `<font color="#ff4444" ${FONT}>Unable to load market data. Please try again later.</font><br>`;
-      } else {
-        stocksHtml = renderTopIndices(quotes);
-      }
+      return !quote
+        ? `<font color="#ff4444" ${FONT}>No data found for &ldquo;${escape(safeTicker)}&rdquo;. Please check the ticker symbol and try again.</font><br>`
+        : renderQuoteRow(quote);
     }
-  } catch (err) {
+    // Fetch all top indices in parallel
+    const results = await Promise.allSettled(TOP_SYMBOLS.map((sym) => fetchStooqHistory(sym)));
+    const quotes = results
+      .filter((r) => r.status === 'fulfilled' && r.value !== null)
+      .map((r) => r.value);
+    return quotes.length === 0
+      ? `<font color="#ff4444" ${FONT}>Unable to load market data. Please try again later.</font><br>`
+      : renderTopIndices(quotes);
+  })().catch((err) => {
     console.error('Stocks API error:', err.message);
-    stocksHtml = `<font color="#ff4444" ${FONT}>Unable to fetch stock data. Please try again later.</font><br>`;
-  }
+    return `<font color="#ff4444" ${FONT}>Unable to fetch stock data. Please try again later.</font><br>`;
+  });
 
   const credit = ticker
     ? 'Stock data courtesy of <a href="https://finance.yahoo.com/" style="color: #5865f2;">Yahoo Finance</a>'
     : 'Stock data courtesy of <a href="https://stooq.com/" style="color: #5865f2;">Stooq</a>';
 
-  let response = strReplace(stocks_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  response = strReplace(
-    response,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(await auth.getUsername(discordID)))
+  const menuOptions = strReplace(
+    logged_in_template,
+    '{$USER}',
+    escape(await auth.getUsername(discordID))
   );
-  response = strReplace(response, '{$TICKER_VALUE}', escape(ticker));
-  response = strReplace(response, '{$STOCKS_CONTENT}', stocksHtml);
-  response = strReplace(response, '{$CREDIT}', credit);
+  const withTheme = strReplace(stocks_template, '{$WHITE_THEME_ENABLED}', themeClass);
+  const withMenu = strReplace(withTheme, '{$MENU_OPTIONS}', menuOptions);
+  const withTicker = strReplace(withMenu, '{$TICKER_VALUE}', escape(ticker));
+  const withContent = strReplace(withTicker, '{$STOCKS_CONTENT}', stocksHtml);
+  const response = strReplace(withContent, '{$CREDIT}', credit);
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);

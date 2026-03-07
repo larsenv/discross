@@ -45,48 +45,36 @@ exports.processChangePassword = async function (bot, req, res, args) {
     '/sendactioncode?action=changepassword' +
     (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
 
-  let response = changepassword_template;
-  response = strReplace(
-    response,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(username || ''))
-  );
-  response = strReplace(response, '{$SESSION_PARAM}', sessionParam);
-  response = strReplace(response, '{$SEND_CODE_URL}', sendCodeUrl);
-
+  const errortext = parsedUrl.searchParams.get('errortext');
+  let errorHtml;
   if (dmErrorText) {
-    response = strReplace(
-      response,
-      '{$ERROR}',
-      strReplace(error_template, '{$ERROR_MESSAGE}', strReplace(escape(dmErrorText), '\n', '<br>'))
+    errorHtml = strReplace(
+      error_template,
+      '{$ERROR_MESSAGE}',
+      strReplace(escape(dmErrorText), '\n', '<br>')
     );
-  } else if (parsedUrl.searchParams.get('errortext')) {
-    response = strReplace(
-      response,
-      '{$ERROR}',
-      strReplace(
-        error_template,
-        '{$ERROR_MESSAGE}',
-        strReplace(escape(parsedUrl.searchParams.get('errortext')), '\n', '<br>')
-      )
+  } else if (errortext) {
+    errorHtml = strReplace(
+      error_template,
+      '{$ERROR_MESSAGE}',
+      strReplace(escape(errortext), '\n', '<br>')
     );
   } else if (parsedUrl.searchParams.get('codesent')) {
-    response = strReplace(
-      response,
-      '{$ERROR}',
-      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>'
-    );
+    errorHtml =
+      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>';
   } else if (parsedUrl.searchParams.get('success')) {
-    response = strReplace(
-      response,
-      '{$ERROR}',
-      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Password changed successfully! Please log in again.</font>'
-    );
+    errorHtml =
+      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Password changed successfully! Please log in again.</font>';
   } else {
-    response = strReplace(response, '{$ERROR}', '');
+    errorHtml = '';
   }
 
-  response = strReplace(response, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
+  const menuOptions = strReplace(logged_in_template, '{$USER}', escape(username || ''));
+  const withMenu = strReplace(changepassword_template, '{$MENU_OPTIONS}', menuOptions);
+  const withSession = strReplace(withMenu, '{$SESSION_PARAM}', sessionParam);
+  const withSendCode = strReplace(withSession, '{$SEND_CODE_URL}', sendCodeUrl);
+  const withError = strReplace(withSendCode, '{$ERROR}', errorHtml);
+  const response = strReplace(withError, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
 };

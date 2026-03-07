@@ -162,32 +162,22 @@ function renderRatesTable(base, latestData, prevData, targets) {
   const latestRates = latestData ? latestData.rates || {} : {};
   const prevRates = prevData ? prevData.rates || {} : {};
 
-  let html = `<font size="4" ${FONT} color="#dddddd"><b>Exchange Rates &mdash; Base: ${escape(base)}</b></font>`;
-  if (latestData && latestData.date) {
-    html += ` <font size="2" ${FONT} color="#72767d">(as of ${escape(latestData.date)})</font>`;
-  }
-  html += '<br><br>\n';
+  const dateLabel = latestData?.date
+    ? ` <font size="2" ${FONT} color="#72767d">(as of ${escape(latestData.date)})</font>`
+    : '';
 
-  html += `<table cellpadding="4" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n`;
-  html += `  <tr style="border-bottom:2px solid #40444b;">
-    <td><font size="2" ${FONT} color="#72767d"><b>Currency</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Rate</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Change</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>% Change</b></font></td>
-  </tr>\n`;
-
-  for (const code of targets) {
-    if (code === base) continue;
+  const rows = targets.flatMap((code) => {
+    if (code === base) return [];
     const rate = latestRates[code] ?? null;
-    if (rate === null) continue;
+    if (rate === null) return [];
     const prev = prevRates[code] ?? null;
     const change = prev !== null ? rate - prev : null;
     const changePct = prev !== null && prev !== 0 ? ((rate - prev) / prev) * 100 : null;
     const decimals = rateDecimals(rate);
     const color = changeColor(change);
     const name = CURRENCY_NAMES[code] || code;
-
-    html += `  <tr style="border-bottom:1px solid #40444b;">
+    return [
+      `  <tr style="border-bottom:1px solid #40444b;">
     <td>
       <font size="3" ${FONT} color="#dddddd"><b>${escape(code)}</b></font><br>
       <font size="2" ${FONT} color="#72767d">${escape(name)}</font>
@@ -195,10 +185,23 @@ function renderRatesTable(base, latestData, prevData, targets) {
     <td><font size="3" ${FONT} color="#dddddd">${formatRate(rate, decimals)}</font></td>
     <td><font size="3" ${FONT} color="${color}">${formatChange(change, decimals)}</font></td>
     <td><font size="3" ${FONT} color="${color}">${formatChangePct(changePct)}</font></td>
-  </tr>\n`;
-  }
+  </tr>\n`,
+    ];
+  });
 
-  html += `</table>\n`;
+  const html =
+    `<font size="4" ${FONT} color="#dddddd"><b>Exchange Rates &mdash; Base: ${escape(base)}</b></font>` +
+    dateLabel +
+    '<br><br>\n' +
+    `<table cellpadding="4" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n` +
+    `  <tr style="border-bottom:2px solid #40444b;">
+    <td><font size="2" ${FONT} color="#72767d"><b>Currency</b></font></td>
+    <td><font size="2" ${FONT} color="#72767d"><b>Rate</b></font></td>
+    <td><font size="2" ${FONT} color="#72767d"><b>Change</b></font></td>
+    <td><font size="2" ${FONT} color="#72767d"><b>% Change</b></font></td>
+  </tr>\n` +
+    rows.join('') +
+    `</table>\n`;
   return html;
 }
 
@@ -243,16 +246,17 @@ exports.processCurrency = async function processCurrency(req, res) {
     currencyHtml += `<font color="#ff4444" ${FONT}>Unable to fetch currency data. Please try again later.</font><br>`;
   }
 
-  let response = strReplace(currency_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  response = strReplace(
-    response,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(await auth.getUsername(discordID)))
+  const menuOptions = strReplace(
+    logged_in_template,
+    '{$USER}',
+    escape(await auth.getUsername(discordID))
   );
-  response = strReplace(response, '{$BASE_VALUE}', escape(base));
-  response = strReplace(response, '{$CURRENCY_CONTENT}', currencyHtml);
-  response = strReplace(response, '{$SESSION_ID}', escape(urlSessionID));
-  response = strReplace(response, '{$SESSION_SUFFIX}', escape(sessionSuffix));
+  const withTheme = strReplace(currency_template, '{$WHITE_THEME_ENABLED}', themeClass);
+  const withMenu = strReplace(withTheme, '{$MENU_OPTIONS}', menuOptions);
+  const withBase = strReplace(withMenu, '{$BASE_VALUE}', escape(base));
+  const withContent = strReplace(withBase, '{$CURRENCY_CONTENT}', currencyHtml);
+  const withSession = strReplace(withContent, '{$SESSION_ID}', escape(urlSessionID));
+  const response = strReplace(withSession, '{$SESSION_SUFFIX}', escape(sessionSuffix));
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);

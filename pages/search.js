@@ -41,21 +41,30 @@ exports.processSearch = async function processSearch(req, res) {
 
   const themeClass = getPageThemeAttr(req);
 
-  let response = strReplace(search_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  response = strReplace(
-    response,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(await auth.getUsername(discordID)))
+  const menuOptions = strReplace(
+    logged_in_template,
+    '{$USER}',
+    escape(await auth.getUsername(discordID))
   );
-  response = strReplace(response, '{$QUERY_VALUE}', escape(query));
-  response = strReplace(
-    response,
+  const withTheme = strReplace(search_template, '{$WHITE_THEME_ENABLED}', themeClass);
+  const withMenu = strReplace(withTheme, '{$MENU_OPTIONS}', menuOptions);
+  const withQuery = strReplace(withMenu, '{$QUERY_VALUE}', escape(query));
+  const withFrogfind = strReplace(
+    withQuery,
     '{$FROGFIND_CHECKED}',
     safeEngine === 'frogfind' ? 'checked' : ''
   );
-  response = strReplace(response, '{$WIBY_CHECKED}', safeEngine === 'wiby' ? 'checked' : '');
-  response = strReplace(response, '{$GOOGLE_CHECKED}', safeEngine === 'google' ? 'checked' : '');
-  response = strReplace(response, '{$SESSION_ID}', escape(urlSessionID));
+  const withWiby = strReplace(
+    withFrogfind,
+    '{$WIBY_CHECKED}',
+    safeEngine === 'wiby' ? 'checked' : ''
+  );
+  const withGoogle = strReplace(
+    withWiby,
+    '{$GOOGLE_CHECKED}',
+    safeEngine === 'google' ? 'checked' : ''
+  );
+  const response = strReplace(withGoogle, '{$SESSION_ID}', escape(urlSessionID));
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
