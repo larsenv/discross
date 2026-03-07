@@ -226,17 +226,18 @@ function httpsGet(options, maxRedirects) {
       const status = res.statusCode;
       if (status >= 300 && status < 400 && res.headers.location && maxRedirects > 0) {
         res.resume(); // Discard body
-        let newLoc;
-        try {
-          const loc = new URL(res.headers.location);
-          newLoc = Object.assign({}, options, {
-            hostname: loc.hostname,
-            path: loc.pathname + loc.search,
-          });
-        } catch (e) {
-          // Relative redirect — keep existing hostname
-          newLoc = Object.assign({}, options, { path: res.headers.location });
-        }
+        const newLoc = (() => {
+          try {
+            const loc = new URL(res.headers.location);
+            return Object.assign({}, options, {
+              hostname: loc.hostname,
+              path: loc.pathname + loc.search,
+            });
+          } catch (e) {
+            // Relative redirect — keep existing hostname
+            return Object.assign({}, options, { path: res.headers.location });
+          }
+        })();
         return httpsGet(newLoc, maxRedirects - 1)
           .then(resolve)
           .catch(reject);

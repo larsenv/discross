@@ -519,17 +519,17 @@ exports.handleGet = async function (bot, req, res, discordID) {
         const inCart = cartQtyByProduct[code] || 0;
 
         // Items with multiple size variants get a "Customize" button linking to the size picker
-        let actionHtml;
-        if (hasMultipleVariants) {
-          const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(code)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(req.url)}${persistentSuffix}`;
-          const btnLabel = inCart > 0 ? `Customize (${inCart} in cart)` : 'Customize / Add';
-          actionHtml = `<a href="${customizeUrl}" class="food-btn food-btn-sm">${escape(btnLabel)}</a>`;
-        } else {
+        const actionHtml = (() => {
+          if (hasMultipleVariants) {
+            const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(code)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(req.url)}${persistentSuffix}`;
+            const btnLabel = inCart > 0 ? `Customize (${inCart} in cart)` : 'Customize / Add';
+            return `<a href="${customizeUrl}" class="food-btn food-btn-sm">${escape(btnLabel)}</a>`;
+          }
           const singleVariant = (p.Variants && p.Variants[0]) || code;
           const inCartSingle = cartQtyByVariant[singleVariant] || 0;
           const btnLabel =
             inCartSingle > 0 ? `Add to Cart (${inCartSingle} in cart)` : 'Add to Cart';
-          actionHtml = `<form method="POST" action="/food/cart/add${persistentParam}">
+          return `<form method="POST" action="/food/cart/add${persistentParam}">
       <input type="hidden" name="storeId" value="${safeStoreId}">
       <input type="hidden" name="country" value="${escape(country)}">
       <input type="hidden" name="code" value="${safeCode}">
@@ -538,7 +538,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
       <input type="hidden" name="redirect" value="${safeRedirect}">
       <button type="submit" class="food-btn food-btn-sm">${escape(btnLabel)}</button>
     </form>`;
-        }
+        })();
 
         itemsHtml += `<div class="food-item-card">
   <img src="/foodProxy/${encodeURIComponent((p.ImageCode || code).replace(/[^a-zA-Z0-9_-]/g, ''))}.jpg" alt="${name}" class="food-item-img" onerror="this.style.display='none'">
@@ -575,16 +575,18 @@ exports.handleGet = async function (bot, req, res, discordID) {
     const cartPageCount = (cart.items || []).reduce((s, i) => s + (i.qty || 1), 0);
     html = strReplace(html, '{$CART_COUNT}', String(cartPageCount));
 
-    let itemsHtml = '';
-    let total = 0;
     const items = cart.items || [];
-    if (items.length > 0) {
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const price = parseFloat(item.price || 0);
-        const qty = item.qty || 1;
-        total += price * qty;
-        itemsHtml += `<tr>
+    const total = items.reduce(
+      (sum, item) => sum + parseFloat(item.price || 0) * (item.qty || 1),
+      0
+    );
+    const itemsHtml =
+      items.length > 0
+        ? items
+            .map((item, i) => {
+              const price = parseFloat(item.price || 0);
+              const qty = item.qty || 1;
+              return `<tr>
   <td class="food-cart-name">${escape(item.name || item.code)}</td>
   <td class="food-cart-qty">${escape(String(qty))}</td>
   <td class="food-cart-price">$${(price * qty).toFixed(2)}</td>
@@ -595,11 +597,9 @@ exports.handleGet = async function (bot, req, res, discordID) {
     </form>
   </td>
 </tr>`;
-      }
-    } else {
-      itemsHtml =
-        '<tr><td colspan="4" style="font-family:\'rodin\',Arial,Helvetica,sans-serif;color:#b5bac1;padding:16px">Your cart is empty.</td></tr>';
-    }
+            })
+            .join('')
+        : '<tr><td colspan="4" style="font-family:\'rodin\',Arial,Helvetica,sans-serif;color:#b5bac1;padding:16px">Your cart is empty.</td></tr>';
 
     html = strReplace(html, '{$CART_ITEMS}', itemsHtml);
     html = strReplace(html, '{$CART_TOTAL}', total.toFixed(2));
@@ -1091,12 +1091,14 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
   const subpath = parsedurl.pathname.replace(/^\/food\/?/, '').replace(/\/$/, '');
   const secure = isSecure(req);
 
-  let params = {};
-  try {
-    params = Object.fromEntries(new URLSearchParams(body));
-  } catch (e) {
-    console.warn('[food] Failed to parse request body:', e.message);
-  }
+  const params = (() => {
+    try {
+      return Object.fromEntries(new URLSearchParams(body));
+    } catch (e) {
+      console.warn('[food] Failed to parse request body:', e.message);
+      return {};
+    }
+  })();
 
   // Session + cart/checkout state for Wii U URL-based fallback
   const urlSessionID = params.sessionID || parsedurl.searchParams.get('sessionID') || '';

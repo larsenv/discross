@@ -56,8 +56,10 @@ exports.processSetup2FA = async function (bot, req, res, args) {
   const action = totpEnabled ? 'disable2fa' : 'setup2fa';
 
   // Send 6-digit action code via Discord DM on fresh page load (not on error/codesent redirects)
-  let dmErrorText = '';
-  if (!parsedUrl.searchParams.get('errortext') && !parsedUrl.searchParams.get('codesent')) {
+  const dmErrorText = await (async () => {
+    if (parsedUrl.searchParams.get('errortext') || parsedUrl.searchParams.get('codesent')) {
+      return '';
+    }
     const code = auth.createActionCode(discordID, action);
     const dmResult = await bot.sendDM(
       discordID,
@@ -67,64 +69,59 @@ exports.processSetup2FA = async function (bot, req, res, args) {
         code +
         '**\nThis code expires in 10 minutes.'
     );
-    if (!dmResult.success) {
-      dmErrorText =
-        'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.';
-    }
-  }
+    return dmResult.success
+      ? ''
+      : 'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.';
+  })();
 
   const sendCodeUrl =
     '/sendactioncode?action=' +
     action +
     (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
 
-  let response;
-  if (totpEnabled) {
-    // 2FA already enabled — show the disable page
-    response = disable2fa_template;
-  } else {
+  const baseTemplate = await (async () => {
+    if (totpEnabled) {
+      // 2FA already enabled — show the disable page
+      return disable2fa_template;
+    }
     // 2FA not yet enabled — show setup page with QR code
     const { secret, qrDataUrl } = await auth.beginTOTPSetup(discordID, username || discordID);
-    response = setup2fa_template;
-    response = strReplace(response, '{$QR_CODE}', qrDataUrl);
-    response = strReplace(response, '{$SECRET}', escape(secret));
-  }
+    const withQr = strReplace(setup2fa_template, '{$QR_CODE}', qrDataUrl);
+    return strReplace(withQr, '{$SECRET}', escape(secret));
+  })();
 
-  response = strReplace(
-    response,
+  const withMenuOptions = strReplace(
+    baseTemplate,
     '{$MENU_OPTIONS}',
     strReplace(logged_in_template, '{$USER}', escape(username || ''))
   );
-  response = strReplace(response, '{$SESSION_PARAM}', sessionParam);
-  response = strReplace(response, '{$SEND_CODE_URL}', sendCodeUrl);
+  const withSessionParam = strReplace(withMenuOptions, '{$SESSION_PARAM}', sessionParam);
+  const withSendCodeUrl = strReplace(withSessionParam, '{$SEND_CODE_URL}', sendCodeUrl);
 
-  if (dmErrorText) {
-    response = strReplace(
-      response,
-      '{$ERROR}',
-      strReplace(error_template, '{$ERROR_MESSAGE}', strReplace(escape(dmErrorText), '\n', '<br>'))
-    );
-  } else if (parsedUrl.searchParams.get('errortext')) {
-    response = strReplace(
-      response,
-      '{$ERROR}',
-      strReplace(
+  const errorHtml = (() => {
+    if (dmErrorText) {
+      return strReplace(
         error_template,
         '{$ERROR_MESSAGE}',
-        strReplace(escape(parsedUrl.searchParams.get('errortext')), '\n', '<br>')
-      )
-    );
-  } else if (parsedUrl.searchParams.get('codesent')) {
-    response = strReplace(
-      response,
-      '{$ERROR}',
-      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>'
-    );
-  } else {
-    response = strReplace(response, '{$ERROR}', '');
-  }
+        strReplace(escape(dmErrorText), '\n', '<br>')
+      );
+    }
+    const urlError = parsedUrl.searchParams.get('errortext');
+    if (urlError) {
+      return strReplace(
+        error_template,
+        '{$ERROR_MESSAGE}',
+        strReplace(escape(urlError), '\n', '<br>')
+      );
+    }
+    if (parsedUrl.searchParams.get('codesent')) {
+      return '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>';
+    }
+    return '';
+  })();
 
-  response = strReplace(response, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
+  const withError = strReplace(withSendCodeUrl, '{$ERROR}', errorHtml);
+  const response = strReplace(withError, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
 };
