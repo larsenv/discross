@@ -676,6 +676,7 @@ body.light-theme,
 }
 .light-theme .menu-button img {
     filter: brightness(0) saturate(100%) invert(9%) sepia(8%) saturate(1040%) hue-rotate(185deg) brightness(96%) contrast(90%);
+    /* Note: CSS filter not supported in IE8/Opera 9.x — icon colour won't invert on those browsers */
 }
 .light-theme .discross-button { background: #5865f2 !important; color: white !important; }
 .light-theme .discross-button:hover { background: #4752c4 !important; }
@@ -844,7 +845,7 @@ html.page-draw #wrapper {
 
 html.page-draw body {
     overflow-y: auto;
-    min-height: 100vh;
+    /* min-height: 100vh omitted — vh units not supported in IE8/Opera 9.x */
 }
 
 /* Override themes.css which sets #wrapper to #303338; keep it matching body */
@@ -1147,7 +1148,7 @@ html.page-server font[color="#dcddde"] {
     max-width: 480px;
 }
 .news-card-image-wrap { display: block; }
-.news-card-image { width: 100%; max-width: 200px; max-height: 133px; object-fit: cover; display: block; }
+.news-card-image { width: 100%; max-width: 200px; max-height: 133px; display: block; }
 .news-card-caption { font-size: 11px; color: #72767d; display: block; padding: 2px 8px; }
 .news-card-body { padding: 10px; }
 .news-card-title { font-size: 16px; display: block; margin-bottom: 4px; }
@@ -1160,7 +1161,7 @@ html.page-server font[color="#dcddde"] {
 .news-article-content { max-width: 680px; }
 .news-article-paragraph { margin: 0 0 14px 0; font-size: 15px; line-height: 1.6; color: #dcddde; }
 .news-article-image-wrap { margin: 14px 0; display: block; }
-.news-article-image { width: 100%; max-width: 480px; max-height: 320px; object-fit: cover; display: block; border-radius: 4px; }
+.news-article-image { width: 100%; max-width: 480px; max-height: 320px; display: block; border-radius: 4px; }
 .news-article-caption { font-size: 12px; color: #72767d; display: block; margin-top: 4px; }
 .news-attribution { font-size: 12px; color: #72767d; margin-top: 16px; }
 
