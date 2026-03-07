@@ -50,12 +50,14 @@ function fetchYahooQuote(symbol) {
   };
   return httpsGet(options, 5).then(({ statusCode, body }) => {
     if (statusCode !== 200) return null;
-    let data;
-    try {
-      data = JSON.parse(body);
-    } catch (e) {
-      return null;
-    }
+    const data = (() => {
+      try {
+        return JSON.parse(body);
+      } catch {
+        return null;
+      }
+    })();
+    if (!data) return null;
     const result = data?.chart?.result?.[0];
     if (!result) return null;
     const meta = result.meta;

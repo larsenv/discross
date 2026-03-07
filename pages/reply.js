@@ -45,7 +45,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
       const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-      let processedmessage = await resolveMentions(
+      const resolvedMsg = await resolveMentions(
         convertEmoji(parsedurl.searchParams.get('message') || ''),
         channel.guild
       );
@@ -73,7 +73,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         .then((m) => m.displayName || m.user.username)
         .catch(() => reply_message.author.username);
 
-      processedmessage = `> Replying to ${reply_message_content} from ${author_name}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${processedmessage}`;
+      const processedmessage = `> Replying to ${reply_message_content} from ${author_name}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${resolvedMsg}`;
 
       const message = await webhook.send({
         content: processedmessage,

@@ -91,16 +91,18 @@ function getTimezoneFromIP(ip) {
  * @returns {Object} - Object with year, month (1-indexed), and day
  */
 function getDateComponentsInTimezone(date, timezone) {
-  let formatter = _dateFormatterCache.get(timezone);
-  if (!formatter) {
-    formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-    });
-    _dateFormatterCache.set(timezone, formatter);
-  }
+  const formatter =
+    _dateFormatterCache.get(timezone) ??
+    (() => {
+      const f = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+      });
+      _dateFormatterCache.set(timezone, f);
+      return f;
+    })();
   const parts = formatter.formatToParts(date);
   const year = parseInt(parts.find((p) => p.type === 'year').value, 10);
   const month = parseInt(parts.find((p) => p.type === 'month').value, 10); // 1-indexed (1-12)

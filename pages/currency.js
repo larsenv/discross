@@ -104,12 +104,14 @@ async function fetchLatestAndPrevRates(base) {
   };
   const { statusCode, body } = await httpsGet(options, 3);
   if (statusCode !== 200) return { latestData: null, prevData: null };
-  let data;
-  try {
-    data = JSON.parse(body);
-  } catch (e) {
-    return { latestData: null, prevData: null };
-  }
+  const data = (() => {
+    try {
+      return JSON.parse(body);
+    } catch {
+      return null;
+    }
+  })();
+  if (!data) return { latestData: null, prevData: null };
   // data.rates is keyed by date string "YYYY-MM-DD"
   const allDates = Object.keys(data.rates || {}).sort();
   if (allDates.length === 0) return { latestData: null, prevData: null };
