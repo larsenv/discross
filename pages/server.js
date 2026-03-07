@@ -503,23 +503,26 @@ function applyUserPreferences(response, req) {
 
 function createServerHTML(server, member, imagesCookie, sessionParam) {
   // Generate server-specific HTML
-  let serverHTML = strReplace(
-    server_icon_template,
-    '{$SERVER_ICON_URL}',
-    server.icon
-      ? `/ico/server/${server.id}/${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
-      : '/discord-mascot.gif'
-  );
-  serverHTML = strReplace(serverHTML, '{$SERVER_URL}', './' + server.id + (sessionParam || ''));
-
-  // Always strip emoji from server name to prevent twemoji rendering inside the name text
-  // Remove custom emoji <:name:id> and <a:name:id>, then unicode emoji, then trim
   const serverName = server.name
     .replace(/<a?:[^:]+:\d+>/g, '')
     .replace(emojiRegex, '')
     .trim();
 
-  serverHTML = strReplace(serverHTML, '{$SERVER_NAME}', escape(normalizeWeirdUnicode(serverName)));
+  const serverHTML = strReplace(
+    strReplace(
+      strReplace(
+        server_icon_template,
+        '{$SERVER_ICON_URL}',
+        server.icon
+          ? `/ico/server/${server.id}/${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
+          : '/discord-mascot.gif'
+      ),
+      '{$SERVER_URL}',
+      './' + server.id + (sessionParam || '')
+    ),
+    '{$SERVER_NAME}',
+    escape(normalizeWeirdUnicode(serverName))
+  );
   return serverHTML;
 }
 

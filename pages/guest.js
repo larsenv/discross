@@ -95,10 +95,12 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
   // Show name entry page if no guest name set
   if (!guestName) {
     const hasError = parsedUrl.searchParams.get('guest_name_error') === '1';
-    let page = strReplace(TEMPLATE_NAME, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    page = strReplace(page, '{$CHANNEL_ID}', escape(channelId));
-    page = strReplace(
-      page,
+    const page = strReplace(
+      strReplace(
+        strReplace(TEMPLATE_NAME, '{$WHITE_THEME_ENABLED}', theme.themeClass),
+        '{$CHANNEL_ID}',
+        escape(channelId)
+      ),
       '{$ERROR}',
       hasError
         ? '<font color="#f04747" face="\'rodin\', Arial, Helvetica, sans-serif">Please enter a valid name.</font>'
