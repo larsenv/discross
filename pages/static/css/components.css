@@ -135,11 +135,13 @@ pre code { background: none; border: none; padding: 0; }
 /* Message mentions */
 .message.mentioned {
   border-left: 4px solid #faa61a;
+  background-color: #302510; /* solid fallback for IE8 which doesn't support rgba() */
   background-color: rgba(250, 166, 26, 0.1);
   padding-left: 12px;
 }
 .mention {
   color: #00aff4;
+  background: #2b2e59; /* solid fallback for IE8 which doesn't support rgba() */
   background: rgba(88, 101, 242, 0.3);
   padding: 0 2px;
   border-radius: 3px;
@@ -148,6 +150,7 @@ pre code { background: none; border: none; padding: 0; }
 /* Light theme mention styles */
 .light-theme .mention {
   color: #0c4a6e;
+  background: #dcdef9; /* solid fallback for IE8 which doesn't support rgba() */
   background: rgba(88, 101, 242, 0.15);
 }
 
@@ -189,6 +192,7 @@ pre code { background: none; border: none; padding: 0; }
 /* Forwarded */
 .forwarded-content-wrapper {
   padding: 8px;
+  background: #2e3033; /* solid fallback for IE8 which doesn't support rgba() */
   background: rgba(47, 49, 54, 0.6);
   border-radius: 4px;
   margin-bottom: 8px;
