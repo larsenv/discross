@@ -784,17 +784,22 @@ html.page-channel body {
    21. PAGE-CHANNEL-REPLY: fixed message form at bottom
    ================================================================ */
 
-html.page-channel-reply body,
-html.page-channel-reply #wrapper {
-    height: 100%;
-}
+/* Fixed layout only on screens wider than 256px.
+   DSi Opera 9.5 stays static (either viewport is 256px so min-width:257px never
+   matches, or it doesn't parse media queries at all). */
+@media (min-width: 257px) {
+    html.page-channel-reply body,
+    html.page-channel-reply #wrapper {
+        height: 100%;
+    }
 
-html.page-channel-reply .message-form-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
+    html.page-channel-reply .message-form-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+    }
 }
 
 /* Replying-to banner inside the fixed form bar */
@@ -1135,6 +1140,8 @@ html.page-server font[color="#dcddde"] {
     font-family: 'rodin', Arial, Helvetica, sans-serif;
     margin-right: 4px;
     vertical-align: middle;
+    width: 100%;
+    min-width: 120px;
 }
 .news-search-btn { padding: 8px 16px; font-size: 14px; margin: 0; vertical-align: middle; }
 .news-empty { color: #72767d; font-family: sans-serif; }
