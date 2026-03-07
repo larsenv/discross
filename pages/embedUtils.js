@@ -115,51 +115,55 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
         : '';
 
       // Process embed fields with emoji support (#11)
-      let fieldsHtml = '';
-      if (embed.fields && embed.fields.length > 0) {
-        fieldsHtml =
-          '<table width="100%" cellpadding="2" cellspacing="0" style="margin-bottom: 8px; table-layout: fixed;">';
-        let rowOpen = false;
-        let inlineCount = 0;
-        embed.fields.forEach((field, i) => {
-          if (!field.inline) {
-            if (rowOpen) {
-              fieldsHtml += '</tr>';
-              rowOpen = false;
-              inlineCount = 0;
+      const fieldsHtml = (() => {
+        if (!embed.fields || embed.fields.length === 0) return '';
+        const { body: tableBody, rowOpen: lastRowOpen } = embed.fields.reduce(
+          (state, field, i) => {
+            let { body, rowOpen, inlineCount } = state;
+            if (!field.inline) {
+              if (rowOpen) {
+                body += '</tr>';
+                rowOpen = false;
+                inlineCount = 0;
+              }
+              body +=
+                '<tr><td colspan="3" style="padding-bottom: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
+              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
+              const renderedValue = renderDiscordMarkdown(field.value);
+              body += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
+              body += '</td></tr>';
+            } else {
+              if (!rowOpen) {
+                body += '<tr>';
+                rowOpen = true;
+                inlineCount = 0;
+              }
+              body +=
+                '<td valign="top" style="padding-bottom: 4px; padding-right: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
+              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
+              const renderedValue = renderDiscordMarkdown(field.value);
+              body += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
+              body += '</td>';
+              inlineCount++;
+              const nextField = embed.fields[i + 1];
+              if (inlineCount >= 3 || !nextField || !nextField.inline) {
+                body += '</tr>';
+                rowOpen = false;
+                inlineCount = 0;
+              }
             }
-            fieldsHtml +=
-              '<tr><td colspan="3" style="padding-bottom: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
-            fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
-            const renderedValue = renderDiscordMarkdown(field.value);
-            fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
-            fieldsHtml += '</td></tr>';
-          } else {
-            if (!rowOpen) {
-              fieldsHtml += '<tr>';
-              rowOpen = true;
-              inlineCount = 0;
-            }
-            fieldsHtml +=
-              '<td valign="top" style="padding-bottom: 4px; padding-right: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
-            fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
-            const renderedValue = renderDiscordMarkdown(field.value);
-            fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
-            fieldsHtml += '</td>';
-            inlineCount++;
-            const nextField = embed.fields[i + 1];
-            if (inlineCount >= 3 || !nextField || !nextField.inline) {
-              fieldsHtml += '</tr>';
-              rowOpen = false;
-              inlineCount = 0;
-            }
-          }
-        });
-        if (rowOpen) {
-          fieldsHtml += '</tr>';
-        }
-        fieldsHtml += '</table>';
-      }
+            return { body, rowOpen, inlineCount };
+          },
+          { body: '', rowOpen: false, inlineCount: 0 }
+        );
+        const closingTag = lastRowOpen ? '</tr>' : '';
+        return (
+          '<table width="100%" cellpadding="2" cellspacing="0" style="margin-bottom: 8px; table-layout: fixed;">' +
+          tableBody +
+          closingTag +
+          '</table>'
+        );
+      })();
 
       // Process embed image (#29 - restore image rendering)
       const imageHtml =
@@ -177,19 +181,15 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
       // Process embed footer
       const footerHtml = (() => {
         if (!embed.footer && !embed.timestamp) return '';
-        let html =
-          '<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">';
-        if (embed.footer) {
-          html += `<span>${escape(normalizeWeirdUnicode(embed.footer.text))}</span>`;
-        }
-        if (embed.timestamp) {
-          if (embed.footer) html += '<span style="margin: 0 4px;">•</span>';
-          const date = new Date(embed.timestamp);
-          // Format with timezone - returns just time for today, "Yesterday at time" for yesterday, or "date, time" for older
-          const formattedDate = formatDateWithTimezone(date, clientTimezone);
-          html += `<span>${formattedDate}</span>`;
-        }
-        return html + '</div>';
+        const footerText = embed.footer
+          ? `<span>${escape(normalizeWeirdUnicode(embed.footer.text))}</span>`
+          : '';
+        const separator =
+          embed.footer && embed.timestamp ? '<span style="margin: 0 4px;">•</span>' : '';
+        const timestamp = embed.timestamp
+          ? `<span>${formatDateWithTimezone(new Date(embed.timestamp), clientTimezone)}</span>`
+          : '';
+        return `<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">${footerText}${separator}${timestamp}</div>`;
       })();
 
       const withColor = strReplace(embed_template, '{$EMBED_COLOR}', embedColor);

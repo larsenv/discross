@@ -588,34 +588,25 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
 
 async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie) {
   try {
-    let replyUser = item.mentions?.repliedUser;
-    let replyMember;
-    let replyMessage;
+    const replyMessage = await item.fetchReference().catch(() => null);
+    const replyUser = replyMessage?.author ?? item.mentions?.repliedUser;
 
-    try {
-      replyMessage = await item.fetchReference();
-      replyUser = replyMessage.author;
-    } catch {
-      /* deleted or inaccessible */
-    }
-
-    if (replyMessage) {
-      if (!replyMessage.author?.bot) {
-        replyMember = await ensureMemberData(replyMessage, chnl.guild, memberCache);
+    const replyMember = await (async () => {
+      if (replyMessage) {
+        return replyMessage.author?.bot
+          ? null
+          : await ensureMemberData(replyMessage, chnl.guild, memberCache);
       }
-    } else if (replyUser?.id) {
-      const cached = memberCache.get(replyUser.id);
-      if (cached !== undefined) {
-        replyMember = cached;
-      } else {
-        try {
-          replyMember = await chnl.guild.members.fetch(replyUser.id);
-          memberCache.set(replyUser.id, replyMember);
-        } catch {
-          /* left the server */
-        }
-      }
-    }
+      if (!replyUser?.id) return undefined;
+      if (memberCache.has(replyUser.id)) return memberCache.get(replyUser.id);
+      return chnl.guild.members
+        .fetch(replyUser.id)
+        .then((m) => {
+          memberCache.set(replyUser.id, m);
+          return m;
+        })
+        .catch(() => undefined /* left the server */);
+    })();
 
     const replyContent = replyMessage?.content
       ? await (async () => {

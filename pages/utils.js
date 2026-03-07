@@ -197,14 +197,15 @@ async function resolveMentions(text, guild) {
   // Collect matches upfront so we iterate the original match list even as `result` changes.
   const matches = [...result.matchAll(regex)];
   for (const m of matches) {
-    let mentioneduser = guild.members.cache.find((member) => member.user.tag === m[1]);
-    if (!mentioneduser) {
-      try {
-        mentioneduser = (await guild.members.fetch()).find((member) => member.user.tag === m[1]);
-      } catch (err) {
-        console.error('Failed to fetch members for mention:', err);
-      }
-    }
+    const mentioneduser =
+      guild.members.cache.find((member) => member.user.tag === m[1]) ??
+      (await guild.members
+        .fetch()
+        .then((members) => members.find((member) => member.user.tag === m[1]))
+        .catch((err) => {
+          console.error('Failed to fetch members for mention:', err);
+          return null;
+        }));
     if (mentioneduser) {
       result = strReplace(result, m[0], `<@${mentioneduser.id}>`);
     }
