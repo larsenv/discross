@@ -31,7 +31,7 @@ function toggleClass(el, cls) {
 
 // Category collapse/expand functionality (#17)
 function toggleCategory(element) {
-    var arrow = element.querySelector('.category-arrow');
+    const arrow = element.querySelector('.category-arrow');
     // Find the category-channels div - it should be a sibling after potentially a BR
     var categoryDiv = null;
     var sibling = nextElemSibling(element);
@@ -54,7 +54,7 @@ function toggleCategory(element) {
 
         // Store state in localStorage
         try {
-            var categoryId = categoryDiv.id;
+            const categoryId = categoryDiv.id;
             if (categoryId) {
                 localStorage.setItem(categoryId, isCollapsed ? 'collapsed' : 'expanded');
             }
@@ -86,7 +86,7 @@ function toggleThreads(element) {
         }
 
         try {
-            var id = threadDiv.id;
+            const id = threadDiv.id;
             if (id) {
                 localStorage.setItem(id, isCollapsed ? 'collapsed' : 'expanded');
             }
@@ -99,10 +99,10 @@ function toggleThreads(element) {
 // Restore category and thread group states on page load
 window.onload = function() {
     try {
-        var categories = document.querySelectorAll('.category-channels');
-        for (var i = 0; i < categories.length; i++) {
-            var cat = categories[i];
-            var state = localStorage.getItem(cat.id);
+        const categories = document.querySelectorAll('.category-channels');
+        for (let i = 0; i < categories.length; i++) {
+            const cat = categories[i];
+            const state = localStorage.getItem(cat.id);
             if (state === 'collapsed') {
                 addClass(cat, 'collapsed');
 
@@ -110,7 +110,7 @@ window.onload = function() {
                 var prevSibling = prevElemSibling(cat);
                 while (prevSibling) {
                     if (prevSibling.tagName === 'A' && prevSibling.onclick) {
-                        var arrow = prevSibling.querySelector('.category-arrow');
+                        const arrow = prevSibling.querySelector('.category-arrow');
                         if (arrow) {
                             arrow.src = '/resources/twemoji/25b6.gif';
                             arrow.alt = '>';
@@ -122,17 +122,17 @@ window.onload = function() {
             }
         }
 
-        var threadGroups = document.querySelectorAll('.thread-channels');
-        for (var tgIndex = 0; tgIndex < threadGroups.length; tgIndex++) {
-            var tg = threadGroups[tgIndex];
-            var tgState = localStorage.getItem(tg.id);
+        const threadGroups = document.querySelectorAll('.thread-channels');
+        for (let tgIndex = 0; tgIndex < threadGroups.length; tgIndex++) {
+            const tg = threadGroups[tgIndex];
+            const tgState = localStorage.getItem(tg.id);
             if (tgState === 'collapsed') {
                 addClass(tg, 'collapsed');
 
                 var prevElement = prevElemSibling(tg);
                 while (prevElement) {
                     if (prevElement.tagName === 'A' && prevElement.onclick) {
-                        var tArrow = prevElement.querySelector('.thread-arrow');
+                        const tArrow = prevElement.querySelector('.thread-arrow');
                         if (tArrow) {
                             tArrow.src = '/resources/twemoji/25b6.gif';
                             tArrow.alt = '>';

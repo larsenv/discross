@@ -1,4 +1,4 @@
-for (var i = 0; i < 4; i++) {
+for (let i = 0; i < 4; i++) {
     console.log('%cHold Up!', 'font-weight: bold; -webkit-text-fill-color: #5865f2; -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: black; font-size: 71px;');
     console.log('%cIf someone told you to copy/paste something here you have an 11/10 chance you\'re being scammed.', 'font-size: 17px;');
     console.log('%cPasting anything in here could give attackers access to your Discross account.', 'color: red; font-weight: bold; font-size: 17px;');
@@ -8,12 +8,12 @@ console.log('%cIf you do understand exactly what you are doing, you should come 
 window.onload = function () {
     // Enhanced scroll-to-bottom for old browser compatibility
     function scrollToBottom() {
-        var end = document.getElementById("end");
-        var msgContainer = document.getElementById("msgcontainer");
-        var scrollContainer = msgContainer ? msgContainer.parentNode : null;
+        const end = document.getElementById("end");
+        const msgContainer = document.getElementById("msgcontainer");
+        const scrollContainer = msgContainer ? msgContainer.parentNode : null;
         
         // Try multiple scroll methods for maximum compatibility
-        var scrolled = false;
+        let scrolled = false;
         
         // Method 1: scrollIntoView on #end element (modern browsers)
         if (end && end.scrollIntoView) {
@@ -65,10 +65,10 @@ window.onload = function () {
     scrollToBottom();
 };
 
-var emojiShowing = false;
+let emojiShowing = false;
 
 function insertEmoji(code) {
-    var input = document.getElementById('message');
+    const input = document.getElementById('message');
     if (input.value === '') {
         input.value = code;
     } else {
@@ -77,7 +77,7 @@ function insertEmoji(code) {
 }
 
 function showEmoji() {
-    var emojiDiv = document.getElementById("emoji");
+    const emojiDiv = document.getElementById("emoji");
     if (emojiShowing) {
         emojiDiv.style.display = "none";
         emojiShowing = false;
@@ -96,7 +96,7 @@ function show(el) {
             el.className = el.className + ' spoiler-revealed';
         }
         // Also set inline background for older browsers that don't support class-based CSS
-        var revealedBg;
+        let revealedBg;
         if (document.body.className.indexOf('light-theme') !== -1) {
             revealedBg = '#efeff0';
         } else if (document.body.className.indexOf('amoled-theme') !== -1) {
@@ -106,13 +106,13 @@ function show(el) {
         }
         el.style.background = revealedBg;
         // Navigate the DOM structure: table -> tbody -> tr -> td -> span
-        var tbody = el.childNodes[0];
+        const tbody = el.childNodes[0];
         if (tbody && tbody.childNodes && tbody.childNodes[0]) {
-            var tr = tbody.childNodes[0];
+            const tr = tbody.childNodes[0];
             if (tr && tr.childNodes && tr.childNodes[0]) {
-                var td = tr.childNodes[0];
+                const td = tr.childNodes[0];
                 if (td && td.childNodes && td.childNodes[0]) {
-                    var span = td.childNodes[0];
+                    const span = td.childNodes[0];
                     if (span && span.style) {
                         span.style.visibility = 'visible';
                     }
@@ -133,9 +133,9 @@ function show(el) {
 
 // File upload handling - integrated with send button
 function openFileUpload() {
-    var channelId = document.getElementById('channel').value;
-    var url = '/upload?channel=' + encodeURIComponent(channelId);
-    var sessionEl = document.getElementById('sessionID');
+    const channelId = document.getElementById('channel').value;
+    let url = '/upload?channel=' + encodeURIComponent(channelId);
+    const sessionEl = document.getElementById('sessionID');
     if (sessionEl && sessionEl.value) {
         url += '&sessionID=' + encodeURIComponent(sessionEl.value);
     }
@@ -150,8 +150,8 @@ function handleFileSelect(input) {
         return;
     }
     if (input.files && input.files[0]) {
-        var file = input.files[0];
-        var maxSize = 249 * 1024 * 1024; // 249MB limit for transfer.whalebone.io
+        const file = input.files[0];
+        const maxSize = 249 * 1024 * 1024; // 249MB limit for transfer.whalebone.io
         
         if (file.size > maxSize) {
             alert('File is too large. Maximum size is 249MB.');
@@ -170,7 +170,7 @@ function sendMessageOrFile() {
 }
 
 function uploadFile(file) {
-    var formData = new FormData();
+    const formData = new FormData();
     formData.append('file', file);
     formData.append('channel', document.getElementById('channel').value);
     formData.append('message', ''); // No message content, just the file URL
@@ -181,8 +181,8 @@ function uploadFile(file) {
     }
     
     // Show uploading indicator
-    var messageInput = document.getElementById('message');
-    var originalValue = messageInput ? messageInput.value : '';
+    const messageInput = document.getElementById('message');
+    const originalValue = messageInput ? messageInput.value : '';
     if (messageInput) {
         messageInput.disabled = true;
         messageInput.value = 'Uploading ' + file.name + '...';

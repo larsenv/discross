@@ -1,41 +1,26 @@
-var fs = require('fs');
-var escape = require('escape-html');
+'use strict';
+const { strReplace, getPageThemeAttr } = require('./utils.js');
+const fs = require('fs');
+const escape = require('escape-html');
+const auth = require('../authentication.js');
 
-var auth = require('../authentication.js');
-
-const index_template = fs.readFileSync('pages/templates/index.html', 'utf-8').split('{$COMMON_HEAD}').join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const index_template = fs
+  .readFileSync('pages/templates/index.html', 'utf-8')
+  .split('{$COMMON_HEAD}')
+  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
-
 exports.processIndex = async function (bot, req, res, args) {
   const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
-  let response;
-  if (discordID) {
-    response = strReplace(index_template, "{$MENU_OPTIONS}",
-      strReplace(logged_in_template, "{$USER}", escape(await auth.getUsername(discordID)))
-    );
-  } else {
-    response = strReplace(index_template, "{$MENU_OPTIONS}", logged_out_template);
-  }  const parsedurl = new URL(req.url, 'http://localhost');
-  const urlTheme = parsedurl.searchParams.get('theme');
-  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(cookie => cookie.startsWith('whiteThemeCookie='))?.split('=')[1];
-  
-  // URL param takes priority over cookie
-  const theme = urlTheme !== null ? parseInt(urlTheme) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie) : 0);
-
-  // Apply theme class based on value: 0=dark (default), 1=light, 2=amoled
-  if (theme === 1) {
-    response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"light-theme\"");
-  } else if (theme === 2) {
-    response = strReplace(response, "{$WHITE_THEME_ENABLED}", "class=\"amoled-theme\"");
-  } else {
-    response = strReplace(response, "{$WHITE_THEME_ENABLED}", "bgcolor=\"303338\"");
-  }
-  res.write(response);
-  res.end();
-}
+  const menuOptions = discordID
+    ? strReplace(logged_in_template, '{$USER}', escape(await auth.getUsername(discordID)))
+    : logged_out_template;
+  const response = strReplace(
+    strReplace(index_template, '{$MENU_OPTIONS}', menuOptions),
+    '{$WHITE_THEME_ENABLED}',
+    getPageThemeAttr(req)
+  );
+  res.end(response);
+};

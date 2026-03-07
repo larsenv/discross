@@ -1,12 +1,11 @@
 'use strict';
 
 const fs = require('fs');
-const https = require('https');
 const escape = require('escape-html');
 
-const auth = require('../authentication.js');
+const { strReplace, getPageThemeAttr, httpsGet } = require('./utils.js');
 
-const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
+const auth = require('../authentication.js');
 
 // Frankfurter API — free, no API key required
 const FRANKFURTER_HOST = 'api.frankfurter.app';
@@ -15,7 +14,20 @@ const FRANKFURTER_HOST = 'api.frankfurter.app';
 const CURRENCY_MAX_LENGTH = 3;
 
 // Major currencies to display on the default dashboard
-const DEFAULT_TARGETS = ['EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'MXN', 'BRL', 'KRW', 'HKD'];
+const DEFAULT_TARGETS = [
+  'EUR',
+  'GBP',
+  'JPY',
+  'CAD',
+  'AUD',
+  'CHF',
+  'CNY',
+  'INR',
+  'MXN',
+  'BRL',
+  'KRW',
+  'HKD',
+];
 
 // Full names for well-known currencies
 const CURRENCY_NAMES = {
@@ -53,48 +65,12 @@ const CURRENCY_NAMES = {
   ZAR: 'South African Rand',
 };
 
-const currency_template = fs.readFileSync('pages/templates/currency.html', 'utf-8')
+const currency_template = fs
+  .readFileSync('pages/templates/currency.html', 'utf-8')
   .split('{$COMMON_HEAD}')
   .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
-
-/**
- * Make an HTTPS GET request, following up to maxRedirects redirects.
- * Resolves with { statusCode, body }.
- */
-function httpsGet(options, maxRedirects) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      const status = res.statusCode;
-      if (status >= 300 && status < 400 && res.headers.location && maxRedirects > 0) {
-        res.resume();
-        let newOptions;
-        try {
-          const loc = new URL(res.headers.location);
-          newOptions = Object.assign({}, options, {
-            hostname: loc.hostname,
-            path: loc.pathname + loc.search,
-          });
-        } catch (e) {
-          newOptions = Object.assign({}, options, { path: res.headers.location });
-        }
-        return httpsGet(newOptions, maxRedirects - 1).then(resolve).catch(reject);
-      }
-      let body = '';
-      res.on('data', (chunk) => {
-        body += chunk;
-      });
-      res.on('end', () => resolve({ statusCode: status, body }));
-    });
-    req.on('error', reject);
-    req.end();
-  });
-}
 
 /**
  * Return a date string N calendar days before today in YYYY-MM-DD format.
@@ -122,18 +98,20 @@ async function fetchLatestAndPrevRates(base) {
     method: 'GET',
     headers: {
       'User-Agent': 'Discross/1.0',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Accept-Encoding': 'identity',
     },
   };
   const { statusCode, body } = await httpsGet(options, 3);
   if (statusCode !== 200) return { latestData: null, prevData: null };
-  let data;
-  try {
-    data = JSON.parse(body);
-  } catch (e) {
-    return { latestData: null, prevData: null };
-  }
+  const data = (() => {
+    try {
+      return JSON.parse(body);
+    } catch {
+      return null;
+    }
+  })();
+  if (!data) return { latestData: null, prevData: null };
   // data.rates is keyed by date string "YYYY-MM-DD"
   const allDates = Object.keys(data.rates || {}).sort();
   if (allDates.length === 0) return { latestData: null, prevData: null };
@@ -142,13 +120,15 @@ async function fetchLatestAndPrevRates(base) {
   const prevDate = allDates.length >= 2 ? allDates[allDates.length - 2] : null;
 
   const latestData = { date: latestDate, base: data.base, rates: data.rates[latestDate] };
-  const prevData = prevDate ? { date: prevDate, base: data.base, rates: data.rates[prevDate] } : null;
+  const prevData = prevDate
+    ? { date: prevDate, base: data.base, rates: data.rates[prevDate] }
+    : null;
 
   return { latestData, prevData };
 }
 
 function formatRate(rate, decimals) {
-  if (rate == null) return '--';
+  if (rate === null) return '--';
   return rate.toLocaleString('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -156,25 +136,25 @@ function formatRate(rate, decimals) {
 }
 
 function formatChange(change, decimals) {
-  if (change == null) return '--';
+  if (change === null) return '--';
   const sign = change >= 0 ? '+' : '';
   return sign + change.toFixed(decimals);
 }
 
 function formatChangePct(pct) {
-  if (pct == null) return '--';
+  if (pct === null) return '--';
   const sign = pct >= 0 ? '+' : '';
   return sign + pct.toFixed(2) + '%';
 }
 
 function changeColor(change) {
-  if (change == null) return '#72767d';
+  if (change === null) return '#72767d';
   return change >= 0 ? '#57f287' : '#ed4245';
 }
 
 /** Choose decimal precision based on rate magnitude. */
 function rateDecimals(rate) {
-  if (rate == null) return 4;
+  if (rate === null) return 4;
   if (rate >= 100) return 2;
   if (rate >= 10) return 3;
   return 4;
@@ -184,32 +164,22 @@ function renderRatesTable(base, latestData, prevData, targets) {
   const latestRates = latestData ? latestData.rates || {} : {};
   const prevRates = prevData ? prevData.rates || {} : {};
 
-  let html = `<font size="4" ${FONT} color="#dddddd"><b>Exchange Rates &mdash; Base: ${escape(base)}</b></font>`;
-  if (latestData && latestData.date) {
-    html += ` <font size="2" ${FONT} color="#72767d">(as of ${escape(latestData.date)})</font>`;
-  }
-  html += '<br><br>\n';
+  const dateLabel = latestData?.date
+    ? ` <font size="2" ${FONT} color="#72767d">(as of ${escape(latestData.date)})</font>`
+    : '';
 
-  html += `<table cellpadding="4" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n`;
-  html += `  <tr style="border-bottom:2px solid #40444b;">
-    <td><font size="2" ${FONT} color="#72767d"><b>Currency</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Rate</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Change</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>% Change</b></font></td>
-  </tr>\n`;
-
-  for (const code of targets) {
-    if (code === base) continue;
-    const rate = latestRates[code] != null ? latestRates[code] : null;
-    if (rate == null) continue;
-    const prev = prevRates[code] != null ? prevRates[code] : null;
-    const change = prev != null ? rate - prev : null;
-    const changePct = prev != null && prev !== 0 ? ((rate - prev) / prev) * 100 : null;
+  const rows = targets.flatMap((code) => {
+    if (code === base) return [];
+    const rate = latestRates[code] ?? null;
+    if (rate === null) return [];
+    const prev = prevRates[code] ?? null;
+    const change = prev !== null ? rate - prev : null;
+    const changePct = prev !== null && prev !== 0 ? ((rate - prev) / prev) * 100 : null;
     const decimals = rateDecimals(rate);
     const color = changeColor(change);
     const name = CURRENCY_NAMES[code] || code;
-
-    html += `  <tr style="border-bottom:1px solid #40444b;">
+    return [
+      `  <tr style="border-bottom:1px solid #40444b;">
     <td>
       <font size="3" ${FONT} color="#dddddd"><b>${escape(code)}</b></font><br>
       <font size="2" ${FONT} color="#72767d">${escape(name)}</font>
@@ -217,10 +187,23 @@ function renderRatesTable(base, latestData, prevData, targets) {
     <td><font size="3" ${FONT} color="#dddddd">${formatRate(rate, decimals)}</font></td>
     <td><font size="3" ${FONT} color="${color}">${formatChange(change, decimals)}</font></td>
     <td><font size="3" ${FONT} color="${color}">${formatChangePct(changePct)}</font></td>
-  </tr>\n`;
-  }
+  </tr>\n`,
+    ];
+  });
 
-  html += `</table>\n`;
+  const html =
+    `<font size="4" ${FONT} color="#dddddd"><b>Exchange Rates &mdash; Base: ${escape(base)}</b></font>` +
+    dateLabel +
+    '<br><br>\n' +
+    `<table cellpadding="4" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n` +
+    `  <tr style="border-bottom:2px solid #40444b;">
+    <td><font size="2" ${FONT} color="#72767d"><b>Currency</b></font></td>
+    <td><font size="2" ${FONT} color="#72767d"><b>Rate</b></font></td>
+    <td><font size="2" ${FONT} color="#72767d"><b>Change</b></font></td>
+    <td><font size="2" ${FONT} color="#72767d"><b>% Change</b></font></td>
+  </tr>\n` +
+    rows.join('') +
+    `</table>\n`;
   return html;
 }
 
@@ -235,59 +218,52 @@ exports.processCurrency = async function processCurrency(req, res) {
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
   const sessionSuffix = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
-  const whiteThemeCookie = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const themeValue = whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0;
+  const themeClass = getPageThemeAttr(req);
 
-  let themeClass = '';
-  if (themeValue === 1) {
-    themeClass = 'class="light-theme"';
-  } else if (themeValue === 2) {
-    themeClass = 'class="amoled-theme"';
-  }
+  const prefix = inputWasNormalized
+    ? `<font color="#e3a84a" ${FONT}><i>Invalid currency code entered. Showing results for &ldquo;${escape(base)}&rdquo; instead.</i></font><br><br>`
+    : '';
 
-  let currencyHtml = '';
+  const currencyHtml = await (async () => {
+    try {
+      // Fetch latest and previous trading day rates in a single range request.
+      // The 14-day window is robust across weekends and public holidays.
+      const { latestData, prevData } = await fetchLatestAndPrevRates(base).catch(() => ({
+        latestData: null,
+        prevData: null,
+      }));
 
-  if (inputWasNormalized) {
-    currencyHtml += `<font color="#e3a84a" ${FONT}><i>Invalid currency code entered. Showing results for &ldquo;${escape(base)}&rdquo; instead.</i></font><br><br>`;
-  }
-
-  try {
-    // Fetch latest and previous trading day rates in a single range request.
-    // The 14-day window is robust across weekends and public holidays.
-    const { latestData, prevData } = await fetchLatestAndPrevRates(base).catch(() => ({
-      latestData: null,
-      prevData: null,
-    }));
-
-    if (!latestData) {
-      currencyHtml += `<font color="#ff4444" ${FONT}>No data found for base currency &ldquo;${escape(base)}&rdquo;. Please enter a valid 3-letter currency code (e.g. USD, EUR, GBP).</font><br>`;
-    } else {
+      if (!latestData) {
+        return (
+          prefix +
+          `<font color="#ff4444" ${FONT}>No data found for base currency &ldquo;${escape(base)}&rdquo;. Please enter a valid 3-letter currency code (e.g. USD, EUR, GBP).</font><br>`
+        );
+      }
       // Use all available target currencies or our default list
       const availableCodes = Object.keys(latestData.rates || {}).sort();
       const targets =
-        base === 'USD'
-          ? DEFAULT_TARGETS.filter((c) => availableCodes.includes(c))
-          : availableCodes;
-      currencyHtml = renderRatesTable(base, latestData, prevData, targets);
+        base === 'USD' ? DEFAULT_TARGETS.filter((c) => availableCodes.includes(c)) : availableCodes;
+      return prefix + renderRatesTable(base, latestData, prevData, targets);
+    } catch (err) {
+      console.error('Currency API error:', err.message);
+      return (
+        prefix +
+        `<font color="#ff4444" ${FONT}>Unable to fetch currency data. Please try again later.</font><br>`
+      );
     }
-  } catch (err) {
-    console.error('Currency API error:', err.message);
-    currencyHtml += `<font color="#ff4444" ${FONT}>Unable to fetch currency data. Please try again later.</font><br>`;
-  }
+  })();
 
-  let response = strReplace(currency_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  response = strReplace(
-    response,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(await auth.getUsername(discordID)))
+  const menuOptions = strReplace(
+    logged_in_template,
+    '{$USER}',
+    escape(await auth.getUsername(discordID))
   );
-  response = strReplace(response, '{$BASE_VALUE}', escape(base));
-  response = strReplace(response, '{$CURRENCY_CONTENT}', currencyHtml);
-  response = strReplace(response, '{$SESSION_ID}', escape(urlSessionID));
-  response = strReplace(response, '{$SESSION_SUFFIX}', escape(sessionSuffix));
+  const withTheme = strReplace(currency_template, '{$WHITE_THEME_ENABLED}', themeClass);
+  const withMenu = strReplace(withTheme, '{$MENU_OPTIONS}', menuOptions);
+  const withBase = strReplace(withMenu, '{$BASE_VALUE}', escape(base));
+  const withContent = strReplace(withBase, '{$CURRENCY_CONTENT}', currencyHtml);
+  const withSession = strReplace(withContent, '{$SESSION_ID}', escape(urlSessionID));
+  const response = strReplace(withSession, '{$SESSION_SUFFIX}', escape(sessionSuffix));
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);

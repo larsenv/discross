@@ -6,20 +6,19 @@ const he = require('he');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText } = require('./emojiUtils');
+const { strReplace, parseCookies, resolveTheme, buildSessionParam } = require('./utils.js');
 
 const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
 
-const news_template = fs.readFileSync('pages/templates/news.html', 'utf-8')
-  .split('{$COMMON_HEAD}').join(head_partial);
+const news_template = fs
+  .readFileSync('pages/templates/news.html', 'utf-8')
+  .split('{$COMMON_HEAD}')
+  .join(head_partial);
 
-const article_template = fs.readFileSync('pages/templates/news_article.html', 'utf-8')
-  .split('{$COMMON_HEAD}').join(head_partial);
-
-const THEME_CONFIG = {
-  0: { themeClass: '' },
-  1: { themeClass: 'class="light-theme"' },
-  2: { themeClass: 'class="amoled-theme"' },
-};
+const article_template = fs
+  .readFileSync('pages/templates/news_article.html', 'utf-8')
+  .split('{$COMMON_HEAD}')
+  .join(head_partial);
 
 const AP_BASE = 'https://apnews.com';
 const DEFAULT_TOPIC = 'apf-topnews';
@@ -28,14 +27,11 @@ const DEFAULT_TOPIC = 'apf-topnews';
 const MAX_ARTICLE_ELEMENTS = 150;
 
 // Browser-like User-Agent for AP News requests
-const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
+const BROWSER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 function proxyImageUrl(url) {
-  return '/imageProxy/external/' + Buffer.from(url).toString('base64');
+  return `/imageProxy/external/${Buffer.from(url).toString('base64')}`;
 }
 
 // Escape text for safe HTML output with the same Unicode processing used for
@@ -54,14 +50,16 @@ function escapeContent(text, showImages) {
 // Output is always passed through he.decode + escape-html before rendering.
 function stripHtml(html) {
   if (!html) return '';
-  return he.decode(
-    html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<\/div>/gi, '\n')
-      .replace(/<[^>]*>/g, '')  // Remove all HTML tags and their attributes
-      .replace(/</g, '')        // Remove any stray '<' left by malformed attribute values
-  ).trim();
+  return he
+    .decode(
+      html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<[^>]*>/g, '') // Remove all HTML tags and their attributes
+        .replace(/</g, '') // Remove any stray '<' left by malformed attribute values
+    )
+    .trim();
 }
 
 // Returns true if the paragraph text is a CTA / live-update callout that
@@ -77,27 +75,32 @@ function resolvePrefs(req) {
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
 
-  const whiteThemeCookie = req.headers.cookie?.split('; ')?.find(c => c.startsWith('whiteThemeCookie='))?.split('=')[1];
-  const imagesCookieValue = req.headers.cookie?.split('; ')?.find(c => c.startsWith('images='))?.split('=')[1];
+  const { whiteThemeCookie, images: imagesCookieValue } = parseCookies(req);
 
-  const linkParamParts = [];
-  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && whiteThemeCookie === undefined) linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && imagesCookieValue === undefined) linkParamParts.push('images=' + encodeURIComponent(urlImages));
-  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
+  const sessionParam = buildSessionParam(
+    urlSessionID,
+    urlTheme,
+    whiteThemeCookie,
+    urlImages,
+    imagesCookieValue
+  );
 
-  const themeValue = urlTheme !== null ? parseInt(urlTheme, 10) : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0);
-  const theme = THEME_CONFIG[themeValue] ?? THEME_CONFIG[0];
-  const imagesCookie = urlImages !== null ? parseInt(urlImages, 10) : (imagesCookieValue !== undefined ? parseInt(imagesCookieValue, 10) : 1);
+  const theme = resolveTheme(req);
+  const imagesCookie =
+    urlImages !== null
+      ? parseInt(urlImages, 10)
+      : imagesCookieValue !== undefined
+        ? parseInt(imagesCookieValue, 10)
+        : 1;
 
-  return { urlSessionID, sessionParam, theme, themeValue, imagesCookie, parsedUrl };
+  return { urlSessionID, sessionParam, theme, imagesCookie, parsedUrl };
 }
 
 async function fetchHtml(url) {
   const response = await fetch(url, {
     headers: {
       'User-Agent': BROWSER_UA,
-      'Accept': 'text/html,application/xhtml+xml',
+      Accept: 'text/html,application/xhtml+xml',
     },
   });
   if (!response.ok) {
@@ -178,7 +181,9 @@ function parseHubHtml(html) {
     if (!urlMatch) continue;
 
     // Headline text from the PagePromoContentIcons-text span
-    const titleMatch = block.match(/<span[^>]+class="[^"]*PagePromoContentIcons-text[^"]*"[^>]*>([\s\S]*?)<\/span>/i);
+    const titleMatch = block.match(
+      /<span[^>]+class="[^"]*PagePromoContentIcons-text[^"]*"[^>]*>([\s\S]*?)<\/span>/i
+    );
     if (!titleMatch) continue;
 
     const url = urlMatch[1].startsWith('http') ? urlMatch[1] : `${AP_BASE}${urlMatch[1]}`;
@@ -230,13 +235,15 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
   const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
   const articleUrl = `/news/${encodeURIComponent(slug)}${sessionParam}`;
 
-  let imageHtml = '';
-  if (showImages && imageUrl) {
-    const proxied = proxyImageUrl(imageUrl);
-    const alt = escapeContent(imageAlt || title, showImages);
-    const caption = escapeContent(imageCaption || '', showImages);
-    imageHtml = `<div class="news-card-image-wrap"><img src="${proxied}" alt="${alt}" class="news-card-image">${caption ? `<br><span class="news-card-caption">${caption}</span>` : ''}</div>`;
-  }
+  const imageHtml =
+    showImages && imageUrl
+      ? (() => {
+          const proxied = proxyImageUrl(imageUrl);
+          const alt = escapeContent(imageAlt || title, showImages);
+          const caption = escapeContent(imageCaption || '', showImages);
+          return `<div class="news-card-image-wrap"><img src="${proxied}" alt="${alt}" class="news-card-image">${caption ? `<br><span class="news-card-caption">${caption}</span>` : ''}</div>`;
+        })()
+      : '';
 
   return `<div class="news-card">
   ${imageHtml}
@@ -260,7 +267,9 @@ function extractStoryBody(html) {
 // Extracts headline/author/date from JSON-LD, with a GTM dataLayer fallback.
 // Body text and inline images come from div.RichTextStoryBody only.
 function parseArticlePage(html, showImages) {
-  let headline = '', bylines = '', date = null;
+  let headline = '',
+    bylines = '',
+    date = null;
 
   // Primary: JSON-LD structured data
   const ldMatch = html.match(/<script[^>]+id="link-ld-json"[^>]*>([\s\S]*?)<\/script>/i);
@@ -268,17 +277,24 @@ function parseArticlePage(html, showImages) {
     try {
       const raw = JSON.parse(ldMatch[1]);
       const article = Array.isArray(raw)
-        ? raw.find(e => e['@type'] === 'NewsArticle')
-        : (raw['@type'] === 'NewsArticle' ? raw : null);
+        ? raw.find((e) => e['@type'] === 'NewsArticle')
+        : raw['@type'] === 'NewsArticle'
+          ? raw
+          : null;
       if (article) {
         headline = article.headline || '';
         if (article.author) {
           const authors = Array.isArray(article.author) ? article.author : [article.author];
-          bylines = authors.map(a => a.name || (typeof a === 'string' ? a : '')).filter(Boolean).join(', ');
+          bylines = authors
+            .map((a) => a.name || (typeof a === 'string' ? a : ''))
+            .filter(Boolean)
+            .join(', ');
         }
         if (article.datePublished) date = new Date(article.datePublished);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   // Fallback: GTM dataLayer meta tag
@@ -290,44 +306,45 @@ function parseArticlePage(html, showImages) {
         headline = gtm.headline || '';
         bylines = gtm.author || '';
         if (gtm.publication_date) date = new Date(gtm.publication_date);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   }
 
   // Extract article body — ONLY what's inside div.RichTextStoryBody
   const body = extractStoryBody(html);
-  let contentHtml = '';
-  let leadImageHtml = '';
 
-  if (body) {
-    // Extract the first AP News CDN image as the single lead/hero image.
-    // We look for the first <img> tag with an AP News CDN src anywhere in the body.
-    if (showImages) {
-      const imgTagRe = /<img(\s[^>]*)>/gi;
-      let imgMatch;
-      while ((imgMatch = imgTagRe.exec(body)) !== null) {
-        const el = imgMatch[0];
-        const srcMatch = el.match(AP_IMG_SRC_RE);
-        if (!srcMatch) continue;
-        const imgUrl = srcMatch[1];
-        const proxied = proxyImageUrl(imgUrl);
-        // Use the first figcaption in the whole body — it corresponds to the first image.
-        // Also try looking within ±5000 chars around the img for robustness.
-        const tagEnd = imgMatch.index + imgMatch[0].length;
-        const searchStart = Math.max(0, imgMatch.index - 3000);
-        const nearby = body.slice(searchStart, tagEnd + 5000);
-        const captionMatch = nearby.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
-        const caption = captionMatch ? escapeContent(stripHtml(captionMatch[1]), showImages) : '';
-        leadImageHtml = `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
-        break;
-      }
-    }
+  const leadImageHtml =
+    body && showImages
+      ? (() => {
+          const imgTagRe = /<img(\s[^>]*)>/gi;
+          let imgMatch;
+          while ((imgMatch = imgTagRe.exec(body)) !== null) {
+            const srcMatch = imgMatch[0].match(AP_IMG_SRC_RE);
+            if (!srcMatch) continue;
+            const imgUrl = srcMatch[1];
+            const proxied = proxyImageUrl(imgUrl);
+            const tagEnd = imgMatch.index + imgMatch[0].length;
+            const searchStart = Math.max(0, imgMatch.index - 3000);
+            const nearby = body.slice(searchStart, tagEnd + 5000);
+            const captionMatch = nearby.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
+            const caption = captionMatch
+              ? escapeContent(stripHtml(captionMatch[1]), showImages)
+              : '';
+            return `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
+          }
+          return '';
+        })()
+      : '';
 
-    // Walk <p> tags only — body text without any inline images.
+  const contentHtml = (() => {
+    if (!body)
+      return '<p class="news-article-paragraph news-empty">Article text could not be extracted.</p>';
     const pRe = /<p(\s|>)/gi;
     let match;
     let count = 0;
-
+    const paragraphs = [];
     while ((match = pRe.exec(body)) !== null && count < MAX_ARTICLE_ELEMENTS) {
       const end = body.indexOf('</p>', match.index);
       if (end === -1) continue;
@@ -335,21 +352,23 @@ function parseArticlePage(html, showImages) {
       const el = body.slice(match.index, end + 4);
       const text = stripHtml(el).trim();
       if (text.length > 10 && !isCTAParagraph(text)) {
-        contentHtml += `<p class="news-article-paragraph">${escapeContent(text, showImages)}</p>\n`;
+        paragraphs.push(
+          `<p class="news-article-paragraph">${escapeContent(text, showImages)}</p>\n`
+        );
         count++;
       }
     }
-  }
-
-  if (!contentHtml) {
-    contentHtml = '<p class="news-article-paragraph news-empty">Article text could not be extracted.</p>';
-  }
+    return (
+      paragraphs.join('') ||
+      '<p class="news-article-paragraph news-empty">Article text could not be extracted.</p>'
+    );
+  })();
 
   return { headline, bylines, date, leadImageHtml, contentHtml };
 }
 
 exports.processNews = async function processNews(req, res, args, discordID) {
-  const { urlSessionID, sessionParam, theme, themeValue, parsedUrl, imagesCookie } = resolvePrefs(req);
+  const { urlSessionID, sessionParam, theme, parsedUrl, imagesCookie } = resolvePrefs(req);
   const timezone = getTimezoneFromIP(getClientIP(req));
 
   // Sanitise tag: allow letters, digits, hyphens (AP News topic format)
@@ -364,29 +383,36 @@ exports.processNews = async function processNews(req, res, args, discordID) {
     const feedItems = parseHubHtml(html);
 
     const cards = feedItems
-      .map(item => buildNewsCardHtml(item, timezone, sessionParam, imagesCookie !== 0))
+      .map((item) => buildNewsCardHtml(item, timezone, sessionParam, imagesCookie !== 0))
       .filter(Boolean);
 
-    const newsItemsHtml = cards.length > 0
-      ? cards.join('\n')
-      : '<p class="news-empty">No articles found for this category.</p>';
+    const newsItemsHtml =
+      cards.length > 0
+        ? cards.join('\n')
+        : '<p class="news-empty">No articles found for this category.</p>';
 
-    let sessionHidden = '';
-    if (urlSessionID) sessionHidden += `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">`;
-    if (themeValue !== 0) sessionHidden += `<input type="hidden" name="theme" value="${escape(String(themeValue))}">`;
+    const sessionHidden = [
+      urlSessionID ? `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">` : '',
+      theme.themeValue !== 0
+        ? `<input type="hidden" name="theme" value="${theme.themeValue}">`
+        : '',
+    ].join('');
 
-    let final = strReplace(news_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    final = strReplace(final, '{$TAG_DISPLAY}', displayTag);
-    final = strReplace(final, '{$TAG_VALUE}', tagInputValue);
-    final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
-    final = strReplace(final, '{$SESSION_HIDDEN}', sessionHidden);
-    final = strReplace(final, '{$NEWS_ITEMS}', newsItemsHtml);
+    const withTheme = strReplace(news_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
+    const withTag = strReplace(withTheme, '{$TAG_DISPLAY}', displayTag);
+    const withTagValue = strReplace(withTag, '{$TAG_VALUE}', tagInputValue);
+    const withSessionParam = strReplace(withTagValue, '{$SESSION_PARAM}', sessionParam);
+    const withSessionHidden = strReplace(withSessionParam, '{$SESSION_HIDDEN}', sessionHidden);
+    const final = strReplace(withSessionHidden, '{$NEWS_ITEMS}', newsItemsHtml);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);
   } catch (err) {
     console.error('AP News feed error:', err);
-    const msg = err.statusCode === 404 ? 'Category not found.' : 'Could not load news feed. Please try again later.';
+    const msg =
+      err.statusCode === 404
+        ? 'Category not found.'
+        : 'Could not load news feed. Please try again later.';
     res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
     res.end(msg);
   }
@@ -408,28 +434,32 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
 
   try {
     const html = await fetchHtml(articleUrl);
-    const { headline, bylines, date, leadImageHtml, contentHtml } = parseArticlePage(html, imagesCookie !== 0);
+    const { headline, bylines, date, leadImageHtml, contentHtml } = parseArticlePage(
+      html,
+      imagesCookie !== 0
+    );
 
     const headlineEscaped = escapeContent(headline || 'Untitled', imagesCookie !== 0);
     const bylinesEscaped = bylines ? `${escapeContent(bylines, imagesCookie !== 0)} - ` : '';
     const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
 
-    let final = strReplace(article_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    final = strReplace(final, '{$HEADLINE}', headlineEscaped);
-    final = strReplace(final, '{$BYLINE}', bylinesEscaped);
-    final = strReplace(final, '{$DATE}', dateStr);
-    final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
-    final = strReplace(final, '{$LEAD_IMAGE}', leadImageHtml);
-    final = strReplace(final, '{$ARTICLE_CONTENT}', contentHtml);
+    const withTheme = strReplace(article_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
+    const withHeadline = strReplace(withTheme, '{$HEADLINE}', headlineEscaped);
+    const withByline = strReplace(withHeadline, '{$BYLINE}', bylinesEscaped);
+    const withDate = strReplace(withByline, '{$DATE}', dateStr);
+    const withSessionParam = strReplace(withDate, '{$SESSION_PARAM}', sessionParam);
+    const withLeadImage = strReplace(withSessionParam, '{$LEAD_IMAGE}', leadImageHtml);
+    const final = strReplace(withLeadImage, '{$ARTICLE_CONTENT}', contentHtml);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);
   } catch (err) {
     console.error('AP News article error:', err);
-    const msg = err.statusCode === 404 ? 'Article not found.' : 'Could not load article. Please try again later.';
+    const msg =
+      err.statusCode === 404
+        ? 'Article not found.'
+        : 'Could not load article. Please try again later.';
     res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
     res.end(msg);
   }
 };
-
-
