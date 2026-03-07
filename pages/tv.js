@@ -220,11 +220,11 @@ function parseLineupChannels(html, date) {
   var channels = [];
   var seen = new Set();
 
-  // Find all station page links in the format /tv-listings/stations/{slug}/{id}/{date}.
+  // Find all station page links in the format /tv-listings/stations/{slug}/{id} or /{slug}/{id}/{date}.
   // Capture group 1: full station site_id (e.g. "nbc-wnbc-new-york-ny/1767")
   // Capture group 2: station slug (e.g. "nbc-wnbc-new-york-ny")
   // Capture group 3: numeric station id (e.g. "1767")
-  var stationLinkRegex = /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/stations\/(([a-z0-9\-]+)\/(\d+))\/(?:\d{4}-\d{2}-\d{2})?"/gi;
+  var stationLinkRegex = /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/stations\/(([a-z0-9\-]+)\/(\d+))(?:\/\d{4}-\d{2}-\d{2})?"/gi;
   var m;
 
   while ((m = stationLinkRegex.exec(html)) !== null) {
