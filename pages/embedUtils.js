@@ -76,134 +76,136 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     return '';
   }
 
-  let embedsHtml = '';
+  const embedsHtml = embeds
+    .map((embed) => {
+      let embedHtml = embed_template;
 
-  embeds.forEach((embed) => {
-    let embedHtml = embed_template;
+      // Set embed color (default to #202225 if not present)
+      const embedColor = embed.color ? `#${embed.color.toString(16).padStart(6, '0')}` : '#202225';
+      embedHtml = strReplace(embedHtml, '{$EMBED_COLOR}', embedColor);
 
-    // Set embed color (default to #202225 if not present)
-    const embedColor = embed.color ? `#${embed.color.toString(16).padStart(6, '0')}` : '#202225';
-    embedHtml = strReplace(embedHtml, '{$EMBED_COLOR}', embedColor);
-
-    // Process embed author
-    const authorContent = embed.author
-      ? `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(normalizeWeirdUnicode(embed.author.name))}</span>`
-      : '';
-    const authorHtml =
-      embed.author && authorContent
-        ? embed.author.url
-          ? `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${authorContent}</a>`
-          : authorContent
+      // Process embed author
+      const authorContent = embed.author
+        ? `<span style="font-size: 14px; font-weight: 600; color: #${embedHead};">${escape(normalizeWeirdUnicode(embed.author.name))}</span>`
         : '';
-    embedHtml = strReplace(embedHtml, '{$EMBED_AUTHOR}', authorHtml);
+      const authorHtml =
+        embed.author && authorContent
+          ? embed.author.url
+            ? `<a href="${escape(embed.author.url)}" target="_blank" style="text-decoration: none; color: inherit;">${authorContent}</a>`
+            : authorContent
+          : '';
+      embedHtml = strReplace(embedHtml, '{$EMBED_AUTHOR}', authorHtml);
 
-    // Process embed title
-    const titleContent = embed.title
-      ? embed.url
-        ? `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${escape(normalizeWeirdUnicode(embed.title))}</a>`
-        : escape(normalizeWeirdUnicode(embed.title))
-      : '';
-    const titleHtml = titleContent
-      ? `<div style="font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">${titleContent}</div>`
-      : '';
-    embedHtml = strReplace(embedHtml, '{$EMBED_TITLE}', titleHtml);
+      // Process embed title
+      const titleContent = embed.title
+        ? embed.url
+          ? `<a href="${escape(embed.url)}" target="_blank" style="color: #00b0f4; text-decoration: none;">${escape(normalizeWeirdUnicode(embed.title))}</a>`
+          : escape(normalizeWeirdUnicode(embed.title))
+        : '';
+      const titleHtml = titleContent
+        ? `<div style="font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">${titleContent}</div>`
+        : '';
+      embedHtml = strReplace(embedHtml, '{$EMBED_TITLE}', titleHtml);
 
-    // Process embed description with emoji support (#11)
-    const processedDescription = embed.description
-      ? processEmojiInHTML(renderDiscordMarkdown(embed.description), imagesCookie, animationsCookie)
-      : null;
-    const descriptionHtml = processedDescription
-      ? `<div style="font-size: 14px; color: #${embedText}; margin-bottom: 8px; white-space: pre-wrap;">${processedDescription}</div>`
-      : '';
-    embedHtml = strReplace(embedHtml, '{$EMBED_DESCRIPTION}', descriptionHtml);
+      // Process embed description with emoji support (#11)
+      const processedDescription = embed.description
+        ? processEmojiInHTML(
+            renderDiscordMarkdown(embed.description),
+            imagesCookie,
+            animationsCookie
+          )
+        : null;
+      const descriptionHtml = processedDescription
+        ? `<div style="font-size: 14px; color: #${embedText}; margin-bottom: 8px; white-space: pre-wrap;">${processedDescription}</div>`
+        : '';
+      embedHtml = strReplace(embedHtml, '{$EMBED_DESCRIPTION}', descriptionHtml);
 
-    // Process embed fields with emoji support (#11)
-    let fieldsHtml = '';
-    if (embed.fields && embed.fields.length > 0) {
-      fieldsHtml =
-        '<table width="100%" cellpadding="2" cellspacing="0" style="margin-bottom: 8px; table-layout: fixed;">';
-      let rowOpen = false;
-      let inlineCount = 0;
-      embed.fields.forEach((field, i) => {
-        if (!field.inline) {
-          if (rowOpen) {
-            fieldsHtml += '</tr>';
-            rowOpen = false;
-            inlineCount = 0;
+      // Process embed fields with emoji support (#11)
+      let fieldsHtml = '';
+      if (embed.fields && embed.fields.length > 0) {
+        fieldsHtml =
+          '<table width="100%" cellpadding="2" cellspacing="0" style="margin-bottom: 8px; table-layout: fixed;">';
+        let rowOpen = false;
+        let inlineCount = 0;
+        embed.fields.forEach((field, i) => {
+          if (!field.inline) {
+            if (rowOpen) {
+              fieldsHtml += '</tr>';
+              rowOpen = false;
+              inlineCount = 0;
+            }
+            fieldsHtml +=
+              '<tr><td colspan="3" style="padding-bottom: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
+            fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
+            const renderedValue = renderDiscordMarkdown(field.value);
+            fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
+            fieldsHtml += '</td></tr>';
+          } else {
+            if (!rowOpen) {
+              fieldsHtml += '<tr>';
+              rowOpen = true;
+              inlineCount = 0;
+            }
+            fieldsHtml +=
+              '<td valign="top" style="padding-bottom: 4px; padding-right: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
+            fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
+            const renderedValue = renderDiscordMarkdown(field.value);
+            fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
+            fieldsHtml += '</td>';
+            inlineCount++;
+            const nextField = embed.fields[i + 1];
+            if (inlineCount >= 3 || !nextField || !nextField.inline) {
+              fieldsHtml += '</tr>';
+              rowOpen = false;
+              inlineCount = 0;
+            }
           }
-          fieldsHtml +=
-            '<tr><td colspan="3" style="padding-bottom: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
-          fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
-          const renderedValue = renderDiscordMarkdown(field.value);
-          fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
-          fieldsHtml += '</td></tr>';
-        } else {
-          if (!rowOpen) {
-            fieldsHtml += '<tr>';
-            rowOpen = true;
-            inlineCount = 0;
-          }
-          fieldsHtml +=
-            '<td valign="top" style="padding-bottom: 4px; padding-right: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
-          fieldsHtml += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
-          const renderedValue = renderDiscordMarkdown(field.value);
-          fieldsHtml += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
-          fieldsHtml += '</td>';
-          inlineCount++;
-          const nextField = embed.fields[i + 1];
-          if (inlineCount >= 3 || !nextField || !nextField.inline) {
-            fieldsHtml += '</tr>';
-            rowOpen = false;
-            inlineCount = 0;
-          }
+        });
+        if (rowOpen) {
+          fieldsHtml += '</tr>';
         }
-      });
-      if (rowOpen) {
-        fieldsHtml += '</tr>';
+        fieldsHtml += '</table>';
       }
-      fieldsHtml += '</table>';
-    }
-    embedHtml = strReplace(embedHtml, '{$EMBED_FIELDS}', fieldsHtml);
+      embedHtml = strReplace(embedHtml, '{$EMBED_FIELDS}', fieldsHtml);
 
-    // Process embed image (#29 - restore image rendering)
-    const imageHtml =
-      embed.image && imagesCookie === 1
-        ? `<div style="margin-top: 8px;"><img src="${escape(proxyExternalImageUrl(embed.image.url || embed.image.proxyURL))}" style="max-width: 100%; max-height: 200px; border-radius: 4px; height: auto;" alt="Embed image"></div>`
-        : '';
-    embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
+      // Process embed image (#29 - restore image rendering)
+      const imageHtml =
+        embed.image && imagesCookie === 1
+          ? `<div style="margin-top: 8px;"><img src="${escape(proxyExternalImageUrl(embed.image.url || embed.image.proxyURL))}" style="max-width: 100%; max-height: 200px; border-radius: 4px; height: auto;" alt="Embed image"></div>`
+          : '';
+      embedHtml = strReplace(embedHtml, '{$EMBED_IMAGE}', imageHtml);
 
-    // Process embed thumbnail (#29 - restore thumbnail rendering)
-    // Thumbnail should be positioned BEFORE title/description so it floats to top-right
-    const thumbnailHtml =
-      embed.thumbnail && imagesCookie === 1
-        ? `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(proxyExternalImageUrl(embed.thumbnail.url || embed.thumbnail.proxyURL))}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`
-        : '';
-    embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', thumbnailHtml);
+      // Process embed thumbnail (#29 - restore thumbnail rendering)
+      // Thumbnail should be positioned BEFORE title/description so it floats to top-right
+      const thumbnailHtml =
+        embed.thumbnail && imagesCookie === 1
+          ? `<div style="float: right; margin-left: 12px; margin-bottom: 8px;"><img src="${escape(proxyExternalImageUrl(embed.thumbnail.url || embed.thumbnail.proxyURL))}" style="max-width: 80px; max-height: 80px; border-radius: 4px;" alt="Thumbnail"></div>`
+          : '';
+      embedHtml = strReplace(embedHtml, '{$EMBED_THUMBNAIL}', thumbnailHtml);
 
-    // Process embed footer
-    let footerHtml = '';
-    if (embed.footer || embed.timestamp) {
-      footerHtml =
-        '<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">';
-      if (embed.footer) {
-        footerHtml += `<span>${escape(normalizeWeirdUnicode(embed.footer.text))}</span>`;
-      }
-      if (embed.timestamp) {
+      // Process embed footer
+      const footerHtml = (() => {
+        if (!embed.footer && !embed.timestamp) return '';
+        let html =
+          '<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">';
         if (embed.footer) {
-          footerHtml += '<span style="margin: 0 4px;">•</span>';
+          html += `<span>${escape(normalizeWeirdUnicode(embed.footer.text))}</span>`;
         }
-        const date = new Date(embed.timestamp);
-        // Format with timezone - returns just time for today, "Yesterday at time" for yesterday, or "date, time" for older
-        const formattedDate = formatDateWithTimezone(date, clientTimezone);
-        footerHtml += `<span>${formattedDate}</span>`;
-      }
-      footerHtml += '</div>';
-    }
-    embedHtml = strReplace(embedHtml, '{$EMBED_FOOTER}', footerHtml);
+        if (embed.timestamp) {
+          if (embed.footer) html += '<span style="margin: 0 4px;">•</span>';
+          const date = new Date(embed.timestamp);
+          // Format with timezone - returns just time for today, "Yesterday at time" for yesterday, or "date, time" for older
+          const formattedDate = formatDateWithTimezone(date, clientTimezone);
+          html += `<span>${formattedDate}</span>`;
+        }
+        return html + '</div>';
+      })();
+      embedHtml = strReplace(embedHtml, '{$EMBED_FOOTER}', footerHtml);
 
-    // Margin right wrapper
-    embedsHtml += `<div style="margin-right: 8px;">${embedHtml}</div>`;
-  });
+      // Margin right wrapper
+      return `<div style="margin-right: 8px;">${embedHtml}</div>`;
+    })
+    .join('');
 
   return embedsHtml;
 }

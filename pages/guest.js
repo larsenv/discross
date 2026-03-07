@@ -95,12 +95,10 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
   // Show name entry page if no guest name set
   if (!guestName) {
     const hasError = parsedUrl.searchParams.get('guest_name_error') === '1';
+    const withTheme = strReplace(TEMPLATE_NAME, '{$WHITE_THEME_ENABLED}', theme.themeClass);
+    const withChannelId = strReplace(withTheme, '{$CHANNEL_ID}', escape(channelId));
     const page = strReplace(
-      strReplace(
-        strReplace(TEMPLATE_NAME, '{$WHITE_THEME_ENABLED}', theme.themeClass),
-        '{$CHANNEL_ID}',
-        escape(channelId)
-      ),
+      withChannelId,
       '{$ERROR}',
       hasError
         ? '<font color="#f04747" face="\'rodin\', Arial, Helvetica, sans-serif">Please enter a valid name.</font>'
@@ -155,14 +153,18 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
     const refreshUrl = `${channelId}?random=${Math.random()}`;
 
-    let page = strReplace(TEMPLATE_CHANNEL, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    page = strReplace(page, '{$CHANNEL_ID}', escape(channelId));
-    page = strReplace(page, '{$CHANNEL_NAME}', escape(channelDisplayName));
-    page = strReplace(page, '{$GUEST_NAME}', escape(guestName));
-    page = strReplace(page, '{$RANDOM_EMOJI}', randomEmoji);
-    page = strReplace(page, '{$REFRESH_URL}', refreshUrl);
-    page = strReplace(page, '{$INPUT}', inputHtml);
-    page = strReplace(page, '{$MESSAGES}', messagesHtml);
+    const withTheme = strReplace(TEMPLATE_CHANNEL, '{$WHITE_THEME_ENABLED}', theme.themeClass);
+    const withChannelId = strReplace(withTheme, '{$CHANNEL_ID}', escape(channelId));
+    const withChannelName = strReplace(
+      withChannelId,
+      '{$CHANNEL_NAME}',
+      escape(channelDisplayName)
+    );
+    const withGuestName = strReplace(withChannelName, '{$GUEST_NAME}', escape(guestName));
+    const withEmoji = strReplace(withGuestName, '{$RANDOM_EMOJI}', randomEmoji);
+    const withRefresh = strReplace(withEmoji, '{$REFRESH_URL}', refreshUrl);
+    const withInput = strReplace(withRefresh, '{$INPUT}', inputHtml);
+    const page = strReplace(withInput, '{$MESSAGES}', messagesHtml);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(page);

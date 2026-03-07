@@ -101,16 +101,16 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
             messages: pinnedMessages,
           });
 
-    let final = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    final = strReplace(final, '{$CHANNEL_ID}', chnl.id);
-    final = strReplace(final, '{$SERVER_ID}', chnl.guild.id);
-    final = strReplace(
-      final,
+    const withTheme = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
+    const withChannelId = strReplace(withTheme, '{$CHANNEL_ID}', chnl.id);
+    const withServerId = strReplace(withChannelId, '{$SERVER_ID}', chnl.guild.id);
+    const withChannelName = strReplace(
+      withServerId,
       '{$CHANNEL_NAME}',
       (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
     );
-    final = strReplace(final, '{$MESSAGES}', messagesHtml);
-    final = strReplace(final, '{$SESSION_PARAM}', sessionParam);
+    const withMessages = strReplace(withChannelName, '{$MESSAGES}', messagesHtml);
+    const final = strReplace(withMessages, '{$SESSION_PARAM}', sessionParam);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);

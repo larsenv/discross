@@ -41,23 +41,11 @@ function generateAcronym(serverName) {
       const firstLetter = word.charAt(firstLetterIndex);
 
       // Get any punctuation that comes before the first letter
-      let prefixPunctuation = '';
-      for (let i = 0; i < firstLetterIndex; i++) {
-        prefixPunctuation += word.charAt(i);
-      }
+      const prefixPunctuation = word.slice(0, firstLetterIndex);
 
       // Skip all letters and digits after the first letter, then collect punctuation
-      let suffixPunctuation = '';
-      let i = firstLetterIndex + 1;
-      // Skip remaining alphanumeric characters
-      while (i < word.length && /[a-zA-Z0-9]/.test(word.charAt(i))) {
-        i++;
-      }
-      // Collect all remaining characters (punctuation)
-      while (i < word.length) {
-        suffixPunctuation += word.charAt(i);
-        i++;
-      }
+      const afterFirst = word.slice(firstLetterIndex + 1);
+      const suffixPunctuation = afterFirst.replace(/^[a-zA-Z0-9]+/, '');
 
       return prefixPunctuation + firstLetter + suffixPunctuation;
     })
