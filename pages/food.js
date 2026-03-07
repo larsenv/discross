@@ -323,9 +323,13 @@ exports.handleGet = async function (bot, req, res, discordID) {
   if (subpath === '' || subpath === 'index' || subpath === 'index.html') {
     const cart = getCart(req);
     const cartCount = (cart.items || []).reduce((s, i) => s + (i.qty || 1), 0);
-    let html = strReplace(templates.index, '{$WHITE_THEME_ENABLED}', theme);
-    html = strReplace(html, '{$CART_COUNT}', String(cartCount));
-    html = applySessionToTemplate(html);
+    const html = applySessionToTemplate(
+      strReplace(
+        strReplace(templates.index, '{$WHITE_THEME_ENABLED}', theme),
+        '{$CART_COUNT}',
+        String(cartCount)
+      )
+    );
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end(html);
   }
@@ -416,17 +420,16 @@ exports.handleGet = async function (bot, req, res, discordID) {
       return res.end();
     }
 
-    let menuData = null;
-    try {
-      const result = await dominosRequest({
-        hostname: dominosHost,
-        path: `/power/store/${encodeURIComponent(storeId)}/menu?lang=en&structured=true`,
-        method: 'GET',
+    const menuData = await dominosRequest({
+      hostname: dominosHost,
+      path: `/power/store/${encodeURIComponent(storeId)}/menu?lang=en&structured=true`,
+      method: 'GET',
+    })
+      .then((result) => (result.status >= 200 && result.status < 300 ? result.data : null))
+      .catch((e) => {
+        console.error('Dominos menu fetch error:', e);
+        return null;
       });
-      if (result.status >= 200 && result.status < 300) menuData = result.data;
-    } catch (e) {
-      console.error('Dominos menu fetch error:', e);
-    }
 
     const cart = getCart(req);
     let html = strReplace(templates.menu, '{$WHITE_THEME_ENABLED}', theme);
@@ -450,26 +453,22 @@ exports.handleGet = async function (bot, req, res, discordID) {
       const selectedCat = category || (allCategories[0] && allCategories[0].Code) || '';
 
       // Category tabs
-      let catTabs = '';
-      for (const cat of allCategories) {
-        if (!cat || !cat.Code) continue;
-        const active = selectedCat === cat.Code ? ' food-tab-active' : '';
-        catTabs += `<a href="/food/menu?store=${encodeURIComponent(storeId)}&amp;category=${encodeURIComponent(cat.Code)}&amp;country=${country}${persistentSuffix}" class="food-tab${active}">${escape(cat.Name || cat.Code)}</a>`;
-      }
+      const catTabs = allCategories
+        .filter((cat) => cat && cat.Code)
+        .map((cat) => {
+          const active = selectedCat === cat.Code ? ' food-tab-active' : '';
+          return `<a href="/food/menu?store=${encodeURIComponent(storeId)}&amp;category=${encodeURIComponent(cat.Code)}&amp;country=${country}${persistentSuffix}" class="food-tab${active}">${escape(cat.Name || cat.Code)}</a>`;
+        })
+        .join('');
       html = strReplace(html, '{$CATEGORY_TABS}', catTabs);
 
       // Recursively collect all product codes, handling deeply nested Categories (e.g. Pizza)
       function collectProducts(catNode) {
-        let codes = [];
-        if (catNode.Products && catNode.Products.length) {
-          codes = codes.concat(catNode.Products);
-        }
-        if (catNode.Categories && catNode.Categories.length) {
-          for (const sub of catNode.Categories) {
-            if (sub) codes = codes.concat(collectProducts(sub));
-          }
-        }
-        return codes;
+        const products = catNode.Products?.length ? [...catNode.Products] : [];
+        const subProducts = catNode.Categories?.length
+          ? catNode.Categories.filter(Boolean).flatMap((sub) => collectProducts(sub))
+          : [];
+        return products.concat(subProducts);
       }
 
       const catData = categoryByCode[selectedCat];
@@ -630,44 +629,49 @@ exports.handleGet = async function (bot, req, res, discordID) {
     );
 
     // Fetch store address to display to user
-    let storeAddrHtml = '';
-    if (cart.storeId) {
-      try {
-        const profileResult = await dominosRequest({
+    const storeAddrHtml = cart.storeId
+      ? await dominosRequest({
           hostname: dominosHost,
           path: `/power/store/${encodeURIComponent(cart.storeId)}/profile`,
           method: 'GET',
-        });
-        if (profileResult.status >= 200 && profileResult.status < 300 && profileResult.data) {
-          const p = profileResult.data;
-          const addr = [p.StreetName || p.AddressDescription, p.City, p.Region, p.PostalCode]
-            .filter(Boolean)
-            .join(', ');
-          if (addr) {
-            storeAddrHtml = `<div style="margin-top:12px;padding:10px;background:#2a2d31;border-radius:6px;">
+        })
+          .then((profileResult) => {
+            if (profileResult.status >= 200 && profileResult.status < 300 && profileResult.data) {
+              const p = profileResult.data;
+              const addr = [p.StreetName || p.AddressDescription, p.City, p.Region, p.PostalCode]
+                .filter(Boolean)
+                .join(', ');
+              if (addr) {
+                return `<div style="margin-top:12px;padding:10px;background:#2a2d31;border-radius:6px;">
   <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">
     Delivering from: Store #${escape(cart.storeId)} ${escape(addr)}
   </font>
 </div>`;
-          }
-        }
-      } catch (e) {
-        console.error('Dominos store profile fetch error (non-critical):', e.message);
-      }
-    }
+              }
+            }
+            return '';
+          })
+          .catch((e) => {
+            console.error('Dominos store profile fetch error (non-critical):', e.message);
+            return '';
+          })
+      : '';
     html = strReplace(html, '{$STORE_ADDRESS}', storeAddrHtml);
 
-    let itemsSummary = '';
-    let total = 0;
-    for (const item of cart.items) {
-      const p = parseFloat(item.price || 0);
-      const qty = item.qty || 1;
-      total += p * qty;
-      itemsSummary += `<div class="food-summary-item">
+    const total = cart.items.reduce(
+      (sum, item) => sum + parseFloat(item.price || 0) * (item.qty || 1),
+      0
+    );
+    const itemsSummary = cart.items
+      .map((item) => {
+        const p = parseFloat(item.price || 0);
+        const qty = item.qty || 1;
+        return `<div class="food-summary-item">
   <span>${escape(item.name || item.code)} ×${qty}</span>
   <span>$${(p * qty).toFixed(2)}</span>
 </div>`;
-    }
+      })
+      .join('');
     html = strReplace(html, '{$ORDER_SUMMARY}', itemsSummary);
     html = strReplace(html, '{$ORDER_TOTAL}', total.toFixed(2));
     html = applySessionToTemplate(html);
@@ -680,15 +684,18 @@ exports.handleGet = async function (bot, req, res, discordID) {
   if (subpath === 'verify') {
     const verifyCart = getCart(req);
     const verifyCartCount = (verifyCart.items || []).reduce((s, i) => s + (i.qty || 1), 0);
-    let html = strReplace(templates.verify, '{$WHITE_THEME_ENABLED}', theme);
-    html = strReplace(html, '{$CART_COUNT}', String(verifyCartCount));
     const errorText = parsedurl.searchParams.get('error') || '';
-    html = strReplace(
-      html,
-      '{$ERROR}',
-      errorText ? `<div class="food-error">${escape(errorText)}</div>` : ''
+    const html = applySessionToTemplate(
+      strReplace(
+        strReplace(
+          strReplace(templates.verify, '{$WHITE_THEME_ENABLED}', theme),
+          '{$CART_COUNT}',
+          String(verifyCartCount)
+        ),
+        '{$ERROR}',
+        errorText ? `<div class="food-error">${escape(errorText)}</div>` : ''
+      )
     );
-    html = applySessionToTemplate(html);
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end(html);
   }
@@ -704,15 +711,12 @@ exports.handleGet = async function (bot, req, res, discordID) {
       'SELECT store_name, timestamp FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC LIMIT 1',
       [discordID]
     );
-    let orderInfo = '';
-    if (lastOrder && lastOrder.timestamp) {
-      orderInfo = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+    const orderInfo = lastOrder?.timestamp
+      ? `<font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
         <b>Most recent order:</b> ${escape(lastOrder.store_name || 'Unknown store')}<br>
         <b>Placed:</b> ${escape(formatTimestamp(lastOrder.timestamp, req))}
-      </font>`;
-    } else {
-      orderInfo = `<font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">No recent orders found.</font>`;
-    }
+      </font>`
+      : `<font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">No recent orders found.</font>`;
     html = strReplace(html, '{$ORDER_INFO}', orderInfo);
     html = applySessionToTemplate(html);
     res.writeHead(200, { 'Content-Type': 'text/html' });
@@ -736,18 +740,27 @@ exports.handleGet = async function (bot, req, res, discordID) {
       : '';
     html = strReplace(html, '{$NOTICE}', noticeHtml);
 
-    let ordersHtml = '';
-    if (orders && orders.length > 0) {
-      for (const order of orders) {
-        const date = formatTimestamp(order.timestamp, req);
-        let items = [];
-        try {
-          items = JSON.parse(order.items_json);
-        } catch (e) {
-          console.warn('[orders] Failed to parse items_json for order:', order.id, e.message);
-        }
-        const itemsList = items.map((i) => `${escape(i.name || i.code)} ×${i.qty || 1}`).join(', ');
-        ordersHtml += `<div class="food-receipt-card">
+    const ordersHtml =
+      orders && orders.length > 0
+        ? orders
+            .map((order) => {
+              const date = formatTimestamp(order.timestamp, req);
+              const items = (() => {
+                try {
+                  return JSON.parse(order.items_json);
+                } catch (e) {
+                  console.warn(
+                    '[orders] Failed to parse items_json for order:',
+                    order.id,
+                    e.message
+                  );
+                  return [];
+                }
+              })();
+              const itemsList = items
+                .map((i) => `${escape(i.name || i.code)} ×${i.qty || 1}`)
+                .join(', ');
+              return `<div class="food-receipt-card">
   <div class="food-receipt-header">
     <span class="food-receipt-store">${escape(order.store_name || `Store #${order.store_id}`)}</span>
     <span class="food-receipt-date">${escape(date)}</span>
@@ -758,11 +771,9 @@ exports.handleGet = async function (bot, req, res, discordID) {
     <a href="/food/track${persistentParam}" class="food-btn food-btn-sm">Track</a>
   </div>
 </div>`;
-      }
-    } else {
-      ordersHtml =
-        '<font face="\'rodin\', Arial, Helvetica, sans-serif" color="#b5bac1">No orders yet.</font>';
-    }
+            })
+            .join('')
+        : '<font face="\'rodin\', Arial, Helvetica, sans-serif" color="#b5bac1">No orders yet.</font>';
     html = strReplace(html, '{$ORDERS}', ordersHtml);
     html = applySessionToTemplate(html);
 
@@ -803,17 +814,16 @@ exports.handleGet = async function (bot, req, res, discordID) {
     }
 
     const dominosHost = country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com';
-    let menuData = null;
-    try {
-      const result = await dominosRequest({
-        hostname: dominosHost,
-        path: `/power/store/${encodeURIComponent(storeId)}/menu?lang=en&structured=true`,
-        method: 'GET',
+    const menuData = await dominosRequest({
+      hostname: dominosHost,
+      path: `/power/store/${encodeURIComponent(storeId)}/menu?lang=en&structured=true`,
+      method: 'GET',
+    })
+      .then((result) => (result.status >= 200 && result.status < 300 ? result.data : null))
+      .catch((e) => {
+        console.error('Dominos menu fetch error (customize):', e);
+        return null;
       });
-      if (result.status >= 200 && result.status < 300) menuData = result.data;
-    } catch (e) {
-      console.error('Dominos menu fetch error (customize):', e);
-    }
 
     const custCart = getCart(req);
     const custCartCount = (custCart.items || []).reduce((s, i) => s + (i.qty || 1), 0);
@@ -971,12 +981,13 @@ exports.handleGet = async function (bot, req, res, discordID) {
               const portionList = Array.from(portionSet).sort(
                 (a, b) => parseFloat(a) - parseFloat(b)
               );
-              let optHtml = '';
-              for (const p of portionList) {
-                const label = PORTION_LABELS[p] || p;
-                const sel = p === defaultAmt ? ' selected' : '';
-                optHtml += `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
-              }
+              const optHtml = portionList
+                .map((p) => {
+                  const label = PORTION_LABELS[p] || p;
+                  const sel = p === defaultAmt ? ' selected' : '';
+                  return `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
+                })
+                .join('');
               toppingsSection += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
   ${escape(s.name)}: <select name="sauce_${escape(s.code)}" style="background:#222327;color:#dddddd;border:none;border-radius:4px;padding:2px 4px">
 ${optHtml}
@@ -1001,12 +1012,13 @@ ${optHtml}
                 (a, b) => parseFloat(a) - parseFloat(b)
               );
               // Build select options with labels
-              let optHtml = '';
-              for (const p of portionList) {
-                const label = PORTION_LABELS[p] || p;
-                const sel = p === defaultAmt ? ' selected' : '';
-                optHtml += `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
-              }
+              const optHtml = portionList
+                .map((p) => {
+                  const label = PORTION_LABELS[p] || p;
+                  const sel = p === defaultAmt ? ' selected' : '';
+                  return `<option value="${escape(p)}"${sel}>${escape(label)}</option>`;
+                })
+                .join('');
               toppingsSection += `<div style="padding:4px 0;font-family:'rodin',Arial,Helvetica,sans-serif;color:#dddddd">
   ${escape(t.name)}: <select name="topping_${escape(t.code)}" style="background:#222327;color:#dddddd;border:none;border-radius:4px;padding:2px 4px">
 ${optHtml}
