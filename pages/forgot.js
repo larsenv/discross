@@ -14,21 +14,18 @@ const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.ht
 
 exports.processForgot = function (bot, req, res, args) {
   const parsedurl = new URL(req.url, 'http://localhost');
-  let response = forgot_template;
-  response = strReplace(response, '{$MENU_OPTIONS}', logged_out_template);
-  if (parsedurl.searchParams.get('errortext')) {
-    response = strReplace(
-      response,
+  const rawError = parsedurl.searchParams.get('errortext');
+  const errorHtml = rawError
+    ? strReplace(error_template, '{$ERROR_MESSAGE}', strReplace(escape(rawError), '\n', '<br>'))
+    : '';
+  const response = strReplace(
+    strReplace(
+      strReplace(forgot_template, '{$MENU_OPTIONS}', logged_out_template),
       '{$ERROR}',
-      strReplace(
-        error_template,
-        '{$ERROR_MESSAGE}',
-        strReplace(escape(parsedurl.searchParams.get('errortext')), '\n', '<br>')
-      )
-    );
-  } else {
-    response = strReplace(response, '{$ERROR}', '');
-  }
-  response = strReplace(response, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
+      errorHtml
+    ),
+    '{$WHITE_THEME_ENABLED}',
+    getPageThemeAttr(req)
+  );
   res.end(response);
 };

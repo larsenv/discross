@@ -704,8 +704,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
   if (subpath === 'track') {
     const trackCart = getCart(req);
     const trackCartCount = (trackCart.items || []).reduce((s, i) => s + (i.qty || 1), 0);
-    let html = strReplace(templates.track, '{$WHITE_THEME_ENABLED}', theme);
-    html = strReplace(html, '{$CART_COUNT}', String(trackCartCount));
+    const withTheme = strReplace(templates.track, '{$WHITE_THEME_ENABLED}', theme);
+    const withCartCount = strReplace(withTheme, '{$CART_COUNT}', String(trackCartCount));
     // Show the user's most recent order info
     const lastOrder = auth.dbQuerySingle(
       'SELECT store_name, timestamp FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC LIMIT 1',
@@ -717,8 +717,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         <b>Placed:</b> ${escape(formatTimestamp(lastOrder.timestamp, req))}
       </font>`
       : `<font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">No recent orders found.</font>`;
-    html = strReplace(html, '{$ORDER_INFO}', orderInfo);
-    html = applySessionToTemplate(html);
+    const html = applySessionToTemplate(strReplace(withCartCount, '{$ORDER_INFO}', orderInfo));
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end(html);
   }
@@ -731,14 +730,14 @@ exports.handleGet = async function (bot, req, res, discordID) {
       'SELECT * FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC',
       [discordID]
     );
-    let html = strReplace(templates.receipts, '{$WHITE_THEME_ENABLED}', theme);
-    html = strReplace(html, '{$CART_COUNT}', String(receiptCartCount));
+    const withTheme = strReplace(templates.receipts, '{$WHITE_THEME_ENABLED}', theme);
+    const withCartCount = strReplace(withTheme, '{$CART_COUNT}', String(receiptCartCount));
 
     const justPlaced = parsedurl.searchParams.get('placed') === '1';
     const noticeHtml = justPlaced
       ? `<div class="food-success-box"><font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Your order has been placed!</b> Your name, address, phone, and email were used only to send the order and have not been saved to our servers. Only your items, total, and store are stored for your receipt.</font></div>`
       : '';
-    html = strReplace(html, '{$NOTICE}', noticeHtml);
+    const withNotice = strReplace(withCartCount, '{$NOTICE}', noticeHtml);
 
     const ordersHtml =
       orders && orders.length > 0
@@ -774,8 +773,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
             })
             .join('')
         : '<font face="\'rodin\', Arial, Helvetica, sans-serif" color="#b5bac1">No orders yet.</font>';
-    html = strReplace(html, '{$ORDERS}', ordersHtml);
-    html = applySessionToTemplate(html);
+    const html = applySessionToTemplate(strReplace(withNotice, '{$ORDERS}', ordersHtml));
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end(html);

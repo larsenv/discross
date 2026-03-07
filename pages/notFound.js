@@ -10,10 +10,10 @@ const template404 = fs
   .join(commonHead);
 
 exports.serve404 = function (req, res, message, backUrl, backLabel) {
-  let html = strReplace(template404, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
-  html = strReplace(html, '{$MESSAGE}', message || 'Page not found.');
-  html = strReplace(html, '{$BACK_URL}', backUrl || '/');
-  html = strReplace(html, '{$BACK_LABEL}', backLabel || 'Back to Home');
+  const withTheme = strReplace(template404, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
+  const withMessage = strReplace(withTheme, '{$MESSAGE}', message || 'Page not found.');
+  const withBackUrl = strReplace(withMessage, '{$BACK_URL}', backUrl || '/');
+  const html = strReplace(withBackUrl, '{$BACK_LABEL}', backLabel || 'Back to Home');
   res.writeHead(404, { 'Content-Type': 'text/html' });
   return res.end(html);
 };

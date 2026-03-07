@@ -103,13 +103,11 @@ function iconImg(code, size) {
 function buildNavButtons(city, activeView, urlSessionID) {
   const cityEnc = encodeURIComponent(city);
   const sessionSuffix = urlSessionID ? `&sessionID=${encodeURIComponent(urlSessionID)}` : '';
-  let html = '<table cellpadding="0" cellspacing="0"><tr>\n';
-  for (const v of VIEWS) {
+  const rows = VIEWS.map((v) => {
     const cls = v.id === activeView ? 'discross-button' : 'discross-button secondary';
-    html += `  <td style="padding:0 6px 10px 0;"><a href="/weather?city=${cityEnc}&view=${v.id}${sessionSuffix}" class="${cls}" style="padding:7px 16px;font-size:14px;margin:0;">${v.label}</a></td>\n`;
-  }
-  html += '</tr></table>\n';
-  return html;
+    return `  <td style="padding:0 6px 10px 0;"><a href="/weather?city=${cityEnc}&view=${v.id}${sessionSuffix}" class="${cls}" style="padding:7px 16px;font-size:14px;margin:0;">${v.label}</a></td>\n`;
+  });
+  return `<table cellpadding="0" cellspacing="0"><tr>\n${rows.join('')}</tr></table>\n`;
 }
 
 const weather_template = fs

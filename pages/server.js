@@ -508,18 +508,17 @@ function createServerHTML(server, member, imagesCookie, sessionParam) {
     .replace(emojiRegex, '')
     .trim();
 
+  const iconUrl = server.icon
+    ? `/ico/server/${server.id}/${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
+    : '/discord-mascot.gif';
+  const withIconUrl = strReplace(server_icon_template, '{$SERVER_ICON_URL}', iconUrl);
+  const withServerUrl = strReplace(
+    withIconUrl,
+    '{$SERVER_URL}',
+    './' + server.id + (sessionParam || '')
+  );
   const serverHTML = strReplace(
-    strReplace(
-      strReplace(
-        server_icon_template,
-        '{$SERVER_ICON_URL}',
-        server.icon
-          ? `/ico/server/${server.id}/${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
-          : '/discord-mascot.gif'
-      ),
-      '{$SERVER_URL}',
-      './' + server.id + (sessionParam || '')
-    ),
+    withServerUrl,
     '{$SERVER_NAME}',
     escape(normalizeWeirdUnicode(serverName))
   );
