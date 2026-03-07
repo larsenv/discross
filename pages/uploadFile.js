@@ -176,13 +176,10 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
               : '';
 
             // Upload file to transfer.notkiska.pw
-            let transferUrl;
-            try {
-              transferUrl = await uploadToTransfer(
-                filePath,
-                file.originalFilename || file.name || 'uploaded_file'
-              );
-            } catch (uploadError) {
+            const transferUrl = await uploadToTransfer(
+              filePath,
+              file.originalFilename || file.name || 'uploaded_file'
+            ).catch((uploadError) => {
               console.error('Error uploading to transfer.notkiska.pw:', uploadError);
               if (isTraditionalSubmission) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
@@ -198,8 +195,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                 );
               }
               resolve();
-              return;
-            }
+              return undefined;
+            });
+            if (transferUrl === undefined) return;
 
             // Send message with just the transfer.notkiska.pw URL as a link
             const message = await webhook.send({
