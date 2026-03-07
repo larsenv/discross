@@ -1280,8 +1280,8 @@ html.page-food input[type="email"] {
 }
 
 .food-input {
-    background: #222327;
-    border: none;
+    background: #2a2d31;
+    border: 1px solid #3d4046;
     border-radius: 8px;
     color: #dddddd;
     padding: 0 14px;
@@ -1439,6 +1439,11 @@ a.food-btn:hover,
     font-family: 'rodin', Arial, Helvetica, sans-serif;
     font-size: 0.9rem;
     cursor: pointer;
+}
+input[type="radio"]:checked + .food-tip-btn {
+    background: #5865f2;
+    color: #ffffff;
+    border-color: #5865f2;
 }
 .food-customize-img {
     max-width: 200px;
@@ -1838,17 +1843,15 @@ a.food-tab-active:hover,
 }
 
 /* Theme overrides for food pages */
-.light-theme .food-input,
-.amoled-theme .food-input {
-    border: none;
-}
 .light-theme .food-input {
     background: #FFFFFF;
     color: #323339;
+    border: none;
 }
 .amoled-theme .food-input {
     background: #141416;
     color: #DCDCDF;
+    border: 1px solid #1e1e22;
 }
 .light-theme .food-btn,
 .amoled-theme .food-btn {
@@ -1909,8 +1912,10 @@ a.food-tab-active:hover,
 .light-theme .food-size-option { background: #e3e5e8; color: #323339; }
 .light-theme .food-size-price { color: #323339; }
 .light-theme .food-tip-btn { background: #e3e5e8; color: #323339; border-color: #c8ccd2; }
+.light-theme input[type="radio"]:checked + .food-tip-btn { background: #5865f2; color: #ffffff; border-color: #5865f2; }
 .amoled-theme .food-size-option { background: #141416; color: #dddddd; }
 .amoled-theme .food-tip-btn { background: #141416; color: #dddddd; border-color: #2a2d31; }
+.amoled-theme input[type="radio"]:checked + .food-tip-btn { background: #5865f2; color: #ffffff; border-color: #5865f2; }
 
 /* Responsive */
 @media (max-width: 720px) {
