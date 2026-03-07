@@ -189,7 +189,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
         const timestamp = embed.timestamp
           ? `<span>${formatDateWithTimezone(new Date(embed.timestamp), clientTimezone)}</span>`
           : '';
-        return `<div style="display: flex; align-items: center; margin-top: 8px; font-size: 12px; color: #72767d;">${footerText}${separator}${timestamp}</div>`;
+        return `<div style="margin-top: 8px; font-size: 12px; color: #72767d;">${footerText}${separator}${timestamp}</div>`;
       })();
 
       const withColor = strReplace(embed_template, '{$EMBED_COLOR}', embedColor);

@@ -143,6 +143,12 @@ function openFileUpload() {
 }
 
 function handleFileSelect(input) {
+    // File upload requires fetch and FormData — not available in IE8/Opera 9.x
+    if (!window.fetch || !window.FormData) {
+        alert('File upload requires a more modern browser. Please use a text message instead.');
+        input.value = '';
+        return;
+    }
     if (input.files && input.files[0]) {
         const file = input.files[0];
         const maxSize = 249 * 1024 * 1024; // 249MB limit for transfer.whalebone.io
@@ -168,6 +174,11 @@ function uploadFile(file) {
     formData.append('file', file);
     formData.append('channel', document.getElementById('channel').value);
     formData.append('message', ''); // No message content, just the file URL
+
+    function resetInput() {
+        var fi = document.getElementById('fileUpload');
+        if (fi) fi.value = '';
+    }
     
     // Show uploading indicator
     const messageInput = document.getElementById('message');
@@ -185,6 +196,7 @@ function uploadFile(file) {
         return response.json();
     })
     .then(function(data) {
+        resetInput();
         if (data.success) {
             // Clear message box before refreshing
             if (messageInput) {
@@ -201,25 +213,26 @@ function uploadFile(file) {
         }
     })
     .catch(function(error) {
+        resetInput();
         alert('Upload failed: ' + error);
         if (messageInput) {
             messageInput.value = originalValue;
             messageInput.disabled = false;
         }
-    })
-    .finally(function() {
-        document.getElementById('fileUpload').value = '';
     });
 }
 
 // Theme-aware hover color helper
+// Use className.indexOf instead of classList.contains for IE8/Opera 9.x compatibility
+// Use solid colors as primary values so IE8 (which doesn't support rgba) still shows hover
 function getHoverColor() {
-    if (document.body.classList.contains('light-theme')) {
-        return 'rgba(0, 0, 0, 0.08)';
-    } else if (document.body.classList.contains('amoled-theme')) {
-        return 'rgba(255, 255, 255, 0.08)';
+    var cn = document.body.className;
+    if (cn.indexOf('light-theme') !== -1) {
+        return '#ebebeb';
+    } else if (cn.indexOf('amoled-theme') !== -1) {
+        return '#222';
     } else {
-        return 'rgba(255, 255, 255, 0.06)';
+        return '#444';
     }
 }
 
