@@ -5,11 +5,11 @@ const sockets = [];
 const listenChannels = [];
 
 function sendToAll(message, channel) {
-  for (let i = 0; i < sockets.length; i++) {
+  sockets.forEach((socket, i) => {
     if (listenChannels[i] === channel) {
-      sockets[i].send(message);
+      socket.send(message);
     }
-  }
+  });
 }
 
 exports.sendToAll = sendToAll;

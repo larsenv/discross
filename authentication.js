@@ -67,12 +67,12 @@ function unixTime() {
 }
 
 exports.createUser = async function (discordID, username, password) {
-  let match = querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username]);
-  if (match) {
+  const usernameMatch = querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username]);
+  if (usernameMatch) {
     return { status: 'error', reason: 'An account with that username exists!' };
   }
-  match = querySingle('SELECT DISTINCT * FROM users WHERE discordID=?', [discordID]);
-  if (match) {
+  const discordMatch = querySingle('SELECT DISTINCT * FROM users WHERE discordID=?', [discordID]);
+  if (discordMatch) {
     return {
       status: 'error',
       reason:
@@ -248,11 +248,7 @@ let _lastSessionCleanup = 0;
 // Generate 10-character alphanumeric backup code (uppercase + digits)
 function generateBackupCodeValue() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // unambiguous charset
-  let code = '';
-  for (let i = 0; i < 10; i++) {
-    code += chars[crypto.randomInt(chars.length)];
-  }
-  return code;
+  return Array.from({ length: 10 }, () => chars[crypto.randomInt(chars.length)]).join('');
 }
 
 async function verifyBackupCode(discordID, plainCode) {

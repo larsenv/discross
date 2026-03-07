@@ -22,52 +22,40 @@ exports.processChangePassword = async function (bot, req, res, args) {
   const username = await auth.getUsername(discordID);
 
   // Send 6-digit action code via Discord DM (only on fresh page load, not on error/success/codesent redirects)
-  let dmErrorText = '';
-  if (
+  const dmErrorText =
     !parsedUrl.searchParams.get('errortext') &&
     !parsedUrl.searchParams.get('success') &&
     !parsedUrl.searchParams.get('codesent')
-  ) {
-    const code = auth.createActionCode(discordID, 'changepassword');
-    const dmResult = await bot.sendDM(
-      discordID,
-      'Your Discross verification code to change your password: **' +
-        code +
-        '**\nThis code expires in 10 minutes.'
-    );
-    if (!dmResult.success) {
-      dmErrorText =
-        'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.';
-    }
-  }
+      ? await (async () => {
+          const code = auth.createActionCode(discordID, 'changepassword');
+          const dmResult = await bot.sendDM(
+            discordID,
+            'Your Discross verification code to change your password: **' +
+              code +
+              '**\nThis code expires in 10 minutes.'
+          );
+          return dmResult.success
+            ? ''
+            : 'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.';
+        })()
+      : '';
 
   const sendCodeUrl =
     '/sendactioncode?action=changepassword' +
     (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
 
   const errortext = parsedUrl.searchParams.get('errortext');
-  let errorHtml;
-  if (dmErrorText) {
-    errorHtml = strReplace(
-      error_template,
-      '{$ERROR_MESSAGE}',
-      strReplace(escape(dmErrorText), '\n', '<br>')
-    );
-  } else if (errortext) {
-    errorHtml = strReplace(
-      error_template,
-      '{$ERROR_MESSAGE}',
-      strReplace(escape(errortext), '\n', '<br>')
-    );
-  } else if (parsedUrl.searchParams.get('codesent')) {
-    errorHtml =
-      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>';
-  } else if (parsedUrl.searchParams.get('success')) {
-    errorHtml =
-      '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Password changed successfully! Please log in again.</font>';
-  } else {
-    errorHtml = '';
-  }
+  const buildErrorMsg = (text) =>
+    strReplace(error_template, '{$ERROR_MESSAGE}', strReplace(escape(text), '\n', '<br>'));
+  const errorHtml = dmErrorText
+    ? buildErrorMsg(dmErrorText)
+    : errortext
+      ? buildErrorMsg(errortext)
+      : parsedUrl.searchParams.get('codesent')
+        ? '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>'
+        : parsedUrl.searchParams.get('success')
+          ? '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Password changed successfully! Please log in again.</font>'
+          : '';
 
   const menuOptions = strReplace(logged_in_template, '{$USER}', escape(username || ''));
   const withMenu = strReplace(changepassword_template, '{$MENU_OPTIONS}', menuOptions);
