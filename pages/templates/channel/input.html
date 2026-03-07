@@ -1,11 +1,9 @@
-<div class="message-input-bar-wrapper" style="background: {$COLOR}; border-radius: 8px; padding: 4px; margin: 8px 0; overflow: hidden;">
+<div class="message-input-bar-wrapper" style="position: relative; background: {$COLOR}; border-radius: 8px; margin: 8px 0; overflow: hidden;">
     <input type="submit" class="send-button-input" value="Send"
-        style="float: right; border: none; border-radius: 4px; color: white; padding: 0px 24px; cursor: pointer; font-family: rodin, Whitney, Helvetica Neue, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; height: 38px; line-height: 38px; text-align: center; white-space: nowrap; background: #5865f2;"
+        style="position: absolute; right: 0; top: 0; bottom: 0; height: auto; border: none; border-radius: 4px; color: white; padding: 0 24px; cursor: pointer; font-family: rodin, Whitney, Helvetica Neue, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; text-align: center; white-space: nowrap; background: #5865f2;"
         onmouseover="this.style.background='#4752c4'"
         onmouseout="this.style.background='#5865f2'">
-    <div style="overflow: hidden;">
-        <input type="text" name="message" id="message" value="" class="message-input-field"
-            style="width: 100%; box-sizing: border-box; -moz-box-sizing: border-box; background: transparent; border: none; outline: none; height: 19px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 19px;"
-            placeholder="Message {$CHANNEL_NAME}">
-    </div>
+    <input type="text" name="message" id="message" value="" class="message-input-field"
+        style="width: 100%; box-sizing: border-box; -moz-box-sizing: border-box; background: transparent; border: none; outline: none; height: 41px; padding: 0 90px 0 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 41px;"
+        placeholder="Message {$CHANNEL_NAME}">
 </div>
