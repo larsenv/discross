@@ -1,11 +1,33 @@
+'use strict';
 const fs = require('fs');
 const escape = require('escape-html');
+const { strReplace } = require('./utils.js');
 
 const poll_template = fs.readFileSync('pages/templates/message/poll.html', 'utf-8');
 const poll_answer_template = fs.readFileSync('pages/templates/message/poll_answer.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
+function buildPollEmojiHtml(emoji, imagesCookie) {
+  if (!emoji) return '';
+  if (emoji.id && imagesCookie === 1) {
+    const extension = emoji.animated ? 'gif' : 'png';
+    return `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
+  }
+  if (emoji.name && imagesCookie === 1) {
+    const codePoints = [];
+    for (let i = 0; i < emoji.name.length; i++) {
+      const code = emoji.name.codePointAt(i);
+      if (code) {
+        codePoints.push(code.toString(16));
+        if (code > 0xffff) i++;
+      }
+    }
+    const emojiCode = codePoints.join('-');
+    return `<img src="/resources/twemoji/${emojiCode}.gif" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
+  }
+  if (emoji.name) {
+    return `<span style="font-size: 20px;">${emoji.name}</span>`;
+  }
+  return '';
 }
 
 /**
@@ -18,95 +40,59 @@ function processPoll(poll, imagesCookie) {
   if (!poll) return '';
 
   try {
-    let pollHtml = poll_template;
-    
-    // Set the poll question
-    const question = poll.question?.text || 'Poll';
-    pollHtml = strReplace(pollHtml, '{$POLL_QUESTION}', escape(question));
-    
     // Calculate total votes across all answers
-    let totalVotes = 0;
-    if (poll.answers && poll.answers.size > 0) {
-      poll.answers.forEach(answer => {
-        totalVotes += answer.voteCount || 0;
-      });
-    }
-    
+    const totalVotes =
+      poll.answers?.size > 0
+        ? Array.from(poll.answers.values()).reduce((sum, a) => sum + (a.voteCount || 0), 0)
+        : 0;
+
     // Process each answer
-    let answersHtml = '';
-    if (poll.answers && poll.answers.size > 0) {
-      poll.answers.forEach(answer => {
-        let answerHtml = poll_answer_template;
-        
-        // Calculate vote percentage
-        const voteCount = answer.voteCount || 0;
-        const votePercentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-        
-        // Get answer text
-        const answerText = answer.text || '';
-        answerHtml = strReplace(answerHtml, '{$ANSWER_TEXT}', escape(answerText));
-        
-        // Handle emoji if present
-        let emojiHtml = '';
-        if (answer._emoji) {
-          const emoji = answer._emoji;
-          if (emoji.id && imagesCookie == 1) {
-            // Custom emoji
-            const isAnimated = emoji.animated || false;
-            const extension = isAnimated ? 'gif' : 'png';
-            emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
-          } else if (emoji.name && imagesCookie == 1) {
-            // Unicode emoji - convert to twemoji
-            const codePoints = [];
-            for (let i = 0; i < emoji.name.length; i++) {
-              const code = emoji.name.codePointAt(i);
-              if (code) {
-                codePoints.push(code.toString(16));
-                // Skip low surrogate if this was a high surrogate
-                if (code > 0xFFFF) i++;
-              }
-            }
-            const emojiCode = codePoints.join('-');
-            emojiHtml = `<img src="/resources/twemoji/${emojiCode}.gif" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
-          } else if (emoji.name) {
-            // Fallback to unicode emoji text
-            emojiHtml = `<span style="font-size: 20px;">${emoji.name}</span>`;
-          }
-        }
-        answerHtml = strReplace(answerHtml, '{$ANSWER_EMOJI}', emojiHtml);
-        
-        // Set vote count and percentage
-        answerHtml = strReplace(answerHtml, '{$VOTE_COUNT}', voteCount.toString());
-        answerHtml = strReplace(answerHtml, '{$VOTE_PERCENTAGE}', votePercentage.toString());
-        
-        answersHtml += answerHtml;
-      });
-    } else {
-      answersHtml = '<div style="color: #72767d; font-size: 14px; font-style: italic;">No answers available</div>';
-    }
-    
-    pollHtml = strReplace(pollHtml, '{$POLL_ANSWERS}', answersHtml);
-    
+    const answersHtml =
+      poll.answers?.size > 0
+        ? Array.from(poll.answers.values())
+            .map((answer) => {
+              const voteCount = answer.voteCount || 0;
+              const votePercentage =
+                totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+              const withText = strReplace(
+                poll_answer_template,
+                '{$ANSWER_TEXT}',
+                escape(answer.text || '')
+              );
+              const withEmoji = strReplace(
+                withText,
+                '{$ANSWER_EMOJI}',
+                buildPollEmojiHtml(answer._emoji, imagesCookie)
+              );
+              const withCount = strReplace(withEmoji, '{$VOTE_COUNT}', voteCount);
+              return strReplace(withCount, '{$VOTE_PERCENTAGE}', votePercentage);
+            })
+            .join('')
+        : '<div style="color: #72767d; font-size: 14px; font-style: italic;">No answers available</div>';
+
     // Create footer with poll metadata
-    let footerParts = [];
-    footerParts.push(`${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}`);
-    
+    const footerParts = [`${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}`];
+
     if (poll.allowMultiselect) {
       footerParts.push('Multiple choice');
     }
-    
+
     // Check if poll has ended
     const now = Date.now();
     if (poll.expiresTimestamp && poll.expiresTimestamp < now) {
       footerParts.push('Poll ended');
     } else if (poll.expiresTimestamp) {
-      const expiresDate = new Date(poll.expiresTimestamp);
-      footerParts.push(`Ends ${expiresDate.toLocaleDateString()}`);
+      footerParts.push(`Ends ${new Date(poll.expiresTimestamp).toLocaleDateString()}`);
     }
-    
-    const footer = footerParts.join(' • ');
-    pollHtml = strReplace(pollHtml, '{$POLL_FOOTER}', escape(footer));
-    
+
+    const withQuestion = strReplace(
+      poll_template,
+      '{$POLL_QUESTION}',
+      escape(poll.question?.text || 'Poll')
+    );
+    const withAnswers = strReplace(withQuestion, '{$POLL_ANSWERS}', answersHtml);
+    const pollHtml = strReplace(withAnswers, '{$POLL_FOOTER}', escape(footerParts.join(' • ')));
+
     return pollHtml;
   } catch (error) {
     console.error('Error processing poll:', error);
@@ -115,5 +101,5 @@ function processPoll(poll, imagesCookie) {
 }
 
 module.exports = {
-  processPoll
+  processPoll,
 };
