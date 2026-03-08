@@ -1,87 +1,78 @@
+'use strict';
 // Shared utility functions for processing and rendering reactions
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement || "");
-}
+const { strReplace } = require('./utils.js');
 
 // Function to process and format reactions
-function processReactions(reactions, imagesCookie, reactions_template, reaction_template, animationsCookie = 1) {
+function processReactions(
+  reactions,
+  imagesCookie,
+  reactions_template,
+  reaction_template,
+  animationsCookie = 1
+) {
   try {
     // In Discord.js v14, message.reactions is a ReactionManager with a cache property
     // that contains the Collection of MessageReaction objects. Handle both cases.
     const reactionCollection = reactions?.cache || reactions;
-    
+
     if (!reactionCollection || reactionCollection.size === 0) {
       return '';
     }
 
-    let reactionsHtml = '';
-    
-    reactionCollection.forEach((reaction) => {
+    const reactionsHtml = Array.from(reactionCollection.values()).reduce((acc, reaction) => {
       try {
         const emoji = reaction.emoji;
         const count = reaction.count;
-        
+
         // Determine if it's a super reaction based on burst colors
         const isSuperReaction = reaction.burst_colors && reaction.burst_colors.length > 0;
-        
+
         // Set background and border colors
-        let backgroundColor, borderColor;
-        if (isSuperReaction) {
-          // Super reactions have a different background
-          backgroundColor = 'rgba(88, 101, 242, 0.15)'; // Purple-ish tint for super reactions
-          borderColor = 'rgba(88, 101, 242, 0.4)';
-        } else {
-          // Normal reactions
-          backgroundColor = 'rgba(79, 84, 92, 0.16)';
-          borderColor = 'rgba(79, 84, 92, 0.24)';
-        }
-        
-        let emojiHtml = '';
-        
-        if (emoji.id) {
-          // Custom emoji
-          if (imagesCookie === 1) {
-            // Use animations setting for animated emoji
-            const extension = (emoji.animated && animationsCookie === 1) ? 'gif' : 'png';
-            cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
-            emojiHtml = `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
-          } else {
-            // Fallback to emoji name if images are disabled
-            emojiHtml = `:${emoji.name}:`;
+        const backgroundColor = isSuperReaction
+          ? 'rgba(88, 101, 242, 0.15)'
+          : 'rgba(79, 84, 92, 0.16)';
+        const borderColor = isSuperReaction ? 'rgba(88, 101, 242, 0.4)' : 'rgba(79, 84, 92, 0.24)';
+
+        const emojiHtml = (() => {
+          if (emoji.id) {
+            if (imagesCookie === 1) {
+              const extension = emoji.animated && animationsCookie === 1 ? 'gif' : 'png';
+              cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
+              return `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
+            }
+            return `:${emoji.name}:`;
           }
-        } else if (emoji.name) {
-          // Unicode emoji (twemoji)
-          if (imagesCookie === 1) {
-            const output = unicodeToTwemojiCode(emoji.name);
-            emojiHtml = `<img src="/resources/twemoji/${output}.gif" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
-          } else {
-            // Show the unicode emoji directly
-            emojiHtml = emoji.name;
+          if (emoji.name) {
+            if (imagesCookie === 1) {
+              const output = unicodeToTwemojiCode(emoji.name);
+              return `<img src="/resources/twemoji/${output}.gif" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
+            }
+            return emoji.name;
           }
-        }
-        
+          return '';
+        })();
+
         // Build the reaction HTML - skip if emoji couldn't be processed
         if (emojiHtml) {
-          let reactionHtml = reaction_template;
-          reactionHtml = strReplace(reactionHtml, '{$EMOJI}', emojiHtml);
-          reactionHtml = strReplace(reactionHtml, '{$COUNT}', count.toString());
-          reactionHtml = strReplace(reactionHtml, '{$REACTION_BG}', backgroundColor);
-          reactionHtml = strReplace(reactionHtml, '{$REACTION_BORDER}', borderColor);
-          
-          reactionsHtml += reactionHtml;
+          const withEmoji = strReplace(reaction_template, '{$EMOJI}', emojiHtml);
+          const withCount = strReplace(withEmoji, '{$COUNT}', count);
+          const withBg = strReplace(withCount, '{$REACTION_BG}', backgroundColor);
+          const reactionHtml = strReplace(withBg, '{$REACTION_BORDER}', borderColor);
+          return acc + reactionHtml;
         }
+        return acc;
       } catch (err) {
         console.error('Error processing individual reaction:', err);
         // Continue processing other reactions even if one fails
+        return acc;
       }
-    });
-    
+    }, '');
+
     if (reactionsHtml) {
-      return reactions_template.replace('{$REACTIONS}', reactionsHtml);
+      return strReplace(reactions_template, '{$REACTIONS}', reactionsHtml);
     }
-    
+
     return '';
   } catch (err) {
     console.error('Error processing reactions:', err);
@@ -90,5 +81,5 @@ function processReactions(reactions, imagesCookie, reactions_template, reaction_
 }
 
 module.exports = {
-  processReactions
+  processReactions,
 };

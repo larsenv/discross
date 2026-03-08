@@ -67,6 +67,11 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Prevent blue borders around linked images in IE4/IE5/IE6/Netscape 4 */
+a img {
+  border: 0;
+}
+
 /* Tables */
 table {
   padding-bottom: 5px;
@@ -80,9 +85,8 @@ hr {
   border: solid 1px #494c50;
 }
 
-/* Focus outlines */
+/* Focus outlines — box-shadow not supported in IE8, border-color still applies */
 button:focus, input:focus, textarea:focus {
-  box-shadow: 0 0 0 3px rgba(88,101,242,0.12);
   border-color: #5865f2;
 }
 
