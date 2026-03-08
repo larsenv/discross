@@ -77,6 +77,7 @@ const sportspage = require('./pages/sports.js')
 const stockspage = require('./pages/stocks.js');
 const searchpage = require('./pages/search.js');
 const foodpage = require('./pages/food.js');
+const tvpage = require('./pages/tv.js')
 const notFound = require('./pages/notFound.js');
 
 // Constants for imageProxy path lengths
@@ -478,6 +479,8 @@ server.on('request', async (req, res) => {
         await stockspage.processStocks(req, res);
       } else if (args[1] === 'search') {
         await searchpage.processSearch(req, res);
+      } else if (args[1] === 'tv') {
+        await tvpage.processTV(req, res)
       } else if (args[1] === 'food') {
         const discordID = await auth.checkAuth(req, res);
         if (discordID) {
