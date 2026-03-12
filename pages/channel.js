@@ -706,7 +706,7 @@ async function resolveReplyData(
 // Reply indicator HTML
 // ---------------------------------------------------------------------------
 
-function buildReplyIndicator(replyData, replyText, barColor = '#4e5058') {
+function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const atSign = replyData.mentionsPing ? '@' : '';
   // Two-row layout: row 1 is an empty connector spacer; row 2 draws the ┌ corner
   // (border-top + border-left + border-top-left-radius) inline so no CSS class is needed.
@@ -771,7 +771,7 @@ async function resolveInteractionData(item, chnl, memberCache) {
 // Interaction indicator HTML
 // ---------------------------------------------------------------------------
 
-function buildInteractionIndicator(interactionData, textColor, barColor = '#4e5058') {
+function buildInteractionIndicator(interactionData, textColor, barColor = '#808080') {
   return (
     '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
     '<td style="width:12px;height:10px;border-left:2px solid ' +
@@ -925,7 +925,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     animationsCookie = 1,
     authorText,
     replyText,
-    barColor = '#4e5058',
+    barColor = '#808080',
     clientTimezone,
     channelId,
     messages: overrideMessages,

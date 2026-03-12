@@ -75,7 +75,7 @@ table {
 .blockquote-bar {
     display: table-cell;
     width: 4px;
-    background: #4e5058;
+    background: #808080;
     border-radius: 2px;
     vertical-align: top;
 }

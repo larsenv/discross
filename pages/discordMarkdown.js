@@ -84,7 +84,7 @@ function highlightCode(code, lang) {
 function renderDiscordMarkdown(text, options = {}) {
   if (!text) return '';
 
-  const barColor = options.barColor || '#4e5058';
+  const barColor = options.barColor || '#808080';
 
   // Replace curly/smart apostrophes and quotes with straight ones
   // The Rodin font does not render them properly

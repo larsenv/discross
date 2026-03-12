@@ -71,7 +71,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
   // Apply theme colors: 1=light, otherwise dark/amoled
   const embedHead = themeValue === 1 ? '#000000' : '#ffffff';
   const embedText = themeValue === 1 ? '#000000' : '#dcddde';
-  const embedBarColor = themeValue === 1 ? '#C5C6CA' : '#4e5058';
+  const embedBarColor = '#808080';
 
   if (!embeds || embeds.length === 0) {
     return '';
