@@ -499,7 +499,8 @@ async function resolveForwardData(
   clientTimezone,
   req,
   imagesCookie,
-  animationsCookie
+  animationsCookie,
+  barColor
 ) {
   try {
     const fwdMsg = await item.fetchReference();
@@ -542,7 +543,7 @@ async function resolveForwardData(
 
     return {
       author: getDisplayName(fwdMember, fwdMsg.author),
-      content: renderDiscordMarkdown(content),
+      content: renderDiscordMarkdown(content, { barColor }),
       date: formatDateWithTimezone(fwdMsg.createdAt, clientTimezone),
       origin: originHtml,
       embeds: embedsHtml,
@@ -565,7 +566,7 @@ async function resolveForwardData(
 
     return {
       author: getDisplayName(null, snapshotMsg.author) || '',
-      content: renderDiscordMarkdown(content),
+      content: renderDiscordMarkdown(content, { barColor }),
       date: snapshotMsg.createdAt
         ? formatDateWithTimezone(snapshotMsg.createdAt, clientTimezone)
         : '',
@@ -633,7 +634,15 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
   return text;
 }
 
-async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie) {
+async function resolveReplyData(
+  item,
+  chnl,
+  memberCache,
+  bot,
+  imagesCookie,
+  animationsCookie,
+  barColor
+) {
   try {
     const replyMessage = await item.fetchReference().catch(() => null);
     const replyUser = replyMessage?.author ?? item.mentions?.repliedUser;
@@ -673,7 +682,8 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
           // full blockquote embeds inside the reply preview — show them as plain > text
           const cleanFlat = resolvedFlat.replace(/^(>>?>?\s*)+/, '');
           const rawContent = renderDiscordMarkdown(
-            truncateText(cleanFlat, REPLY_CONTENT_MAX_LENGTH)
+            truncateText(cleanFlat, REPLY_CONTENT_MAX_LENGTH),
+            { barColor }
           );
           return renderEmojis(rawContent, replyMessage, imagesCookie, animationsCookie);
         })()
@@ -865,9 +875,10 @@ async function renderMessageContent(item, context) {
     clientTimezone,
     memberCache,
     templates,
+    barColor,
   } = context;
 
-  const withMarkdown = renderDiscordMarkdown(item.content);
+  const withMarkdown = renderDiscordMarkdown(item.content, { barColor });
   const withEmojis = renderEmojis(withMarkdown, item, imagesCookie, animationsCookie);
   const withAttachments = renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload);
   const withStickers = renderStickers(withAttachments, item, imagesCookie, animationsCookie);
@@ -972,6 +983,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     clientTimezone,
     memberCache,
     templates,
+    barColor,
   };
 
   const shouldStartNewGroup = (item) =>
@@ -1020,7 +1032,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             clientTimezone,
             req,
             imagesCookie,
-            animationsCookie
+            animationsCookie,
+            barColor
           )
         : null;
     const isForwarded = fwdData !== null;
@@ -1028,7 +1041,15 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
     const rplyData =
       item.reference && !isForwarded
-        ? await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie)
+        ? await resolveReplyData(
+            item,
+            chnl,
+            memberCache,
+            bot,
+            imagesCookie,
+            animationsCookie,
+            barColor
+          )
         : null;
     const isReply = rplyData !== null;
     const replyData = rplyData ?? {};

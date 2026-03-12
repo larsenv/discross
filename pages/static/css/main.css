@@ -650,7 +650,6 @@ body.light-theme,
 .light-theme .messagecontent a { color: #0067e0; }
 .light-theme .messagecontent .message-link { color: inherit; }
 .light-theme .messagecontent h1 a, .light-theme .messagecontent h2 a, .light-theme .messagecontent h3 a { color: inherit; }
-.light-theme .blockquote-bar { background: #C5C6CA; }
 .light-theme .message-form-container { background: #FBFBFB !important; border-top-color: #e3e5e8 !important; }
 .light-theme .message-input { color: #323339; background: #FFFFFF; }
 .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }

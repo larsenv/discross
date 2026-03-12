@@ -81,8 +81,10 @@ function highlightCode(code, lang) {
   }
 }
 
-function renderDiscordMarkdown(text) {
+function renderDiscordMarkdown(text, options = {}) {
   if (!text) return '';
+
+  const barColor = options.barColor || '#4e5058';
 
   // Replace curly/smart apostrophes and quotes with straight ones
   // The Rodin font does not render them properly
@@ -301,7 +303,7 @@ function renderDiscordMarkdown(text) {
       })
       .join('<br>');
 
-    return `<div class="blockquote-container"><div class="blockquote-bar"></div><blockquote class="discord-quote">${processed}</blockquote></div>`;
+    return `<div class="blockquote-container"><div class="blockquote-bar" style="background:${barColor};"></div><blockquote class="discord-quote">${processed}</blockquote></div>`;
   });
 
   // Restore Lists
