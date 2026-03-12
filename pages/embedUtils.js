@@ -128,7 +128,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
               }
               body +=
                 '<tr><td colspan="3" style="padding-bottom: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
-              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
+              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${renderDiscordMarkdown(normalizeWeirdUnicode(field.name))}</div>`;
               const renderedValue = renderDiscordMarkdown(field.value);
               body += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
               body += '</td></tr>';
@@ -140,7 +140,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
               }
               body +=
                 '<td valign="top" style="padding-bottom: 4px; padding-right: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
-              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
+              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${renderDiscordMarkdown(normalizeWeirdUnicode(field.name))}</div>`;
               const renderedValue = renderDiscordMarkdown(field.value);
               body += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
               body += '</td>';
