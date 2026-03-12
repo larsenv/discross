@@ -76,17 +76,25 @@ function parseCookies(req) {
  * Theme configuration for dark (0), light (1), and AMOLED (2) themes.
  */
 const THEME_CONFIG = {
-  0: { boxColor: '#222327', authorText: '#72767d', replyText: '#b5bac1', themeClass: '' },
+  0: {
+    boxColor: '#222327',
+    authorText: '#72767d',
+    replyText: '#b5bac1',
+    barColor: '#4e5058',
+    themeClass: '',
+  },
   1: {
     boxColor: '#ffffff',
     authorText: '#000000',
     replyText: '#000000',
+    barColor: '#C5C6CA',
     themeClass: 'class="light-theme"',
   },
   2: {
     boxColor: '#141416',
     authorText: '#72767d',
     replyText: '#b5bac1',
+    barColor: '#4e5058',
     themeClass: 'class="amoled-theme"',
   },
 };
