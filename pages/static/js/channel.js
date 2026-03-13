@@ -5,7 +5,30 @@ for (let i = 0; i < 4; i++) {
 }
 console.log('%cUnless you understand exactly what you are doing, close this window and stay safe.', 'font-size: 17px;');
 console.log('%cIf you do understand exactly what you are doing, you should come work with us http://discross.net/jobs/', 'font-size: 17px;');
+
+// Generate a unique nonce for duplicate message prevention.
+// Uses crypto.getRandomValues when available (modern browsers) and falls back
+// to Math.random() combined with the current timestamp for older browsers.
+function generateNonce() {
+    try {
+        if (window.crypto && window.crypto.getRandomValues) {
+            const arr = new Uint32Array(3);
+            window.crypto.getRandomValues(arr);
+            return arr[0].toString(36) + arr[1].toString(36) + arr[2].toString(36);
+        }
+    } catch (e) {
+        // Fall through to Math.random() fallback
+    }
+    return Math.random().toString(36).substring(2) + (new Date().getTime()).toString(36);
+}
+
 window.onload = function () {
+    // Generate a unique nonce for this page load to prevent duplicate message sends
+    const nonceEl = document.getElementById('nonce');
+    if (nonceEl) {
+        nonceEl.value = generateNonce();
+    }
+
     // Enhanced scroll-to-bottom for old browser compatibility
     function scrollToBottom() {
         const end = document.getElementById("end");
@@ -165,6 +188,11 @@ function handleFileSelect(input) {
 }
 
 function sendMessageOrFile() {
+    // Refresh the nonce before each submission so retries get a fresh token
+    const nonceEl = document.getElementById('nonce');
+    if (nonceEl) {
+        nonceEl.value = generateNonce();
+    }
     // Files are uploaded immediately on selection, so just allow normal form submission for text messages
     return true;
 }
