@@ -11,6 +11,7 @@ const {
   getBaseUrl,
   sanitizeGuestName,
 } = require('./utils.js');
+const { checkAndMarkNonce } = require('./messageDedup.js');
 
 exports.guestSend = async function guestSend(bot, req, res) {
   const parsedUrl = new URL(req.url, 'http://localhost');
@@ -60,6 +61,14 @@ exports.guestSend = async function guestSend(bot, req, res) {
 
   // Only send non-empty messages
   if (typeof rawMessage === 'string' && rawMessage.trim() !== '') {
+    // Deduplicate: if this nonce was already processed, skip sending
+    const nonce = parsedUrl.searchParams.get('nonce') || '';
+    if (checkAndMarkNonce(nonce)) {
+      res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
+      res.end();
+      return;
+    }
+
     const processedMessage = convertEmoji(rawMessage);
     const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
