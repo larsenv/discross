@@ -10,9 +10,9 @@ const upload_template = fs
   .split('{$COMMON_HEAD}')
   .join(head_partial);
 
-exports.processUpload = async function processUpload(bot, req, res, discordID) {
+exports.processUpload = async function processUpload(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
-  const channelId = parsedUrl.searchParams.get('channel') || '';
+  const channelId = (args && args.length > 2 && args[2]) || parsedUrl.searchParams.get('channel') || '';
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
 
   if (!isValidSnowflake(channelId)) {

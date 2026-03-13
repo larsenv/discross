@@ -10,7 +10,7 @@
     <div style="padding: 16px;">
         <p><a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}">&lt; Back to #{$CHANNEL_NAME}</a></p>
         <p><font face="'rodin', Arial, sans-serif" color="#dddddd">Upload a file to #{$CHANNEL_NAME}:</font></p>
-        <form action="/uploadFile?traditional=true" method="POST" enctype="multipart/form-data">
+        <form action="/uploadFile?traditional=true&sessionID={$SESSION_ID}" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="channel" value="{$CHANNEL_ID}">
             <input type="hidden" name="message" value="">
             <input type="hidden" name="sessionID" value="{$SESSION_ID}">
