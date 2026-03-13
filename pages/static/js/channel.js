@@ -154,17 +154,6 @@ function show(el) {
     }
 }
 
-// File upload handling - integrated with send button
-function openFileUpload() {
-    const channelId = document.getElementById('channel').value;
-    let url = '/upload?channel=' + encodeURIComponent(channelId);
-    const sessionEl = document.getElementById('sessionID');
-    if (sessionEl && sessionEl.value) {
-        url += '&sessionID=' + encodeURIComponent(sessionEl.value);
-    }
-    window.location.href = url;
-}
-
 function handleFileSelect(input) {
     // File upload requires fetch and FormData — not available in IE8/Opera 9.x
     if (!window.fetch || !window.FormData) {

@@ -377,7 +377,7 @@ server.on('request', async (req, res) => {
       } else if (args[1] === 'upload') {
         const discordID = await auth.checkAuth(req, res);
         if (discordID) {
-          await uploadpage.processUpload(bot, req, res, discordID);
+          await uploadpage.processUpload(bot, req, res, args, discordID);
         }
       } else if (args[1] === 'pins') {
         const discordID = await auth.checkAuth(req, res);
