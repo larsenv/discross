@@ -180,6 +180,16 @@ server.on('request', async (req, res) => {
         const discordID = await auth.checkAuth(req, res, true);
         if (discordID) {
           await uploadFile(bot, req, res, [], discordID);
+        } else if (!res.headersSent) {
+          const isTraditional =
+            new URL(req.url, 'http://localhost').searchParams.get('traditional') === 'true';
+          if (isTraditional) {
+            res.writeHead(302, { Location: '/login.html' });
+            res.end();
+          } else {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
+          }
         }
       })().catch((err) => {
         console.error(err);
@@ -377,7 +387,7 @@ server.on('request', async (req, res) => {
       } else if (args[1] === 'upload') {
         const discordID = await auth.checkAuth(req, res);
         if (discordID) {
-          await uploadpage.processUpload(bot, req, res, discordID);
+          await uploadpage.processUpload(bot, req, res, args, discordID);
         }
       } else if (args[1] === 'pins') {
         const discordID = await auth.checkAuth(req, res);
