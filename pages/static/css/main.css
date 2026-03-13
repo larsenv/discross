@@ -68,19 +68,17 @@ table {
 
 /* Blockquotes */
 .blockquote-container {
-    display: table;
     width: 100%;
     margin: 4px 0;
+    padding-bottom: 0;
 }
 .blockquote-bar {
-    display: table-cell;
     width: 4px;
     background: #808080;
     border-radius: 2px;
     vertical-align: top;
 }
 .discord-quote {
-    display: table-cell;
     padding-left: 12px;
     color: #b5bac1;
     margin: 0;

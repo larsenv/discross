@@ -303,7 +303,7 @@ function renderDiscordMarkdown(text, options = {}) {
       })
       .join('<br>');
 
-    return `<div class="blockquote-container"><div class="blockquote-bar" style="background:${barColor};"></div><blockquote class="discord-quote">${processed}</blockquote></div>`;
+    return `<table class="blockquote-container" cellpadding="0" cellspacing="0"><tr><td class="blockquote-bar" style="background:${barColor};"></td><td class="discord-quote">${processed}</td></tr></table>`;
   });
 
   // Restore Lists
