@@ -68,19 +68,17 @@ table {
 
 /* Blockquotes */
 .blockquote-container {
-    display: table;
     width: 100%;
     margin: 4px 0;
+    padding-bottom: 0;
 }
 .blockquote-bar {
-    display: table-cell;
     width: 4px;
-    background: #4e5058;
+    background: #808080;
     border-radius: 2px;
     vertical-align: top;
 }
 .discord-quote {
-    display: table-cell;
     padding-left: 12px;
     color: #b5bac1;
     margin: 0;
@@ -217,6 +215,7 @@ pre code { background: none; border: none; padding: 0; }
 }
 .messagecontent a { color: #00b0f4; }
 .messagecontent .message-link { color: inherit; }
+.messagecontent h1 a, .messagecontent h2 a, .messagecontent h3 a { color: inherit; }
 .firstmessage { margin: 0; }
 
 /* Message mentions */
@@ -648,6 +647,7 @@ body.light-theme,
 .light-theme .message-date-font { color: #70718A !important; }
 .light-theme .messagecontent a { color: #0067e0; }
 .light-theme .messagecontent .message-link { color: inherit; }
+.light-theme .messagecontent h1 a, .light-theme .messagecontent h2 a, .light-theme .messagecontent h3 a { color: inherit; }
 .light-theme .message-form-container { background: #FBFBFB !important; border-top-color: #e3e5e8 !important; }
 .light-theme .message-input { color: #323339; background: #FFFFFF; }
 .light-theme .icon-button:hover { background: rgba(0, 0, 0, 0.08); }
@@ -719,6 +719,7 @@ body.amoled-theme,
 .amoled-theme .messagecontent { color: #DCDCDF !important; }
 .amoled-theme .messagecontent a { color: #5865f2; }
 .amoled-theme .messagecontent .message-link { color: inherit; }
+.amoled-theme .messagecontent h1 a, .amoled-theme .messagecontent h2 a, .amoled-theme .messagecontent h3 a { color: inherit; }
 .amoled-theme .message:hover { background: rgba(255, 255, 255, 0.05) !important; }
 .amoled-theme .message-author { color: #DCDCDF; }
 .amoled-theme .message-date { color: #767780; }

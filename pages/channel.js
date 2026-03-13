@@ -447,7 +447,7 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
   return messagetext.replace(/&lt;#(\d{17,19})&gt;/g, (match, id) => {
     const ch = bot.client.channels.cache.get(id);
     if (!ch) return match;
-    return `<a href="/channels/${ch.id}" style="text-decoration:none;"><span class="mention">#${escape(normalizeWeirdUnicode(ch.name))}</span></a>`;
+    return `<a href="/channels/${ch.id}" style="text-decoration:none;color:inherit;"><span class="mention">#${escape(normalizeWeirdUnicode(ch.name))}</span></a>`;
   });
 }
 
@@ -490,7 +490,18 @@ function detectMention(item, member, discordID, isReply, replyData) {
 // Forward data resolution
 // ---------------------------------------------------------------------------
 
-async function resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone, req, imagesCookie, animationsCookie) {
+async function resolveForwardData(
+  item,
+  chnl,
+  bot,
+  discordID,
+  memberCache,
+  clientTimezone,
+  req,
+  imagesCookie,
+  animationsCookie,
+  barColor
+) {
   try {
     const fwdMsg = await item.fetchReference();
     const fwdMember = fwdMsg.author?.bot
@@ -521,11 +532,18 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
     // and doesn't require an extra API call for the embed data).
     const snapshotMsg = item.messageSnapshots?.first();
     const embedsSource = fwdMsg.embeds?.length ? fwdMsg : (snapshotMsg ?? fwdMsg);
-    const embedsHtml = renderEmbeds('', embedsSource, req, imagesCookie, animationsCookie, clientTimezone);
+    const embedsHtml = renderEmbeds(
+      '',
+      embedsSource,
+      req,
+      imagesCookie,
+      animationsCookie,
+      clientTimezone
+    );
 
     return {
       author: getDisplayName(fwdMember, fwdMsg.author),
-      content: renderDiscordMarkdown(content),
+      content: renderDiscordMarkdown(content, { barColor }),
       date: formatDateWithTimezone(fwdMsg.createdAt, clientTimezone),
       origin: originHtml,
       embeds: embedsHtml,
@@ -537,12 +555,21 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
     if (!snapshotMsg) return null;
 
     const content = truncateText(snapshotMsg.content ?? '', FORWARDED_CONTENT_MAX_LENGTH);
-    const embedsHtml = renderEmbeds('', snapshotMsg, req, imagesCookie, animationsCookie, clientTimezone);
+    const embedsHtml = renderEmbeds(
+      '',
+      snapshotMsg,
+      req,
+      imagesCookie,
+      animationsCookie,
+      clientTimezone
+    );
 
     return {
       author: getDisplayName(null, snapshotMsg.author) || '',
-      content: renderDiscordMarkdown(content),
-      date: snapshotMsg.createdAt ? formatDateWithTimezone(snapshotMsg.createdAt, clientTimezone) : '',
+      content: renderDiscordMarkdown(content, { barColor }),
+      date: snapshotMsg.createdAt
+        ? formatDateWithTimezone(snapshotMsg.createdAt, clientTimezone)
+        : '',
       origin: '',
       embeds: embedsHtml,
     };
@@ -607,7 +634,15 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
   return text;
 }
 
-async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie) {
+async function resolveReplyData(
+  item,
+  chnl,
+  memberCache,
+  bot,
+  imagesCookie,
+  animationsCookie,
+  barColor
+) {
   try {
     const replyMessage = await item.fetchReference().catch(() => null);
     const replyUser = replyMessage?.author ?? item.mentions?.repliedUser;
@@ -647,7 +682,8 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
           // full blockquote embeds inside the reply preview — show them as plain > text
           const cleanFlat = resolvedFlat.replace(/^(>>?>?\s*)+/, '');
           const rawContent = renderDiscordMarkdown(
-            truncateText(cleanFlat, REPLY_CONTENT_MAX_LENGTH)
+            truncateText(cleanFlat, REPLY_CONTENT_MAX_LENGTH),
+            { barColor }
           );
           return renderEmojis(rawContent, replyMessage, imagesCookie, animationsCookie);
         })()
@@ -670,7 +706,7 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
 // Reply indicator HTML
 // ---------------------------------------------------------------------------
 
-function buildReplyIndicator(replyData, replyText) {
+function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const atSign = replyData.mentionsPing ? '@' : '';
   // Two-row layout: row 1 is an empty connector spacer; row 2 draws the ┌ corner
   // (border-top + border-left + border-top-left-radius) inline so no CSS class is needed.
@@ -690,7 +726,11 @@ function buildReplyIndicator(replyData, replyText) {
     `<font style="font-size:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `</td>${contentTd}` +
     '</tr><tr>' +
-    '<td style="width:12px;height:8px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px"></td>' +
+    '<td style="width:12px;height:8px;border-left:2px solid ' +
+    barColor +
+    ';border-top:2px solid ' +
+    barColor +
+    ';border-top-left-radius:4px"></td>' +
     '</tr></table>'
   );
 }
@@ -731,10 +771,14 @@ async function resolveInteractionData(item, chnl, memberCache) {
 // Interaction indicator HTML
 // ---------------------------------------------------------------------------
 
-function buildInteractionIndicator(interactionData, textColor) {
+function buildInteractionIndicator(interactionData, textColor, barColor = '#808080') {
   return (
     '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td style="width:12px;height:10px;border-left:2px solid #4e5058;border-top:2px solid #4e5058;border-top-left-radius:4px;vertical-align:middle"></td>' +
+    '<td style="width:12px;height:10px;border-left:2px solid ' +
+    barColor +
+    ';border-top:2px solid ' +
+    barColor +
+    ';border-top-left-radius:4px;vertical-align:middle"></td>' +
     `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
     `<font style="font-size:12px;font-weight:600;color:${interactionData.authorColor}" face="rodin,sans-serif">${escape(interactionData.author)}</font>` +
     `<font style="font-size:12px;color:${textColor}" face="rodin,sans-serif"> used /${escape(interactionData.commandName)}</font>` +
@@ -747,7 +791,7 @@ function buildInteractionIndicator(interactionData, textColor) {
 // Message group flushing
 // ---------------------------------------------------------------------------
 
-function flushMessageGroup(state, templates, authorText, replyText, channelId) {
+function flushMessageGroup(state, templates, authorText, replyText, barColor, channelId) {
   const {
     currentmessage,
     isForwarded,
@@ -798,9 +842,9 @@ function flushMessageGroup(state, templates, authorText, replyText, channelId) {
   const displayName = getDisplayName(lastmember, lastauthor);
   const authorColor = getMemberColor(lastmember, authorText);
   const replyIndicator = lastReply
-    ? buildReplyIndicator(lastReplyData, replyText)
+    ? buildReplyIndicator(lastReplyData, replyText, barColor)
     : lastInteraction
-      ? buildInteractionIndicator(lastInteractionData, replyText)
+      ? buildInteractionIndicator(lastInteractionData, replyText, barColor)
       : '';
 
   const withAuthor = strReplace(afterForwarded, '{$MESSAGE_AUTHOR}', escape(displayName));
@@ -831,9 +875,10 @@ async function renderMessageContent(item, context) {
     clientTimezone,
     memberCache,
     templates,
+    barColor,
   } = context;
 
-  const withMarkdown = renderDiscordMarkdown(item.content);
+  const withMarkdown = renderDiscordMarkdown(item.content, { barColor });
   const withEmojis = renderEmojis(withMarkdown, item, imagesCookie, animationsCookie);
   const withAttachments = renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload);
   const withStickers = renderStickers(withAttachments, item, imagesCookie, animationsCookie);
@@ -880,6 +925,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     animationsCookie = 1,
     authorText,
     replyText,
+    barColor = '#808080',
     clientTimezone,
     channelId,
     messages: overrideMessages,
@@ -937,6 +983,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     clientTimezone,
     memberCache,
     templates,
+    barColor,
   };
 
   const shouldStartNewGroup = (item) =>
@@ -953,7 +1000,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     if (state.lastauthor) {
       const flushNow = !item || shouldStartNewGroup(item);
       if (flushNow) {
-        response += flushMessageGroup(state, templates, authorText, replyText, channelId);
+        response += flushMessageGroup(state, templates, authorText, replyText, barColor, channelId);
         state.currentmessage = '';
       }
     }
@@ -976,14 +1023,33 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     // Resolve forward / reply metadata
     const fwdData =
       item.reference?.type === MessageReferenceType.Forward
-        ? await resolveForwardData(item, chnl, bot, discordID, memberCache, clientTimezone, req, imagesCookie, animationsCookie)
+        ? await resolveForwardData(
+            item,
+            chnl,
+            bot,
+            discordID,
+            memberCache,
+            clientTimezone,
+            req,
+            imagesCookie,
+            animationsCookie,
+            barColor
+          )
         : null;
     const isForwarded = fwdData !== null;
     const forwardData = fwdData ?? {};
 
     const rplyData =
       item.reference && !isForwarded
-        ? await resolveReplyData(item, chnl, memberCache, bot, imagesCookie, animationsCookie)
+        ? await resolveReplyData(
+            item,
+            chnl,
+            memberCache,
+            bot,
+            imagesCookie,
+            animationsCookie,
+            barColor
+          )
         : null;
     const isReply = rplyData !== null;
     const replyData = rplyData ?? {};
@@ -1031,10 +1097,20 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
     // System message handling
     const isSystem = !isNormalMessage(item.type);
-    const visibleText = rawText.replace(/<img\b[^>]*>/gi, 'x').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const visibleText = rawText
+      .replace(/<img\b[^>]*>/gi, 'x')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    if (!isSystem && !isForwarded && visibleText.length === 0 &&
-        !item.attachments?.size && !item.embeds?.length && !item.stickers?.size) {
+    if (
+      !isSystem &&
+      !isForwarded &&
+      visibleText.length === 0 &&
+      !item.attachments?.size &&
+      !item.embeds?.length &&
+      !item.stickers?.size
+    ) {
       return; // nothing to show
     }
 
@@ -1044,17 +1120,17 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         : withReactions;
 
     // Advance state
-    state.lastauthor        = item.author;
-    state.lastmember        = currentMember;
-    state.lastdate          = item.createdAt;
-    state.messageid         = item.id;
-    state.isForwarded       = isForwarded;
-    state.forwardData       = forwardData;
-    state.lastMentioned     = isMentioned;
-    state.lastReply         = isReply;
-    state.lastReplyData     = replyData;
-    state.lastForwarded     = isForwarded;
-    state.lastInteraction   = isInteraction;
+    state.lastauthor = item.author;
+    state.lastmember = currentMember;
+    state.lastdate = item.createdAt;
+    state.messageid = item.id;
+    state.isForwarded = isForwarded;
+    state.forwardData = forwardData;
+    state.lastMentioned = isMentioned;
+    state.lastReply = isReply;
+    state.lastReplyData = replyData;
+    state.lastForwarded = isForwarded;
+    state.lastInteraction = isInteraction;
     state.lastInteractionData = interactionData;
     state.currentmessage += messagetext;
   };
@@ -1129,7 +1205,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
   const theme = resolveTheme(req);
 
   const template = strReplace(TEMPLATES.channel, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-  const { authorText, replyText, boxColor } = theme;
+  const { authorText, replyText, boxColor, barColor } = theme;
 
   if (!isBotReady(bot)) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });
@@ -1203,6 +1279,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       animationsCookie: 1,
       authorText,
       replyText,
+      barColor,
       clientTimezone,
       channelId: args[2],
       // Templates are now sourced internally; kept for backward-compat signature
