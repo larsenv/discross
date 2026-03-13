@@ -85,7 +85,17 @@ const TEMPLATES = {
   channel: fs
     .readFileSync('pages/templates/channel.html', 'utf-8')
     .split('{$COMMON_HEAD}')
-    .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8')),
+    .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'))
+    .split('{$PAGE_CLASS}')
+    .join('page-channel')
+    .split('{$CONTENT_EXTRA_PADDING}')
+    .join('')
+    .split('{$EMOJI_PICKER}')
+    .join(fs.readFileSync('pages/templates/partials/emoji_picker.html', 'utf-8'))
+    .split('{$CHANNEL_REPLY}')
+    .join('')
+    .split('{$REPLY_MESSAGE_ID_INPUT}')
+    .join(''),
   firstMessageContent: fs.readFileSync(
     'pages/templates/message/first_message_content.html',
     'utf-8'

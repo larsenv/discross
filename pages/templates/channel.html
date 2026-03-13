@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="page-channel">
+<html lang="en" class="{$PAGE_CLASS}">
 
 <head>
     {$COMMON_HEAD}
@@ -14,7 +14,7 @@
         </a>
 
         <!-- Main content area with padding at bottom for message input -->
-        <div style="padding-left: 60px;"> <!-- Padding accommodates message form container height -->
+        <div style="padding-left: 60px;{$CONTENT_EXTRA_PADDING}"> <!-- Padding accommodates message form container height -->
             <div style="padding: 16px;">
                 <div id="msgcontainer">
                     {$MESSAGES}
@@ -23,26 +23,10 @@
         </div>
         
         <div class="message-form-container">
-            <div id="emoji" style="display: none;">
-                <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':sob:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f62d.gif" alt="sob" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':face_with_raised_eyebrow:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f928.gif" alt="face_with_raised_eyebrow" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':skull:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f480.gif" alt="skull" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':pleading_face:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f97a.gif" alt="pleading_face" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':heart:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/2764-fe0f.gif" alt="heart" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                    </tr>
-                    <tr>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':thumbsup:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f44d.gif" alt="thumbsup" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':thumbsdown:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f44e.gif" alt="thumbsdown" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':pray:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f64f.gif" alt="pray" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':tada:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f389.gif" alt="tada" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                        <td width="20%" align="center" style="padding:4px"><a href="javascript:void(0)" onclick="insertEmoji(':slight_smile:')" style="display:inline-block;background:none;cursor:pointer;padding:8px;border-radius:4px;text-decoration:none" onmouseover="setHoverBg(this)" onmouseout="clearBg(this)"><img src="/resources/twemoji/1f642.gif" alt="slight_smile" width="24" height="24" style="width: 24px; height: 24px;"></a></td>
-                    </tr>
-                </table>
-            </div>
+            {$CHANNEL_REPLY}
+            {$EMOJI_PICKER}
             
-            <form action="../send" method="GET" onsubmit="return sendMessageOrFile()" style="position: relative;">
+            <form action="/send" method="GET" onsubmit="return sendMessageOrFile()" style="position: relative;">
                 <div>
                     <a href="javascript:void(0)" onclick="showEmoji()" class="message-action-btn">
                         <img src="/resources/twemoji/{$RANDOM_EMOJI}.gif" alt="Add emoji" width="24" height="24"
@@ -92,6 +76,7 @@
                 <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                 <input type="hidden" id="sessionID" name="sessionID" value="{$SESSION_ID}">
                 <input type="hidden" id="lite" name="lite" value="False">
+                {$REPLY_MESSAGE_ID_INPUT}
                 {$INPUT}
             </form>
             
