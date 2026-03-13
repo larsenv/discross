@@ -4,6 +4,7 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
 const { isValidSnowflake, isBotReady, getBaseUrl, resolveMentions } = require('./utils.js');
+const { checkAndMarkNonce } = require('./messageDedup.js');
 
 exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
   const baseUrl = getBaseUrl(req);
@@ -13,6 +14,16 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
     // Ensure message exists and is a non-empty string
     if (typeof query.message === 'string' && query.message !== '') {
+      // Deduplicate: if this nonce was already processed, skip sending
+      if (checkAndMarkNonce(query.nonce)) {
+        const redirectChannel = parsedurl.searchParams.get('channel') || args?.[2] || '';
+        const sessionID = parsedurl.searchParams.get('sessionID') || '';
+        const sessionPart = sessionID ? `?sessionID=${encodeURIComponent(sessionID)}` : '';
+        res.writeHead(302, { Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}` });
+        res.end();
+        return;
+      }
+
       const channelId = query.channel || query.channel_id || args?.[2];
 
       // Check if bot is connected
