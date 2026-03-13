@@ -71,6 +71,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
   // Apply theme colors: 1=light, otherwise dark/amoled
   const embedHead = themeValue === 1 ? '#000000' : '#ffffff';
   const embedText = themeValue === 1 ? '#000000' : '#dcddde';
+  const embedBarColor = '#808080';
 
   if (!embeds || embeds.length === 0) {
     return '';
@@ -105,7 +106,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
       // Process embed description with emoji support (#11)
       const processedDescription = embed.description
         ? processEmojiInHTML(
-            renderDiscordMarkdown(embed.description),
+            renderDiscordMarkdown(embed.description, { barColor: embedBarColor }),
             imagesCookie,
             animationsCookie
           )
@@ -128,8 +129,8 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
               }
               body +=
                 '<tr><td colspan="3" style="padding-bottom: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
-              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
-              const renderedValue = renderDiscordMarkdown(field.value);
+              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${renderDiscordMarkdown(normalizeWeirdUnicode(field.name), { barColor: embedBarColor })}</div>`;
+              const renderedValue = renderDiscordMarkdown(field.value, { barColor: embedBarColor });
               body += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
               body += '</td></tr>';
             } else {
@@ -140,8 +141,8 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
               }
               body +=
                 '<td valign="top" style="padding-bottom: 4px; padding-right: 4px; overflow-wrap: break-word; word-wrap: break-word;">';
-              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${escape(normalizeWeirdUnicode(field.name))}</div>`;
-              const renderedValue = renderDiscordMarkdown(field.value);
+              body += `<div style="font-size: 14px; font-weight: 600; color: #${embedHead}; margin-bottom: 4px;">${renderDiscordMarkdown(normalizeWeirdUnicode(field.name), { barColor: embedBarColor })}</div>`;
+              const renderedValue = renderDiscordMarkdown(field.value, { barColor: embedBarColor });
               body += `<div style="font-size: 14px; color: #${embedText}; white-space: pre-wrap;">${processEmojiInHTML(renderedValue, imagesCookie, animationsCookie)}</div>`;
               body += '</td>';
               inlineCount++;

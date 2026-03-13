@@ -84,11 +84,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     imagesCookieValue
   );
 
-  // Resolve theme config; channel_reply uses a slightly lighter dark bg (#40444b)
-  // than the standard dark theme (#222327 in THEME_CONFIG[0])
   const themeObj = resolveTheme(req);
-  const { authorText, replyText, themeClass } = themeObj;
-  const boxColor = themeObj.boxColor === '#222327' ? '#40444b' : themeObj.boxColor;
+  const { authorText, replyText, themeClass, boxColor } = themeObj;
   const baseTemplate = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass);
 
   const imagesCookie =
