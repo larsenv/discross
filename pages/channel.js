@@ -28,6 +28,7 @@ const {
   resolveTheme,
   RANDOM_EMOJIS,
   buildSessionParam,
+  buildEmojiToggleUrl,
 } = require('./utils.js');
 
 // ---------------------------------------------------------------------------
@@ -1166,6 +1167,7 @@ function resolvePreferences(req) {
   const urlSessionID = parsedUrl.searchParams.get('sessionID') ?? '';
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
+  const urlEmoji = parsedUrl.searchParams.get('emoji');
 
   const { images: cookieImages, whiteThemeCookie: cookieTheme } = parseCookies(req);
 
@@ -1184,7 +1186,7 @@ function resolvePreferences(req) {
     cookieImages
   );
 
-  return { urlSessionID, imagesCookie, sessionParam };
+  return { urlSessionID, imagesCookie, sessionParam, emojiOpen: urlEmoji === '1' };
 }
 
 // ---------------------------------------------------------------------------
@@ -1213,7 +1215,7 @@ function buildInputHtml(botMember, member, chnl, boxColor) {
 // ---------------------------------------------------------------------------
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
-  const { urlSessionID, imagesCookie, sessionParam } = resolvePreferences(req);
+  const { urlSessionID, imagesCookie, sessionParam, emojiOpen } = resolvePreferences(req);
   const theme = resolveTheme(req);
 
   const template = strReplace(TEMPLATES.channel, '{$WHITE_THEME_ENABLED}', theme.themeClass);
@@ -1265,6 +1267,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     );
     const inputHtml = buildInputHtml(botMember, member, chnl, boxColor);
 
+    const emojiDisplay = emojiOpen ? '' : 'display: none;';
+    const emojiToggleUrl = buildEmojiToggleUrl(chnl.id, emojiOpen, sessionParam);
+
     // No message history permission
     if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
       const withInput = strReplace(baseTemplate, '{$INPUT}', inputHtml);
@@ -1275,7 +1280,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
       );
       const withSessionId = strReplace(withName, '{$SESSION_ID}', urlSessionID);
-      const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+      const withSessionParam = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+      const withEmojiDisplay = strReplace(withSessionParam, '{$EMOJI_DISPLAY}', emojiDisplay);
+      const final = strReplace(withEmojiDisplay, '{$EMOJI_TOGGLE_URL}', emojiToggleUrl);
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(final);
       return;
@@ -1327,7 +1334,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     );
     const withMessages = strReplace(withName, '{$MESSAGES}', messagesHtml);
     const withSessionId = strReplace(withMessages, '{$SESSION_ID}', urlSessionID);
-    const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+    const withSessionParam = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+    const withEmojiDisplay = strReplace(withSessionParam, '{$EMOJI_DISPLAY}', emojiDisplay);
+    const final = strReplace(withEmojiDisplay, '{$EMOJI_TOGGLE_URL}', emojiToggleUrl);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);

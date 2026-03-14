@@ -13,6 +13,7 @@ const {
   resolveTheme,
   RANDOM_EMOJIS,
   buildSessionParam,
+  buildEmojiToggleUrl,
 } = require('./utils.js');
 
 // Templates for viewing messages in a channel (Reply Context)
@@ -85,6 +86,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
+  const urlEmoji = parsedUrl.searchParams.get('emoji');
 
   const { whiteThemeCookie, images: imagesCookieValue } = parseCookies(req);
 
@@ -111,6 +113,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
   const clientIP = getClientIP(req);
   const clientTimezone = getTimezoneFromIP(clientIP);
+
+  const emojiDisplay = urlEmoji === '1' ? '' : 'display: none;';
+  // args[3] is the reply message ID — the current page's relative URL segment
+  const emojiToggleUrl = buildEmojiToggleUrl(args[3], urlEmoji === '1', sessionParam);
 
   try {
     if (!isBotReady(bot)) {
@@ -157,7 +163,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         const withColor = strReplace(withInput, '{$COLOR}', boxColor);
         const withMessages = strReplace(withColor, '{$MESSAGES}', no_message_history_template);
         const withSessionId = strReplace(withMessages, '{$SESSION_ID}', urlSessionID);
-        const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+        const withSessionParam = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+        const withEmojiDisplay = strReplace(withSessionParam, '{$EMOJI_DISPLAY}', emojiDisplay);
+        const final = strReplace(withEmojiDisplay, '{$EMOJI_TOGGLE_URL}', emojiToggleUrl);
 
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(final);
@@ -247,7 +255,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         );
         const withMessages = strReplace(withChannelName, '{$MESSAGES}', response);
         const withSessionId = strReplace(withMessages, '{$SESSION_ID}', urlSessionID);
-        const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+        const withSessionParam = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+        const withEmojiDisplay = strReplace(withSessionParam, '{$EMOJI_DISPLAY}', emojiDisplay);
+        const final = strReplace(withEmojiDisplay, '{$EMOJI_TOGGLE_URL}', emojiToggleUrl);
 
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(final);
