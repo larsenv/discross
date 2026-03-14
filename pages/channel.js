@@ -92,6 +92,8 @@ const TEMPLATES = {
     .join('')
     .split('{$EMOJI_PICKER}')
     .join(fs.readFileSync('pages/templates/partials/emoji_picker.html', 'utf-8'))
+    .split('{$EMOJI_BUTTON}')
+    .join(fs.readFileSync('pages/templates/partials/emoji_picker_button.html', 'utf-8'))
     .split('{$CHANNEL_REPLY}')
     .join('')
     .split('{$REPLY_MESSAGE_ID_INPUT}')

@@ -30,6 +30,8 @@ const channel_template = fs
   .join(' padding-bottom: 190px;')
   .split('{$EMOJI_PICKER}')
   .join(fs.readFileSync('pages/templates/partials/emoji_picker.html', 'utf-8'))
+  .split('{$EMOJI_BUTTON}')
+  .join(fs.readFileSync('pages/templates/partials/emoji_picker_button.html', 'utf-8'))
   .split('{$REPLY_MESSAGE_ID_INPUT}')
   .join('<input type="hidden" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">');
 
