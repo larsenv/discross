@@ -582,7 +582,7 @@ server.on('request', async (req, res) => {
         } else if (args[2] === 'sticker') {
           // Sticker URLs: /imageProxy/sticker/{stickerId}.{format}
           const stickerPath = req.url.slice(STICKER_PROXY_PREFIX_LENGTH);
-          const fullImageUrl = `https://media.discordapp.net/stickers/${stickerPath}?size=160&quality=lossless`;
+          const fullImageUrl = `https://media.discordapp.net/stickers/${stickerPath}`;
           await imageProxy(res, fullImageUrl);
         } else {
           // Emoji and attachment URLs
