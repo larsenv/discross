@@ -78,7 +78,7 @@ function parseCookies(req) {
 const THEME_CONFIG = {
   0: {
     boxColor: '#222327',
-    authorText: '#72767d',
+    authorText: '#ffffff',
     replyText: '#b5bac1',
     barColor: '#808080',
   },
@@ -91,7 +91,7 @@ const THEME_CONFIG = {
   },
   2: {
     boxColor: '#141416',
-    authorText: '#72767d',
+    authorText: '#ffffff',
     replyText: '#b5bac1',
     barColor: '#808080',
     themeClass: 'class="amoled-theme"',
