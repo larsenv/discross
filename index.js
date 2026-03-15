@@ -15,6 +15,11 @@ const options = {};
 
 const sentryEnabled = !!process.env.SENTRY_DSN;
 
+Sentry.init({
+  dsn: sentryEnabled,
+  sendDefaultPii: true,
+});
+
 process.on('unhandledRejection', (err) => {
   console.error(err);
   if (sentryEnabled) Sentry.captureException(err);
