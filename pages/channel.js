@@ -250,10 +250,11 @@ function renderStickers(messagetext, item, imagesCookie) {
   if (!item.stickers?.size) return messagetext;
 
   item.stickers.forEach((sticker) => {
+    const sep = messagetext ? '<br>' : '';
     if (imagesCookie === 1) {
-      messagetext += `<br><img src="/imageProxy/sticker/${sticker.id}.png" style="width:100px;height:100px;" alt="sticker">`;
+      messagetext += `${sep}<img src="/imageProxy/sticker/${sticker.id}.png" style="width:100px;height:100px;" alt="sticker">`;
     } else {
-      messagetext += `<br>[Sticker: ${sticker.name ?? 'Unknown'}]`;
+      messagetext += `${sep}[Sticker: ${sticker.name ?? 'Unknown'}]`;
     }
   });
 
