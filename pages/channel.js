@@ -654,7 +654,8 @@ async function resolveReplyData(
   bot,
   imagesCookie,
   animationsCookie,
-  barColor
+  barColor,
+  authorText
 ) {
   try {
     const replyMessage = await item.fetchReference().catch(() => null);
@@ -705,7 +706,7 @@ async function resolveReplyData(
     return {
       author: getDisplayName(replyMember, replyUser),
       authorId: replyUser?.id,
-      authorColor: getMemberColor(replyMember),
+      authorColor: getMemberColor(replyMember, authorText),
       mentionsPing: item.mentions?.repliedUser !== null && item.mentions?.repliedUser !== undefined,
       content: replyContent,
     };
@@ -752,7 +753,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
 // Interaction (slash command) data resolution
 // ---------------------------------------------------------------------------
 
-async function resolveInteractionData(item, chnl, memberCache) {
+async function resolveInteractionData(item, chnl, memberCache, authorText) {
   try {
     const interactionUser = item.interaction?.user;
     if (!interactionUser) return null;
@@ -771,7 +772,7 @@ async function resolveInteractionData(item, chnl, memberCache) {
 
     return {
       author: getDisplayName(interactionMember, interactionUser),
-      authorColor: getMemberColor(interactionMember),
+      authorColor: getMemberColor(interactionMember, authorText),
       commandName: item.interaction.commandName,
     };
   } catch (err) {
@@ -1061,13 +1062,14 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             bot,
             imagesCookie,
             animationsCookie,
-            barColor
+            barColor,
+            authorText
           )
         : null;
     const isReply = rplyData !== null;
     const replyData = rplyData ?? {};
 
-    const intData = item.interaction ? await resolveInteractionData(item, chnl, memberCache) : null;
+    const intData = item.interaction ? await resolveInteractionData(item, chnl, memberCache, authorText) : null;
     const isInteraction = intData !== null;
     const interactionData = intData ?? {};
 
