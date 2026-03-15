@@ -177,6 +177,22 @@ function buildSessionParam(urlSessionID, urlTheme, cookieTheme, urlImages, cooki
 }
 
 /**
+ * Builds a URL that toggles the emoji picker open/closed while preserving other
+ * query parameters (session, theme, images).
+ *
+ * @param {string} baseUrl - Relative URL of the current page (e.g. channel ID).
+ * @param {boolean} emojiOpen - Whether the emoji picker is currently open.
+ * @param {string} sessionParam - Existing session/preference query string (from buildSessionParam).
+ * @returns {string} URL with `emoji=1` added (to open) or removed (to close).
+ */
+function buildEmojiToggleUrl(baseUrl, emojiOpen, sessionParam) {
+  if (emojiOpen) {
+    return baseUrl + sessionParam;
+  }
+  return baseUrl + '?emoji=1' + (sessionParam ? sessionParam.replace('?', '&') : '');
+}
+
+/**
  * Strips non-printable / potentially dangerous characters from a Discord guest name.
  *
  * @param {string} name - Raw input name.
@@ -272,6 +288,7 @@ module.exports = {
   THEME_CONFIG,
   RANDOM_EMOJIS,
   buildSessionParam,
+  buildEmojiToggleUrl,
   sanitizeGuestName,
   resolveMentions,
   httpsGet,

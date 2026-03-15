@@ -13,13 +13,28 @@ const {
   resolveTheme,
   RANDOM_EMOJIS,
   buildSessionParam,
+  buildEmojiToggleUrl,
 } = require('./utils.js');
 
 // Templates for viewing messages in a channel (Reply Context)
+const channel_reply_bar_template = fs.readFileSync(
+  'pages/templates/partials/channel_reply_bar.html',
+  'utf-8'
+);
 const channel_template = fs
-  .readFileSync('pages/templates/channel_reply.html', 'utf-8')
+  .readFileSync('pages/templates/channel.html', 'utf-8')
   .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'))
+  .split('{$PAGE_CLASS}')
+  .join('page-channel-reply')
+  .split('{$CONTENT_EXTRA_PADDING}')
+  .join(' padding-bottom: 190px;')
+  .split('{$EMOJI_PICKER}')
+  .join(fs.readFileSync('pages/templates/partials/emoji_picker.html', 'utf-8'))
+  .split('{$EMOJI_BUTTON}')
+  .join(fs.readFileSync('pages/templates/partials/emoji_picker_button.html', 'utf-8'))
+  .split('{$REPLY_MESSAGE_ID_INPUT}')
+  .join('<input type="hidden" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">');
 
 // Reply-specific message wrapper templates
 const message_template = fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8');
@@ -71,6 +86,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
   const urlTheme = parsedUrl.searchParams.get('theme');
   const urlImages = parsedUrl.searchParams.get('images');
+  const urlEmoji = parsedUrl.searchParams.get('emoji');
 
   const { whiteThemeCookie, images: imagesCookieValue } = parseCookies(req);
 
@@ -97,6 +113,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
   const clientIP = getClientIP(req);
   const clientTimezone = getTimezoneFromIP(clientIP);
+
+  const emojiDisplay = urlEmoji === '1' ? '' : 'display: none;';
+  // args[3] is the reply message ID — the current page's relative URL segment
+  const emojiToggleUrl = buildEmojiToggleUrl(args[3], urlEmoji === '1', sessionParam);
 
   try {
     if (!isBotReady(bot)) {
@@ -134,15 +154,18 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
         const withServerId = strReplace(baseTemplate, '{$SERVER_ID}', chnl.guild.id);
         const withChannelId = strReplace(withServerId, '{$CHANNEL_ID}', chnl.id);
+        const withChannelReply = strReplace(withChannelId, '{$CHANNEL_REPLY}', '');
 
         const inputTpl = member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)
           ? input_template
           : input_disabled_template;
-        const withInput = strReplace(withChannelId, '{$INPUT}', inputTpl);
+        const withInput = strReplace(withChannelReply, '{$INPUT}', inputTpl);
         const withColor = strReplace(withInput, '{$COLOR}', boxColor);
         const withMessages = strReplace(withColor, '{$MESSAGES}', no_message_history_template);
         const withSessionId = strReplace(withMessages, '{$SESSION_ID}', urlSessionID);
-        const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+        const withSessionParam = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+        const withEmojiDisplay = strReplace(withSessionParam, '{$EMOJI_DISPLAY}', emojiDisplay);
+        const final = strReplace(withEmojiDisplay, '{$EMOJI_TOGGLE_URL}', emojiToggleUrl);
 
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(final);
@@ -217,14 +240,14 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
           .catch(() => getDisplayName(null, message.author));
 
         const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
-        const withReplyId = strReplace(afterWebhookCheck, '{$REPLY_MESSAGE_ID}', reply_message_id);
-        const withReplyAuthor = strReplace(withReplyId, '{$REPLY_MESSAGE_AUTHOR}', author);
-        const withReplyContent = strReplace(
-          withReplyAuthor,
+        const replyBar = strReplace(
+          strReplace(channel_reply_bar_template, '{$REPLY_MESSAGE_AUTHOR}', author),
           '{$REPLY_MESSAGE_CONTENT}',
           message_content
         );
-        const withEmoji = strReplace(withReplyContent, '{$RANDOM_EMOJI}', randomEmoji);
+        const withChannelReply = strReplace(afterWebhookCheck, '{$CHANNEL_REPLY}', replyBar);
+        const withReplyId = strReplace(withChannelReply, '{$REPLY_MESSAGE_ID}', reply_message_id);
+        const withEmoji = strReplace(withReplyId, '{$RANDOM_EMOJI}', randomEmoji);
         const withChannelName = strReplace(
           withEmoji,
           '{$CHANNEL_NAME}',
@@ -232,7 +255,9 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         );
         const withMessages = strReplace(withChannelName, '{$MESSAGES}', response);
         const withSessionId = strReplace(withMessages, '{$SESSION_ID}', urlSessionID);
-        const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+        const withSessionParam = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
+        const withEmojiDisplay = strReplace(withSessionParam, '{$EMOJI_DISPLAY}', emojiDisplay);
+        const final = strReplace(withEmojiDisplay, '{$EMOJI_TOGGLE_URL}', emojiToggleUrl);
 
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(final);
