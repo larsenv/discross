@@ -16,7 +16,7 @@ const options = {};
 const sentryEnabled = !!process.env.SENTRY_DSN;
 
 Sentry.init({
-  dsn: sentryEnabled,
+  dsn: process.env.SENTRY_DSN,
   sendDefaultPii: true,
 });
 
