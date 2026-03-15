@@ -781,6 +781,19 @@ html.page-channel body {
     overflow-y: auto;
 }
 
+/* Fixed message form at bottom for channel pages on screens wider than 256px.
+   DSi Opera 9.5 stays static (either viewport is 256px so min-width:257px never
+   matches, or it doesn't parse media queries at all). */
+@media (min-width: 257px) {
+    html.page-channel .message-form-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+    }
+}
+
 /* ================================================================
    21. PAGE-CHANNEL-REPLY: fixed message form at bottom
    ================================================================ */
