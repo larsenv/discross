@@ -27,20 +27,21 @@ function getDisplayName(member, author) {
 }
 
 /**
- * Get the member's highest role color or default to white
+ * Get the member's highest role color or default to the provided fallback color.
  *
  * @param {Object} member - Discord GuildMember object (may be null)
+ * @param {string} [defaultColor='#ffffff'] - Fallback color when no role color is set (should be theme-appropriate)
  * @returns {string} Hex color string (e.g., "#ffffff")
  */
-function getMemberColor(member) {
+function getMemberColor(member, defaultColor = '#ffffff') {
   if (!member || !member.roles) {
-    return '#ffffff'; // Default white color
+    return defaultColor;
   }
 
   // member.roles.color returns the highest role that has a non-zero color set
   const colorRole = member.roles.color;
   if (!colorRole) {
-    return '#ffffff'; // No colored role found
+    return defaultColor;
   }
 
   // Convert Discord color integer to hex
