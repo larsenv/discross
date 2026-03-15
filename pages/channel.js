@@ -90,7 +90,7 @@ const TEMPLATES = {
     .split('{$PAGE_CLASS}')
     .join('page-channel')
     .split('{$CONTENT_EXTRA_PADDING}')
-    .join('')
+    .join(' padding-bottom: 130px;')
     .split('{$EMOJI_PICKER}')
     .join(fs.readFileSync('pages/templates/partials/emoji_picker.html', 'utf-8'))
     .split('{$EMOJI_BUTTON}')
