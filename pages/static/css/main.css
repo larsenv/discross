@@ -785,6 +785,12 @@ html.page-channel body {
    DSi Opera 9.5 stays static (either viewport is 256px so min-width:257px never
    matches, or it doesn't parse media queries at all). */
 @media (min-width: 257px) {
+    html.page-channel,
+    html.page-channel body,
+    html.page-channel #wrapper {
+        height: 100%;
+    }
+
     html.page-channel .message-form-container {
         position: fixed;
         bottom: 0;
@@ -792,8 +798,6 @@ html.page-channel body {
         right: 0;
         z-index: 100;
     }
-    /* Padding so the fixed bar doesn't cover the bottom of the message list. */
-    html.page-channel body { padding-bottom: 100px; }
 }
 
 /* ================================================================
