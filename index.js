@@ -88,7 +88,6 @@ const notFound = require('./pages/notFound.js');
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
-const STICKER_PROXY_PREFIX_LENGTH = '/imageProxy/sticker/'.length; // 20
 
 bot.startBot();
 
@@ -586,8 +585,9 @@ server.on('request', async (req, res) => {
           await imageProxy(res, fullImageUrl);
         } else if (args[2] === 'sticker') {
           // Sticker URLs: /imageProxy/sticker/{stickerId}.{format}
-          const stickerPath = req.url.slice(STICKER_PROXY_PREFIX_LENGTH);
-          const fullImageUrl = `https://cdn.discordapp.com/stickers/${stickerPath}`;
+          // Always fetch .png from media.discordapp.net regardless of requested extension
+          const stickerId = args[3].replace(/\.[^.]*$/, '');
+          const fullImageUrl = `https://media.discordapp.net/stickers/${stickerId}.png`;
           await imageProxy(res, fullImageUrl);
         } else {
           // Emoji and attachment URLs
