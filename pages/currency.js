@@ -65,6 +65,8 @@ const CURRENCY_NAMES = {
   ZAR: 'South African Rand',
 };
 
+const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
+
 const currency_template = fs
   .readFileSync('pages/templates/currency.html', 'utf-8')
   .split('{$COMMON_HEAD}')

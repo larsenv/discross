@@ -237,6 +237,7 @@ server.on('request', async (req, res) => {
               }
             } catch (err) {
               console.error('Error toggling category:', err);
+              if (sentryEnabled) Sentry.captureException(err);
               res.writeHead(500, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ success: false, error: err.message }));
             }
@@ -263,6 +264,7 @@ server.on('request', async (req, res) => {
           }
         })().catch((err) => {
           console.error(err);
+          if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' });
           res.end('Internal Server Error');
         });
@@ -277,6 +279,7 @@ server.on('request', async (req, res) => {
           }
         })().catch((err) => {
           console.error(err);
+          if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' });
           res.end('Internal Server Error');
         });
@@ -291,6 +294,7 @@ server.on('request', async (req, res) => {
           }
         })().catch((err) => {
           console.error(err);
+          if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' });
           res.end('Internal Server Error');
         });
@@ -302,6 +306,7 @@ server.on('request', async (req, res) => {
           }
         })().catch((err) => {
           console.error(err);
+          if (sentryEnabled) Sentry.captureException(err);
           if (!res.headersSent) {
             res.writeHead(500, { 'Content-Type': 'text/plain' });
             res.end('Internal Server Error');
