@@ -246,15 +246,15 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
 // Sticker rendering
 // ---------------------------------------------------------------------------
 
-function renderStickers(messagetext, item, imagesCookie, animationsCookie) {
+function renderStickers(messagetext, item, imagesCookie) {
   if (!item.stickers?.size) return messagetext;
 
   item.stickers.forEach((sticker) => {
+    const sep = messagetext ? '<br>' : '';
     if (imagesCookie === 1) {
-      const ext = animationsCookie === 1 ? 'gif' : 'png';
-      messagetext += `<br><img src="/imageProxy/sticker/${sticker.id}.${ext}" style="width:100px;height:100px;" alt="sticker">`;
+      messagetext += `${sep}<img src="/imageProxy/sticker/${sticker.id}.png" style="width:100px;height:100px;" alt="sticker">`;
     } else {
-      messagetext += `<br>[Sticker: ${sticker.name ?? 'Unknown'}]`;
+      messagetext += `${sep}[Sticker: ${sticker.name ?? 'Unknown'}]`;
     }
   });
 
@@ -895,7 +895,7 @@ async function renderMessageContent(item, context) {
   const withMarkdown = renderDiscordMarkdown(item.content, { barColor });
   const withEmojis = renderEmojis(withMarkdown, item, imagesCookie, animationsCookie);
   const withAttachments = renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload);
-  const withStickers = renderStickers(withAttachments, item, imagesCookie, animationsCookie);
+  const withStickers = renderStickers(withAttachments, item, imagesCookie);
   const withEmbeds = renderEmbeds(
     withStickers,
     item,
