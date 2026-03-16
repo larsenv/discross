@@ -722,29 +722,21 @@ async function resolveReplyData(
 
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const atSign = replyData.mentionsPing ? '@' : '';
-  // Two-row layout: row 1 is an empty connector spacer; row 2 draws the ┌ corner
-  // (border-top + border-left + border-top-left-radius) inline so no CSS class is needed.
-  // The author and content cells each span both rows (rowspan="2") so the row boundary is exactly
-  // at 50% of the content height, placing the ┌ corner at the vertical center of the quoted text.
-  // Content is in its own cell so its white-space:nowrap doesn't interact with the author width.
-  // JS truncateText already limits the raw text to REPLY_CONTENT_MAX_LENGTH chars + "...",
-  // so no CSS overflow clipping is needed on the content cell.
+  // Single-row layout: the left indicator cell uses border-left + border-bottom +
+  // border-bottom-left-radius to draw a reliable └ (upside-down L) corner shape.
+  // The author and content cells sit to the right in the same row.
+  // The content cell uses max-width + overflow:hidden + text-overflow:ellipsis so
+  // long quoted text truncates with "…" instead of overflowing the viewport margin.
   const contentTd = replyData.content
-    ? `<td rowspan="2" style="padding-left:4px;vertical-align:middle;white-space:nowrap">` +
+    ? `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;max-width:200px">` +
       `<font style="font-size:11px;color:${replyText}" face="rodin,sans-serif">${replyData.content}</font></td>`
     : '';
   return (
     '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td style="width:12px;height:8px"></td>' +
-    `<td rowspan="2" style="padding-left:8px;vertical-align:middle;white-space:nowrap">` +
+    `<td style="width:12px;height:16px;vertical-align:bottom;border-left:2px solid ${barColor};border-bottom:2px solid ${barColor};border-bottom-left-radius:4px"></td>` +
+    `<td style="padding-left:8px;vertical-align:middle">` +
     `<font style="font-size:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `</td>${contentTd}` +
-    '</tr><tr>' +
-    '<td style="width:12px;height:8px;border-left:2px solid ' +
-    barColor +
-    ';border-top:2px solid ' +
-    barColor +
-    ';border-top-left-radius:4px"></td>' +
     '</tr></table>'
   );
 }
