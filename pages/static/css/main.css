@@ -292,7 +292,7 @@ pre code { background: none; border: none; padding: 0; }
     margin-bottom: 4px;
 }
 .reaction img { width: 16px; height: 16px; vertical-align: middle; }
-.reaction-count { color: #ABACB2; font-size: 12px; margin-left: 4px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+.reaction-count { color: #ABACB2; font-size: 12px; margin-left: 4px; font-weight: bold; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; }
 
 /* Reactions inside embed messages */
 .embed-reactions .reaction { background: #39312A; }
@@ -781,6 +781,25 @@ html.page-channel body {
     overflow-y: auto;
 }
 
+/* Fixed message form at bottom for channel pages on screens wider than 256px.
+   DSi Opera 9.5 stays static (either viewport is 256px so min-width:257px never
+   matches, or it doesn't parse media queries at all). */
+@media (min-width: 257px) {
+    html.page-channel,
+    html.page-channel body,
+    html.page-channel #wrapper {
+        height: 100%;
+    }
+
+    html.page-channel .message-form-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+    }
+}
+
 /* ================================================================
    21. PAGE-CHANNEL-REPLY: fixed message form at bottom
    ================================================================ */
@@ -805,12 +824,14 @@ html.page-channel body {
 
 /* Replying-to banner inside the fixed form bar */
 html.page-channel-reply #replying_to {
-    padding: 6px 12px;
-    border-bottom: 1px solid #40444b;
+   min-height: 49px;
+   padding: 0 4px;
+   border-bottom: 1px solid #40444b;
 }
 html.page-channel-reply #replying_to .reply-label {
     font-size: 14px;
-    margin-bottom: 4px;
+    margin: 0;
+    line-height: 1.2;
     color: #b9bbbe;
 }
 html.page-channel-reply #replying_to .reply-cancel {
@@ -820,6 +841,7 @@ html.page-channel-reply #replying_to .reply-cancel {
 }
 html.page-channel-reply #replying_to .reply-content-preview {
     font-size: 14px;
+    line-height: 1.2;
     color: #dcddde;
 }
 html.light-theme.page-channel-reply #replying_to,
