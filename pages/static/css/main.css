@@ -292,7 +292,7 @@ pre code { background: none; border: none; padding: 0; }
     margin-bottom: 4px;
 }
 .reaction img { width: 16px; height: 16px; vertical-align: middle; }
-.reaction-count { color: #ABACB2; font-size: 12px; margin-left: 4px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+.reaction-count { color: #ABACB2; font-size: 12px; margin-left: 4px; font-weight: bold; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; }
 
 /* Reactions inside embed messages */
 .embed-reactions .reaction { background: #39312A; }
