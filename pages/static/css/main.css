@@ -798,6 +798,14 @@ html.page-channel body {
         right: 0;
         z-index: 100;
     }
+
+    /* Float emoji picker above the container so it doesn't expand bar height */
+    html.page-channel #emoji {
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        right: 0;
+    }
 }
 
 /* ================================================================
@@ -820,11 +828,19 @@ html.page-channel body {
         right: 0;
         z-index: 100;
     }
+
+    /* Float emoji picker above the container so it doesn't expand bar height */
+    html.page-channel-reply #emoji {
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        right: 0;
+    }
 }
 
 /* Replying-to banner inside the fixed form bar */
 html.page-channel-reply #replying_to {
-    padding: 6px 12px;
+    padding: 10px 12px;
     border-bottom: 1px solid #40444b;
 }
 html.page-channel-reply #replying_to .reply-label {
