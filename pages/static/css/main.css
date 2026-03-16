@@ -824,13 +824,9 @@ html.page-channel body {
 
 /* Replying-to banner inside the fixed form bar */
 html.page-channel-reply #replying_to {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
-    min-height: 56px;
-    padding: 0 12px;
-    border-bottom: 1px solid #40444b;
+   min-height: 49px;
+   padding: 0 4px;
+   border-bottom: 1px solid #40444b;
 }
 html.page-channel-reply #replying_to .reply-label {
     font-size: 14px;
