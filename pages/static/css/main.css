@@ -171,7 +171,7 @@ pre code { background: none; border: none; padding: 0; }
 
 .menu-button {
     position: fixed;
-    top: 16px;
+    bottom: 16px;
     left: 16px;
     z-index: 1000;
     background: none !important;
@@ -1126,7 +1126,7 @@ html.page-server font[color="#dcddde"] {
 }
 
 @media (max-width: 768px) {
-    .menu-button { top: 8px; left: 8px; }
+    .menu-button { bottom: 8px; left: 8px; }
 }
 
 /* DSi Opera 9.5 (256px screen) */
