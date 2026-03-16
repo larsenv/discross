@@ -826,8 +826,10 @@ html.page-channel body {
 html.page-channel-reply #replying_to {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 10px 12px;
+    justify-content: center;
+    gap: 2px;
+    min-height: 56px;
+    padding: 0 12px;
     border-bottom: 1px solid #40444b;
 }
 html.page-channel-reply #replying_to .reply-label {
