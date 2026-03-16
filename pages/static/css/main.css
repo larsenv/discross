@@ -824,12 +824,16 @@ html.page-channel body {
 
 /* Replying-to banner inside the fixed form bar */
 html.page-channel-reply #replying_to {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     padding: 10px 12px;
     border-bottom: 1px solid #40444b;
 }
 html.page-channel-reply #replying_to .reply-label {
     font-size: 14px;
-    margin-bottom: 4px;
+    margin: 0;
+    line-height: 1.2;
     color: #b9bbbe;
 }
 html.page-channel-reply #replying_to .reply-cancel {
@@ -839,6 +843,7 @@ html.page-channel-reply #replying_to .reply-cancel {
 }
 html.page-channel-reply #replying_to .reply-content-preview {
     font-size: 14px;
+    line-height: 1.2;
     color: #dcddde;
 }
 html.light-theme.page-channel-reply #replying_to,
