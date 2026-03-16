@@ -798,14 +798,6 @@ html.page-channel body {
         right: 0;
         z-index: 100;
     }
-
-    /* Float emoji picker above the container so it doesn't expand bar height */
-    html.page-channel #emoji {
-        position: absolute;
-        bottom: 100%;
-        left: 0;
-        right: 0;
-    }
 }
 
 /* ================================================================
@@ -827,14 +819,6 @@ html.page-channel body {
         left: 0;
         right: 0;
         z-index: 100;
-    }
-
-    /* Float emoji picker above the container so it doesn't expand bar height */
-    html.page-channel-reply #emoji {
-        position: absolute;
-        bottom: 100%;
-        left: 0;
-        right: 0;
     }
 }
 

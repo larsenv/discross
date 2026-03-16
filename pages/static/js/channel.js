@@ -109,6 +109,15 @@ function showEmoji() {
         emojiShowing = true;
         try { emojiDiv.scrollIntoView(); } catch(e) { /* scrollIntoView not supported */ }
     }
+    // Sync content bottom-padding to the bar's current height so the bar
+    // never obscures the last message (bar grows when emoji picker is open).
+    try {
+        const container = document.querySelector('.message-form-container');
+        const content = document.getElementById('content');
+        if (container && content) {
+            content.style.paddingBottom = container.offsetHeight + 'px';
+        }
+    } catch(e) { /* ignore in old browsers */ }
 }
 
 // Spoiler reveal function for Wii compatibility
