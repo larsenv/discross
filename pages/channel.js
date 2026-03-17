@@ -695,11 +695,7 @@ async function resolveReplyData(
           // Strip block-level quote markers (>>> and >) so they don't render as
           // full blockquote embeds inside the reply preview — show them as plain > text
           const cleanFlat = resolvedFlat.replace(/^(>>?>?\s*)+/, '');
-          const rawContent = renderDiscordMarkdown(
-            truncateText(cleanFlat, REPLY_CONTENT_MAX_LENGTH),
-            { barColor }
-          );
-          return renderEmojis(rawContent, replyMessage, imagesCookie, animationsCookie);
+          return truncateText(cleanFlat, REPLY_CONTENT_MAX_LENGTH);
         })()
       : '';
 
@@ -724,7 +720,6 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const ellipsis = '...';
   const ellipsisLength = ellipsis.length;
   const lineBreakTagPattern = /<br[^>]*>/gi;
-  const htmlTagPattern = /<[^>]+>/g;
   // 42 chars fits the 200px preview width with 11px Rodin/fallback text in manual Chromium/Linux checks.
   const maxReplyPreviewLength = 42;
   const contentLengthBeforeTruncation = maxReplyPreviewLength - ellipsisLength;
@@ -732,7 +727,6 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const atSign = replyData.mentionsPing ? '@' : '';
   const normalizedReplyContent = (replyData.content || '')
     .replace(lineBreakTagPattern, ' ')
-    .replace(htmlTagPattern, '')
     .replace(/\r?\n/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
