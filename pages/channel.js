@@ -721,8 +721,10 @@ async function resolveReplyData(
 // ---------------------------------------------------------------------------
 
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
+  const ellipsisLength = 3;
   const maxReplyPreviewLength = 42;
-  const truncatedReplyLength = maxReplyPreviewLength - 3;
+  const truncatedReplyLength = maxReplyPreviewLength - ellipsisLength;
+  const replyTextTopOffset = -1;
   const atSign = replyData.mentionsPing ? '@' : '';
   const normalizedReplyContent = (replyData.content || '')
     .replace(/<br\s*\/?>/gi, ' ')
@@ -740,13 +742,13 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   // Keep reply content on one line and use a plain "..." suffix when truncated.
   const contentTd = truncatedReplyPreview
     ? `<td style="padding-left:4px;padding-top:0;vertical-align:top;line-height:11px;overflow:hidden;white-space:nowrap;max-width:200px">` +
-      `<font style="position:relative;top:-1px;display:inline-block;vertical-align:top;font-size:11px;line-height:11px;color:${replyText}" face="rodin,sans-serif">${truncatedReplyPreview}</font></td>`
+      `<font style="position:relative;top:${replyTextTopOffset}px;display:inline-block;vertical-align:top;font-size:11px;line-height:11px;color:${replyText}" face="rodin,sans-serif">${truncatedReplyPreview}</font></td>`
     : '';
   return (
     '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px;line-height:1"><tr>' +
     `<td style="width:12px;height:10px;padding-top:0;vertical-align:top;border-left:2px solid ${barColor};border-top:2px solid ${barColor};border-top-left-radius:4px"></td>` +
     `<td style="padding-left:8px;padding-top:0;vertical-align:top;line-height:11px">` +
-    `<font style="position:relative;top:-1px;display:inline-block;vertical-align:top;font-size:11px;line-height:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
+    `<font style="position:relative;top:${replyTextTopOffset}px;display:inline-block;vertical-align:top;font-size:11px;line-height:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `</td>${contentTd}` +
     '</tr></table>'
   );
