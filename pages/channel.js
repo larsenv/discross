@@ -723,13 +723,15 @@ async function resolveReplyData(
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const ellipsis = '...';
   const ellipsisLength = ellipsis.length;
-  // Keep this close to Discord's compact reply preview width in default desktop view (empirical fit).
+  const lineBreakTagPattern = /<br\s*\/?>/gi;
+  const encodeHtml = (value) => escape(value);
+  // 42 chars fits the 200px preview width with 11px Rodin/fallback text in manual UI comparisons.
   const maxReplyPreviewLength = 42;
   const contentLengthBeforeTruncation = maxReplyPreviewLength - ellipsisLength;
   const replyTextTopOffset = -1;
   const atSign = replyData.mentionsPing ? '@' : '';
   const normalizedReplyContent = (replyData.content || '')
-    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(lineBreakTagPattern, ' ')
     .replace(/\r?\n/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -738,7 +740,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
     replyContentChars.length > maxReplyPreviewLength
       ? `${replyContentChars.slice(0, contentLengthBeforeTruncation).join('')}${ellipsis}`
       : normalizedReplyContent;
-  const safeReplyPreview = escape(truncatedReplyPreview);
+  const safeReplyPreview = encodeHtml(truncatedReplyPreview);
   // Single-row layout: the left indicator cell uses border-left + border-top +
   // border-top-left-radius to draw a reliable ┌ corner shape.
   // The author and content cells sit to the right in the same row.
