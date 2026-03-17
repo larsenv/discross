@@ -207,6 +207,7 @@ pre code { background: none; border: none; padding: 0; }
     display: inline;
 }
 .message-link { text-decoration: none; color: inherit; display: block; }
+.message-link:hover { text-decoration: none; }
 .messagecontent, .messagecontent-font {
     color: #DCDCDF;
     font-size: 17px;

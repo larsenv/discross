@@ -444,7 +444,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
     }
 
     const custom_emoji_matches = [
-      ...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g),
+      ...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})?(?:(?!\1).)*&gt;/g),
     ]; // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
     if (custom_emoji_matches[0] && imagesCookie === 1)
       custom_emoji_matches.forEach(async (match) => {

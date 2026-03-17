@@ -35,7 +35,7 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
 
   // Process custom emoji (HTML escaped format from markdown)
   const customEmojiMatches = [
-    ...withUnicode.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g),
+    ...withUnicode.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})?(?:(?!\1).)*&gt;/g),
   ];
   // Cache emoji metadata first (side effect), then transform string (pure reduce)
   for (const match of customEmojiMatches) {
