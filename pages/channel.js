@@ -722,8 +722,8 @@ async function resolveReplyData(
 
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const atSign = replyData.mentionsPing ? '@' : '';
-  // Single-row layout: the left indicator cell uses border-left + border-bottom +
-  // border-bottom-left-radius to draw a reliable └ (upside-down L) corner shape.
+  // Single-row layout: the left indicator cell uses border-left + border-top +
+  // border-top-left-radius to draw a reliable ┌ corner shape.
   // The author and content cells sit to the right in the same row.
   // The content cell uses max-width + overflow:hidden + text-overflow:ellipsis so
   // long quoted text truncates with "…" instead of overflowing the viewport margin.
@@ -733,7 +733,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
     : '';
   return (
     '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    `<td style="width:12px;height:16px;vertical-align:bottom;border-left:2px solid ${barColor};border-bottom:2px solid ${barColor};border-bottom-left-radius:4px"></td>` +
+    `<td style="width:12px;height:10px;vertical-align:middle;border-left:2px solid ${barColor};border-top:2px solid ${barColor};border-top-left-radius:4px"></td>` +
     `<td style="padding-left:8px;vertical-align:middle">` +
     `<font style="font-size:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `</td>${contentTd}` +
@@ -780,11 +780,11 @@ async function resolveInteractionData(item, chnl, memberCache, authorText) {
 function buildInteractionIndicator(interactionData, textColor, barColor = '#808080') {
   return (
     '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td style="width:12px;height:16px;border-left:2px solid ' +
+    '<td style="width:12px;height:10px;border-left:2px solid ' +
     barColor +
-    ';border-bottom:2px solid ' +
+    ';border-top:2px solid ' +
     barColor +
-    ';border-bottom-left-radius:4px;vertical-align:bottom"></td>' +
+    ';border-top-left-radius:4px;vertical-align:middle"></td>' +
     `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
     `<font style="font-size:12px;font-weight:600;color:${interactionData.authorColor}" face="rodin,sans-serif">${escape(interactionData.author)}</font>` +
     `<font style="font-size:12px;color:${textColor}" face="rodin,sans-serif"> used /${escape(interactionData.commandName)}</font>` +
