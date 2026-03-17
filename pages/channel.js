@@ -728,7 +728,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   // The content cell uses max-width + overflow:hidden + text-overflow:ellipsis so
   // long quoted text truncates with "…" instead of overflowing the viewport margin.
   const contentTd = replyData.content
-    ? `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;max-width:200px">` +
+    ? `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">` +
       `<font style="font-size:11px;color:${replyText}" face="rodin,sans-serif">${replyData.content}</font></td>`
     : '';
   return (
@@ -780,11 +780,11 @@ async function resolveInteractionData(item, chnl, memberCache, authorText) {
 function buildInteractionIndicator(interactionData, textColor, barColor = '#808080') {
   return (
     '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    '<td style="width:12px;height:10px;border-left:2px solid ' +
+    '<td style="width:12px;height:16px;border-left:2px solid ' +
     barColor +
-    ';border-top:2px solid ' +
+    ';border-bottom:2px solid ' +
     barColor +
-    ';border-top-left-radius:4px;vertical-align:middle"></td>' +
+    ';border-bottom-left-radius:4px;vertical-align:bottom"></td>' +
     `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;max-width:400px;white-space:nowrap">` +
     `<font style="font-size:12px;font-weight:600;color:${interactionData.authorColor}" face="rodin,sans-serif">${escape(interactionData.author)}</font>` +
     `<font style="font-size:12px;color:${textColor}" face="rodin,sans-serif"> used /${escape(interactionData.commandName)}</font>` +

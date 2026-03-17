@@ -316,11 +316,11 @@ pre code { background: none; border: none; padding: 0; }
 /* Reply indicator arrow */
 .reply-arrow {
     width: 12px;
-    height: 10px;
+    height: 16px;
     border-left: 2px solid #474851;
-    border-top: 2px solid #474851;
-    border-top-left-radius: 4px;
-    vertical-align: middle;
+    border-bottom: 2px solid #474851;
+    border-bottom-left-radius: 4px;
+    vertical-align: bottom;
 }
 
 /* Forwarded label and footer text */
@@ -659,7 +659,7 @@ body.light-theme,
 .light-theme .forwarded-content-wrapper { background: #C5C6CA; border-color: #e3e5e8; }
 .light-theme .date-sep-line { border-top-color: #E0E0E1; }
 .light-theme .date-sep-text { color: #6C6D76; }
-.light-theme .reply-arrow { border-left-color: #C5C6CA; border-top-color: #C5C6CA; }
+.light-theme .reply-arrow { border-left-color: #C5C6CA; border-bottom-color: #C5C6CA; }
 .light-theme .forwarded-label { color: #6C6D76; }
 .light-theme #emoji { background: #FBFBFB !important; border-color: #e3e5e8; }
 .light-theme #emoji a:hover { background: rgba(0, 0, 0, 0.08); }
@@ -737,7 +737,7 @@ body.amoled-theme,
 .amoled-theme .forwarded-content-wrapper { background: #3B3C43; border-color: #222; }
 .amoled-theme .date-sep-line { border-top-color: #2A2A2D; }
 .amoled-theme .date-sep-text { color: #888990; }
-.amoled-theme .reply-arrow { border-left-color: #3B3C43; border-top-color: #3B3C43; }
+.amoled-theme .reply-arrow { border-left-color: #3B3C43; border-bottom-color: #3B3C43; }
 .amoled-theme .forwarded-label { color: #888990; }
 .amoled-theme .mention { color: #94A8FF; background: #1D204C; }
 .amoled-theme .mention-default { color: #E4E4E6; background: #1D204C; }
