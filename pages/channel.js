@@ -724,8 +724,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const ellipsis = '...';
   const ellipsisLength = ellipsis.length;
   const lineBreakTagPattern = /<br\s*\/?>/gi;
-  const encodeHtml = (value) => escape(value);
-  // 42 chars fits the 200px preview width with 11px Rodin/fallback text in manual UI comparisons.
+  // 42 chars fits the 200px preview width with 11px Rodin/fallback text in manual Chromium/Linux checks.
   const maxReplyPreviewLength = 42;
   const contentLengthBeforeTruncation = maxReplyPreviewLength - ellipsisLength;
   const replyTextTopOffset = -1;
@@ -740,7 +739,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
     replyContentChars.length > maxReplyPreviewLength
       ? `${replyContentChars.slice(0, contentLengthBeforeTruncation).join('')}${ellipsis}`
       : normalizedReplyContent;
-  const safeReplyPreview = encodeHtml(truncatedReplyPreview);
+  const safeReplyPreview = he.encode(truncatedReplyPreview, { useNamedReferences: true });
   // Single-row layout: the left indicator cell uses border-left + border-top +
   // border-top-left-radius to draw a reliable ┌ corner shape.
   // The author and content cells sit to the right in the same row.
