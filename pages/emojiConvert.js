@@ -83,7 +83,7 @@ const _escapedAsciiRegex = new RegExp(
  * (:thumbsup::skin-tone-2: -> 👍🏻), and ASCII shortcuts (e.g. :) :D <3).
  *
  * A leading backslash escapes conversion: \:slight_smile: stays as
- * :slight_smile: and \:-) stays as :-), mirroring Discord's behaviour.
+ * :slight_smile: and \:-) becomes :slight_smile:, mirroring Discord's behaviour.
  * @param {string} message
  * @returns {string}
  */
@@ -102,7 +102,7 @@ function convertEmoji(message) {
   withProtected = withProtected.replace(_escapedAsciiRegex, (match) => {
     const shortcut = match.slice(1); // strip the leading backslash
     const idx = escaped.length;
-    escaped.push(shortcut);
+    escaped.push(`:${_shortcutMap.get(shortcut)}:`);
     return `\u0000ESC${idx}\u0000`;
   });
 
