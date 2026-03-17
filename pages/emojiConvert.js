@@ -69,20 +69,52 @@ function _convertAsciiEmoji(message) {
   return message.replace(_shortcutsRegex, (match) => emojify(`:${_shortcutMap.get(match)}:`));
 }
 
+// Regex that matches a backslash followed by any ASCII emoji shortcut.
+// Built once at module load like _shortcutsRegex.
+const _escapedAsciiRegex = new RegExp(
+  `\\\\(?:${_sortedShortcuts.map(_escapeRegex).join('|')})`,
+  'g'
+);
+
 /**
  * Convert emoji shortcodes in message text to Unicode emoji characters.
  * Handles standard Discord shortcodes (e.g. :slight_smile: -> 🙂), skin-tone
  * variants in both combined form (:thumbsup_tone2: -> 👍🏼) and split form
  * (:thumbsup::skin-tone-2: -> 👍🏻), and ASCII shortcuts (e.g. :) :D <3).
+ *
+ * A leading backslash escapes conversion: \:slight_smile: stays as
+ * :slight_smile: and \:-) stays as :-), mirroring Discord's behaviour.
  * @param {string} message
  * @returns {string}
  */
 function convertEmoji(message) {
-  const afterShortcodes = emojify(message).replace(
+  // Protect backslash-escaped items from conversion.
+  // \:shortcode: and \<ascii-shortcut> are stored and restored later
+  // without their leading backslash (Discord drops the backslash on send).
+  const escaped = [];
+
+  let withProtected = message.replace(/\\(:[a-zA-Z0-9_+\-]+:)/g, (match, shortcode) => {
+    const idx = escaped.length;
+    escaped.push(shortcode);
+    return `\u0000ESC${idx}\u0000`;
+  });
+
+  withProtected = withProtected.replace(_escapedAsciiRegex, (match) => {
+    const shortcut = match.slice(1); // strip the leading backslash
+    const idx = escaped.length;
+    escaped.push(shortcut);
+    return `\u0000ESC${idx}\u0000`;
+  });
+
+  const afterShortcodes = emojify(withProtected).replace(
     /:skin-tone-([2-6]):/g,
     (_, n) => SKIN_TONE_CHARS[n]
   );
-  return _convertAsciiEmoji(afterShortcodes);
+
+  const afterAscii = _convertAsciiEmoji(afterShortcodes);
+
+  // Restore escaped items (without the leading backslash)
+  return afterAscii.replace(/\u0000ESC(\d+)\u0000/g, (_, i) => escaped[parseInt(i, 10)]);
 }
 
 module.exports = { convertEmoji };
