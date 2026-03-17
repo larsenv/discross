@@ -723,7 +723,7 @@ async function resolveReplyData(
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const ellipsis = '...';
   const ellipsisLength = ellipsis.length;
-  // Keep this close to Discord's compact reply preview width in default desktop view.
+  // Keep this close to Discord's compact reply preview width in default desktop view (empirical fit).
   const maxReplyPreviewLength = 42;
   const contentLengthBeforeTruncation = maxReplyPreviewLength - ellipsisLength;
   const replyTextTopOffset = -1;
