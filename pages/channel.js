@@ -724,7 +724,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const ellipsis = '...';
   const ellipsisLength = ellipsis.length;
   const maxReplyPreviewLength = 42;
-  const truncatedReplyLength = maxReplyPreviewLength - ellipsisLength;
+  const contentLengthBeforeTruncation = maxReplyPreviewLength - ellipsisLength;
   const replyTextTopOffset = -1;
   const atSign = replyData.mentionsPing ? '@' : '';
   const normalizedReplyContent = (replyData.content || '')
@@ -735,15 +735,16 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const replyContentChars = Array.from(normalizedReplyContent);
   const truncatedReplyPreview =
     replyContentChars.length > maxReplyPreviewLength
-      ? `${replyContentChars.slice(0, truncatedReplyLength).join('')}${ellipsis}`
+      ? `${replyContentChars.slice(0, contentLengthBeforeTruncation).join('')}${ellipsis}`
       : normalizedReplyContent;
+  const safeReplyPreview = escape(truncatedReplyPreview);
   // Single-row layout: the left indicator cell uses border-left + border-top +
   // border-top-left-radius to draw a reliable ┌ corner shape.
   // The author and content cells sit to the right in the same row.
   // Keep reply content on one line and use a plain "..." suffix when truncated.
   const contentTd = truncatedReplyPreview
     ? `<td style="padding-left:4px;padding-top:0;vertical-align:top;line-height:11px;overflow:hidden;white-space:nowrap;max-width:200px">` +
-      `<font style="position:relative;top:${replyTextTopOffset}px;display:inline-block;vertical-align:top;font-size:11px;line-height:11px;color:${replyText}" face="rodin,sans-serif">${truncatedReplyPreview}</font></td>`
+      `<font style="position:relative;top:${replyTextTopOffset}px;display:inline-block;vertical-align:top;font-size:11px;line-height:11px;color:${replyText}" face="rodin,sans-serif">${safeReplyPreview}</font></td>`
     : '';
   return (
     '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px;line-height:1"><tr>' +
