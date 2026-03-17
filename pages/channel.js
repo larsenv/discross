@@ -695,11 +695,7 @@ async function resolveReplyData(
           // Strip block-level quote markers (>>> and >) so they don't render as
           // full blockquote embeds inside the reply preview — show them as plain > text
           const cleanFlat = resolvedFlat.replace(/^(>>?>?\s*)+/, '');
-          const rawContent = renderDiscordMarkdown(
-            truncateText(cleanFlat, REPLY_CONTENT_MAX_LENGTH),
-            { barColor }
-          );
-          return renderEmojis(rawContent, replyMessage, imagesCookie, animationsCookie);
+          return truncateText(cleanFlat, REPLY_CONTENT_MAX_LENGTH);
         })()
       : '';
 
@@ -721,21 +717,38 @@ async function resolveReplyData(
 // ---------------------------------------------------------------------------
 
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
+  const ellipsis = '...';
+  const ellipsisLength = ellipsis.length;
+  const lineBreakTagPattern = /<br[^>]*>/gi;
+  // 42 chars fits the 200px preview width with 11px Rodin/fallback text in manual Chromium/Linux checks.
+  const maxReplyPreviewLength = 42;
+  const contentLengthBeforeTruncation = maxReplyPreviewLength - ellipsisLength;
+  const replyTextTopOffset = -1;
   const atSign = replyData.mentionsPing ? '@' : '';
-  // Single-row layout: the left indicator cell uses border-left + border-bottom +
-  // border-bottom-left-radius to draw a reliable └ (upside-down L) corner shape.
+  const normalizedReplyContent = (replyData.content || '')
+    .replace(lineBreakTagPattern, ' ')
+    .replace(/\r?\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const replyContentChars = Array.from(normalizedReplyContent);
+  const truncatedReplyPreview =
+    replyContentChars.length > maxReplyPreviewLength
+      ? `${replyContentChars.slice(0, contentLengthBeforeTruncation).join('')}${ellipsis}`
+      : normalizedReplyContent;
+  const safeReplyPreview = he.encode(truncatedReplyPreview, { useNamedReferences: true });
+  // Single-row layout: the left indicator cell uses border-left + border-top +
+  // border-top-left-radius to draw a reliable ┌ corner shape.
   // The author and content cells sit to the right in the same row.
-  // The content cell uses max-width + overflow:hidden + text-overflow:ellipsis so
-  // long quoted text truncates with "…" instead of overflowing the viewport margin.
-  const contentTd = replyData.content
-    ? `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;max-width:200px">` +
-      `<font style="font-size:11px;color:${replyText}" face="rodin,sans-serif">${replyData.content}</font></td>`
+  // Keep reply content on one line and use a plain "..." suffix when truncated.
+  const contentTd = truncatedReplyPreview
+    ? `<td style="padding-left:4px;padding-top:0;vertical-align:top;line-height:11px;overflow:hidden;white-space:nowrap;max-width:200px">` +
+      `<font style="position:relative;top:${replyTextTopOffset}px;display:inline-block;vertical-align:top;font-size:11px;line-height:11px;color:${replyText}" face="rodin,sans-serif">${safeReplyPreview}</font></td>`
     : '';
   return (
-    '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    `<td style="width:12px;height:16px;vertical-align:bottom;border-left:2px solid ${barColor};border-bottom:2px solid ${barColor};border-bottom-left-radius:4px"></td>` +
-    `<td style="padding-left:8px;vertical-align:middle">` +
-    `<font style="font-size:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
+    '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px;line-height:1"><tr>' +
+    `<td style="width:12px;height:10px;padding-top:0;vertical-align:top;border-left:2px solid ${barColor};border-top:2px solid ${barColor};border-top-left-radius:4px"></td>` +
+    `<td style="padding-left:8px;padding-top:0;vertical-align:top;line-height:11px">` +
+    `<font style="position:relative;top:${replyTextTopOffset}px;display:inline-block;vertical-align:top;font-size:11px;line-height:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `</td>${contentTd}` +
     '</tr></table>'
   );
