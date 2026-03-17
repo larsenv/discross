@@ -722,9 +722,11 @@ async function resolveReplyData(
 
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const atSign = replyData.mentionsPing ? '@' : '';
-  const replyPreviewChars = Array.from(replyData.content || '');
+  const replyContentChars = Array.from(replyData.content || '');
   const truncatedReplyPreview =
-    replyPreviewChars.length > 70 ? `${replyPreviewChars.slice(0, 67).join('')}...` : replyData.content;
+    replyContentChars.length > 70
+      ? `${replyContentChars.slice(0, 67).join('')}...`
+      : (replyData.content || '');
   // Single-row layout: the left indicator cell uses border-left + border-top +
   // border-top-left-radius to draw a reliable ┌ corner shape.
   // The author and content cells sit to the right in the same row.
