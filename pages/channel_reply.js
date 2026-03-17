@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('fs');
+const escape = require('escape-html');
 const { PermissionFlagsBits } = require('discord.js');
 const { getDisplayName } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
@@ -80,6 +81,28 @@ const date_separator_template = fs.readFileSync(
   'pages/templates/message/date_separator.html',
   'utf-8'
 );
+const REPLY_PREVIEW_MAX_LENGTH = 30;
+
+function buildReplyPreviewContent(message) {
+  const flattened = message.content.replace(/\s+/g, ' ').trim();
+  let preview = flattened;
+
+  message.mentions?.users?.forEach((user) => {
+    if (!user) return;
+    const member = message.mentions?.members?.get(user.id);
+    const mentionName =
+      '@' +
+      normalizeWeirdUnicode(
+        member ? getDisplayName(member, user) : (user.displayName ?? user.globalName ?? user.username)
+      );
+    preview = preview.replace(new RegExp(`<@!?${user.id}>`, 'g'), mentionName);
+  });
+
+  if (preview.length > REPLY_PREVIEW_MAX_LENGTH) {
+    preview = preview.substring(0, REPLY_PREVIEW_MAX_LENGTH) + '...';
+  }
+  return escape(preview);
+}
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
@@ -231,8 +254,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       const reply_message_id = args[3];
       try {
         const message = await chnl.messages.fetch(reply_message_id);
-        const message_content =
-          message.content.length > 30 ? message.content.substring(0, 30) + '...' : message.content;
+        const message_content = buildReplyPreviewContent(message);
 
         const author = await chnl.guild.members
           .fetch(message.author.id)
@@ -241,7 +263,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
         const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
         const replyBar = strReplace(
-          strReplace(channel_reply_bar_template, '{$REPLY_MESSAGE_AUTHOR}', author),
+          strReplace(channel_reply_bar_template, '{$REPLY_MESSAGE_AUTHOR}', escape(author)),
           '{$REPLY_MESSAGE_CONTENT}',
           message_content
         );

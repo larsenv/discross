@@ -169,7 +169,7 @@ function renderEmojis(messagetext, item, imagesCookie, animationsCookie) {
   if (imagesCookie !== 1) return messagetext;
 
   // Jumbo detection
-  const customEmojiRegex = /<a?:.+?:\d{17,19}>/g;
+  const customEmojiRegex = /<a?:.+?:\d{16,20}>/g;
   const customMatches = item.content.match(customEmojiRegex) ?? [];
   const unicodeMatches = item.content.match(emojiRegex) ?? [];
   const totalEmojis = customMatches.length + unicodeMatches.length;
@@ -187,7 +187,7 @@ function renderEmojis(messagetext, item, imagesCookie, animationsCookie) {
   });
 
   // Custom emoji
-  [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{17,19})?(?:(?!\1).)*&gt;/g)].forEach(
+  [...messagetext.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})?(?:(?!\1).)*&gt;/g)].forEach(
     (match) => {
       const animated = !!match[2];
       const ext = animated && animationsCookie === 1 ? 'gif' : 'png';
@@ -415,7 +415,7 @@ function renderKnownMentions(messagetext, item, tmpl_mention) {
 
 async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_mention) {
   // Fetch any member IDs not yet in cache
-  const unresolvedIds = [...messagetext.matchAll(/&lt;@!?(\d{17,19})&gt;/g)]
+  const unresolvedIds = [...messagetext.matchAll(/&lt;@!?(\d{16,20})&gt;/g)]
     .map((m) => m[1])
     .filter((id) => !memberCache.has(id));
 
@@ -429,7 +429,7 @@ async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_men
     })
   );
 
-  return messagetext.replace(/&lt;@!?(\d{17,19})&gt;/g, (match, userId) => {
+  return messagetext.replace(/&lt;@!?(\d{16,20})&gt;/g, (match, userId) => {
     const resolved = memberCache.get(userId) ?? chnl.guild.members.cache.get(userId);
     if (resolved) {
       return strReplace(
@@ -443,7 +443,7 @@ async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_men
 }
 
 async function resolveChannelMentions(messagetext, bot, chnl) {
-  const unresolvedIds = [...messagetext.matchAll(/&lt;#(\d{17,19})&gt;/g)]
+  const unresolvedIds = [...messagetext.matchAll(/&lt;#(\d{16,20})&gt;/g)]
     .map((m) => m[1])
     .filter((id) => !bot.client.channels.cache.has(id));
 
@@ -457,7 +457,7 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
     })
   );
 
-  return messagetext.replace(/&lt;#(\d{17,19})&gt;/g, (match, id) => {
+  return messagetext.replace(/&lt;#(\d{16,20})&gt;/g, (match, id) => {
     const ch = bot.client.channels.cache.get(id);
     if (!ch) return match;
     return `<a href="/channels/${ch.id}" style="text-decoration:none;color:inherit;"><span class="mention">#${escape(normalizeWeirdUnicode(ch.name))}</span></a>`;
@@ -524,7 +524,7 @@ async function resolveForwardData(
     const content = truncateText(fwdMsg.content, FORWARDED_CONTENT_MAX_LENGTH);
 
     const originHtml = await (async () => {
-      const snowflakeRe = /^\d{17,19}$/;
+      const snowflakeRe = /^\d{16,20}$/;
       if (!fwdMsg.guildId || !snowflakeRe.test(fwdMsg.channelId) || !snowflakeRe.test(fwdMsg.id))
         return '';
       const fwdChannel = fwdMsg.channel ?? bot.client.channels.cache.get(fwdMsg.channelId);
@@ -609,7 +609,7 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
     text = text.split(`<@&${role.id}>`).join('@' + normalizeWeirdUnicode(role.name));
   });
   // Fetch any remaining unrecognized user IDs from the API
-  const unresolvedUserIds = [...text.matchAll(/<@!?(\d{17,19})>/g)]
+  const unresolvedUserIds = [...text.matchAll(/<@!?(\d{16,20})>/g)]
     .map((m) => m[1])
     .filter((id) => !memberCache.has(id));
   await Promise.allSettled(
@@ -621,13 +621,13 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
       }
     })
   );
-  text = text.replace(/<@!?(\d{17,19})>/g, (match, id) => {
+  text = text.replace(/<@!?(\d{16,20})>/g, (match, id) => {
     const cached = memberCache.get(id) ?? chnl.guild.members.cache.get(id);
     if (cached) return '@' + normalizeWeirdUnicode(getDisplayName(cached, cached.user));
     return match;
   });
   // Fetch any unresolved channel IDs from the API
-  const unresolvedChannelIds = [...text.matchAll(/<#(\d{17,19})>/g)]
+  const unresolvedChannelIds = [...text.matchAll(/<#(\d{16,20})>/g)]
     .map((m) => m[1])
     .filter((id) => !bot.client.channels.cache.has(id));
   await Promise.allSettled(
@@ -639,7 +639,7 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
       }
     })
   );
-  text = text.replace(/<#(\d{17,19})>/g, (match, id) => {
+  text = text.replace(/<#(\d{16,20})>/g, (match, id) => {
     const ch = bot.client.channels.cache.get(id);
     if (ch) return '#' + normalizeWeirdUnicode(ch.name);
     return match;
