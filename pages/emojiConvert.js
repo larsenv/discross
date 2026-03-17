@@ -102,7 +102,8 @@ function convertEmoji(message) {
   withProtected = withProtected.replace(_escapedAsciiRegex, (match) => {
     const shortcut = match.slice(1); // strip the leading backslash
     const idx = escaped.length;
-    escaped.push(`:${_shortcutMap.get(shortcut)}:`);
+    const emojiName = _shortcutMap.get(shortcut);
+    escaped.push(emojiName ? `:${emojiName}:` : shortcut);
     return `\u0000ESC${idx}\u0000`;
   });
 
