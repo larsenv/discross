@@ -723,7 +723,8 @@ async function resolveReplyData(
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const ellipsis = '...';
   const ellipsisLength = ellipsis.length;
-  const lineBreakTagPattern = /<br\s*\/?>/gi;
+  const lineBreakTagPattern = /<br[^>]*>/gi;
+  const htmlTagPattern = /<[^>]+>/g;
   // 42 chars fits the 200px preview width with 11px Rodin/fallback text in manual Chromium/Linux checks.
   const maxReplyPreviewLength = 42;
   const contentLengthBeforeTruncation = maxReplyPreviewLength - ellipsisLength;
@@ -731,6 +732,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const atSign = replyData.mentionsPing ? '@' : '';
   const normalizedReplyContent = (replyData.content || '')
     .replace(lineBreakTagPattern, ' ')
+    .replace(htmlTagPattern, '')
     .replace(/\r?\n/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
