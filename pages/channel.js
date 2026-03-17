@@ -721,7 +721,8 @@ async function resolveReplyData(
 // ---------------------------------------------------------------------------
 
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
-  const ellipsisLength = 3;
+  const ellipsis = '...';
+  const ellipsisLength = ellipsis.length;
   const maxReplyPreviewLength = 42;
   const truncatedReplyLength = maxReplyPreviewLength - ellipsisLength;
   const replyTextTopOffset = -1;
@@ -734,7 +735,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const replyContentChars = Array.from(normalizedReplyContent);
   const truncatedReplyPreview =
     replyContentChars.length > maxReplyPreviewLength
-      ? `${replyContentChars.slice(0, truncatedReplyLength).join('')}...`
+      ? `${replyContentChars.slice(0, truncatedReplyLength).join('')}${ellipsis}`
       : normalizedReplyContent;
   // Single-row layout: the left indicator cell uses border-left + border-top +
   // border-top-left-radius to draw a reliable ┌ corner shape.
