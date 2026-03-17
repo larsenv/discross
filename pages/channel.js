@@ -721,11 +721,19 @@ async function resolveReplyData(
 // ---------------------------------------------------------------------------
 
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
+  const maxReplyPreviewLength = 42;
+  const truncatedReplyLength = maxReplyPreviewLength - 3;
   const atSign = replyData.mentionsPing ? '@' : '';
-  const normalizedReplyContent = (replyData.content || '').replace(/<br\s*\/?>/gi, ' ').replace(/\r?\n/g, ' ');
+  const normalizedReplyContent = (replyData.content || '')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/\r?\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   const replyContentChars = Array.from(normalizedReplyContent);
   const truncatedReplyPreview =
-    replyContentChars.length > 42 ? `${replyContentChars.slice(0, 39).join('')}...` : normalizedReplyContent;
+    replyContentChars.length > maxReplyPreviewLength
+      ? `${replyContentChars.slice(0, truncatedReplyLength).join('')}...`
+      : normalizedReplyContent;
   // Single-row layout: the left indicator cell uses border-left + border-top +
   // border-top-left-radius to draw a reliable ┌ corner shape.
   // The author and content cells sit to the right in the same row.
