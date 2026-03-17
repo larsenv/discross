@@ -725,16 +725,16 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   // Single-row layout: the left indicator cell uses border-left + border-top +
   // border-top-left-radius to draw a reliable ┌ corner shape.
   // The author and content cells sit to the right in the same row.
-  // The content cell uses max-width + overflow:hidden + text-overflow:ellipsis so
-  // long quoted text truncates with "…" instead of overflowing the viewport margin.
+  // Keep reply content on one line and clipped to max-width without CSS ellipsis
+  // so font rendering remains consistent with Discord.
   const contentTd = replyData.content
-    ? `<td style="padding-left:4px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">` +
+    ? `<td style="padding-left:4px;vertical-align:top;overflow:hidden;white-space:nowrap;max-width:200px">` +
       `<font style="font-size:11px;color:${replyText}" face="rodin,sans-serif">${replyData.content}</font></td>`
     : '';
   return (
     '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-    `<td style="width:12px;height:10px;vertical-align:middle;border-left:2px solid ${barColor};border-top:2px solid ${barColor};border-top-left-radius:4px"></td>` +
-    `<td style="padding-left:8px;vertical-align:middle">` +
+    `<td style="width:12px;height:10px;vertical-align:top;border-left:2px solid ${barColor};border-top:2px solid ${barColor};border-top-left-radius:4px"></td>` +
+    `<td style="padding-left:8px;vertical-align:top">` +
     `<font style="font-size:11px;font-weight:600;color:${replyData.authorColor}" face="rodin,sans-serif">${atSign}${escape(replyData.author)}</font>` +
     `</td>${contentTd}` +
     '</tr></table>'
