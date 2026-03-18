@@ -90,6 +90,20 @@ function renderDiscordMarkdown(text, options = {}) {
   // The Rodin font does not render them properly
   text = text.replace(/\u2018|\u2019/g, "'").replace(/\u201C|\u201D/g, '"');
 
+  // Fix markdown with spaces around markers (Discord-compatible)
+  // Remove spaces between ** and text for bold
+  text = text.replace(/\*\*\s+(.+?)\s+\*\*/g, '**$1**');  // ** bold ** --> **bold**
+  text = text.replace(/\*\*\s+(.+?)\*\*/g, '**$1**');   // ** bold** --> **bold**
+  text = text.replace(/\*\*(.+?)\s+\*\*/g, '**$1**');   // **bold ** --> **bold**
+  // Remove spaces between __ and text for underline/bold
+  text = text.replace(/__\s+(.+?)\s+__/g, '__$1__');  // __ underline __ --> __underline__
+  text = text.replace(/__\s+(.+?)__/g, '__$1__');   // __ underline__ --> __underline__
+  text = text.replace(/__(.+?)\s+__/g, '__$1__');   // __underline __ --> __underline__
+  // Remove spaces between * and text for italic (avoiding **)
+  text = text.replace(/\*(?!\*)\s+(.+?)\s+\*(?!\*)/g, '*$1*');  // * italic * --> *italic*
+  text = text.replace(/\*(?!\*)\s+(.+?)\*(?!\*)/g, '*$1*');   // * italic* --> *italic*
+  text = text.replace(/\*(?!\*)(.+?)\s+\*(?!\*)/g, '*$1*');   // *italic * --> *italic*
+
   const codePlaceholders = [];
   const underlinePlaceholders = [];
   const spoilerPlaceholders = [];
@@ -184,11 +198,11 @@ function renderDiscordMarkdown(text, options = {}) {
       continue;
     }
 
-    // 3.2: Single-line Block Quote (>)
-    if (line.match(/^>\s?.*$/)) {
+    // 3.2: Single-line Block Quote (> ) - must have space after >
+    if (line.match(/^>\s(?!>).*$/)) {
       if (inList) flushAccumulators();
       inQuote = true;
-      const content = line.replace(/^>\s?/, '');
+      const content = line.replace(/^>\s/, '');
       currentQuoteList.push(content);
       continue;
     } else {
