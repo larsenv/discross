@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const fs1 = require('fs');
 const escape = require('escape-html');
 const he = require('he');
 const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
