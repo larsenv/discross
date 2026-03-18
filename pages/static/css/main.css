@@ -608,6 +608,16 @@ canvas {
 /* Hide legacy elements */
 br.nodisp { display: none; }
 
+/* Discord styled timestamps */
+.discord-timestamp {
+  background: #2b2e59;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 17px;
+  color: #dcddde;
+  white-space: nowrap;
+}
+
 /* Spoiler blocks */
 .spoiler-box {
     background: #666770;
@@ -695,6 +705,7 @@ body.light-theme,
     border-color: #4752c4 !important;
 }
 .light-theme hr { border-color: #e3e5e8; }
+.light-theme .discord-timestamp { background: #dcdef9; color: #323339; }
 .light-theme .spoiler-box { background: #8f9097; }
 .light-theme .spoiler-box.spoiler-revealed { background: #efeff0; color: #060607; }
 
@@ -761,6 +772,7 @@ body.amoled-theme,
 .amoled-theme hr { border-color: #555555; }
 .amoled-theme .spoiler-box { background: #5c5d66; }
 .amoled-theme .spoiler-box.spoiler-revealed { background: #1d1d20; }
+.amoled-theme .discord-timestamp { background: #1d204c; color: #94A8FF; }
 
 /* ================================================================
    20. PAGE-CHANNEL: channel.html needs height:auto on body

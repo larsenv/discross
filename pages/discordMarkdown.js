@@ -85,6 +85,7 @@ function renderDiscordMarkdown(text, options = {}) {
   if (!text) return '';
 
   const barColor = options.barColor || '#808080';
+  const timezone = options.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   // Replace curly/smart apostrophes and quotes with straight ones
   // The Rodin font does not render them properly
@@ -111,6 +112,7 @@ function renderDiscordMarkdown(text, options = {}) {
   const bulletListPlaceholders = [];
   const blockQuotePlaceholders = [];
   const subtextPlaceholders = [];
+  const timestampPlaceholders = [];
 
   // Step 0: Protect Code Blocks
   text = text.replace(
@@ -129,6 +131,13 @@ function renderDiscordMarkdown(text, options = {}) {
     const index = codePlaceholders.length;
     codePlaceholders.push({ type: 'inline', content: content });
     return `§§CODEINLINE${index}§§`;
+  });
+
+  // Step 0.6: Protect Discord Timestamps <t:timestamp:format>
+  text = text.replace(/<t:(\d+):?([A-Za-z])?>/g, function (match, timestamp, format) {
+    const index = timestampPlaceholders.length;
+    timestampPlaceholders.push({ timestamp: parseInt(timestamp, 10), format: format || 'f' });
+    return `§§TIMESTAMP${index}§§`;
   });
 
   // Step 1: Protect Bold Italic & Underline
@@ -376,10 +385,144 @@ function renderDiscordMarkdown(text, options = {}) {
   // Replace discord.com channel/message jump links with local Discross paths.
   // The message content sent to Discord keeps the discord.com URL (for Discord clients),
   // but when rendered on the Discross frontend we convert them so "jump" navigates locally.
-  return withCodeBlocks.replace(
+  const withLinks = withCodeBlocks.replace(
     /<a\s+href="https:\/\/discord\.com\/channels\/\d{16,20}\/(\d{16,20})\/(\d{16,20})"/gi,
     '<a href="/channels/$1/$2"'
   );
+
+  // Restore Timestamps
+  const withTimestamps = withLinks.replace(/§§TIMESTAMP(\d+)§§/g, function (m, i) {
+    const ts = timestampPlaceholders[parseInt(i, 10)];
+    const date = new Date(ts.timestamp * 1000);
+    const now = new Date();
+
+    function formatDateComponents(dt) {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+      }).formatToParts(dt);
+      const y = parseInt(parts.find((p) => p.type === 'year').value, 10);
+      const m = parseInt(parts.find((p) => p.type === 'month').value, 10);
+      const d = parseInt(parts.find((p) => p.type === 'day').value, 10);
+      return { y, m, d };
+    }
+
+    const diffDays = (a, b) => {
+      return Math.round((a - b) / (1000 * 60 * 60 * 24));
+    };
+
+    const formatTime = (dt) => {
+      return dt.toLocaleString('en-US', {
+        timeZone: timezone,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    };
+
+    const msgComps = formatDateComponents(date);
+    const nowComps = formatDateComponents(now);
+    const msgDate = Date.UTC(msgComps.y, msgComps.m - 1, msgComps.d);
+    const nowDate = Date.UTC(nowComps.y, nowComps.m - 1, nowComps.d);
+    const diff = diffDays(nowDate, msgDate);
+
+    let formatted;
+    switch (ts.format) {
+      case 'S': // Short date/time
+        formatted = date.toLocaleString('en-US', {
+          timeZone,
+          month: '2-digit',
+          day: '2-digit',
+          year: '2-digit',
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        });
+        break;
+      case 'f': // Long date/time
+        formatted = date.toLocaleString('en-US', {
+          timeZone,
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) + ' at ' + formatTime(date);
+        break;
+      case 'F': // Full date/time
+        formatted = date.toLocaleString('en-US', {
+          timeZone,
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) + ' at ' + formatTime(date);
+        break;
+      case 'R': // Relative time
+        const diffMs = date.getTime() - now.getTime();
+        const absDiff = Math.abs(diffMs);
+        const absSec = Math.abs(Math.floor(diffMs / 1000));
+        const absMin = Math.abs(Math.floor(diffMs / (1000 * 60)));
+        const absHour = Math.abs(Math.floor(diffMs / (1000 * 60 * 60)));
+        const absDay = Math.abs(Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+        const absMonth = Math.abs(Math.floor(absDay / 30));
+        const absYear = Math.abs(Math.floor(absDay / 365));
+        const rel = diffMs < 0 ? 'ago' : 'in';
+        if (absSec < 60) {
+          formatted = absSec === 1 ? 'a second ' + rel : `${absSec} seconds ` + rel;
+        } else if (absMin < 60) {
+          formatted = absMin === 1 ? 'a minute ' + rel : `${absMin} minutes ` + rel;
+        } else if (absHour < 24) {
+          formatted = absHour === 1 ? 'an hour ' + rel : `${absHour} hours ` + rel;
+        } else if (absDay < 30) {
+          formatted = absDay === 1 ? 'a day ' + rel : `${absDay} days ` + rel;
+        } else if (absMonth < 12) {
+          formatted = absMonth === 1 ? 'a month ' + rel : `${absMonth} months ` + rel;
+        } else {
+          formatted = absYear === 1 ? 'a year ' + rel : `${absYear} years ` + rel;
+        }
+        break;
+      case 'd': // Short date
+        formatted = date.toLocaleString('en-US', {
+          timeZone,
+          month: '2-digit',
+          day: '2-digit',
+          year: '2-digit'
+        });
+        break;
+      case 'D': // Long date
+        formatted = date.toLocaleString('en-US', {
+          timeZone,
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        break;
+      case 't': // Short time
+        formatted = formatTime(date);
+        break;
+      case 'T': // Long time
+        formatted = date.toLocaleString('en-US', {
+          timeZone,
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        });
+        break;
+      default:
+        formatted = date.toLocaleString('en-US', {
+          timeZone,
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) + ' at ' + formatTime(date);
+    }
+    return `<span class="discord-timestamp">${formatted}</span>`;
+  });
+
+  return withTimestamps;
 }
 
 module.exports = { renderDiscordMarkdown };
