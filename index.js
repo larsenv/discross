@@ -98,6 +98,7 @@ const server = http.createServer(options);
 connectionHandler.startWsServer(server);
 
 // In-memory cache for static files served via servePage()
+// Cache entry format: { data: Buffer, mtime: Date }
 const staticFileCache = new Map();
 const STATIC_CACHE_MAX_FILES = 2000; // max distinct files to cache (FIFO eviction)
 const STATIC_CACHE_MAX_BYTES = 1024 * 1024; // skip caching individual files larger than 1 MB
@@ -112,7 +113,22 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
 
   // Serve from in-memory cache for plain (non-templated) requests
   if (!textToReplace && staticFileCache.has(filename)) {
-    const data = staticFileCache.get(filename);
+    const cacheEntry = staticFileCache.get(filename);
+
+   // Check if file has been modified since caching
+   try {
+     const stats = fs.statSync(filename);
+     if (stats.mtime.getTime() === cacheEntry.mtime.getTime()) {
+       // File unchanged, serve from cache
+       res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
+       return res.end(cacheEntry.data);
+     }
+     // File modified, remove from cache and continue to read from disk
+     staticFileCache.delete(filename);
+   } catch (err) {
+     // If we can't stat the file, invalidate cache and continue
+     staticFileCache.delete(filename);
+   }
     res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
     return res.end(data);
   }
@@ -135,12 +151,48 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
         if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
           staticFileCache.delete(staticFileCache.keys().next().value);
         }
-        staticFileCache.set(filename, data);
+       // Get modification time and store in cache
+       try {
+         const stats = fs.statSync(filename);
+         staticFileCache.set(filename, {
+           data: data,
+           mtime: stats.mtime
+         });
+       } catch (err) {
+         // If we can't stat the file, still serve it but don't cache
+         console.warn('Could not stat file for caching:', filename, err);
+       }
       }
       res.end(data);
     }
   });
 }
+
+// File watching for hot-reload (monitors pages/, templates/, and static files)
+// File watching for hot-reload (monitors ENTIRE pages folder - all files)
+function setupFileWatchers() {
+  if (process.env.HOT_RELOAD !== 'true') {
+    return;
+  }
+
+  console.log('Hot-reload enabled: Monitoring ENTIRE pages/ folder');
+
+  const pagesDir = path.resolve('pages');
+  try {
+    fs.watch(pagesDir, { recursive: true }, (eventType, filename) => {
+      if (!filename) return;
+      const fullPath = path.join(pagesDir, filename);
+      if (staticFileCache.has(fullPath)) {
+        staticFileCache.delete(fullPath);
+      }
+      console.log('Hot-reload:', filename);
+    });
+  } catch (err) {
+    console.error('Failed to watch pages/:', err.message);
+  }
+}
+
+setupFileWatchers();
 
 async function senddrawingAsync(req, res, body) {
   const discordID = await auth.checkAuth(req, res);
