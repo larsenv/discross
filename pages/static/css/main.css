@@ -217,13 +217,14 @@ pre code { background: none; border: none; padding: 0; }
 .message.mentioned {
     border-left: 4px solid #DC8D01;
     background-color: #30271F;
-    padding-left: 12px;
 }
 
-/* Ping row (mentioned message table) */
+/* Ping row (mentioned message table) - compensate for small content-padding */
 .ping-row {
     border-left: 4px solid #DC8D01;
     background: #30271F;
+    margin-left: 0 !important;
+    padding-left: 12px;
 }
 .mention {
     color: #A9BBFF;
@@ -664,7 +665,7 @@ body.light-theme,
 .light-theme .mention { color: #2E3C88; background: #DCDEF9; }
 .light-theme .mention-default { color: #303035; background: #DCDEF9; }
 .light-theme .message.mentioned { border-left-color: #9E5A01; background-color: #FAF4EB; }
-.light-theme .ping-row { border-left-color: #9E5A01; background: #FAF4EB; }
+.light-theme .ping-row { border-left-color: #9E5A01; background: #FAF4EB; margin-left: 0 !important; padding-left: 12px; }
 .light-theme a { color: #0067e0; }
 .light-theme .menu-button {
     background: none !important;
@@ -737,7 +738,7 @@ body.amoled-theme,
 .amoled-theme .mention { color: #94A8FF; background: #1D204C; }
 .amoled-theme .mention-default { color: #E4E4E6; background: #1D204C; }
 .amoled-theme .message.mentioned { border-left-color: #C97E01; background-color: #20160A; }
-.amoled-theme .ping-row { border-left-color: #C97E01; background: #20160A; }
+.amoled-theme .ping-row { border-left-color: #C97E01; background: #20160A; margin-left: 0 !important; padding-left: 12px; }
 .amoled-theme pre,
 .amoled-theme code { background: #0a0a0a; border-color: #222; color: #DCDCDF; }
 .amoled-theme a { color: #5865f2 !important; }
@@ -774,47 +775,6 @@ html.page-channel #wrapper {
 
 html.page-channel body {
     overflow-y: auto;
-}
-
-/* Fixed message form at bottom for channel pages on screens wider than 256px.
-   DSi Opera 9.5 stays static (either viewport is 256px so min-width:257px never
-   matches, or it doesn't parse media queries at all). */
-@media (min-width: 257px) {
-    html.page-channel,
-    html.page-channel body,
-    html.page-channel #wrapper {
-        height: 100%;
-    }
-
-    html.page-channel .message-form-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 100;
-    }
-}
-
-/* ================================================================
-   21. PAGE-CHANNEL-REPLY: fixed message form at bottom
-   ================================================================ */
-
-/* Fixed layout only on screens wider than 256px.
-   DSi Opera 9.5 stays static (either viewport is 256px so min-width:257px never
-   matches, or it doesn't parse media queries at all). */
-@media (min-width: 257px) {
-    html.page-channel-reply body,
-    html.page-channel-reply #wrapper {
-        height: 100%;
-    }
-
-    html.page-channel-reply .message-form-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 100;
-    }
 }
 
 /* Replying-to banner inside the fixed form bar */
@@ -875,21 +835,6 @@ html.page-draw body {
 /* Override themes.css which sets #wrapper to #303338; keep it matching body */
 html.page-draw #wrapper {
     background: #1A1A1E;
-}
-
-/* Message form on draw page: fixed at bottom for modern browsers (viewport > 256px).
-   DSi Opera 9.5 stays static (either viewport is 256px so min-width:257px never
-   matches, or it doesn't parse media queries at all). */
-@media (min-width: 257px) {
-    html.page-draw .message-form-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 100;
-    }
-    /* Padding so the fixed bar doesn't cover the bottom of the canvas. */
-    html.page-draw body { padding-bottom: 100px; }
 }
 
 /* ================================================================
@@ -1087,40 +1032,6 @@ html.page-server .amoled-theme #wrapper .warning-box b {
 /* Channel color for default dark theme */
 html.page-server font[color="#dcddde"] {
     color: #81828A !important;
-}
-
-/* ================================================================
-   25. RESPONSIVE MEDIA QUERIES
-   ================================================================ */
-
-@media (max-width: 640px) {
-    .content-padding { padding-bottom: calc(var(--toolbar-height) + var(--safe-area-bottom)); }
-    .homepage, .home, #home { padding: 12px; }
-
-    #toolbar-container {
-        width: calc(100% - 16px);
-        margin: 8px 8px 5px 8px;
-        padding: 8px 5px;
-        box-sizing: border-box;
-    }
-    #canvas-wrapper {
-        width: calc(100% - 16px);
-        margin: 0 8px 20px 8px;
-    }
-    canvas { width: 100%; }
-    .c-box { width: 20px; height: 20px; margin: 2px; }
-    .s-btn { margin: 0 2px; }
-    #btn-clear { font-size: 12px !important; height: 36px !important; padding: 0 12px !important; }
-    #btn-fill { font-size: 12px !important; height: 36px !important; padding: 0 12px !important; }
-    .mobile-break { display: block; }
-
-    .message-form-container { padding: 8px; }
-    .send-button { padding: 8px 10px; min-height: 40px; font-size: 0.9rem; }
-
-    html.page-channel-reply .message-form-container {
-        left: 0 !important;
-        right: 0 !important;
-    }
 }
 
 @media (max-width: 768px) {
@@ -2053,38 +1964,6 @@ a.food-tab-active:hover,
 :root {
   --toolbar-height-reply: 105px; /* Reply page toolbar height (base + reply banner) */
 }
-
-/* Reply pages use taller toolbar to account for reply banner */
-html.page-channel-reply .content-padding {
-  padding-bottom: calc(var(--toolbar-height-reply) + var(--safe-area-bottom));
-}
-
-html.page-channel .content-padding {
-    padding-bottom: calc(51px + var(--safe-area-bottom)) !important;
-}
-html.page-channel-reply .content-padding {
-    padding-bottom: calc(101px + var(--safe-area-bottom)) !important;
-}
-/* Mobile needs extra 35px - use 165px base instead of 100px */
-@media (max-width: 661px) {
-  html.page-channel .content-padding {
-    padding-bottom: calc(11px + var(--safe-area-bottom)) !important;
-  }
-  html.page-channel-reply .content-padding {
-    padding-bottom: calc(61px + var(--safe-area-bottom)) !important;
-  }
-}
-/* Add margin to #end anchor so it scrolls above toolbar */
-a#end {
-  display: block;
-  margin-bottom: calc(var(--toolbar-height) + var(--safe-area-bottom));
-  height: 1px;
-  width: 100%;
-}@media (max-width: 640px) {
-  html.page-channel a#end, html.page-channel-reply a#end {
-    margin-bottom: calc(35px + var(--toolbar-height) + var(--safe-area-bottom));
-  }
-}}
 
 /* Hide <br> inside empty message-links to prevent spacing */
 .message-link br {
