@@ -200,7 +200,7 @@ pre code { background: none; border: none; padding: 0; }
     color: #81828A;
     display: inline;
 }
-.message-link { text-decoration: none; color: inherit; display: block; }
+.message-link { text-decoration: none; color: inherit; display: inline; }
 .message-link:hover { text-decoration: none; }
 .messagecontent, .messagecontent-font {
     color: #DCDCDF;
@@ -2085,3 +2085,18 @@ a#end {
     margin-bottom: calc(35px + var(--toolbar-height) + var(--safe-area-bottom));
   }
 }}
+
+/* Hide <br> inside empty message-links to prevent spacing */
+.message-link br {
+  display: none;
+}
+
+/* Hide empty message-links that contain only <br> */
+.message-link:has(> br) {
+  display: none;
+}
+
+/* Added padding-left for messages */
+.content-padding {
+  padding-left: 7px;
+}

@@ -106,6 +106,7 @@ function buildReplyPreviewContent(message) {
   if (preview.length > REPLY_PREVIEW_MAX_LENGTH) {
     preview = preview.substring(0, REPLY_PREVIEW_MAX_LENGTH) + '...';
   }
+  if (!preview) return ""; // Prevent empty <br>
   return escape(preview);
 }
 
