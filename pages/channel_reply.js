@@ -29,7 +29,7 @@ const channel_template = fs
   .split('{$PAGE_CLASS}')
   .join('page-channel-reply')
   .split('{$CONTENT_EXTRA_PADDING}')
-  .join(' padding-bottom: 190px;')
+  .join('')
   .split('{$EMOJI_PICKER}')
   .join(fs.readFileSync('pages/templates/partials/emoji_picker.html', 'utf-8'))
   .split('{$EMOJI_BUTTON}')
@@ -84,6 +84,11 @@ const date_separator_template = fs.readFileSync(
 const REPLY_PREVIEW_MAX_LENGTH = 30;
 
 function buildReplyPreviewContent(message) {
+  // If the message has attachments, show "Attachment" instead of text preview
+  if (message.attachments && message.attachments.size > 0) {
+    return 'Attachment';
+  }
+
   const flattened = message.content.replace(/\s+/g, ' ').trim();
   let preview = flattened;
 

@@ -210,16 +210,17 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
 
   const IMAGE_EXT = /\.(jpg|gif|png|jpeg|avif|svg|webp|tif|tiff)$/i;
   const VIDEO_EXT = /\.(mp4|webm|mov|avi|mkv)$/i;
-  const imageUrls = [];
+  const imageData = []; // Store {url, isSpoiler} for each image
 
   item.attachments.forEach((attachment) => {
     const isImage = IMAGE_EXT.test(attachment.name);
     const isVideo = VIDEO_EXT.test(attachment.name);
+    const isSpoiler = attachment.name.toUpperCase().startsWith('SPOILER_');
     const proxyBase = isImage && imagesCookie === 1 ? '/imageProxy/' : '/fileProxy/';
     const url = proxyBase + attachment.url.replace(/^(.*?)(\d+)/, '$2');
 
     if (isImage && imagesCookie === 1) {
-      imageUrls.push(url);
+      imageData.push({ url, isSpoiler });
     } else {
       // File download card
       const card = strReplace(
@@ -234,8 +235,23 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
     }
   });
 
-  imageUrls.forEach((url) => {
-    messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;height:auto;" alt="image"></a>`;
+  imageData.forEach(({ url, isSpoiler }) => {
+    if (isSpoiler) {
+      // Spoiler image - hidden until clicked
+      messagetext += `<br><table cellpadding="0" cellspacing="0" class="spoiler-box spoiler-image" style="display:inline-table;vertical-align:text-top;border-spacing:0;cursor:pointer" onclick="show(this);event.stopPropagation();return false">` +
+        `<tr><td style="line-height:1;padding:0">` +
+        `<div style="position:relative;display:inline-block">` +
+        `<img src="${url}" style="max-width:256px;max-height:200px;height:auto;filter:blur(16px);" alt="image">` +
+        `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:bold;color:white;pointer-events:none">SPOILER</div>` +
+        `</div>` +
+        `<span style="visibility:hidden">` +
+        `<img src="${url}" style="max-width:256px;max-height:200px;height:auto;" alt="image">` +
+        `</span>` +
+        `</td></tr></table>`;
+    } else {
+      // Normal image
+      messagetext += `<br><a href="${url}" target="_blank"><img src="${url}" style="max-width:256px;max-height:200px;height:auto;" alt="image"></a>`;
+    }
   });
 
   return messagetext;
