@@ -415,7 +415,7 @@ function renderDiscordMarkdown(text, options = {}) {
 
     const formatTime = (dt) => {
       return dt.toLocaleString('en-US', {
-        timeZone: timezone,
+        timezone,
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
@@ -432,7 +432,7 @@ function renderDiscordMarkdown(text, options = {}) {
     switch (ts.format) {
       case 'S': // Short date/time
         formatted = date.toLocaleString('en-US', {
-          timeZone,
+          timezone,
           month: '2-digit',
           day: '2-digit',
           year: '2-digit',
@@ -444,7 +444,7 @@ function renderDiscordMarkdown(text, options = {}) {
         break;
       case 'f': // Long date/time
         formatted = date.toLocaleString('en-US', {
-          timeZone,
+          timezone,
           year: 'numeric',
           month: 'long',
           day: 'numeric'
@@ -452,7 +452,7 @@ function renderDiscordMarkdown(text, options = {}) {
         break;
       case 'F': // Full date/time
         formatted = date.toLocaleString('en-US', {
-          timeZone,
+          timezone,
           weekday: 'long',
           year: 'numeric',
           month: 'long',
@@ -462,12 +462,12 @@ function renderDiscordMarkdown(text, options = {}) {
       case 'R': // Relative time
         const diffMs = date.getTime() - now.getTime();
         const absDiff = Math.abs(diffMs);
-        const absSec = Math.abs(Math.floor(diffMs / 1000));
-        const absMin = Math.abs(Math.floor(diffMs / (1000 * 60)));
-        const absHour = Math.abs(Math.floor(diffMs / (1000 * 60 * 60)));
-        const absDay = Math.abs(Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-        const absMonth = Math.abs(Math.floor(absDay / 30));
-        const absYear = Math.abs(Math.floor(absDay / 365));
+        const absSec = Math.abs(Math.round(diffMs / 1000));
+        const absMin = Math.abs(Math.round(diffMs / (1000 * 60)));
+        const absHour = Math.abs(Math.round(diffMs / (1000 * 60 * 60)));
+        const absDay = Math.abs(Math.round(diffMs / (1000 * 60 * 60 * 24)));
+        const absMonth = Math.abs(Math.round(absDay / 30));
+        const absYear = Math.abs(Math.round(absDay / 365));
         const rel = diffMs < 0 ? 'ago' : 'in';
         if (absSec < 60) {
           formatted = absSec === 1 ? 'a second ' + rel : `${absSec} seconds ` + rel;
