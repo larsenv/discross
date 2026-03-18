@@ -24,9 +24,24 @@ function generateNonce() {
 
 window.onload = function () {
     // Generate a unique nonce for this page load to prevent duplicate message sends
-    const nonceEl = document.getElementById('nonce');
+    var nonceEl = document.getElementById('nonce');
     if (nonceEl) {
         nonceEl.value = generateNonce();
+    }
+
+    // Set padding initially
+    updateToolbarPadding();
+
+    // Update on resize (debounce slightly for performance)
+    var resizeTimer;
+    function onResize() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(updateToolbarPadding, 100);
+    }
+
+    if (window.addEventListener) {
+        window.addEventListener('resize', onResize);
+        window.addEventListener('orientationchange', onResize);
     }
 
     // Enhanced scroll-to-bottom for old browser compatibility
@@ -147,15 +162,8 @@ function showEmoji() {
         emojiShowing = true;
         try { emojiDiv.scrollIntoView(); } catch(e) { /* scrollIntoView not supported */ }
     }
-    // Sync content bottom-padding to the bar's current height so the bar
-    // never obscures the last message (bar grows when emoji picker is open).
-    try {
-        const container = document.querySelector('.message-form-container');
-        const content = document.getElementById('content');
-        if (container && content) {
-            content.style.paddingBottom = container.offsetHeight + 'px';
-        }
-    } catch(e) { /* ignore in old browsers */ }
+    // Update padding based on new toolbar height
+    updateToolbarPadding();
 }
 
 // Spoiler reveal function for Wii compatibility
