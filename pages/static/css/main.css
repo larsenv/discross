@@ -155,12 +155,6 @@ pre code { background: none; border: none; padding: 0; }
     max-width: 1200px;
     margin: 0 auto;
 }
-
-/* Channel layout padding */
-.content-padding {
-    padding-left: 60px;
-    padding-bottom: 160px;
-}
 .scrollable-content {
     padding: 16px;
 }
@@ -1100,7 +1094,7 @@ html.page-server font[color="#dcddde"] {
    ================================================================ */
 
 @media (max-width: 640px) {
-    .content-padding { padding-left: 50px; padding-bottom: 160px; }
+    .content-padding { padding-bottom: calc(var(--toolbar-height) + var(--safe-area-bottom)); }
     .homepage, .home, #home { padding: 12px; }
 
     #toolbar-container {
@@ -2050,3 +2044,44 @@ a.food-tab-active:hover,
 .hljs-emphasis { font-style: italic; }
 .hljs-strong { font-weight: 700; }
 .hljs-link { text-decoration: underline; }
+/* CSS Custom Properties for dynamic safe area calculations */
+:root {
+  --toolbar-height: 65px; /* Base toolbar height for channel pages */
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px); /* iOS safe area (0px on desktop/Android) */
+}
+\n/* Separate variable for reply pages (190px includes reply banner) */
+:root {
+  --toolbar-height-reply: 105px; /* Reply page toolbar height (base + reply banner) */
+}
+
+/* Reply pages use taller toolbar to account for reply banner */
+html.page-channel-reply .content-padding {
+  padding-bottom: calc(var(--toolbar-height-reply) + var(--safe-area-bottom));
+}
+
+html.page-channel .content-padding {
+    padding-bottom: calc(51px + var(--safe-area-bottom)) !important;
+}
+html.page-channel-reply .content-padding {
+    padding-bottom: calc(101px + var(--safe-area-bottom)) !important;
+}
+/* Mobile needs extra 35px - use 165px base instead of 100px */
+@media (max-width: 661px) {
+  html.page-channel .content-padding {
+    padding-bottom: calc(11px + var(--safe-area-bottom)) !important;
+  }
+  html.page-channel-reply .content-padding {
+    padding-bottom: calc(61px + var(--safe-area-bottom)) !important;
+  }
+}
+/* Add margin to #end anchor so it scrolls above toolbar */
+a#end {
+  display: block;
+  margin-bottom: calc(var(--toolbar-height) + var(--safe-area-bottom));
+  height: 1px;
+  width: 100%;
+}@media (max-width: 640px) {
+  html.page-channel a#end, html.page-channel-reply a#end {
+    margin-bottom: calc(35px + var(--toolbar-height) + var(--safe-area-bottom));
+  }
+}}
