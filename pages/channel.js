@@ -912,7 +912,7 @@ async function renderMessageContent(item, context) {
     barColor,
   } = context;
 
-  const withMarkdown = renderDiscordMarkdown(item.content, { barColor });
+  const withMarkdown = renderDiscordMarkdown(item.content || '', { barColor, timezone: clientTimezone });
   const withEmojis = renderEmojis(withMarkdown, item, imagesCookie, animationsCookie);
   const withAttachments = renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload);
   const withStickers = renderStickers(withAttachments, item, imagesCookie);

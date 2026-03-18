@@ -261,6 +261,148 @@ function formatForwardedTimestamp(date, timezone) {
   }
 }
 
+/**
+ * Format Discord-style timestamp with different formats
+ * @param {number} unixTimestamp - Unix timestamp (seconds)
+ * @param {string} format - Format style: 'S', 'f', 'F', 'R', 'd', 'D', 't', 'T'
+ * @param {string|null} timezone - Timezone string or null for default
+ * @returns {string} - Formatted timestamp string
+ */
+function formatDiscordTimestamp(unixTimestamp, format, timezone) {
+  try {
+    const date = new Date(unixTimestamp * 1000);
+    const userTimezone = timezone || _systemTimezone;
+    const now = new Date();
+
+    const messageComps = getDateComponentsInTimezone(date, userTimezone);
+    const todayComps = getDateComponentsInTimezone(now, userTimezone);
+    const messageDateOnly = Date.UTC(messageComps.year, messageComps.month - 1, messageComps.day);
+    const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
+    const diffDays = Math.round((todayDateOnly - messageDateOnly) / MILLISECONDS_PER_DAY);
+    const diffTime = messageDateOnly - todayDateOnly;
+
+    switch (format) {
+      case 'S': // Short date/time: 3/18/26, 3:05:06 PM
+        return date.toLocaleString('en-US', {
+          timeZone: userTimezone,
+          month: '2-digit',
+          day: '2-digit',
+          year: '2-digit',
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        });
+      case 'f': // Long date/time: March 18, 2026 at 3:06 PM
+        return date.toLocaleString('en-US', {
+          timeZone: userTimezone,
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        }).replace(',', '') + ' at ' + date.toLocaleString('en-US', {
+          timeZone: userTimezone,
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+      case 'F': // Full date/time: Wednesday, March 18, 2026 at 3:06 PM
+        return date.toLocaleString('en-US', {
+          timeZone: userTimezone,
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        }).replace(',', '') + ' at ' + date.toLocaleString('en-US', {
+          timeZone: userTimezone,
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+      case 'R': // Relative time: a minute ago, 5 months ago, etc.
+        const diffNow = date.getTime() - now.getTime();
+        const diffSeconds = Math.abs(Math.floor(diffNow / 1000));
+        const diffMinutes = Math.abs(Math.floor(diffNow / (1000 * 60)));
+        const diffHours = Math.abs(Math.floor(diffNow / (1000 * 60 * 60)));
+        const diffDaysFloor = Math.abs(Math.floor(diffNow / (1000 * 60 * 60 * 24)));
+        const diffMonths = Math.abs(Math.floor(diffDaysFloor / 30));
+        const diffYears = Math.abs(Math.floor(diffDaysFloor / 365));
+
+        const pastOrFuture = diffNow < 0 ? 'ago' : 'in';
+
+        if (diffSeconds < 60) {
+          return diffSeconds === 1 ? 'a second ' + pastOrFuture : `${diffSeconds} seconds ` + pastOrFuture;
+        } else if (diffMinutes < 60) {
+          return diffMinutes === 1 ? 'a minute ' + pastOrFuture : `${diffMinutes} minutes ` + pastOrFuture;
+        } else if (diffHours < 24) {
+          return diffHours === 1 ? 'an hour ' + pastOrFuture : `${diffHours} hours ` + pastOrFuture;
+        } else if (diffDaysFloor < 30) {
+          return diffDaysFloor === 1 ? 'a day ' + pastOrFuture : `${diffDaysFloor} days ` + pastOrFuture;
+        } else if (diffMonths < 12) {
+          return diffMonths === 1 ? 'a month ' + pastOrFuture : `${diffMonths} months ` + pastOrFuture;
+        } else {
+          return diffYears === 1 ? 'a year ' + pastOrFuture : `${diffYears} years ` + pastOrFuture;
+        }
+      case 'd': // Short date: 3/18/26
+        return date.toLocaleString('en-US', {
+          timeZone: userTimezone,
+          month: '2-digit',
+          day: '2-digit',
+          year: '2-digit',
+        });
+      case 'D': // Long date: March 18, 2026
+        return date.toLocaleString('en-US', {
+          timeZone: userTimezone,
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+      case 't': // Short time: 3:05 PM
+        return date.toLocaleString('en-US', {
+          timeZone: userTimezone,
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+      case 'T': // Long time: 3:05:06 PM
+        return date.toLocaleString('en-US', {
+          timeZone: userTimezone,
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        });
+      default: // Default to S format
+        return formatDiscordTimestamp(unixTimestamp, 'S', timezone);
+    }
+  } catch (err) {
+    console.error('Error formatting Discord timestamp:', err);
+    return String(unixTimestamp);
+  }
+}
+
+/**
+ * Replace Discord timestamp tags with formatted timestamps
+ * @param {string} text - Text containing <t:timestamp:format> tags
+ * @param {string|null} timezone - Timezone string or null for default
+ * @returns {string} - Text with timestamps formatted
+ */
+function replaceDiscordTimestamps(text, timezone) {
+  if (!text || typeof text !== 'string') return text;
+
+  return text.replace(/<t:(\d+):?([A-Za-z])?>/g, (match, timestamp, format) => {
+    const ts = parseInt(timestamp, 10);
+    const fmt = format || 'f';
+    const formatted = formatDiscordTimestamp(ts, fmt, timezone);
+    return `<span class="discord-timestamp">${formatted}</span>`;
+  });
+}
+
 module.exports = {
   getClientIP,
   getTimezoneFromIP,
@@ -268,4 +410,6 @@ module.exports = {
   formatDateSeparator,
   areDifferentDays,
   formatForwardedTimestamp,
+  formatDiscordTimestamp,
+  replaceDiscordTimestamps,
 };
