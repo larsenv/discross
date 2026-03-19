@@ -3,7 +3,7 @@
 const fs = require('fs');
 const escape = require('escape-html');
 
-const { strReplace, getPageThemeAttr, httpsGet } = require('./utils.js');
+const { strReplace, getPageThemeAttr, httpsGet, formatChangePct, changeColor } = require('./utils.js');
 
 const auth = require('../authentication.js');
 
@@ -141,17 +141,6 @@ function formatChange(change, decimals) {
   if (change === null) return '--';
   const sign = change >= 0 ? '+' : '';
   return sign + change.toFixed(decimals);
-}
-
-function formatChangePct(pct) {
-  if (pct === null) return '--';
-  const sign = pct >= 0 ? '+' : '';
-  return sign + pct.toFixed(2) + '%';
-}
-
-function changeColor(change) {
-  if (change === null) return '#72767d';
-  return change >= 0 ? '#57f287' : '#ed4245';
 }
 
 /** Choose decimal precision based on rate magnitude. */

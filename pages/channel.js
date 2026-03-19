@@ -1,7 +1,6 @@
 'use strict';
 
 const fs = require('fs');
-const fs1 = require('fs');
 const escape = require('escape-html');
 const he = require('he');
 const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
@@ -14,6 +13,7 @@ const {
   formatDateSeparator,
   areDifferentDays,
   formatForwardedTimestamp,
+  replaceDiscordTimestamps,
 } = require('../timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
@@ -913,7 +913,8 @@ async function renderMessageContent(item, context) {
   } = context;
 
   const withMarkdown = renderDiscordMarkdown(item.content || '', { barColor, timezone: clientTimezone });
-  const withEmojis = renderEmojis(withMarkdown, item, imagesCookie, animationsCookie);
+  const withDiscordTimestamps = replaceDiscordTimestamps(withMarkdown, clientTimezone);
+  const withEmojis = renderEmojis(withDiscordTimestamps, item, imagesCookie, animationsCookie);
   const withAttachments = renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload);
   const withStickers = renderStickers(withAttachments, item, imagesCookie);
   const withEmbeds = renderEmbeds(
