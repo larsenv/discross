@@ -242,7 +242,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
         `<tr><td style="line-height:1;padding:0">` +
         `<div style="position:relative;display:inline-block">` +
         `<img src="${url}" style="max-width:256px;max-height:200px;height:auto;filter:blur(16px);" alt="image">` +
-        `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:bold;color:white;pointer-events:none">SPOILER</div>` +
+        `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:bold;color:white;pointer-events:none;text-align:center;white-space:nowrap;width:100%">SPOILER</div>` +
         `</div>` +
         `<span style="visibility:hidden">` +
         `<img src="${url}" style="max-width:256px;max-height:200px;height:auto;" alt="image">` +
