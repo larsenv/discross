@@ -168,55 +168,34 @@ function showEmoji() {
 
 // Spoiler reveal function for Wii compatibility
 function show(el) {
-    try {
-        // Add revealed class (CSS handles per-theme revealed background)
-        if (el.className.indexOf('spoiler-revealed') === -1) {
-            el.className = el.className + ' spoiler-revealed';
-        }
-        // Also set inline background for older browsers that don't support class-based CSS
-        let revealedBg;
-        if (document.body.className.indexOf('light-theme') !== -1) {
-            revealedBg = '#efeff0';
-        } else if (document.body.className.indexOf('amoled-theme') !== -1) {
-            revealedBg = '#1d1d20';
-        } else {
-            revealedBg = '#26262b';
-        }
-        el.style.background = revealedBg;
-        // Navigate the DOM structure: table -> tbody -> tr -> td -> span
-        const tbody = el.childNodes[0];
-        if (tbody && tbody.childNodes && tbody.childNodes[0]) {
-            const tr = tbody.childNodes[0];
-            if (tr && tr.childNodes && tr.childNodes[0]) {
-                const td = tr.childNodes[0];
-                if (td && td.childNodes && td.childNodes[0]) {
-                    const span = td.childNodes[0];
-                    if (span && span.style) {
-                        span.style.visibility = 'visible';
-                    }
-                }
-            }
-        }
-    } catch (e) {
-        // Fallback: set revealed background even if structure is unexpected
-        if (document.body.className.indexOf('light-theme') !== -1) {
-            el.style.background = '#efeff0';
-        } else if (document.body.className.indexOf('amoled-theme') !== -1) {
-            el.style.background = '#1d1d20';
-        } else {
-            el.style.background = '#26262b';
-        }
+  try {
+    // Add revealed class (CSS handles per-theme revealed background)
+    if (!el.classList.contains('spoiler-revealed')) {
+      el.classList.add('spoiler-revealed');
     }
-}
-
-function handleFileSelect(input) {
-    // File upload requires fetch and FormData — not available in IE8/Opera 9.x
-    if (!window.fetch || !window.FormData) {
-        alert('File upload requires a more modern browser. Please use a text message instead.');
-        input.value = '';
-        return;
+    // Also set inline background for older browsers that don't support class-based CSS
+    let revealedBg;
+    if (document.body.classList.contains('light-theme')) {
+      revealedBg = '#efeff0';
+    } else if (document.body.classList.contains('amoled-theme')) {
+      revealedBg = '#1d1d20';
+    } else {
+      revealedBg = '#26262b';
     }
-    if (input.files && input.files[0]) {
+    el.style.background = revealedBg;
+    // Find and reveal hidden spoiler content (first span with visibility:hidden)
+    const hiddenSpan = el.querySelector('span[style*="visibility:hidden"], span[style*="visibility: hidden"]');
+    if (hiddenSpan) {
+      hiddenSpan.style.visibility = 'visible';
+    }
+      el.style.background = '#efeff0';
+    } else if (document.body.classList.contains('amoled-theme')) {
+      el.style.background = '#1d1d20';
+    } else {
+      el.style.background = '#26262b';
+    }
+  }
+}    if (input.files && input.files[0]) {
         const file = input.files[0];
         const maxSize = 249 * 1024 * 1024; // 249MB limit for transfer.whalebone.io
         
