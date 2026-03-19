@@ -21,10 +21,8 @@ function generateNonce() {
 
 window.onload = function () {
     setTimeout(function() {
-        setTimeout(function() {
-            window.location.hash = '';
-            window.location.hash = 'end';
-        }, 100);
+        window.location.hash = '';
+        window.location.hash = 'end';
     }, 1000);
 };
 
@@ -55,34 +53,6 @@ function showEmoji() {
     
     if (typeof updateToolbarPadding === 'function') {
         updateToolbarPadding();
-    }
-}
-
-// Fixed Syntax Error & Rewritten without classList for older browser support
-function show(el) {
-    try {
-        var isRevealed = el.className && el.className.indexOf('spoiler-revealed') !== -1;
-        if (!isRevealed) {
-            el.className += ' spoiler-revealed';
-        }
-
-        var bodyClass = document.body.className || '';
-        var revealedBg = '#26262b'; // Default
-
-        if (bodyClass.indexOf('light-theme') !== -1) {
-            revealedBg = '#efeff0';
-        } else if (bodyClass.indexOf('amoled-theme') !== -1) {
-            revealedBg = '#1d1d20';
-        }
-        
-        el.style.background = revealedBg;
-
-        var hiddenSpan = el.querySelector ? el.querySelector('span') : null;
-        if (hiddenSpan) {
-            hiddenSpan.style.visibility = 'visible';
-        }
-    } catch (e) {
-        // Prevent breaking execution if querySelector fails on truly ancient browsers
     }
 }
 

@@ -39,14 +39,14 @@ function processReactions(
             if (imagesCookie === 1) {
               const extension = emoji.animated && animationsCookie === 1 ? 'gif' : 'png';
               cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
-              return `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji">`;
+              return `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="21" height="21" style="width: 21px; height: 21px; vertical-align: middle;" alt="emoji">`;
             }
             return `:${emoji.name}:`;
           }
           if (emoji.name) {
             if (imagesCookie === 1) {
               const output = unicodeToTwemojiCode(emoji.name);
-              return `<img src="/resources/twemoji/${output}.gif" width="16" height="16" style="width: 16px; height: 16px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
+              return `<img src="/resources/twemoji/${output}.gif" width="21" height="21" style="width: 21px; height: 21px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
             }
             return emoji.name;
           }
