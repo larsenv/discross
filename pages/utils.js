@@ -207,6 +207,27 @@ function sanitizeGuestName(name) {
 }
 
 /**
+ * Format percentage change for display (e.g., "+1.23%" or "-4.56%")
+ * @param {number|null} pct - Percentage change value
+ * @returns {string} Formatted percentage string
+ */
+function formatChangePct(pct) {
+  if (pct === null) return '--';
+  const sign = pct >= 0 ? '+' : '';
+  return sign + pct.toFixed(2) + '%';
+}
+
+/**
+ * Get color based on positive/negative change
+ * @param {number|null} change - Change value
+ * @returns {string} Color hex code (green for positive, red for negative, gray for null)
+ */
+function changeColor(change) {
+  if (change === null) return '#72767d';
+  return change >= 0 ? '#57f287' : '#ed4245';
+}
+
+/**
  * Resolves @User#1234 mention tags in a message to proper Discord <@id> mentions.
  * Falls back gracefully (skips unresolvable mentions) and never throws.
  *

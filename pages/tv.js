@@ -3,6 +3,7 @@
 const fs = require('fs');
 const https = require('https');
 const escape = require('escape-html');
+const { strReplace } = require('./utils.js');
 const he = require('he');
 
 const auth = require('../authentication.js');
@@ -25,22 +26,18 @@ const tv_station_template = fs.readFileSync('pages/templates/tv_station.html', '
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
-
 // Make an HTTPS request (GET or POST), following up to maxRedirects redirects.
 // After a POST redirect, follow the redirect with a GET (standard browser POST-back behaviour).
 function httpsRequest(options, postBody, maxRedirects) {
   if (maxRedirects === undefined) maxRedirects = 5;
   return new Promise(function (resolve, reject) {
-    var req = https.request(options, function (res) {
-      var status = res.statusCode;
+    const req = https.request(options, function (res) {
+      const status = res.statusCode;
       if (status >= 300 && status < 400 && res.headers.location && maxRedirects > 0) {
         res.resume();
-        var newOptions;
+        let newOptions;
         try {
-          var loc = new URL(res.headers.location);
+          const loc = new URL(res.headers.location);
           newOptions = {
             hostname: loc.hostname,
             path: loc.pathname + loc.search,
@@ -57,7 +54,7 @@ function httpsRequest(options, postBody, maxRedirects) {
         // After a redirect always use GET (no body)
         return httpsRequest(newOptions, null, maxRedirects - 1).then(resolve).catch(reject);
       }
-      var chunks = [];
+      const chunks = [];
       res.on('data', function (chunk) { chunks.push(chunk); });
       res.on('end', function () {
         resolve({ statusCode: status, body: Buffer.concat(chunks).toString('utf8'), headers: res.headers });

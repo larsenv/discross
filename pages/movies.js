@@ -4,6 +4,7 @@ const fs = require("fs");
 const escape = require("escape-html");
 const he = require("he");
 const auth = require("../authentication.js");
+const { strReplace } = require("./utils.js");
 
 const head_partial = fs.readFileSync(
   "pages/templates/partials/head.html",
@@ -55,10 +56,6 @@ const TABS = [
     apiType: "tv-series-browsing",
   },
 ];
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? "");
-}
 
 function proxyImageUrl(url) {
   return "/imageProxy/external/" + Buffer.from(url).toString("base64");

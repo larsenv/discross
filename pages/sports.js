@@ -5,6 +5,7 @@ const https = require('https');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
+const { strReplace } = require('./utils.js');
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
@@ -25,10 +26,6 @@ const sports_template = fs
   .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
-
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
-}
 
 // NBA first — in full regular season; NFL last since it's off-season in early spring
 const SPORTS = [

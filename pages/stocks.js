@@ -4,7 +4,7 @@ const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace, getPageThemeAttr, httpsGet } = require('./utils.js');
+const { strReplace, getPageThemeAttr, httpsGet, formatChangePct, changeColor } = require('./utils.js');
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
@@ -187,17 +187,6 @@ function formatChange(change) {
   if (change === null) return '--';
   const sign = change >= 0 ? '+' : '';
   return sign + change.toFixed(2);
-}
-
-function formatChangePct(pct) {
-  if (pct === null) return '--';
-  const sign = pct >= 0 ? '+' : '';
-  return sign + pct.toFixed(2) + '%';
-}
-
-function changeColor(change) {
-  if (change === null) return '#72767d';
-  return change >= 0 ? '#57f287' : '#ed4245';
 }
 
 function renderQuoteRow(quote) {
