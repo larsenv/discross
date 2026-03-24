@@ -556,8 +556,11 @@ button:focus, input:focus, textarea:focus {
     margin: 0 auto 5px auto;
     border-radius: 8px;
     text-align: center;
-    position: relative;
-    z-index: 10;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
 }
 .c-box {
     width: 24px;
@@ -1970,4 +1973,40 @@ a.food-tab-active:hover,
 /* Added padding-left for messages */
 .content-padding {
   padding-left: 7px;
+}
+
+/* ================================================================
+   DRAW PAGE LAYOUT OVERRIDES: Move color picker to top, fix layout
+   ================================================================ */
+
+html.page-draw body {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    overflow: hidden;
+}
+
+html.page-draw #wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#toolbar-container {
+    position: static;
+    bottom: auto;
+    top: auto;
+    left: auto;
+    transform: none;
+}
+
+#canvas-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    width: 100%;
+    margin: 0;
 }

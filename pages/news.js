@@ -6,19 +6,11 @@ const he = require('he');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText } = require('./emojiUtils');
-const { strReplace, parseCookies, resolveTheme, buildSessionParam } = require('./utils.js');
+const { renderTemplate, parseCookies, resolveTheme, buildSessionParam, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
 
-const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
+const news_template = loadAndRenderPageTemplate('news');
 
-const news_template = fs
-  .readFileSync('pages/templates/news.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(head_partial);
-
-const article_template = fs
-  .readFileSync('pages/templates/news_article.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(head_partial);
+const article_template = loadAndRenderPageTemplate('news_article');
 
 const AP_BASE = 'https://apnews.com';
 const DEFAULT_TOPIC = 'apf-topnews';
@@ -241,18 +233,22 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
           const proxied = proxyImageUrl(imageUrl);
           const alt = escapeContent(imageAlt || title, showImages);
           const caption = escapeContent(imageCaption || '', showImages);
-          return `<div class="news-card-image-wrap"><img src="${proxied}" alt="${alt}" class="news-card-image">${caption ? `<br><span class="news-card-caption">${caption}</span>` : ''}</div>`;
+          return renderTemplate(getTemplate('news_card_image', 'news'), {
+  PROXIED_URL: proxied,
+  ALT_TEXT: alt,
+  CAPTION_HTML: caption
+    ? renderTemplate(getTemplate('caption', 'news'), { CLASS: 'news-card-caption', CAPTION: caption })
+    : '',
+});
         })()
       : '';
 
-  return `<div class="news-card">
-  ${imageHtml}
-  <div class="news-card-body">
-    <div class="news-card-title"><font face="'rodin', Arial, Helvetica, sans-serif">${headline}</font></div>
-    ${dateStr ? `<div class="news-card-meta">${dateStr}</div>` : ''}
-    <a href="${articleUrl}" class="discross-button news-read-btn">Read Article</a>
-  </div>
-</div>`;
+  return renderTemplate(getTemplate('news_card', 'news'), {
+  IMAGE_HTML: imageHtml,
+  TITLE_HTML: renderTemplate(getTemplate('news_card_title', 'news'), { HEADLINE: headline }),
+  DATE_META_HTML: dateStr ? renderTemplate(getTemplate('news_card_meta', 'news'), { DATE_STR: dateStr }) : '',
+  READ_BUTTON_HTML: renderTemplate(getTemplate('news_read_button', 'news'), { ARTICLE_URL: articleUrl }),
+});
 }
 
 // Extract the inner content of div.RichTextStoryBody, tightly bounded by div
@@ -332,7 +328,13 @@ function parseArticlePage(html, showImages) {
             const caption = captionMatch
               ? escapeContent(stripHtml(captionMatch[1]), showImages)
               : '';
-            return `<div class="news-article-image-wrap"><img src="${proxied}" alt="" class="news-article-image">${caption ? `<br><span class="news-article-caption">${caption}</span>` : ''}</div>\n`;
+            return renderTemplate(getTemplate('news_article_image', 'news'), {
+  PROXIED_URL: proxied,
+  ALT_TEXT: '', // alt is empty here, as in the original
+  CAPTION_HTML: caption
+    ? renderTemplate(getTemplate('caption', 'news'), { CLASS: 'news-article-caption', CAPTION: caption })
+    : '',
+}) + '\n';
           }
           return '';
         })()
@@ -340,7 +342,7 @@ function parseArticlePage(html, showImages) {
 
   const contentHtml = (() => {
     if (!body)
-      return '<p class="news-article-paragraph news-empty">Article text could not be extracted.</p>';
+      return getTemplate('news_article_text_error', 'news');
     const pRe = /<p(\s|>)/gi;
     let match;
     let count = 0;
@@ -353,16 +355,15 @@ function parseArticlePage(html, showImages) {
       const text = stripHtml(el).trim();
       if (text.length > 10 && !isCTAParagraph(text)) {
         paragraphs.push(
-          `<p class="news-article-paragraph">${escapeContent(text, showImages)}</p>\n`
-        );
-        count++;
+          renderTemplate(getTemplate('news_article_paragraph', 'news'), {
+            CONTENT: escapeContent(text, showImages),
+          }) + '\n'
+        );        count++;
       }
     }
     return (
-      paragraphs.join('') ||
-      '<p class="news-article-paragraph news-empty">Article text could not be extracted.</p>'
-    );
-  })();
+      paragraphs.join('') || getTemplate('news_article_text_error', 'news')
+    );  })();
 
   return { headline, bylines, date, leadImageHtml, contentHtml };
 }
@@ -389,31 +390,38 @@ exports.processNews = async function processNews(req, res, args, discordID) {
     const newsItemsHtml =
       cards.length > 0
         ? cards.join('\n')
-        : '<p class="news-empty">No articles found for this category.</p>';
-
+        : getTemplate('news_no_articles_error', 'news');
     const sessionHidden = [
-      urlSessionID ? `<input type="hidden" name="sessionID" value="${escape(urlSessionID)}">` : '',
+      urlSessionID
+        ? renderTemplate(getTemplate('hidden_input', 'news'), {
+            NAME: 'sessionID',
+            VALUE: escape(urlSessionID),
+          })
+        : '',
       theme.themeValue !== 0
-        ? `<input type="hidden" name="theme" value="${theme.themeValue}">`
+        ? renderTemplate(getTemplate('hidden_input', 'news'), {
+            NAME: 'theme',
+            VALUE: theme.themeValue.toString(),
+          })
         : '',
     ].join('');
 
-    const withTheme = strReplace(news_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    const withTag = strReplace(withTheme, '{$TAG_DISPLAY}', displayTag);
-    const withTagValue = strReplace(withTag, '{$TAG_VALUE}', tagInputValue);
-    const withSessionParam = strReplace(withTagValue, '{$SESSION_PARAM}', sessionParam);
-    const withSessionHidden = strReplace(withSessionParam, '{$SESSION_HIDDEN}', sessionHidden);
-    const final = strReplace(withSessionHidden, '{$NEWS_ITEMS}', newsItemsHtml);
-
+    const final = renderTemplate(news_template, {
+      WHITE_THEME_ENABLED: theme.themeClass,
+      TAG_DISPLAY: displayTag,
+      TAG_VALUE: tagInputValue,
+      SESSION_PARAM: sessionParam,
+      SESSION_HIDDEN: sessionHidden,
+      NEWS_ITEMS: newsItemsHtml,
+    });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);
   } catch (err) {
     console.error('AP News feed error:', err);
     const msg =
       err.statusCode === 404
-        ? 'Category not found.'
-        : 'Could not load news feed. Please try again later.';
-    res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
+        ? getTemplate('news_category_not_found_error', 'misc')
+        : getTemplate('news_load_feed_error', 'misc');    res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
     res.end(msg);
   }
 };
@@ -426,7 +434,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
   const articleSlug = args[2] || '';
   if (!articleSlug || /[^a-zA-Z0-9-]/.test(articleSlug)) {
     res.writeHead(400, { 'Content-Type': 'text/plain' });
-    res.end('Invalid article ID');
+    res.end(getTemplate('news_invalid_article_id_error', 'misc'));
     return;
   }
 
@@ -443,23 +451,23 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     const bylinesEscaped = bylines ? `${escapeContent(bylines, imagesCookie !== 0)} - ` : '';
     const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
 
-    const withTheme = strReplace(article_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    const withHeadline = strReplace(withTheme, '{$HEADLINE}', headlineEscaped);
-    const withByline = strReplace(withHeadline, '{$BYLINE}', bylinesEscaped);
-    const withDate = strReplace(withByline, '{$DATE}', dateStr);
-    const withSessionParam = strReplace(withDate, '{$SESSION_PARAM}', sessionParam);
-    const withLeadImage = strReplace(withSessionParam, '{$LEAD_IMAGE}', leadImageHtml);
-    const final = strReplace(withLeadImage, '{$ARTICLE_CONTENT}', contentHtml);
-
+    const final = renderTemplate(article_template, {
+      WHITE_THEME_ENABLED: theme.themeClass,
+      HEADLINE: headlineEscaped,
+      BYLINE: bylinesEscaped,
+      DATE: dateStr,
+      SESSION_PARAM: sessionParam,
+      LEAD_IMAGE: leadImageHtml,
+      ARTICLE_CONTENT: contentHtml,
+    });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);
   } catch (err) {
     console.error('AP News article error:', err);
     const msg =
       err.statusCode === 404
-        ? 'Article not found.'
-        : 'Could not load article. Please try again later.';
-    res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
+        ? getTemplate('news_article_not_found_error', 'misc')
+        : getTemplate('news_load_article_error', 'misc');    res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
     res.end(msg);
   }
 };

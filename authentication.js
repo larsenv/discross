@@ -6,6 +6,7 @@ const he = require('he'); // Encodes HTML attributes
 const otplib = require('otplib');
 const qrcode = require('qrcode');
 const crypto = require('crypto');
+const { getTemplate, renderTemplate } = require('./pages/utils.js');
 
 const saltRounds = 10;
 const expiryTime = 24 * 60 * 60; // For sessions - expires in 24 hours
@@ -490,9 +491,10 @@ exports.handleLoginRegister = async function (req, res, body) {
             'Content-Type': 'text/html',
           });
           res.end(
-            `<html><head><meta http-equiv="refresh" content="0; URL=${he.encode(redirectPath)}" /></head><body>Logged in. Click <a href="${he.encode(redirectPath)}">here</a> to continue</body></html>`
-          );
-        } else {
+            renderTemplate(getTemplate('redirect_page', 'misc'), {
+              REDIRECT_URL: he.encode(redirectPath),
+            })
+          );        } else {
           const redirectPath = `/server/?sessionID=${encodeURIComponent(result.sessionID)}#end`;
           res.writeHead(200, {
             'Set-Cookie': [
@@ -502,9 +504,10 @@ exports.handleLoginRegister = async function (req, res, body) {
             'Content-Type': 'text/html',
           });
           res.end(
-            `<html><head><meta http-equiv="refresh" content="0; URL=${he.encode(redirectPath)}" /></head><body>Logged in. Click <a href="${he.encode(redirectPath)}">here</a> to continue</body></html>`
-          );
-        }
+            renderTemplate(getTemplate('redirect_page', 'misc'), {
+              REDIRECT_URL: he.encode(redirectPath),
+            })
+          );        }
       } else {
         res.writeHead(301, {
           Location: `/login.html?errortext=${encodeURIComponent(result.reason)}`,

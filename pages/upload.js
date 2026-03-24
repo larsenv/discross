@@ -2,13 +2,9 @@
 const fs = require('fs');
 const escape = require('escape-html');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
-const { strReplace, isValidSnowflake, isBotReady, getPageThemeAttr } = require('./utils.js');
+const { renderTemplate, isValidSnowflake, isBotReady, getPageThemeAttr, loadAndRenderPageTemplate } = require('./utils.js');
 
-const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
-const upload_template = fs
-  .readFileSync('pages/templates/upload.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(head_partial);
+const upload_template = loadAndRenderPageTemplate('upload');
 
 exports.processUpload = async function processUpload(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
@@ -30,13 +26,13 @@ exports.processUpload = async function processUpload(bot, req, res, args, discor
 
   const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
-  const template = strReplace(upload_template, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
-
-  const withChannelId = strReplace(template, '{$CHANNEL_ID}', escape(channelId));
-  const withChannelName = strReplace(withChannelId, '{$CHANNEL_NAME}', escape(channelName));
-  const withSessionId = strReplace(withChannelName, '{$SESSION_ID}', escape(urlSessionID));
-  const final = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
-
+  const final = renderTemplate(upload_template, {
+    WHITE_THEME_ENABLED: getPageThemeAttr(req),
+    CHANNEL_ID: escape(channelId),
+    CHANNEL_NAME: escape(channelName),
+    SESSION_ID: escape(urlSessionID),
+    SESSION_PARAM: sessionParam,
+  });
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(final);
 };

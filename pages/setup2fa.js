@@ -1,45 +1,29 @@
 'use strict';
-const { strReplace, getPageThemeAttr } = require('./utils.js');
+const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
 const fs = require('fs');
 const escape = require('escape-html');
 const auth = require('../authentication.js');
 
-const setup2fa_template = fs
-  .readFileSync('pages/templates/setup2fa.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
-const disable2fa_template = fs
-  .readFileSync('pages/templates/disable2fa.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
-const backup_codes_template = fs
-  .readFileSync('pages/templates/backup_codes.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
-const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
+const setup2fa_template = loadAndRenderPageTemplate('setup2fa');
+const disable2fa_template = loadAndRenderPageTemplate('disable2fa');
+const backup_codes_template = loadAndRenderPageTemplate('backup_codes');
+const error_template = getTemplate('error', 'login');
+const logged_in_template = getTemplate('logged_in', 'index');
 
 function injectMenuAndError(response, username, parsedUrl, sessionParam) {
-  response = strReplace(
-    response,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(username || ''))
-  );
-  response = strReplace(response, '{$SESSION_PARAM}', sessionParam);
-  if (parsedUrl.searchParams.get('errortext')) {
-    response = strReplace(
-      response,
-      '{$ERROR}',
-      strReplace(
-        error_template,
-        '{$ERROR_MESSAGE}',
-        strReplace(escape(parsedUrl.searchParams.get('errortext')), '\n', '<br>')
-      )
-    );
-  } else {
-    response = strReplace(response, '{$ERROR}', '');
-  }
-  return response;
+  const menuOptions = renderTemplate(logged_in_template, { USER: escape(username || '') });
+  const errorText = parsedUrl.searchParams.get('errortext');
+  const errorHtml = errorText
+    ? renderTemplate(error_template, {
+        ERROR_MESSAGE: escape(errorText).replaceAll('\n', '<br>'),
+      })
+    : '';
+
+  return renderTemplate(response, {
+    MENU_OPTIONS: menuOptions,
+    SESSION_PARAM: sessionParam,
+    ERROR: errorHtml,
+  });
 }
 
 exports.processSetup2FA = async function (bot, req, res, args) {
@@ -86,43 +70,38 @@ exports.processSetup2FA = async function (bot, req, res, args) {
     }
     // 2FA not yet enabled — show setup page with QR code
     const { secret, qrDataUrl } = await auth.beginTOTPSetup(discordID, username || discordID);
-    const withQr = strReplace(setup2fa_template, '{$QR_CODE}', qrDataUrl);
-    return strReplace(withQr, '{$SECRET}', escape(secret));
+    return renderTemplate(setup2fa_template, {
+      QR_CODE: qrDataUrl,
+      SECRET: escape(secret),
+    });
   })();
 
-  const withMenuOptions = strReplace(
-    baseTemplate,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(username || ''))
-  );
-  const withSessionParam = strReplace(withMenuOptions, '{$SESSION_PARAM}', sessionParam);
-  const withSendCodeUrl = strReplace(withSessionParam, '{$SEND_CODE_URL}', sendCodeUrl);
-
+  const menuOptions = renderTemplate(logged_in_template, { USER: escape(username || '') });
   const errorHtml = (() => {
     if (dmErrorText) {
-      return strReplace(
-        error_template,
-        '{$ERROR_MESSAGE}',
-        strReplace(escape(dmErrorText), '\n', '<br>')
-      );
+      return renderTemplate(error_template, {
+        ERROR_MESSAGE: escape(dmErrorText).replaceAll('\n', '<br>'),
+      });
     }
     const urlError = parsedUrl.searchParams.get('errortext');
     if (urlError) {
-      return strReplace(
-        error_template,
-        '{$ERROR_MESSAGE}',
-        strReplace(escape(urlError), '\n', '<br>')
-      );
+      return renderTemplate(error_template, {
+        ERROR_MESSAGE: escape(urlError).replaceAll('\n', '<br>'),
+      });
     }
     if (parsedUrl.searchParams.get('codesent')) {
-      return '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>';
+      return getTemplate('verification_sent', 'partials');
     }
     return '';
   })();
 
-  const withError = strReplace(withSendCodeUrl, '{$ERROR}', errorHtml);
-  const response = strReplace(withError, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
-  res.writeHead(200, { 'Content-Type': 'text/html' });
+  const response = renderTemplate(baseTemplate, {
+    MENU_OPTIONS: menuOptions,
+    SESSION_PARAM: sessionParam,
+    SEND_CODE_URL: sendCodeUrl,
+    ERROR: errorHtml,
+    WHITE_THEME_ENABLED: getPageThemeAttr(req),
+  });  res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
 };
 
@@ -176,14 +155,12 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
       .join('') +
     '</table>';
 
-  const withMenuOptions = strReplace(
-    backup_codes_template,
-    '{$MENU_OPTIONS}',
-    strReplace(logged_in_template, '{$USER}', escape(username || ''))
-  );
-  const withBackupCodes = strReplace(withMenuOptions, '{$BACKUP_CODES_LIST}', codesHtml);
-  const response = strReplace(withBackupCodes, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
-
+  const menuOptions = renderTemplate(logged_in_template, { USER: escape(username || '') });
+  const response = renderTemplate(backup_codes_template, {
+    MENU_OPTIONS: menuOptions,
+    BACKUP_CODES_LIST: codesHtml,
+    WHITE_THEME_ENABLED: getPageThemeAttr(req),
+  });
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
 };

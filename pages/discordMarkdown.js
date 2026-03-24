@@ -1,4 +1,5 @@
 'use strict';
+const { renderTemplate, getTemplate } = require('./utils.js');
 const md = require('markdown-it')({
   breaks: true,
   linkify: true,
@@ -83,6 +84,10 @@ function highlightCode(code, lang) {
 
 function renderDiscordMarkdown(text, options = {}) {
   if (!text) return '';
+
+  const tmpl = {
+    spoiler: getTemplate('spoiler', 'discordMarkdown'),
+  };
 
   const barColor = options.barColor || '#808080';
   const timezone = options.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -277,16 +282,7 @@ function renderDiscordMarkdown(text, options = {}) {
     str = str.replace(/§§SPOILER(\d+)§§/g, function (m, i) {
       const content = spoilerPlaceholders[parseInt(i, 10)];
       const rendered = md.renderInline(content);
-      // Use table-based spoiler for Wii Internet Channel compatibility
-      // The show() function in the template files reveals the spoiler by removing background and showing text
-      return (
-        '<table cellpadding="0" cellspacing="0" class="spoiler-box" style="display:inline-table;vertical-align:text-top;border-spacing:0" onclick="show(this);event.stopPropagation();return false">' +
-        '<tr><td style="line-height:1;padding:1px 4px">' +
-        '<span style="visibility:hidden">' +
-        rendered +
-        '</span>' +
-        '</td></tr></table>'
-      );
+      return renderTemplate(tmpl.spoiler, { '{$SPOILER_CONTENT}': rendered });
     });
 
     // Restore Underlines

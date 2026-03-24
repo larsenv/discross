@@ -3,7 +3,7 @@
 const fs = require('fs');
 const https = require('https');
 const escape = require('escape-html');
-const { strReplace } = require('./utils.js');
+const { renderTemplate, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
 const he = require('he');
 
 const auth = require('../authentication.js');
@@ -14,15 +14,9 @@ const ZIP_MAX_LENGTH = 10;
 const LINEUP_MAX_LENGTH = 120;
 const STATION_ID_MAX_LENGTH = 120;
 
-const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
+const tv_template = loadAndRenderPageTemplate('tv');
 
-const tv_template = fs.readFileSync('pages/templates/tv.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(head_partial);
-
-const tv_station_template = fs.readFileSync('pages/templates/tv_station.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(head_partial);
+const tv_station_template = loadAndRenderPageTemplate('tv_station');
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 
@@ -181,6 +175,12 @@ function stripTags(str) {
   return str.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// Strip angle brackets (< and >) from text.
+function stripAngleBrackets(str) {
+  if (!str) return '';
+  return str.replace(/[<>]/g, '');
+}
+
 // Parse providers/lineups from TVPassport /index.php/lineups POST response HTML.
 // Provider links use the format /lineups/set/{lineupId} (optionally followed by ?lineupname=...).
 // Returns array of {name, lineupId} objects.
@@ -205,7 +205,7 @@ function parseLineups(html) {
     if (!name || name.length < 2) name = lineupId;
 
     seen.add(lineupId);
-    lineups.push({ name: name, lineupId: lineupId });
+    lineups.push({ name: stripAngleBrackets(name), lineupId: lineupId });
   }
 
   return lineups;
@@ -258,6 +258,7 @@ function parseLineupChannels(html, date) {
       // Fall back to title-casing the slug: "nbc-wnbc-new-york-ny" -> "Nbc Wnbc New York Ny"
       name = stationSlug.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
     }
+    name = stripAngleBrackets(name);
 
     seen.add(stationId);
     channels.push({ stationId: stationId, name: name, callsign: callsign, logoUrl: logoUrl });
@@ -278,13 +279,13 @@ function parseListings(html) {
   while ((m = itemTagRegex.exec(sectionHtml)) !== null) {
     var tagHtml = m[0];
     items.push({
-      showName: parseDataAttr(tagHtml, 'showName'),
-      episodeTitle: parseDataAttr(tagHtml, 'episodeTitle'),
-      description: parseDataAttr(tagHtml, 'description'),
+      showName: stripAngleBrackets(parseDataAttr(tagHtml, 'showName')),
+      episodeTitle: stripAngleBrackets(parseDataAttr(tagHtml, 'episodeTitle')),
+      description: stripAngleBrackets(parseDataAttr(tagHtml, 'description')),
       startTime: parseDataAttr(tagHtml, 'st'),
-      duration: parseDataAttr(tagHtml, 'duration'),
-      rating: parseDataAttr(tagHtml, 'rating'),
-      showType: parseDataAttr(tagHtml, 'showType'),
+      duration: stripAngleBrackets(parseDataAttr(tagHtml, 'duration')),
+      rating: stripAngleBrackets(parseDataAttr(tagHtml, 'rating')),
+      showType: stripAngleBrackets(parseDataAttr(tagHtml, 'showType')),
     });
   }
   return items;
@@ -293,7 +294,10 @@ function parseListings(html) {
 // Get the station name from the page HTML og:title meta tag.
 function parseStationName(html) {
   var m = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i);
-  if (m) return he.decode(m[1]).replace(/^TV (?:Schedule|Listings?) for /i, '').trim();
+  if (m) {
+    var name = he.decode(m[1]).replace(/^TV (?:Schedule|Listings?) for /i, '').trim();
+    return stripAngleBrackets(name);
+  }
   return '';
 }
 
@@ -308,75 +312,80 @@ function parseStationLogo(html) {
 // zip and lineup are passed so station links can include them for a working back button.
 function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
   if (channels.length === 0) {
-    return '<font color="#aaaaaa" ' + FONT + '>No channels found for this provider.</font><br>';
+    return getTemplate('tv_no_channels_provider_error', 'misc');
   }
 
   var cols = 3;
-  var html = '<table cellpadding="4" cellspacing="4" width="100%">\n';
+  var rowsHtml = '';
 
   for (var i = 0; i < channels.length; i++) {
     var ch = channels[i];
-    if (i % cols === 0) html += '  <tr valign="top">\n';
+    if (i % cols === 0) rowsHtml += getTemplate('channel_grid_row_start', 'tv');
 
     var logoHtml = '';
     if (ch.logoUrl) {
       var proxied = proxyImageUrl(ch.logoUrl);
-      logoHtml = '<img src="' + proxied + '" alt="" width="120" height="68" style="width:120px;height:68px;display:block;background:#1a1b1e;">';
+      logoHtml = renderTemplate(getTemplate('channel_logo_with_image', 'tv'), { PROXIED_URL: proxied });
     } else {
-      logoHtml = '<div style="width:120px;height:68px;background:#1a1b1e;"></div>';
+      logoHtml = getTemplate('channel_logo_placeholder', 'tv');
     }
 
     var stationUrl = buildUrl('/tv/station/' + ch.stationId, { date: date, zip: zip, lineup: lineup }, sessionSuffix);
     var nameHtml = escape(ch.name);
 
-    html += '    <td width="33%" style="padding:4px;">';
-    html += '<a href="' + stationUrl + '" style="text-decoration:none;display:block;background:#2e3035;padding:6px;border:1px solid #3a3d42;">';
-    html += logoHtml;
-    html += '<font ' + FONT + ' color="#dddddd" size="2"><b>' + nameHtml + '</b></font>';
-    html += '</a>';
-    html += '</td>\n';
+    rowsHtml += renderTemplate(getTemplate('channel_grid_item', 'tv'), {
+      STATION_URL: stationUrl,
+      LOGO_HTML: logoHtml,
+      FONT: FONT,
+      NAME_HTML: nameHtml,
+    });
 
-    if ((i + 1) % cols === 0 || i === channels.length - 1) html += '  </tr>\n';
+    if ((i + 1) % cols === 0 || i === channels.length - 1) rowsHtml += getTemplate('channel_grid_row_end', 'tv');
   }
 
-  html += '</table>\n';
-  return html;
+  return renderTemplate(getTemplate('channel_grid', 'tv'), { ROWS: rowsHtml });
 }
 
 // Build the HTML schedule table for a station page.
 function buildScheduleHtml(items) {
   if (items.length === 0) {
-    return '<font color="#aaaaaa" ' + FONT + '>No listings found for this station and date.</font><br>';
+    return getTemplate('no_listings_found', 'tv');
   }
 
-  var html = '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">\n';
+  var rowsHtml = '';
   for (var i = 0; i < items.length; i++) {
     var item = items[i];
     var isLast = i === items.length - 1;
     var timeStr = escape(formatTime(item.startTime));
-    var durationStr = item.duration ? escape(item.duration) + ' min' : '';
+    var durationStr = item.duration
+      ? renderTemplate(getTemplate('duration_html', 'tv'), { DURATION: escape(item.duration) })
+      : '';
     var showName = escape(item.showName || '(Unknown)');
     var episodeTitle = item.episodeTitle ? ' &ndash; ' + escape(item.episodeTitle) : '';
-    var rating = item.rating ? ' <font size="1" color="#72767d">[' + escape(item.rating) + ']</font>' : '';
-    var showType = item.showType ? '<font size="2" color="#72767d">' + escape(item.showType) + '</font><br>' : '';
-    var description = item.description ? '<font size="2" color="#aaaaaa">' + escape(item.description) + '</font>' : '';
+    var rating = item.rating
+      ? renderTemplate(getTemplate('rating_html', 'tv'), { RATING: escape(item.rating) })
+      : '';
+    var showType = item.showType
+      ? renderTemplate(getTemplate('show_type_html', 'tv'), { SHOW_TYPE: escape(item.showType) })
+      : '';
+    var description = item.description
+      ? renderTemplate(getTemplate('description_html', 'tv'), { DESCRIPTION: escape(item.description) })
+      : '';
     var rowStyle = isLast ? '' : ' style="border-bottom:1px solid #40444b;"';
 
-    html += '  <tr' + rowStyle + '>\n';
-    html += '    <td style="padding:8px;white-space:nowrap;width:70px;" valign="top">';
-    html += '<font ' + FONT + ' color="#b5bac1" size="2"><b>' + timeStr + '</b>';
-    if (durationStr) {
-      html += '<br><font size="1" color="#72767d">' + durationStr + '</font>';
-    }
-    html += '</font></td>\n';
-    html += '    <td style="padding:8px;" valign="top">';
-    html += '<font ' + FONT + ' color="#dddddd"><b>' + showName + episodeTitle + '</b>' + rating + '</font><br>';
-    html += showType + description;
-    html += '</td>\n';
-    html += '  </tr>\n';
+    rowsHtml += renderTemplate(getTemplate('schedule_row', 'tv'), {
+      ROW_STYLE: rowStyle,
+      FONT: FONT,
+      TIME_STR: timeStr,
+      DURATION_HTML: durationStr,
+      SHOW_NAME: showName,
+      EPISODE_TITLE: episodeTitle,
+      RATING: rating,
+      SHOW_TYPE: showType,
+      DESCRIPTION: description,
+    });
   }
-  html += '</table>\n';
-  return html;
+  return renderTemplate(getTemplate('schedule_table', 'tv'), { ROWS: rowsHtml });
 }
 
 // Helper: get theme class from request.
@@ -404,7 +413,7 @@ exports.processTV = async function processTV(req, res) {
   var sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
   var themeClass = getThemeClass(req, parsedUrl);
   var username = await auth.getUsername(discordID);
-  var menuHtml = strReplace(logged_in_template, '{$USER}', escape(username));
+  var menuHtml = renderTemplate(logged_in_template, {USER: escape(username)});
 
   // Station schedule sub-page: /tv/station/{slug}/{id}
   if (subpath.startsWith('station/')) {
@@ -447,16 +456,16 @@ async function serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessi
             if (channels.length > 0) {
               contentHtml = buildChannelGrid(channels, date, cleanZip, cleanLineup, sessionSuffix);
             } else {
-              contentHtml = '<font color="#aaaaaa" ' + FONT + '>No channels found for this provider. Try selecting a different provider or date.</font><br>';
+              contentHtml = getTemplate('tv_no_channels_provider_error', 'misc');
             }
           } else if (lineupResult.statusCode === 404) {
-            contentHtml = '<font color="#ff4444" ' + FONT + '>Provider not found. Please go back and try again.</font><br>';
+            contentHtml = getTemplate('tv_provider_not_found_error', 'misc');
           } else {
-            contentHtml = '<font color="#ff4444" ' + FONT + '>Unable to load channel list. Please try again later.</font><br>';
+            contentHtml = getTemplate('tv_load_channel_list_error', 'misc');
           }
         } catch (err) {
           console.error('TV lineup channels fetch error:', err.message);
-          contentHtml = '<font color="#ff4444" ' + FONT + '>Unable to load channel list. Please try again later.</font><br>';
+          contentHtml = getTemplate('tv_load_channel_list_error', 'misc');
         }
       }
     } else {
@@ -472,32 +481,36 @@ async function serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessi
         if (lineupsResult.statusCode === 200) {
           var lineupList = parseLineups(lineupsResult.body);
           if (lineupList.length === 0) {
-            contentHtml = '<font color="#aaaaaa" ' + FONT + '>No TV providers found for ZIP code &ldquo;' + escape(cleanZip) + '&rdquo;. Please check the ZIP code and try again.</font><br>';
+            contentHtml = renderTemplate(getTemplate('tv_no_providers_zip_error', 'misc'), { ZIP_CODE: escape(cleanZip) });
           } else {
-            contentHtml = '<font ' + FONT + ' color="#dddddd"><b>Select your TV provider:</b></font><br><br>\n';
+            contentHtml = getTemplate('tv_select_provider_header', 'misc');
             for (var i = 0; i < lineupList.length; i++) {
               var li = lineupList[i];
               var lineupUrl = buildUrl('/tv', { zip: cleanZip, lineup: li.lineupId, date: date }, sessionSuffix);
-              contentHtml += '<a href="' + lineupUrl + '" class="discross-button" style="padding:6px 14px;font-size:14px;margin:0 0 6px 0;display:inline-block;">' + escape(li.name) + '</a><br>\n';
+              contentHtml += renderTemplate(getTemplate('provider_button', 'tv'), {
+                LINEUP_URL: lineupUrl,
+                LINEUP_NAME: escape(li.name),
+              }) + '\n';
             }
           }
         } else {
-          contentHtml = '<font color="#ff4444" ' + FONT + '>Unable to load provider list. Please try again later.</font><br>';
+          contentHtml = getTemplate('tv_load_provider_list_error', 'misc');
         }
       } catch (err) {
         console.error('TV lineups fetch error:', err.message);
-        contentHtml = '<font color="#ff4444" ' + FONT + '>Unable to load provider list. Please try again later.</font><br>';
+        contentHtml = getTemplate('tv_load_provider_list_error', 'misc');
       }
     }
   }
 
-  var response = strReplace(tv_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  response = strReplace(response, '{$MENU_OPTIONS}', menuHtml);
-  response = strReplace(response, '{$ZIP_VALUE}', escape(zip));
-  response = strReplace(response, '{$DATE_VALUE}', escape(date));
-  response = strReplace(response, '{$TV_CONTENT}', contentHtml);
-  response = strReplace(response, '{$SESSION_ID}', escape(urlSessionID));
-
+  const response = renderTemplate(tv_template, {
+    WHITE_THEME_ENABLED: themeClass,
+    MENU_OPTIONS: menuHtml,
+    ZIP_VALUE: escape(zip),
+    DATE_VALUE: escape(date),
+    TV_CONTENT: contentHtml,
+    SESSION_ID: escape(urlSessionID),
+  });
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
 }
@@ -526,25 +539,25 @@ async function serveStationPage(req, res, parsedUrl, subpath, themeClass, menuHt
       var result = await fetchPage('/tv-listings/stations/' + cleanId + '/' + date, cookie);
 
       if (result.statusCode === 404) {
-        contentHtml = '<font color="#ff4444" ' + FONT + '>Station not found.</font><br>';
+        contentHtml = getTemplate('tv_station_not_found_error', 'misc');
       } else if (result.statusCode !== 200) {
-        contentHtml = '<font color="#ff4444" ' + FONT + '>Unable to load TV guide. Please try again later.</font><br>';
+        contentHtml = getTemplate('tv_load_tv_guide_error', 'misc');
       } else {
         stationName = parseStationName(result.body);
         var logoUrl = parseStationLogo(result.body);
         if (logoUrl) {
           var proxied = proxyImageUrl(logoUrl);
-          stationLogoHtml = '<img src="' + proxied + '" alt="" width="160" height="90" style="width:160px;height:90px;display:block;background:#1a1b1e;margin-bottom:8px;"><br>';
+          stationLogoHtml = renderTemplate(getTemplate('station_logo', 'tv'), { PROXIED_URL: proxied });
         }
         var items = parseListings(result.body);
         contentHtml = stationLogoHtml + buildScheduleHtml(items);
       }
     } catch (err) {
       console.error('TV station fetch error:', err.message);
-      contentHtml = '<font color="#ff4444" ' + FONT + '>Unable to load TV guide. Please try again later.</font><br>';
+      contentHtml = getTemplate('tv_load_tv_guide_error', 'misc');
     }
   } else {
-    contentHtml = '<font color="#ff4444" ' + FONT + '>Invalid station ID.</font><br>';
+    contentHtml = getTemplate('tv_invalid_station_id_error', 'misc');
   }
 
   // Build back URL preserving zip/lineup/date parameters
@@ -553,15 +566,16 @@ async function serveStationPage(req, res, parsedUrl, subpath, themeClass, menuHt
   var backSessionSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '';
   var backUrl = buildUrl('/tv', { date: date, zip: backZip, lineup: backLineup }, backSessionSuffix);
 
-  var response = strReplace(tv_station_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  response = strReplace(response, '{$MENU_OPTIONS}', menuHtml);
-  response = strReplace(response, '{$STATION_NAME}', escape(stationName || 'TV Schedule'));
-  response = strReplace(response, '{$DATE_VALUE}', escape(date));
-  response = strReplace(response, '{$STATION_ID}', escape(cleanId));
-  response = strReplace(response, '{$TV_CONTENT}', contentHtml);
-  response = strReplace(response, '{$SESSION_ID}', escape(urlSessionID));
-  response = strReplace(response, '{$BACK_URL}', escape(backUrl));
-
+  const response = renderTemplate(tv_station_template, {
+    WHITE_THEME_ENABLED: themeClass,
+    MENU_OPTIONS: menuHtml,
+    STATION_NAME: escape(stationName || 'TV Schedule'),
+    DATE_VALUE: escape(date),
+    STATION_ID: escape(cleanId),
+    TV_CONTENT: contentHtml,
+    SESSION_ID: escape(urlSessionID),
+    BACK_URL: escape(backUrl),
+  });
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
 }

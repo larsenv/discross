@@ -2,7 +2,7 @@
 const discord = require('discord.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { resolveMentions } = require('./utils.js');
+const { resolveMentions, getTemplate } = require('./utils.js');
 
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
   try {
@@ -49,7 +49,12 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     }
 
     // Remove the data URL prefix
-    const base64Image = base64Data.split(';base64,').pop();
+    let base64Image;
+    if (base64Data.includes(';base64,')) {
+      base64Image = base64Data.split(';base64,').pop();
+    } else {
+      base64Image = base64Data;
+    }
 
     // Validate the base64 string is not empty
     if (!base64Image || base64Image.trim() === '') {
@@ -94,6 +99,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
   } catch (err) {
     console.error(`[sendDrawing] Error:`, err);
     res.writeHead(500, { 'Content-Type': 'text/html' });
-    res.end('An error occurred! Please try again later.<br>');
+    res.end(getTemplate('generic_error', 'misc'));
   }
 };

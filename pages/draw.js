@@ -3,11 +3,8 @@ const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { strReplace, parseCookies, resolveTheme, buildSessionParam } = require('./utils.js');
-const channel_template = fs
-  .readFileSync('pages/templates/draw.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const { renderTemplate, parseCookies, resolveTheme, buildSessionParam, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const channel_template = loadAndRenderPageTemplate('draw');
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
@@ -28,12 +25,10 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
   );
 
   const { boxColor, themeClass } = resolveTheme(req);
-  const baseTemplate = strReplace(
-    strReplace(channel_template, '{$WHITE_THEME_ENABLED}', themeClass),
-    '{$COLOR}',
-    boxColor
-  );
-
+  const baseTemplate = renderTemplate(channel_template, {
+    WHITE_THEME_ENABLED: themeClass,
+    COLOR: boxColor,
+  });
   try {
     const chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
@@ -50,17 +45,13 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         return;
       }
 
-      const withServerId = strReplace(baseTemplate, '{$SERVER_ID}', chnl.guild.id);
-      const withChannelId = strReplace(withServerId, '{$CHANNEL_ID}', chnl.id);
-
-      const template = strReplace(
-        withChannelId,
-        '{$CHANNEL_NAME}',
-        (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
-      );
-      const withSessionId = strReplace(template, '{$SESSION_ID}', urlSessionID);
-      const finalTemplate = strReplace(withSessionId, '{$SESSION_PARAM}', sessionParam);
-
+      const finalTemplate = renderTemplate(baseTemplate, {
+        SERVER_ID: chnl.guild.id,
+        CHANNEL_ID: chnl.id,
+        CHANNEL_NAME: (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name),
+        SESSION_ID: urlSessionID,
+        SESSION_PARAM: sessionParam,
+      });
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(finalTemplate);
     } else {
@@ -69,6 +60,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
   } catch (error) {
     console.error(error);
     res.writeHead(500, { 'Content-Type': 'text/html' });
-    res.end('An error occurred! Please try again later.<br>');
+    res.end(getTemplate('generic_error', 'misc'));
   }
 };

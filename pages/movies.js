@@ -4,7 +4,7 @@ const fs = require("fs");
 const escape = require("escape-html");
 const he = require("he");
 const auth = require("../authentication.js");
-const { strReplace } = require("./utils.js");
+const { renderTemplate } = require("./utils.js");
 
 const head_partial = fs.readFileSync(
   "pages/templates/partials/head.html",
@@ -755,20 +755,16 @@ exports.processMovies = async function processMovies(req, res, discordID) {
   }
 
   const username = await auth.getUsername(discordID);
-  const menuOptions = strReplace(
+  const menuOptions = renderTemplate(
     logged_in_template,
-    "{$USER}",
-    escape(username),
+    {"{$USER}": escape(username)}
   );
-
-  let final = strReplace(
-    movies_template,
-    "{$WHITE_THEME_ENABLED}",
-    theme.themeClass,
-  );
-  final = strReplace(final, "{$MENU_OPTIONS}", menuOptions);
-  final = strReplace(final, "{$TABS}", tabsHtml);
-  final = strReplace(final, "{$MOVIES_ITEMS}", moviesHtml);
+  const final = renderTemplate(movies_template, {
+    "{$WHITE_THEME_ENABLED}": theme.themeClass,
+    "{$MENU_OPTIONS}": menuOptions,
+    "{$TABS}": tabsHtml,
+    "{$MOVIES_ITEMS}": moviesHtml,
+  });
 
   res.writeHead(200, { "Content-Type": "text/html" });
   res.end(final);

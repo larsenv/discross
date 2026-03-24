@@ -1,7 +1,7 @@
 'use strict';
 // Shared utility functions for processing and rendering reactions
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
-const { strReplace } = require('./utils.js');
+const { renderTemplate, getTemplate } = require('./utils.js');
 
 // Function to process and format reactions
 function processReactions(
@@ -39,14 +39,23 @@ function processReactions(
             if (imagesCookie === 1) {
               const extension = emoji.animated && animationsCookie === 1 ? 'gif' : 'png';
               cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
-              return `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="21" height="21" style="width: 21px; height: 21px; vertical-align: middle;" alt="emoji">`;
+              return renderTemplate(getTemplate('emoji_custom', 'channel'), {
+                EMOJI_ID: emoji.id,
+                EXT: extension,
+                PX: '21',
+                STYLE: 'width: 21px; height: 21px; vertical-align: middle;',
+              });
             }
             return `:${emoji.name}:`;
           }
           if (emoji.name) {
             if (imagesCookie === 1) {
               const output = unicodeToTwemojiCode(emoji.name);
-              return `<img src="/resources/twemoji/${output}.gif" width="21" height="21" style="width: 21px; height: 21px; vertical-align: middle;" alt="emoji" onerror="this.style.display='none'">`;
+              return renderTemplate(getTemplate('emoji_twemoji', 'channel'), {
+                CODE: output,
+                PX: '21',
+                STYLE: 'width: 21px; height: 21px; vertical-align: middle;',
+              });
             }
             return emoji.name;
           }
@@ -55,11 +64,12 @@ function processReactions(
 
         // Build the reaction HTML - skip if emoji couldn't be processed
         if (emojiHtml) {
-          const withEmoji = strReplace(reaction_template, '{$EMOJI}', emojiHtml);
-          const withCount = strReplace(withEmoji, '{$COUNT}', count);
-          const withBg = strReplace(withCount, '{$REACTION_BG}', backgroundColor);
-          const reactionHtml = strReplace(withBg, '{$REACTION_BORDER}', borderColor);
-          return acc + reactionHtml;
+          const reactionHtml = renderTemplate(reaction_template, {
+            EMOJI: emojiHtml,
+            COUNT: count,
+            REACTION_BG: backgroundColor,
+            REACTION_BORDER: borderColor,
+          });          return acc + reactionHtml;
         }
         return acc;
       } catch (err) {
@@ -70,7 +80,7 @@ function processReactions(
     }, '');
 
     if (reactionsHtml) {
-      return strReplace(reactions_template, '{$REACTIONS}', reactionsHtml);
+      return renderTemplate(reactions_template, { REACTIONS: reactionsHtml });
     }
 
     return '';

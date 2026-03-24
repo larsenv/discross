@@ -4,12 +4,9 @@ const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace, getPageThemeAttr } = require('./utils.js');
+const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate } = require('./utils.js');
 
-const search_template = fs
-  .readFileSync('pages/templates/search.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const search_template = loadAndRenderPageTemplate('search');
 
 const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 
@@ -41,30 +38,19 @@ exports.processSearch = async function processSearch(req, res) {
 
   const themeClass = getPageThemeAttr(req);
 
-  const menuOptions = strReplace(
+  const menuOptions = renderTemplate(
     logged_in_template,
-    '{$USER}',
-    escape(await auth.getUsername(discordID))
+    {USER: escape(await auth.getUsername(discordID))}
   );
-  const withTheme = strReplace(search_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  const withMenu = strReplace(withTheme, '{$MENU_OPTIONS}', menuOptions);
-  const withQuery = strReplace(withMenu, '{$QUERY_VALUE}', escape(query));
-  const withFrogfind = strReplace(
-    withQuery,
-    '{$FROGFIND_CHECKED}',
-    safeEngine === 'frogfind' ? 'checked' : ''
-  );
-  const withWiby = strReplace(
-    withFrogfind,
-    '{$WIBY_CHECKED}',
-    safeEngine === 'wiby' ? 'checked' : ''
-  );
-  const withGoogle = strReplace(
-    withWiby,
-    '{$GOOGLE_CHECKED}',
-    safeEngine === 'google' ? 'checked' : ''
-  );
-  const response = strReplace(withGoogle, '{$SESSION_ID}', escape(urlSessionID));
+  const response = renderTemplate(search_template, {
+    WHITE_THEME_ENABLED: themeClass,
+    MENU_OPTIONS: menuOptions,
+    QUERY_VALUE: escape(query),
+    FROGFIND_CHECKED: safeEngine === 'frogfind' ? 'checked' : '',
+    WIBY_CHECKED: safeEngine === 'wiby' ? 'checked' : '',
+    GOOGLE_CHECKED: safeEngine === 'google' ? 'checked' : '',
+    SESSION_ID: escape(urlSessionID),
+  });
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);

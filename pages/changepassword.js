@@ -1,15 +1,12 @@
 'use strict';
-const { strReplace, getPageThemeAttr } = require('./utils.js');
+const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
 const fs = require('fs');
 const escape = require('escape-html');
 const auth = require('../authentication.js');
 
-const changepassword_template = fs
-  .readFileSync('pages/templates/changepassword.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
-const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
+const changepassword_template = loadAndRenderPageTemplate('changepassword');
+const error_template = getTemplate('error', 'login');
+const logged_in_template = getTemplate('logged_in', 'index');
 
 exports.processChangePassword = async function (bot, req, res, args) {
   const discordID = await auth.checkAuth(req, res, false);
@@ -46,24 +43,25 @@ exports.processChangePassword = async function (bot, req, res, args) {
 
   const errortext = parsedUrl.searchParams.get('errortext');
   const buildErrorMsg = (text) =>
-    strReplace(error_template, '{$ERROR_MESSAGE}', strReplace(escape(text), '\n', '<br>'));
-  const errorHtml = dmErrorText
+    renderTemplate(error_template, {
+      ERROR_MESSAGE: escape(text).replaceAll('\n', getTemplate('line_break', 'misc')),
+    });  const errorHtml = dmErrorText
     ? buildErrorMsg(dmErrorText)
     : errortext
       ? buildErrorMsg(errortext)
       : parsedUrl.searchParams.get('codesent')
-        ? '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Verification code sent to your Discord DMs!</font>'
+        ? getTemplate('verification_sent', 'partials')
         : parsedUrl.searchParams.get('success')
-          ? '<br><font color="#00cc00" face="\'rodin\', Arial, Helvetica, sans-serif">Password changed successfully! Please log in again.</font>'
+          ? getTemplate('password_changed', 'misc')
           : '';
 
-  const menuOptions = strReplace(logged_in_template, '{$USER}', escape(username || ''));
-  const withMenu = strReplace(changepassword_template, '{$MENU_OPTIONS}', menuOptions);
-  const withSession = strReplace(withMenu, '{$SESSION_PARAM}', sessionParam);
-  const withSendCode = strReplace(withSession, '{$SEND_CODE_URL}', sendCodeUrl);
-  const withError = strReplace(withSendCode, '{$ERROR}', errorHtml);
-  const response = strReplace(withError, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
-  res.writeHead(200, { 'Content-Type': 'text/html' });
+  const response = renderTemplate(changepassword_template, {
+    MENU_OPTIONS: renderTemplate(logged_in_template, { USER: escape(username || '') }),
+    SESSION_PARAM: sessionParam,
+    SEND_CODE_URL: sendCodeUrl,
+    ERROR: errorHtml,
+    WHITE_THEME_ENABLED: getPageThemeAttr(req),
+  });  res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
 };
 

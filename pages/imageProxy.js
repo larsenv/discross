@@ -2,6 +2,7 @@
 const https = require('https');
 const http = require('http');
 const sharp = require('sharp');
+const { getTemplate } = require('./utils.js'); // Assuming utils.js exists and exports getTemplate
 
 // Smallest valid 1x1 transparent GIF, used as a fallback when an upstream image fails to load
 const EMPTY_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
@@ -101,6 +102,5 @@ exports.imageProxy = async function imageProxy(res, URL) {
     .on('error', (err) => {
       console.error('Image proxy request error:', err);
       res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end('An error occurred fetching the image.');
-    });
+      res.end(getTemplate('generic_error', 'misc'));    });
 };
