@@ -1,5 +1,6 @@
 'use strict';
 const geoip = require('geoip-lite');
+const { getTemplate, renderTemplate } = require('./pages/utils.js');
 
 // Constants for date/time calculations
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -399,7 +400,9 @@ function replaceDiscordTimestamps(text, timezone) {
     const ts = parseInt(timestamp, 10);
     const fmt = format || 'f';
     const formatted = formatDiscordTimestamp(ts, fmt, timezone);
-    return `<span class="discord-timestamp">${formatted}</span>`;
+    return renderTemplate(getTemplate('timestamp_span', 'misc'), {
+      FORMATTED_TIME: formatted,
+    });
   });
 }
 

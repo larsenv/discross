@@ -9,25 +9,19 @@ const notFound = require('./notFound.js');
 const { buildMessagesHtml } = require('./channel.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {
-  strReplace,
+  renderTemplate,
   isValidSnowflake,
   isBotReady,
   parseCookies,
   resolveTheme,
   RANDOM_EMOJIS,
   sanitizeGuestName,
+  loadAndRenderPageTemplate,
+  getTemplate,
 } = require('./utils.js');
-const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 
-function loadTemplate(filePath) {
-  return fs
-    .readFileSync(filePath, 'utf-8')
-    .split('{$COMMON_HEAD}')
-    .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
-}
-
-const TEMPLATE_CHANNEL = loadTemplate('pages/templates/guest_channel.html');
-const TEMPLATE_NAME = loadTemplate('pages/templates/guest_name.html');
+const TEMPLATE_CHANNEL = loadAndRenderPageTemplate('guest_channel');
+const TEMPLATE_NAME = loadAndRenderPageTemplate('guest_name');
 const TEMPLATE_INPUT = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
 const TEMPLATE_INPUT_DISABLED = fs.readFileSync(
   'pages/templates/channel/input_disabled.html',
@@ -95,16 +89,13 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
   // Show name entry page if no guest name set
   if (!guestName) {
     const hasError = parsedUrl.searchParams.get('guest_name_error') === '1';
-    const withTheme = strReplace(TEMPLATE_NAME, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    const withChannelId = strReplace(withTheme, '{$CHANNEL_ID}', escape(channelId));
-    const page = strReplace(
-      withChannelId,
-      '{$ERROR}',
-      hasError
-        ? '<font color="#f04747" face="\'rodin\', Arial, Helvetica, sans-serif">Please enter a valid name.</font>'
-        : ''
-    );
-    res.writeHead(200, { 'Content-Type': 'text/html' });
+    const page = renderTemplate(TEMPLATE_NAME, {
+      WHITE_THEME_ENABLED: theme.themeClass,
+      CHANNEL_ID: escape(channelId),
+      ERROR: hasError
+        ? getTemplate('invalid_name_error', 'misc')
+        : '',
+    });    res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(page);
     return;
   }
@@ -128,14 +119,11 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
       botMember.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
 
     const channelDisplayName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
-    const inputHtml = strReplace(
-      canSend
-        ? strReplace(TEMPLATE_INPUT, '{$COLOR}', boxColor)
-        : strReplace(TEMPLATE_INPUT_DISABLED, '{$COLOR}', boxColor),
-      '{$CHANNEL_NAME}',
-      escape(channelDisplayName)
-    );
-
+    const inputTemplate = canSend ? TEMPLATE_INPUT : TEMPLATE_INPUT_DISABLED;
+    const inputHtml = renderTemplate(inputTemplate, {
+      COLOR: boxColor,
+      CHANNEL_NAME: escape(channelDisplayName),
+    });
     const messagesHtml = await buildMessagesHtml({
       bot,
       chnl,
@@ -153,24 +141,21 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
     const refreshUrl = `${channelId}?random=${Math.random()}`;
 
-    const withTheme = strReplace(TEMPLATE_CHANNEL, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    const withChannelId = strReplace(withTheme, '{$CHANNEL_ID}', escape(channelId));
-    const withChannelName = strReplace(
-      withChannelId,
-      '{$CHANNEL_NAME}',
-      escape(channelDisplayName)
-    );
-    const withGuestName = strReplace(withChannelName, '{$GUEST_NAME}', escape(guestName));
-    const withEmoji = strReplace(withGuestName, '{$RANDOM_EMOJI}', randomEmoji);
-    const withRefresh = strReplace(withEmoji, '{$REFRESH_URL}', refreshUrl);
-    const withInput = strReplace(withRefresh, '{$INPUT}', inputHtml);
-    const page = strReplace(withInput, '{$MESSAGES}', messagesHtml);
-
+    const page = renderTemplate(TEMPLATE_CHANNEL, {
+      WHITE_THEME_ENABLED: theme.themeClass,
+      CHANNEL_ID: escape(channelId),
+      CHANNEL_NAME: escape(channelDisplayName),
+      GUEST_NAME: escape(guestName),
+      RANDOM_EMOJI: randomEmoji,
+      REFRESH_URL: refreshUrl,
+      INPUT: inputHtml,
+      MESSAGES: messagesHtml,
+    });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(page);
   } catch (err) {
     console.error(err);
     res.writeHead(500, { 'Content-Type': 'text/html' });
-    res.end('An error occurred! Please try again later.');
+    res.end(getTemplate('generic_error', 'misc'));
   }
 };

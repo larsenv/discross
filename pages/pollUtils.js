@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 const escape = require('escape-html');
-const { strReplace } = require('./utils.js');
+const { renderTemplate } = require('./utils.js');
 
 const poll_template = fs.readFileSync('pages/templates/message/poll.html', 'utf-8');
 const poll_answer_template = fs.readFileSync('pages/templates/message/poll_answer.html', 'utf-8');
@@ -54,21 +54,15 @@ function processPoll(poll, imagesCookie) {
               const voteCount = answer.voteCount || 0;
               const votePercentage =
                 totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-              const withText = strReplace(
-                poll_answer_template,
-                '{$ANSWER_TEXT}',
-                escape(answer.text || '')
-              );
-              const withEmoji = strReplace(
-                withText,
-                '{$ANSWER_EMOJI}',
-                buildPollEmojiHtml(answer._emoji, imagesCookie)
-              );
-              const withCount = strReplace(withEmoji, '{$VOTE_COUNT}', voteCount);
-              return strReplace(withCount, '{$VOTE_PERCENTAGE}', votePercentage);
+              return renderTemplate(poll_answer_template, {
+                '{$ANSWER_TEXT}': escape(answer.text || ''),
+                '{$ANSWER_EMOJI}': buildPollEmojiHtml(answer._emoji, imagesCookie),
+                '{$VOTE_COUNT}': voteCount,
+                '{$VOTE_PERCENTAGE}': votePercentage,
+              });
             })
             .join('')
-        : '<div style="color: #72767d; font-size: 14px; font-style: italic;">No answers available</div>';
+        : getTemplate('poll_no_answers', 'misc');
 
     // Create footer with poll metadata
     const footerParts = [`${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}`];
@@ -85,13 +79,11 @@ function processPoll(poll, imagesCookie) {
       footerParts.push(`Ends ${new Date(poll.expiresTimestamp).toLocaleDateString()}`);
     }
 
-    const withQuestion = strReplace(
-      poll_template,
-      '{$POLL_QUESTION}',
-      escape(poll.question?.text || 'Poll')
-    );
-    const withAnswers = strReplace(withQuestion, '{$POLL_ANSWERS}', answersHtml);
-    const pollHtml = strReplace(withAnswers, '{$POLL_FOOTER}', escape(footerParts.join(' • ')));
+    const pollHtml = renderTemplate(poll_template, {
+      '{$POLL_QUESTION}': escape(poll.question?.text || 'Poll'),
+      '{$POLL_ANSWERS}': answersHtml,
+      '{$POLL_FOOTER}': escape(footerParts.join(' • ')),
+    });
 
     return pollHtml;
   } catch (error) {

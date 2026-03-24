@@ -3,7 +3,7 @@
 const fs = require('fs');
 const escape = require('escape-html');
 
-const { strReplace, getPageThemeAttr, httpsGet, formatChangePct, changeColor } = require('./utils.js');
+const { renderTemplate, getPageThemeAttr, httpsGet, formatChangePct, changeColor, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
 
 const auth = require('../authentication.js');
 
@@ -67,12 +67,9 @@ const CURRENCY_NAMES = {
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
-const currency_template = fs
-  .readFileSync('pages/templates/currency.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const currency_template = loadAndRenderPageTemplate('currency');
 
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
+const logged_in_template = getTemplate('logged_in', 'index');
 
 /**
  * Return a date string N calendar days before today in YYYY-MM-DD format.
@@ -156,7 +153,7 @@ function renderRatesTable(base, latestData, prevData, targets) {
   const prevRates = prevData ? prevData.rates || {} : {};
 
   const dateLabel = latestData?.date
-    ? ` <font size="2" ${FONT} color="#72767d">(as of ${escape(latestData.date)})</font>`
+    ? renderTemplate(getTemplate('date_label', 'currency'), { DATE: escape(latestData.date) })
     : '';
 
   const rows = targets.flatMap((code) => {
@@ -170,32 +167,22 @@ function renderRatesTable(base, latestData, prevData, targets) {
     const color = changeColor(change);
     const name = CURRENCY_NAMES[code] || code;
     return [
-      `  <tr style="border-bottom:1px solid #40444b;">
-    <td>
-      <font size="3" ${FONT} color="#dddddd"><b>${escape(code)}</b></font><br>
-      <font size="2" ${FONT} color="#72767d">${escape(name)}</font>
-    </td>
-    <td><font size="3" ${FONT} color="#dddddd">${formatRate(rate, decimals)}</font></td>
-    <td><font size="3" ${FONT} color="${color}">${formatChange(change, decimals)}</font></td>
-    <td><font size="3" ${FONT} color="${color}">${formatChangePct(changePct)}</font></td>
-  </tr>\n`,
+      renderTemplate(getTemplate('rate_row', 'currency'), {
+        CODE: escape(code),
+        NAME: escape(name),
+        RATE: formatRate(rate, decimals),
+        COLOR: color,
+        CHANGE: formatChange(change, decimals),
+        CHANGE_PCT: formatChangePct(changePct),
+      }),
     ];
   });
 
-  const html =
-    `<font size="4" ${FONT} color="#dddddd"><b>Exchange Rates &mdash; Base: ${escape(base)}</b></font>` +
-    dateLabel +
-    '<br><br>\n' +
-    `<table cellpadding="4" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n` +
-    `  <tr style="border-bottom:2px solid #40444b;">
-    <td><font size="2" ${FONT} color="#72767d"><b>Currency</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Rate</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Change</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>% Change</b></font></td>
-  </tr>\n` +
-    rows.join('') +
-    `</table>\n`;
-  return html;
+  return renderTemplate(getTemplate('rates_table', 'currency'), {
+    BASE: escape(base),
+    DATE_LABEL: dateLabel,
+    ROWS: rows.join(''),
+  });
 }
 
 exports.processCurrency = async function processCurrency(req, res) {
@@ -212,7 +199,7 @@ exports.processCurrency = async function processCurrency(req, res) {
   const themeClass = getPageThemeAttr(req);
 
   const prefix = inputWasNormalized
-    ? `<font color="#e3a84a" ${FONT}><i>Invalid currency code entered. Showing results for &ldquo;${escape(base)}&rdquo; instead.</i></font><br><br>`
+    ? renderTemplate(getTemplate('invalid_code_prefix', 'currency'), { BASE: escape(base) })
     : '';
 
   const currencyHtml = await (async () => {
@@ -227,7 +214,7 @@ exports.processCurrency = async function processCurrency(req, res) {
       if (!latestData) {
         return (
           prefix +
-          `<font color="#ff4444" ${FONT}>No data found for base currency &ldquo;${escape(base)}&rdquo;. Please enter a valid 3-letter currency code (e.g. USD, EUR, GBP).</font><br>`
+          renderTemplate(getTemplate('no_data_error', 'currency'), { BASE: escape(base) })
         );
       }
       // Use all available target currencies or our default list
@@ -239,22 +226,24 @@ exports.processCurrency = async function processCurrency(req, res) {
       console.error('Currency API error:', err.message);
       return (
         prefix +
-        `<font color="#ff4444" ${FONT}>Unable to fetch currency data. Please try again later.</font><br>`
+        getTemplate('fetch_error', 'currency')
       );
     }
   })();
 
-  const menuOptions = strReplace(
+  const menuOptions = renderTemplate(
     logged_in_template,
-    '{$USER}',
-    escape(await auth.getUsername(discordID))
+    {USER: escape(await auth.getUsername(discordID))}
   );
-  const withTheme = strReplace(currency_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  const withMenu = strReplace(withTheme, '{$MENU_OPTIONS}', menuOptions);
-  const withBase = strReplace(withMenu, '{$BASE_VALUE}', escape(base));
-  const withContent = strReplace(withBase, '{$CURRENCY_CONTENT}', currencyHtml);
-  const withSession = strReplace(withContent, '{$SESSION_ID}', escape(urlSessionID));
-  const response = strReplace(withSession, '{$SESSION_SUFFIX}', escape(sessionSuffix));
+
+  const response = renderTemplate(currency_template, {
+    WHITE_THEME_ENABLED: themeClass,
+    MENU_OPTIONS: menuOptions,
+    BASE_VALUE: escape(base),
+    CURRENCY_CONTENT: currencyHtml,
+    SESSION_ID: escape(urlSessionID),
+    SESSION_SUFFIX: escape(sessionSuffix),
+  });
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);

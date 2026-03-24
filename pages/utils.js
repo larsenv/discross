@@ -4,18 +4,62 @@
  */
 
 const https = require('https');
+const fs = require('fs');
 
 /**
- * Replaces all occurrences of `needle` in `string` with `replacement`.
- * Built-in String.prototype.replace() only replaces the first occurrence.
+ * Loads a component template from the pages/templates folder.
  *
- * @param {string} string - The source string.
- * @param {string} needle - The substring to search for.
- * @param {string} [replacement=""] - The replacement value.
- * @returns {string}
+ * @param {string} name - The name of the template file (without .html).
+ * @param {string} [folder="channel"] - The subfolder within pages/templates.
+ * @returns {string} The template content.
  */
-function strReplace(string, needle, replacement) {
-  return string.split(needle).join(replacement ?? '');
+function getTemplate(name, folder = 'channel') {
+  const filePath = `pages/templates/${folder}/${name}.html`;
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    // Remove #end comments that might be present in some templates
+    return content.replace(/#end(?=["'])/g, '');
+  } catch (err) {
+    console.error(`Failed to load template ${filePath}:`, err);
+    return '';
+  }
+}
+
+/**
+ * Loads and renders a full page template, including the common head partial.
+ *
+ * @param {string} name - The name of the template file (without .html).
+ * @param {string} [folder=""] - The subfolder within pages/templates.
+ * @param {object} [data={}] - A map of placeholder keys to replacement values.
+ * @returns {string} The rendered page content.
+ */
+function loadAndRenderPageTemplate(name, folder = '', data = {}) {
+  const headPartial = getTemplate('head', 'partials');
+  const mainTemplate = getTemplate(name, folder);
+  const templateWithHead = renderTemplate(mainTemplate, { COMMON_HEAD: headPartial });
+  return renderTemplate(templateWithHead, data);
+}
+
+/**
+ * Replaces multiple template placeholders in a string.
+ *
+ * @param {string} template - The template string with {$PLACEHOLDER} tags.
+ * @param {Object.<string, string>} data - A map of placeholder keys to replacement values.
+ * @returns {string} The rendered template.
+ */
+function renderTemplate(template, data) {
+  if (!template || !data) return template || '';
+  let result = template;
+  for (const [key, value] of Object.entries(data)) {
+    // Normalize key: remove surrounding {$$} if present
+    let normalizedKey = key;
+    if (normalizedKey.startsWith('{$') && normalizedKey.endsWith('}')) {
+      normalizedKey = normalizedKey.slice(2, -1);
+    }
+    const placeholder = `{$${normalizedKey}}`;
+    result = result.split(placeholder).join(value ?? '');
+  }
+  return result;
 }
 
 /**
@@ -251,7 +295,7 @@ async function resolveMentions(text, guild) {
           return null;
         }));
     if (mentioneduser) {
-      result = strReplace(result, m[0], `<@${mentioneduser.id}>`);
+      result = result.replaceAll(m[0], `<@${mentioneduser.id}>`);
     }
   }
   return result;
@@ -298,8 +342,17 @@ function httpsGet(options, maxRedirects) {
   });
 }
 
+function reportError(message, error) {
+  console.error(message, error);
+  if (typeof Sentry !== 'undefined' && typeof Sentry.captureException === 'function') {
+    Sentry.captureException(error);
+  }
+}
+
 module.exports = {
-  strReplace,
+  getTemplate,
+  renderTemplate,
+  loadAndRenderPageTemplate,
   isValidSnowflake,
   isBotReady,
   getBaseUrl,
@@ -313,4 +366,7 @@ module.exports = {
   sanitizeGuestName,
   resolveMentions,
   httpsGet,
+  formatChangePct,
+  changeColor,
+  reportError,
 };

@@ -7,17 +7,16 @@ const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
 const {
-  strReplace,
+  renderTemplate,
   isBotReady,
   parseCookies,
   resolveTheme,
   buildSessionParam,
+  loadAndRenderPageTemplate,
+  getTemplate,
 } = require('./utils.js');
 
-const channel_template = fs
-  .readFileSync('pages/templates/pins.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const channel_template = loadAndRenderPageTemplate('pins');
 
 exports.processPins = async function processPins(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
@@ -85,7 +84,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
 
     const messagesHtml =
       pinnedMessages.length === 0
-        ? '<p style="color: #72767d; font-family: \'rodin\', Arial, Helvetica, sans-serif;">No pinned messages in this channel.</p>'
+        ? getTemplate('no_pinned_messages', 'message')
         : await buildMessagesHtml({
             bot,
             chnl,
@@ -101,22 +100,20 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
             messages: pinnedMessages,
           });
 
-    const withTheme = strReplace(channel_template, '{$WHITE_THEME_ENABLED}', theme.themeClass);
-    const withChannelId = strReplace(withTheme, '{$CHANNEL_ID}', chnl.id);
-    const withServerId = strReplace(withChannelId, '{$SERVER_ID}', chnl.guild.id);
-    const withChannelName = strReplace(
-      withServerId,
-      '{$CHANNEL_NAME}',
-      (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name)
-    );
-    const withMessages = strReplace(withChannelName, '{$MESSAGES}', messagesHtml);
-    const final = strReplace(withMessages, '{$SESSION_PARAM}', sessionParam);
-
+    const final = renderTemplate(channel_template, {
+      WHITE_THEME_ENABLED: theme.themeClass,
+      CHANNEL_ID: chnl.id,
+      SERVER_ID: chnl.guild.id,
+      CHANNEL_NAME:
+        (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name),
+      MESSAGES: messagesHtml,
+      SESSION_PARAM: sessionParam,
+    });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);
   } catch (err) {
     console.error(err);
     res.writeHead(500, { 'Content-Type': 'text/html' });
-    res.end('An error occurred! Please try again later.');
+    res.end(getTemplate('generic_error', 'misc'));
   }
 };

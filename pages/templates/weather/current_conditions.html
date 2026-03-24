@@ -1,0 +1,50 @@
+<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;">
+  <tr valign="top">
+    <td style="padding-right:16px;width:80px;">{$ICON_HTML}</td>
+    <td valign="top">
+      <font size="4" {$FONT} color="#b5bac1">{$WEATHER_TEXT}</font><br>
+      <font size="6" {$FONT} color="#dddddd"><b>{$TEMP_F}&deg;F / {$TEMP_C}&deg;C</b></font><br>
+      <font size="3" {$FONT} color="#72767d">Feels like {$FEELS_LIKE_F}&deg;F / {$FEELS_LIKE_C}&deg;C</font>
+    </td>
+  </tr>
+</table>
+<br>
+<table cellpadding="6" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">
+  <tr>
+    <td style="border-bottom:1px solid #40444b;width:50%;vertical-align:top;">
+      <font size="2" {$FONT} color="#72767d">Humidity</font><br>
+      <font {$FONT} color="#dddddd"><b>{$HUMIDITY}%</b></font>
+    </td>
+    <td style="border-bottom:1px solid #40444b;width:50%;vertical-align:top;">
+      <font size="2" {$FONT} color="#72767d">Wind</font><br>
+      <font {$FONT} color="#dddddd"><b>{$WIND_SPEED_MPH} mph / {$WIND_SPEED_KMH} km/h{$WIND_DIR}</b></font>
+    </td>
+  </tr>
+  <tr>
+    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
+      <font size="2" {$FONT} color="#72767d">Visibility</font><br>
+      <font {$FONT} color="#dddddd"><b>{$VISIBILITY_MI} mi / {$VISIBILITY_KM} km</b></font>
+    </td>
+    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
+      <font size="2" {$FONT} color="#72767d">Pressure</font><br>
+      <font {$FONT} color="#dddddd"><b>{$PRESSURE_IN_HG} inHg / {$PRESSURE_MB} mb</b></font>
+    </td>
+  </tr>
+  <tr>
+    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
+      <font size="2" {$FONT} color="#72767d">UV Index</font><br>
+      <font {$FONT} color="#dddddd"><b>{$UV_INDEX}{$UV_TEXT}</b></font>
+    </td>
+    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
+      <font size="2" {$FONT} color="#72767d">Cloud Cover</font><br>
+      <font {$FONT} color="#dddddd"><b>{$CLOUD_COVER}%</b></font>
+    </td>
+  </tr>
+  <tr>
+    <td style="vertical-align:top;">
+      <font size="2" {$FONT} color="#72767d">Dew Point</font><br>
+      <font {$FONT} color="#dddddd"><b>{$DEW_POINT_F}&deg;F / {$DEW_POINT_C}&deg;C</b></font>
+    </td>
+    <td style="vertical-align:top;"></td>
+  </tr>
+</table>

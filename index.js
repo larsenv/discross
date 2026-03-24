@@ -35,20 +35,10 @@ process.on('uncaughtException', (err) => {
   }
 });
 
-try {
-  // Use HTTPS if keys are available
-  options.key = fs.readFileSync('secrets/key.pem');
-  options.cert = fs.readFileSync('secrets/cert.pem');
-  console.info('Found keys - using HTTPS!');
-} catch (err) {
-  console.info('No keys found - using HTTP!');
-}
-
-const usinghttps = !!options.key;
-const http = usinghttps ? require('https') : require('http');
+const http = require('http');
 
 const auth = require('./authentication.js');
-auth.setHTTPS(usinghttps); // Determines whether cookies have the Secure; option
+auth.setHTTPS(false); // Cookies will not have the Secure; option as it's handled by reverse proxy
 
 const indexpage = require('./pages/index.js');
 const loginpage = require('./pages/login.js');
@@ -91,7 +81,7 @@ const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
 
 bot.startBot();
 
-const { strReplace, isValidSnowflake, parseCookies } = require('./pages/utils.js');
+const { isValidSnowflake, parseCookies } = require('./pages/utils.js');
 
 // create a server object:
 const server = http.createServer(options);
@@ -376,7 +366,7 @@ server.on('request', async (req, res) => {
     try {
       const parsedurl = new URL(req.url, 'http://localhost');
 
-      const args = strReplace(parsedurl.pathname, '?', '/').split('/'); // Split by / or ?
+      const args = parsedurl.pathname.replaceAll('?', '/').split('/'); // Split by / or ?
       if (args[1] === 'send') {
         const discordID = await auth.checkAuth(req, res);
         if (discordID) {

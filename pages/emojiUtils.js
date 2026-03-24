@@ -1,4 +1,5 @@
 'use strict';
+const { renderTemplate, getTemplate } = require('./utils.js');
 const sqlite3 = require('better-sqlite3');
 const emojiRegex = require('./twemojiRegex').regex;
 
@@ -104,11 +105,18 @@ function cacheCustomEmoji(emojiId, emojiName, animated) {
  * @param {string} sizeEm - Size in em (e.g. "1.375em")
  * @returns {string} Text with unicode emojis replaced by img tags
  */
+const tmpl = {
+  image: getTemplate('twemoji_image', 'emojiUtils'),
+};
+
 function processUnicodeEmojiInText(text, sizePx, sizeEm) {
   return text.replace(emojiRegex, (match) => {
     const code = unicodeToTwemojiCode(match);
-    return `<img src="/resources/twemoji/${code}.gif" width="${sizePx}" height="${sizePx}" style="width: ${sizeEm}; height: ${sizeEm}; vertical-align: -0.2em;" alt="emoji" onerror="this.style.display='none'">`;
-  });
+    return renderTemplate(tmpl.image, {
+      CODE: code,
+      PX: sizePx,
+      EM: sizeEm,
+    });  });
 }
 
 module.exports = { unicodeToTwemojiCode, cacheCustomEmoji, processUnicodeEmojiInText };

@@ -3,33 +3,34 @@ const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace, getPageThemeAttr } = require('./utils.js');
+const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
 
-const register_template = fs
-  .readFileSync('pages/templates/register.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
-const error_template = fs.readFileSync('pages/templates/login/error.html', 'utf-8');
-const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
+const register_template = loadAndRenderPageTemplate('register');
+const error_template = getTemplate('error', 'login');
+const logged_out_template = getTemplate('logged_out', 'index');
 
 exports.processRegister = async function (bot, req, res, args) {
   const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
   if (discordID) {
     res.writeHead(302, { Location: '/server/' });
-    res.end('Logged in! Click <a href="/server/">here</a> to continue.');
+    res.end(
+      renderTemplate(getTemplate('redirect_page', 'misc'), {
+        REDIRECT_URL: '/server/',
+      })
+    );
   } else {
     const parsedurl = new URL(req.url, 'http://localhost');
     const rawErrorText = parsedurl.searchParams.get('errortext');
     const errorHtml = rawErrorText
-      ? strReplace(
-          error_template,
-          '{$ERROR_MESSAGE}',
-          strReplace(escape(rawErrorText), '\n', '<br>')
-        )
+      ? renderTemplate(error_template, {
+          ERROR_MESSAGE: escape(rawErrorText).replaceAll('\n', getTemplate('line_break', 'misc')),
+        })
       : '';
-    const withMenuOptions = strReplace(register_template, '{$MENU_OPTIONS}', logged_out_template);
-    const withError = strReplace(withMenuOptions, '{$ERROR}', errorHtml);
-    const response = strReplace(withError, '{$WHITE_THEME_ENABLED}', getPageThemeAttr(req));
+    const response = renderTemplate(register_template, {
+      MENU_OPTIONS: logged_out_template,
+      ERROR: errorHtml,
+      WHITE_THEME_ENABLED: getPageThemeAttr(req),
+    });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);
   }

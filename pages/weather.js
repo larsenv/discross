@@ -6,7 +6,7 @@ const zlib = require('zlib');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace, getPageThemeAttr } = require('./utils.js');
+const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
 
 const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY;
 const ACCUWEATHER_HOST = 'api.accuweather.com';
@@ -97,7 +97,10 @@ function formatHour(dateStr) {
 function iconImg(code, size) {
   const file = WEATHER_ICONS[parseInt(code, 10)] || '2600';
   const s = size || 24;
-  return `<img src="/resources/twemoji/${file}.gif" alt="" width="${s}" height="${s}" style="width:${s}px;height:${s}px;vertical-align:middle;">`;
+  return renderTemplate(getTemplate('icon', 'weather'), {
+    FILE: file,
+    SIZE: s.toString(),
+  });
 }
 
 function buildNavButtons(city, activeView, urlSessionID) {
@@ -105,17 +108,20 @@ function buildNavButtons(city, activeView, urlSessionID) {
   const sessionSuffix = urlSessionID ? `&sessionID=${encodeURIComponent(urlSessionID)}` : '';
   const rows = VIEWS.map((v) => {
     const cls = v.id === activeView ? 'discross-button' : 'discross-button secondary';
-    return `  <td style="padding:0 6px 10px 0;"><a href="/weather?city=${cityEnc}&view=${v.id}${sessionSuffix}" class="${cls}" style="padding:7px 16px;font-size:14px;margin:0;">${v.label}</a></td>\n`;
+    return renderTemplate(getTemplate('nav_button', 'weather'), {
+      CITY_ENC: cityEnc,
+      VIEW_ID: v.id,
+      SESSION_SUFFIX: sessionSuffix,
+      CLASS: cls,
+      LABEL: v.label,
+    });
   });
-  return `<table cellpadding="0" cellspacing="0"><tr>\n${rows.join('')}</tr></table>\n`;
+  return renderTemplate(getTemplate('nav_table', 'weather'), { ROWS: rows.join('') });
 }
 
-const weather_template = fs
-  .readFileSync('pages/templates/weather.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const weather_template = loadAndRenderPageTemplate('weather');
 
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
+const logged_in_template = getTemplate('logged_in', 'index');
 
 function fetchJson(hostname, path) {
   return new Promise((resolve, reject) => {
@@ -171,7 +177,7 @@ function renderCurrent(cond) {
         `AccuWeather conditions API returned HTTP ${cond.status}. Response:`,
         JSON.stringify(cond.data)
       );
-    return `<font color="#ff4444" ${FONT}>Current conditions unavailable for this location.</font><br>`;
+    return getTemplate('current_conditions_error', 'weather');
   }
   const c = cond.data[0];
   const iconCode = c.WeatherIcon || 1;
@@ -194,56 +200,27 @@ function renderCurrent(cond) {
   const dewPointF = c.DewPoint?.Imperial?.Value ?? '--';
   const dewPointC = c.DewPoint?.Metric?.Value ?? '--';
 
-  return `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;">
-  <tr valign="top">
-    <td style="padding-right:16px;width:80px;">${iconImg(iconCode, 64)}</td>
-    <td valign="top">
-      <font size="4" ${FONT} color="#b5bac1">${weatherText}</font><br>
-      <font size="6" ${FONT} color="#dddddd"><b>${tempF}&deg;F / ${tempC}&deg;C</b></font><br>
-      <font size="3" ${FONT} color="#72767d">Feels like ${feelsLikeF}&deg;F / ${feelsLikeC}&deg;C</font>
-    </td>
-  </tr>
-</table>
-<br>
-<table cellpadding="6" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">
-  <tr>
-    <td style="border-bottom:1px solid #40444b;width:50%;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Humidity</font><br>
-      <font ${FONT} color="#dddddd"><b>${humidity}%</b></font>
-    </td>
-    <td style="border-bottom:1px solid #40444b;width:50%;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Wind</font><br>
-      <font ${FONT} color="#dddddd"><b>${windSpeedMph} mph / ${windSpeedKmh} km/h${windDir ? ' ' + windDir : ''}</b></font>
-    </td>
-  </tr>
-  <tr>
-    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Visibility</font><br>
-      <font ${FONT} color="#dddddd"><b>${visibilityMi} mi / ${visibilityKm} km</b></font>
-    </td>
-    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Pressure</font><br>
-      <font ${FONT} color="#dddddd"><b>${pressureInHg} inHg / ${pressureMb} mb</b></font>
-    </td>
-  </tr>
-  <tr>
-    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">UV Index</font><br>
-      <font ${FONT} color="#dddddd"><b>${uvIndex}${uvText ? ' (' + uvText + ')' : ''}</b></font>
-    </td>
-    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Cloud Cover</font><br>
-      <font ${FONT} color="#dddddd"><b>${cloudCover}%</b></font>
-    </td>
-  </tr>
-  <tr>
-    <td style="vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Dew Point</font><br>
-      <font ${FONT} color="#dddddd"><b>${dewPointF}&deg;F / ${dewPointC}&deg;C</b></font>
-    </td>
-    <td style="vertical-align:top;"></td>
-  </tr>
-</table>`;
+  return renderTemplate(getTemplate('current_view', 'weather'), {
+    ICON_HTML: iconImg(iconCode, 64),
+    WEATHER_TEXT: weatherText,
+    TEMP_F: tempF.toString(),
+    TEMP_C: tempC.toString(),
+    FEELS_LIKE_F: feelsLikeF.toString(),
+    FEELS_LIKE_C: feelsLikeC.toString(),
+    HUMIDITY: humidity.toString(),
+    WIND_SPEED_MPH: windSpeedMph.toString(),
+    WIND_SPEED_KMH: windSpeedKmh.toString(),
+    WIND_DIR: windDir ? ' ' + windDir : '',
+    VISIBILITY_MI: visibilityMi.toString(),
+    VISIBILITY_KM: visibilityKm.toString(),
+    PRESSURE_INHG: pressureInHg.toString(),
+    PRESSURE_MB: pressureMb.toString(),
+    UV_INDEX: uvIndex.toString(),
+    UV_TEXT: uvText ? ' (' + uvText + ')' : '',
+    CLOUD_COVER: cloudCover.toString(),
+    DEW_POINT_F: dewPointF.toString(),
+    DEW_POINT_C: dewPointC.toString(),
+  });
 }
 
 function renderToday(daily) {
@@ -253,7 +230,7 @@ function renderToday(daily) {
         `AccuWeather daily forecast API returned HTTP ${daily.status}. Response:`,
         JSON.stringify(daily.data)
       );
-    return `<font color="#ff4444" ${FONT}>Today's forecast unavailable for this location.</font><br>`;
+    return renderTemplate(getTemplate('forecast_error', 'weather'), { VIEW_NAME: 'Today\'s' });
   }
   const today = daily.data.DailyForecasts[0];
   const headline = daily.data.Headline?.Text ? escape(daily.data.Headline.Text) : '';
@@ -268,21 +245,23 @@ function renderToday(daily) {
   const dayPrecip = today.Day?.PrecipitationProbability ?? '--';
   const nightPrecip = today.Night?.PrecipitationProbability ?? '--';
 
-  const html =
-    (headline ? `<font size="3" ${FONT} color="#b5bac1"><i>${headline}</i></font><br><br>\n` : '') +
-    `<table cellpadding="6" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">
-  <tr style="border-bottom:1px solid #40444b;">
-    <td style="padding:8px;width:36px;">${iconImg(dayIcon, 32)}</td>
-    <td style="padding:8px;"><font size="3" ${FONT} color="#72767d">Day</font> &mdash; <font ${FONT} color="#dddddd">${dayPhrase}</font><br><font size="2" ${FONT} color="#72767d">Precip: ${dayPrecip}%</font></td>
-    <td style="padding:8px;" align="right"><font ${FONT} color="#dddddd"><b>High: ${highF}&deg;F / ${highC}&deg;C</b></font></td>
-  </tr>
-  <tr>
-    <td style="padding:8px;">${iconImg(nightIcon, 32)}</td>
-    <td style="padding:8px;"><font size="3" ${FONT} color="#72767d">Night</font> &mdash; <font ${FONT} color="#dddddd">${nightPhrase}</font><br><font size="2" ${FONT} color="#72767d">Precip: ${nightPrecip}%</font></td>
-    <td style="padding:8px;" align="right"><font ${FONT} color="#dddddd"><b>Low: ${lowF}&deg;F / ${lowC}&deg;C</b></font></td>
-  </tr>
-</table>`;
-  return html;
+  const headlineHtml = headline
+    ? renderTemplate(getTemplate('headline', 'weather'), { TEXT: headline })
+    : '';
+
+  return renderTemplate(getTemplate('today_view', 'weather'), {
+    HEADLINE_HTML: headlineHtml,
+    DAY_ICON_HTML: iconImg(dayIcon, 32),
+    DAY_PHRASE: dayPhrase,
+    DAY_PRECIP: dayPrecip.toString(),
+    HIGH_F: highF.toString(),
+    HIGH_C: highC.toString(),
+    NIGHT_ICON_HTML: iconImg(nightIcon, 32),
+    NIGHT_PHRASE: nightPhrase,
+    NIGHT_PRECIP: nightPrecip.toString(),
+    LOW_F: lowF.toString(),
+    LOW_C: lowC.toString(),
+  });
 }
 
 function renderHourly(hourly) {
@@ -292,34 +271,33 @@ function renderHourly(hourly) {
         `AccuWeather hourly forecast API returned HTTP ${hourly.status}. Response:`,
         JSON.stringify(hourly.data)
       );
-    return `<font color="#ff4444" ${FONT}>Hourly forecast unavailable for this location.</font><br>`;
+    return renderTemplate(getTemplate('forecast_error', 'weather'), { VIEW_NAME: 'Hourly' });
   }
-  const html =
-    `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n` +
-    hourly.data
-      .map((hour) => {
-        const time = formatHour(hour.DateTime);
-        const tempF = hour.Temperature?.Value ?? '--';
-        const tempC = fToC(tempF);
-        const phrase = escape(hour.IconPhrase || '');
-        const iconCode = hour.WeatherIcon || 1;
-        const precipProb = hour.PrecipitationProbability ?? '--';
-        const windMph = hour.Wind?.Speed?.Value;
-        const windKmh =
-          windMph !== null && windMph !== undefined ? (windMph * MPH_TO_KMH).toFixed(1) : null;
-        const windStr =
-          windMph !== null && windMph !== undefined
-            ? ` &mdash; Wind: ${windMph} mph / ${windKmh} km/h`
-            : '';
-        return `  <tr style="border-bottom:1px solid #40444b;">
-    <td style="padding:6px 8px;white-space:nowrap;width:70px;"><font size="2" ${FONT} color="#b5bac1">${time}</font></td>
-    <td style="padding:6px 4px;width:28px;">${iconImg(iconCode, 24)}</td>
-    <td style="padding:6px 8px;"><font ${FONT} color="#dddddd">${tempF}&deg;F / ${tempC}&deg;C</font><br><font size="2" ${FONT} color="#72767d">${phrase}${windStr} &mdash; Precip: ${precipProb}%</font></td>
-  </tr>\n`;
-      })
-      .join('') +
-    `</table>\n`;
-  return html;
+  const rows = hourly.data.map((hour) => {
+    const time = formatHour(hour.DateTime);
+    const tempF = hour.Temperature?.Value ?? '--';
+    const tempC = fToC(tempF);
+    const phrase = escape(hour.IconPhrase || '');
+    const iconCode = hour.WeatherIcon || 1;
+    const precipProb = hour.PrecipitationProbability ?? '--';
+    const windMph = hour.Wind?.Speed?.Value;
+    const windKmh =
+      windMph !== null && windMph !== undefined ? (windMph * MPH_TO_KMH).toFixed(1) : null;
+    const windStr =
+      windMph !== null && windMph !== undefined
+        ? ` &mdash; Wind: ${windMph} mph / ${windKmh} km/h`
+        : '';
+    return renderTemplate(getTemplate('hourly_row', 'weather'), {
+      TIME: time,
+      ICON_HTML: iconImg(iconCode, 24),
+      TEMP_F: tempF.toString(),
+      TEMP_C: tempC.toString(),
+      PHRASE: phrase,
+      WIND_STR: windStr,
+      PRECIP_PROB: precipProb.toString(),
+    });
+  });
+  return renderTemplate(getTemplate('table', 'weather'), { ROWS: rows.join('') });
 }
 
 function renderDaily(daily) {
@@ -329,28 +307,29 @@ function renderDaily(daily) {
         `AccuWeather daily forecast API returned HTTP ${daily.status}. Response:`,
         JSON.stringify(daily.data)
       );
-    return `<font color="#ff4444" ${FONT}>5-day forecast unavailable for this location.</font><br>`;
+    return renderTemplate(getTemplate('forecast_error', 'weather'), { VIEW_NAME: '5-day' });
   }
-  const html =
-    `<table cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n` +
-    daily.data.DailyForecasts.map((day, i) => {
-      const isLast = i === daily.data.DailyForecasts.length - 1;
-      const dayLabel = i === 0 ? 'Today' : formatDay(day.Date);
-      const highF = day.Temperature?.Maximum?.Value ?? '--';
-      const lowF = day.Temperature?.Minimum?.Value ?? '--';
-      const highC = fToC(highF);
-      const lowC = fToC(lowF);
-      const dayIcon = day.Day?.Icon || 1;
-      const dayPhrase = escape(day.Day?.IconPhrase || '');
-      return `  <tr${isLast ? '' : ' style="border-bottom:1px solid #40444b;"'}>
-    <td style="padding:8px;white-space:nowrap;width:80px;"><font size="2" ${FONT} color="#b5bac1"><b>${dayLabel}</b></font></td>
-    <td style="padding:8px;width:32px;">${iconImg(dayIcon, 24)}</td>
-    <td style="padding:8px;"><font ${FONT} color="#dddddd">${dayPhrase}</font></td>
-    <td style="padding:8px;" align="right"><font ${FONT} color="#dddddd"><b>${highF}&deg;F / ${highC}&deg;C</b></font><br><font size="2" ${FONT} color="#72767d">${lowF}&deg;F / ${lowC}&deg;C</font></td>
-  </tr>\n`;
-    }).join('') +
-    `</table>\n`;
-  return html;
+  const rows = daily.data.DailyForecasts.map((day, i) => {
+    const isLast = i === daily.data.DailyForecasts.length - 1;
+    const dayLabel = i === 0 ? 'Today' : formatDay(day.Date);
+    const highF = day.Temperature?.Maximum?.Value ?? '--';
+    const lowF = day.Temperature?.Minimum?.Value ?? '--';
+    const highC = fToC(highF);
+    const lowC = fToC(lowF);
+    const dayIcon = day.Day?.Icon || 1;
+    const dayPhrase = escape(day.Day?.IconPhrase || '');
+    return renderTemplate(getTemplate('daily_row', 'weather'), {
+      ROW_STYLE: isLast ? '' : ' style="border-bottom:1px solid #40444b;"',
+      DAY_LABEL: dayLabel,
+      ICON_HTML: iconImg(dayIcon, 24),
+      PHRASE: dayPhrase,
+      HIGH_F: highF.toString(),
+      HIGH_C: highC.toString(),
+      LOW_F: lowF.toString(),
+      LOW_C: lowC.toString(),
+    });
+  });
+  return renderTemplate(getTemplate('table', 'weather'), { ROWS: rows.join('') });
 }
 
 exports.processWeather = async function processWeather(req, res) {
@@ -406,7 +385,9 @@ exports.processWeather = async function processWeather(req, res) {
         navHtml = buildNavButtons(trimmedCity, view, urlSessionID);
 
         // Location header
-        weatherHtml = `<font size="5" ${FONT} color="#dddddd"><b>${locationDisplay}</b></font><br><br>\n`;
+        weatherHtml = renderTemplate(getTemplate('location_header', 'weather'), {
+          LOCATION: locationDisplay,
+        });
 
         // Step 2: Fetch only what this view needs, then render
         const VIEW_CONFIG = {
@@ -446,17 +427,19 @@ exports.processWeather = async function processWeather(req, res) {
     }
   }
 
-  const menuOptions = strReplace(
+  const menuOptions = renderTemplate(
     logged_in_template,
-    '{$USER}',
-    escape(await auth.getUsername(discordID))
+    {USER: escape(await auth.getUsername(discordID))}
   );
-  const withTheme = strReplace(weather_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  const withMenu = strReplace(withTheme, '{$MENU_OPTIONS}', menuOptions);
-  const withCity = strReplace(withMenu, '{$CITY_VALUE}', escape(city));
-  const withNav = strReplace(withCity, '{$NAV_BUTTONS}', navHtml);
-  const withContent = strReplace(withNav, '{$WEATHER_CONTENT}', weatherHtml);
-  const response = strReplace(withContent, '{$SESSION_ID}', escape(urlSessionID));
+
+  const response = renderTemplate(weather_template, {
+    WHITE_THEME_ENABLED: themeClass,
+    MENU_OPTIONS: menuOptions,
+    CITY_VALUE: escape(city),
+    NAV_BUTTONS: navHtml,
+    WEATHER_CONTENT: weatherHtml,
+    SESSION_ID: escape(urlSessionID),
+  });
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);

@@ -4,7 +4,7 @@ const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { strReplace, getPageThemeAttr, httpsGet, formatChangePct, changeColor } = require('./utils.js');
+const { renderTemplate, getPageThemeAttr, httpsGet, formatChangePct, changeColor, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
@@ -20,65 +20,11 @@ const DISPLAY_NAMES = {
   '^ndq': 'NASDAQ',
 };
 
-const stocks_template = fs
-  .readFileSync('pages/templates/stocks.html', 'utf-8')
-  .split('{$COMMON_HEAD}')
-  .join(fs.readFileSync('pages/templates/partials/head.html', 'utf-8'));
+const stocks_template = loadAndRenderPageTemplate('stocks');
 
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
+const logged_in_template = getTemplate('logged_in', 'index');
 
-/**
- * Fetch a real-time quote from Yahoo Finance v8 chart API for a single symbol.
- * No API key or authentication required.
- * Returns a Promise resolving to a quote object or null.
- */
-function fetchYahooQuote(symbol) {
-  const s = encodeURIComponent(symbol.toUpperCase());
-  const options = {
-    hostname: 'query1.finance.yahoo.com',
-    path: `/v8/finance/chart/${s}?range=5d&interval=1d&includePrePost=false`,
-    method: 'GET',
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'application/json, text/plain, */*',
-      'Accept-Encoding': 'identity',
-      'Accept-Language': 'en-US,en;q=0.9',
-      Referer: 'https://finance.yahoo.com/',
-      Origin: 'https://finance.yahoo.com',
-    },
-  };
-  return httpsGet(options, 5).then(({ statusCode, body }) => {
-    if (statusCode !== 200) return null;
-    const data = (() => {
-      try {
-        return JSON.parse(body);
-      } catch {
-        return null;
-      }
-    })();
-    if (!data) return null;
-    const result = data?.chart?.result?.[0];
-    if (!result) return null;
-    const meta = result.meta;
-    const close = meta.regularMarketPrice;
-    if (!close) return null;
-    const prevClose = meta.chartPreviousClose || meta.previousClose || null;
-    const change = prevClose !== null ? close - prevClose : null;
-    const changePct =
-      prevClose !== null && prevClose !== 0 ? ((close - prevClose) / prevClose) * 100 : null;
-    return {
-      symbol: meta.symbol || symbol.toUpperCase(),
-      regularMarketPrice: close,
-      regularMarketOpen: meta.regularMarketOpen || null,
-      regularMarketDayHigh: meta.regularMarketDayHigh || null,
-      regularMarketDayLow: meta.regularMarketDayLow || null,
-      regularMarketVolume: meta.regularMarketVolume || null,
-      regularMarketChange: change,
-      regularMarketChangePercent: changePct,
-    };
-  });
-}
+
 
 /**
  * Fetch daily historical data from stooq.com for a single symbol.
@@ -203,71 +149,40 @@ function renderQuoteRow(quote) {
   const volume =
     quote.regularMarketVolume !== null ? quote.regularMarketVolume.toLocaleString('en-US') : '--';
 
-  return `<table cellpadding="6" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;margin-bottom:20px;">
-  <tr>
-    <td colspan="2" style="padding-bottom:4px;">
-      <font size="5" ${FONT} color="#dddddd"><b>${name}</b></font>
-      <font size="3" ${FONT} color="#72767d"> (${symbol})</font>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2" style="padding-top:0;padding-bottom:8px;">
-      <font size="6" ${FONT} color="#dddddd"><b>$${price}</b></font>
-      <font size="4" ${FONT} color="${color}"> ${change} (${changePct})</font>
-    </td>
-  </tr>
-  <tr style="border-top:1px solid #40444b;">
-    <td style="border-bottom:1px solid #40444b;width:50%;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Open</font><br>
-      <font size="3" ${FONT} color="#dddddd">$${dayOpen}</font>
-    </td>
-    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Day High</font><br>
-      <font size="3" ${FONT} color="#dddddd">$${dayHigh}</font>
-    </td>
-  </tr>
-  <tr>
-    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Day Low</font><br>
-      <font size="3" ${FONT} color="#dddddd">$${dayLow}</font>
-    </td>
-    <td style="border-bottom:1px solid #40444b;vertical-align:top;">
-      <font size="2" ${FONT} color="#72767d">Volume</font><br>
-      <font size="3" ${FONT} color="#dddddd">${volume}</font>
-    </td>
-  </tr>
-</table>`;
+  return renderTemplate(getTemplate('summary_card', 'stocks'), {
+    NAME: name,
+    SYMBOL: symbol,
+    PRICE: price,
+    COLOR: color,
+    CHANGE: change,
+    CHANGE_PCT: changePct,
+    OPEN: dayOpen,
+    HIGH: dayHigh,
+    LOW: dayLow,
+    VOLUME: volume,
+  });
 }
 
 function renderTopIndices(quotes) {
   const rows = quotes
     .filter((quote) => !!quote)
     .map((quote) => {
-      const sym = quote.symbol.toLowerCase();
-      const name = escape(DISPLAY_NAMES[sym] || quote.symbol || '');
+      const name = quote.shortName || quote.symbol;
       const price = formatPrice(quote.regularMarketPrice);
       const change = formatChange(quote.regularMarketChange);
       const changePct = formatChangePct(quote.regularMarketChangePercent);
       const color = changeColor(quote.regularMarketChange);
-      return `  <tr style="border-bottom:1px solid #40444b;">
-    <td><font size="3" ${FONT} color="#dddddd">${name}</font></td>
-    <td><font size="3" ${FONT} color="#dddddd">$${price}</font></td>
-    <td><font size="3" ${FONT} color="${color}">${change}</font></td>
-    <td><font size="3" ${FONT} color="${color}">${changePct}</font></td>
-  </tr>\n`;
+      return renderTemplate(getTemplate('index_row', 'stocks'), {
+        NAME: name,
+        PRICE: price,
+        COLOR: color,
+        CHANGE: change,
+        CHANGE_PCT: changePct,
+      });
     });
-  const html =
-    `<font size="4" ${FONT} color="#dddddd"><b>Major Indices</b></font><br><br>\n` +
-    `<table cellpadding="4" cellspacing="0" width="100%" style="max-width:580px;border-collapse:collapse;">\n` +
-    `  <tr style="border-bottom:2px solid #40444b;">
-    <td><font size="2" ${FONT} color="#72767d"><b>Index</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Price</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>Change</b></font></td>
-    <td><font size="2" ${FONT} color="#72767d"><b>% Change</b></font></td>
-  </tr>\n` +
-    rows.join('') +
-    `</table>\n`;
-  return html;
+  return renderTemplate(getTemplate('indices_table', 'stocks'), {
+    ROWS: rows.join(''),
+  });
 }
 
 exports.processStocks = async function processStocks(req, res) {
@@ -282,9 +197,9 @@ exports.processStocks = async function processStocks(req, res) {
   const stocksHtml = await (async () => {
     if (ticker) {
       const safeTicker = ticker.slice(0, TICKER_MAX_LENGTH);
-      const quote = await fetchYahooQuote(safeTicker);
+      const quote = await fetchStooqHistory(safeTicker);
       return !quote
-        ? `<font color="#ff4444" ${FONT}>No data found for &ldquo;${escape(safeTicker)}&rdquo;. Please check the ticker symbol and try again.</font><br>`
+        ? renderTemplate(getTemplate('ticker_not_found', 'stocks'), { TICKER: escape(safeTicker) })
         : renderQuoteRow(quote);
     }
     // Fetch all top indices in parallel
@@ -293,27 +208,26 @@ exports.processStocks = async function processStocks(req, res) {
       .filter((r) => r.status === 'fulfilled' && r.value !== null)
       .map((r) => r.value);
     return quotes.length === 0
-      ? `<font color="#ff4444" ${FONT}>Unable to load market data. Please try again later.</font><br>`
+      ? getTemplate('market_data_error', 'stocks')
       : renderTopIndices(quotes);
   })().catch((err) => {
     console.error('Stocks API error:', err.message);
-    return `<font color="#ff4444" ${FONT}>Unable to fetch stock data. Please try again later.</font><br>`;
+    return getTemplate('fetch_error', 'stocks');
   });
 
-  const credit = ticker
-    ? 'Stock data courtesy of <a href="https://finance.yahoo.com/" style="color: #5865f2;">Yahoo Finance</a>'
-    : 'Stock data courtesy of <a href="https://stooq.com/" style="color: #5865f2;">Stooq</a>';
-
-  const menuOptions = strReplace(
+  const credit = getTemplate('stooq_credit', 'stocks');
+  const menuOptions = renderTemplate(
     logged_in_template,
-    '{$USER}',
-    escape(await auth.getUsername(discordID))
+    {USER: escape(await auth.getUsername(discordID))}
   );
-  const withTheme = strReplace(stocks_template, '{$WHITE_THEME_ENABLED}', themeClass);
-  const withMenu = strReplace(withTheme, '{$MENU_OPTIONS}', menuOptions);
-  const withTicker = strReplace(withMenu, '{$TICKER_VALUE}', escape(ticker));
-  const withContent = strReplace(withTicker, '{$STOCKS_CONTENT}', stocksHtml);
-  const response = strReplace(withContent, '{$CREDIT}', credit);
+
+  const response = renderTemplate(stocks_template, {
+    WHITE_THEME_ENABLED: themeClass,
+    MENU_OPTIONS: menuOptions,
+    TICKER_VALUE: escape(ticker),
+    STOCKS_CONTENT: stocksHtml,
+    CREDIT: credit,
+  });
 
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
