@@ -1,33 +1,68 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-		<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-	<loc>https://discross.rc24.xyz/</loc>
-	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
+	<loc>https://discross.net/</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
 	<priority>1.0</priority>
 </url>
 <url>
-	<loc>https://discross.rc24.xyz/login.html</loc>
-	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
-	<priority>1.0</priority>
-</url>
-<url>
-	<loc>https://discross.rc24.xyz/register.html</loc>
-	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
-	<priority>1.0</priority>
-</url>
-<url>
-	<loc>https://discross.rc24.xyz/forwarder/discross.cia</loc>
-	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
+	<loc>https://discross.net/login.html</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
 	<priority>0.8</priority>
 </url>
 <url>
-	<loc>https://discross.rc24.xyz/forwarder/discross.wad</loc>
-	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
+	<loc>https://discross.net/register.html</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
 	<priority>0.8</priority>
 </url>
 <url>
-	<loc>https://discross.rc24.xyz/forgot.html</loc>
-	<lastmod>2025-03-10T18:11:19+01:00</lastmod>
-	<priority>1.0</priority>
+	<loc>https://discross.net/forgot.html</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.5</priority>
+</url>
+<url>
+	<loc>https://discross.net/privacy.html</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.3</priority>
+</url>
+<url>
+	<loc>https://discross.net/terms.html</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.3</priority>
+</url>
+<url>
+	<loc>https://discross.net/weather</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>https://discross.net/currency</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>https://discross.net/sports</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>https://discross.net/stocks</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>https://discross.net/search</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>https://discross.net/tv</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>https://discross.net/movies</loc>
+	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
+	<priority>0.6</priority>
 </url>
 </urlset>
