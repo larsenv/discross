@@ -2,7 +2,12 @@
 const fs = require('fs');
 const escape = require('escape-html');
 const auth = require('../authentication.js');
-const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const {
+  renderTemplate,
+  getPageThemeAttr,
+  loadAndRenderPageTemplate,
+  getTemplate,
+} = require('./utils.js');
 
 const forgot_template = loadAndRenderPageTemplate('forgot');
 const error_template = getTemplate('error', 'login');
@@ -16,10 +21,10 @@ exports.processForgot = function (bot, req, res, args) {
         ERROR_MESSAGE: escape(rawError).replaceAll('\n', getTemplate('line_break', 'misc')),
       })
     : '';
-    const response = renderTemplate(forgot_template, {
-      MENU_OPTIONS: logged_out_template,
-      ERROR: errorHtml,
-      WHITE_THEME_ENABLED: getPageThemeAttr(req),
-    });
+  const response = renderTemplate(forgot_template, {
+    MENU_OPTIONS: logged_out_template,
+    ERROR: errorHtml,
+    WHITE_THEME_ENABLED: getPageThemeAttr(req),
+  });
   res.end(response);
 };

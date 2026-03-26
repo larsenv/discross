@@ -2,13 +2,20 @@
 const fs = require('fs');
 const escape = require('escape-html');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
-const { renderTemplate, isValidSnowflake, isBotReady, getPageThemeAttr, loadAndRenderPageTemplate } = require('./utils.js');
+const {
+  renderTemplate,
+  isValidSnowflake,
+  isBotReady,
+  getPageThemeAttr,
+  loadAndRenderPageTemplate,
+} = require('./utils.js');
 
 const upload_template = loadAndRenderPageTemplate('upload');
 
 exports.processUpload = async function processUpload(bot, req, res, args, discordID) {
   const parsedUrl = new URL(req.url, 'http://localhost');
-  const channelId = (args && args.length > 2 && args[2]) || parsedUrl.searchParams.get('channel') || '';
+  const channelId =
+    (args && args.length > 2 && args[2]) || parsedUrl.searchParams.get('channel') || '';
   const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
 
   if (!isValidSnowflake(channelId)) {

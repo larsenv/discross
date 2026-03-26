@@ -77,7 +77,7 @@ function getCart(req) {
       return cart;
     }
   } catch (e) {
-    console.error('getCart: failed to parse cart cookie:', e.message);
+    console.error('getCart: failed to parse cart cookie:', e);
   }
   return { storeId: null, items: [] };
 }
@@ -655,7 +655,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
             return '';
           })
           .catch((e) => {
-            console.error('Dominos store profile fetch error (non-critical):', e.message);
+            console.error('Dominos store profile fetch error (non-critical):', e);
             return '';
           })
       : '';
@@ -1339,7 +1339,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
           return null;
         }
       } catch (e) {
-        console.error('[place-order] failed to parse checkout data:', e.message);
+        console.error('[place-order] failed to parse checkout data:', e);
         return null;
       }
     })();

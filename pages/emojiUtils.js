@@ -116,7 +116,8 @@ function processUnicodeEmojiInText(text, sizePx, sizeEm) {
       CODE: code,
       PX: sizePx,
       EM: sizeEm,
-    });  });
+    });
+  });
 }
 
 module.exports = { unicodeToTwemojiCode, cacheCustomEmoji, processUnicodeEmojiInText };

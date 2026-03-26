@@ -6,7 +6,12 @@ const zlib = require('zlib');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const {
+  renderTemplate,
+  getPageThemeAttr,
+  loadAndRenderPageTemplate,
+  getTemplate,
+} = require('./utils.js');
 
 const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY;
 const ACCUWEATHER_HOST = 'api.accuweather.com';
@@ -230,7 +235,7 @@ function renderToday(daily) {
         `AccuWeather daily forecast API returned HTTP ${daily.status}. Response:`,
         JSON.stringify(daily.data)
       );
-    return renderTemplate(getTemplate('forecast_error', 'weather'), { VIEW_NAME: 'Today\'s' });
+    return renderTemplate(getTemplate('forecast_error', 'weather'), { VIEW_NAME: "Today's" });
   }
   const today = daily.data.DailyForecasts[0];
   const headline = daily.data.Headline?.Text ? escape(daily.data.Headline.Text) : '';
@@ -415,22 +420,21 @@ exports.processWeather = async function processWeather(req, res) {
         const cfg = VIEW_CONFIG[view];
         if (cfg) {
           const result = await fetchJson(ACCUWEATHER_HOST, cfg.endpoint).catch((err) => {
-            console.error(`AccuWeather ${cfg.errLabel} error:`, err.message);
+            console.error(`AccuWeather ${cfg.errLabel} error:`, err);
             return null;
           });
           weatherHtml += cfg.renderer(result);
         }
       }
     } catch (err) {
-      console.error('Weather API error:', err.message);
+      console.error('Weather API error:', err);
       weatherHtml = `<font color="#ff4444" ${FONT}>Unable to fetch weather data. Please try again later.</font><br>`;
     }
   }
 
-  const menuOptions = renderTemplate(
-    logged_in_template,
-    {USER: escape(await auth.getUsername(discordID))}
-  );
+  const menuOptions = renderTemplate(logged_in_template, {
+    USER: escape(await auth.getUsername(discordID)),
+  });
 
   const response = renderTemplate(weather_template, {
     WHITE_THEME_ENABLED: themeClass,

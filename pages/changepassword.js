@@ -1,5 +1,10 @@
 'use strict';
-const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const {
+  renderTemplate,
+  getPageThemeAttr,
+  loadAndRenderPageTemplate,
+  getTemplate,
+} = require('./utils.js');
 const fs = require('fs');
 const escape = require('escape-html');
 const auth = require('../authentication.js');
@@ -45,7 +50,8 @@ exports.processChangePassword = async function (bot, req, res, args) {
   const buildErrorMsg = (text) =>
     renderTemplate(error_template, {
       ERROR_MESSAGE: escape(text).replaceAll('\n', getTemplate('line_break', 'misc')),
-    });  const errorHtml = dmErrorText
+    });
+  const errorHtml = dmErrorText
     ? buildErrorMsg(dmErrorText)
     : errortext
       ? buildErrorMsg(errortext)
@@ -61,7 +67,8 @@ exports.processChangePassword = async function (bot, req, res, args) {
     SEND_CODE_URL: sendCodeUrl,
     ERROR: errorHtml,
     WHITE_THEME_ENABLED: getPageThemeAttr(req),
-  });  res.writeHead(200, { 'Content-Type': 'text/html' });
+  });
+  res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(response);
 };
 

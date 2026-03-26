@@ -3,7 +3,14 @@ const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
-const { renderTemplate, parseCookies, resolveTheme, buildSessionParam, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const {
+  renderTemplate,
+  parseCookies,
+  resolveTheme,
+  buildSessionParam,
+  loadAndRenderPageTemplate,
+  getTemplate,
+} = require('./utils.js');
 const channel_template = loadAndRenderPageTemplate('draw');
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {

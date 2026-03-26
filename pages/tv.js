@@ -46,16 +46,26 @@ function httpsRequest(options, postBody, maxRedirects) {
           delete newOptions.headers['Content-Type'];
         }
         // After a redirect always use GET (no body)
-        return httpsRequest(newOptions, null, maxRedirects - 1).then(resolve).catch(reject);
+        return httpsRequest(newOptions, null, maxRedirects - 1)
+          .then(resolve)
+          .catch(reject);
       }
       const chunks = [];
-      res.on('data', function (chunk) { chunks.push(chunk); });
+      res.on('data', function (chunk) {
+        chunks.push(chunk);
+      });
       res.on('end', function () {
-        resolve({ statusCode: status, body: Buffer.concat(chunks).toString('utf8'), headers: res.headers });
+        resolve({
+          statusCode: status,
+          body: Buffer.concat(chunks).toString('utf8'),
+          headers: res.headers,
+        });
       });
     });
     req.on('error', reject);
-    req.setTimeout(25000, function () { req.destroy(new Error('Request timed out')); });
+    req.setTimeout(25000, function () {
+      req.destroy(new Error('Request timed out'));
+    });
     if (postBody) {
       req.write(postBody);
     }
@@ -68,25 +78,29 @@ function httpsGet(options, maxRedirects) {
   return httpsRequest(options, null, maxRedirects);
 }
 
-var BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+var BROWSER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 // POST to a TVPassport form endpoint (application/x-www-form-urlencoded), following any redirect as a GET.
 function fetchPost(path, formData, cookie) {
   var body = formData;
-  return httpsRequest({
-    hostname: TVPASSPORT_HOST,
-    path: path,
-    method: 'POST',
-    headers: {
-      'User-Agent': BROWSER_UA,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(body),
-      'Referer': 'https://www.tvpassport.com/lineups',
-      'Cookie': cookie,
+  return httpsRequest(
+    {
+      hostname: TVPASSPORT_HOST,
+      path: path,
+      method: 'POST',
+      headers: {
+        'User-Agent': BROWSER_UA,
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(body),
+        Referer: 'https://www.tvpassport.com/lineups',
+        Cookie: cookie,
+      },
     },
-  }, body);
+    body
+  );
 }
 
 // Fetch a TVPassport session cookie.
@@ -97,13 +111,15 @@ async function fetchCookie() {
     method: 'GET',
     headers: {
       'User-Agent': BROWSER_UA,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
     },
   });
   var setCookie = result.headers['set-cookie'];
   if (!setCookie || setCookie.length === 0) return '';
-  var cookies = setCookie.map(function (c) { return c.split(';')[0]; });
+  var cookies = setCookie.map(function (c) {
+    return c.split(';')[0];
+  });
   return cookies.join('; ');
 }
 
@@ -115,10 +131,10 @@ function fetchPage(path, cookie) {
     method: 'GET',
     headers: {
       'User-Agent': BROWSER_UA,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
-      'Referer': 'https://www.tvpassport.com/lineups',
-      'Cookie': cookie,
+      Referer: 'https://www.tvpassport.com/lineups',
+      Cookie: cookie,
     },
   });
 }
@@ -172,7 +188,10 @@ function formatTime(timeStr) {
 // Strip HTML tags and return plain text.
 function stripTags(str) {
   if (!str) return '';
-  return str.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return str
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // Strip angle brackets (< and >) from text.
@@ -190,7 +209,8 @@ function parseLineups(html) {
 
   // Match hrefs pointing to /lineups/set/{lineupId} (capturing the bare lineupId before any ? or &).
   // Handles both double-quoted and single-quoted href attributes.
-  var linkRegex = /href=["']?(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/lineups\/set\/([^"'?&\s]+)/gi;
+  var linkRegex =
+    /href=["']?(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/lineups\/set\/([^"'?&\s]+)/gi;
   var m;
   while ((m = linkRegex.exec(html)) !== null) {
     var lineupId = m[1];
@@ -221,7 +241,8 @@ function parseLineupChannels(html, date) {
   // Capture group 1: full station site_id (e.g. "nbc-wnbc-new-york-ny/1767")
   // Capture group 2: station slug (e.g. "nbc-wnbc-new-york-ny")
   // Capture group 3: numeric station id (e.g. "1767")
-  var stationLinkRegex = /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/stations\/(([a-z0-9\-]+)\/(\d+))(?:\/\d{4}-\d{2}-\d{2})?"/gi;
+  var stationLinkRegex =
+    /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/stations\/(([a-z0-9\-]+)\/(\d+))(?:\/\d{4}-\d{2}-\d{2})?"/gi;
   var m;
 
   while ((m = stationLinkRegex.exec(html)) !== null) {
@@ -235,7 +256,9 @@ function parseLineupChannels(html, date) {
     var context = html.substring(contextStart, contextEnd);
 
     // Find channel logo (cdn.tvpassport.com image)
-    var logoMatch = context.match(/src="(?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[0-9x]+\/([a-z0-9\-]+)\.png"/i);
+    var logoMatch = context.match(
+      /src="(?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[0-9x]+\/([a-z0-9\-]+)\.png"/i
+    );
     var callsign = logoMatch ? logoMatch[1] : '';
     var logoUrl = callsign ? '//cdn.tvpassport.com/image/station/240x135/' + callsign + '.png' : '';
 
@@ -256,7 +279,9 @@ function parseLineupChannels(html, date) {
     }
     if (!name || name.length < 2) {
       // Fall back to title-casing the slug: "nbc-wnbc-new-york-ny" -> "Nbc Wnbc New York Ny"
-      name = stationSlug.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+      name = stationSlug.replace(/-/g, ' ').replace(/\b\w/g, function (c) {
+        return c.toUpperCase();
+      });
     }
     name = stripAngleBrackets(name);
 
@@ -295,7 +320,10 @@ function parseListings(html) {
 function parseStationName(html) {
   var m = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i);
   if (m) {
-    var name = he.decode(m[1]).replace(/^TV (?:Schedule|Listings?) for /i, '').trim();
+    var name = he
+      .decode(m[1])
+      .replace(/^TV (?:Schedule|Listings?) for /i, '')
+      .trim();
     return stripAngleBrackets(name);
   }
   return '';
@@ -325,12 +353,18 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
     var logoHtml = '';
     if (ch.logoUrl) {
       var proxied = proxyImageUrl(ch.logoUrl);
-      logoHtml = renderTemplate(getTemplate('channel_logo_with_image', 'tv'), { PROXIED_URL: proxied });
+      logoHtml = renderTemplate(getTemplate('channel_logo_with_image', 'tv'), {
+        PROXIED_URL: proxied,
+      });
     } else {
       logoHtml = getTemplate('channel_logo_placeholder', 'tv');
     }
 
-    var stationUrl = buildUrl('/tv/station/' + ch.stationId, { date: date, zip: zip, lineup: lineup }, sessionSuffix);
+    var stationUrl = buildUrl(
+      '/tv/station/' + ch.stationId,
+      { date: date, zip: zip, lineup: lineup },
+      sessionSuffix
+    );
     var nameHtml = escape(ch.name);
 
     rowsHtml += renderTemplate(getTemplate('channel_grid_item', 'tv'), {
@@ -340,7 +374,8 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
       NAME_HTML: nameHtml,
     });
 
-    if ((i + 1) % cols === 0 || i === channels.length - 1) rowsHtml += getTemplate('channel_grid_row_end', 'tv');
+    if ((i + 1) % cols === 0 || i === channels.length - 1)
+      rowsHtml += getTemplate('channel_grid_row_end', 'tv');
   }
 
   return renderTemplate(getTemplate('channel_grid', 'tv'), { ROWS: rowsHtml });
@@ -369,7 +404,9 @@ function buildScheduleHtml(items) {
       ? renderTemplate(getTemplate('show_type_html', 'tv'), { SHOW_TYPE: escape(item.showType) })
       : '';
     var description = item.description
-      ? renderTemplate(getTemplate('description_html', 'tv'), { DESCRIPTION: escape(item.description) })
+      ? renderTemplate(getTemplate('description_html', 'tv'), {
+          DESCRIPTION: escape(item.description),
+        })
       : '';
     var rowStyle = isLast ? '' : ' style="border-bottom:1px solid #40444b;"';
 
@@ -391,12 +428,16 @@ function buildScheduleHtml(items) {
 // Helper: get theme class from request.
 function getThemeClass(req, parsedUrl) {
   var urlTheme = parsedUrl.searchParams.get('theme');
-  var whiteThemeCookie = (req.headers.cookie || '').split('; ')
-    .filter(function (c) { return c.startsWith('whiteThemeCookie='); })[0];
+  var whiteThemeCookie = (req.headers.cookie || '').split('; ').filter(function (c) {
+    return c.startsWith('whiteThemeCookie=');
+  })[0];
   whiteThemeCookie = whiteThemeCookie ? whiteThemeCookie.split('=')[1] : undefined;
-  var themeValue = urlTheme !== null
-    ? parseInt(urlTheme, 10)
-    : (whiteThemeCookie !== undefined ? parseInt(whiteThemeCookie, 10) : 0);
+  var themeValue =
+    urlTheme !== null
+      ? parseInt(urlTheme, 10)
+      : whiteThemeCookie !== undefined
+        ? parseInt(whiteThemeCookie, 10)
+        : 0;
   if (themeValue === 1) return 'class="light-theme"';
   if (themeValue === 2) return 'class="amoled-theme"';
   return '';
@@ -413,21 +454,49 @@ exports.processTV = async function processTV(req, res) {
   var sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
   var themeClass = getThemeClass(req, parsedUrl);
   var username = await auth.getUsername(discordID);
-  var menuHtml = renderTemplate(logged_in_template, {USER: escape(username)});
+  var menuHtml = renderTemplate(logged_in_template, { USER: escape(username) });
 
   // Station schedule sub-page: /tv/station/{slug}/{id}
   if (subpath.startsWith('station/')) {
-    return serveStationPage(req, res, parsedUrl, subpath, themeClass, menuHtml, urlSessionID, sessionParam, sessionSuffix);
+    return serveStationPage(
+      req,
+      res,
+      parsedUrl,
+      subpath,
+      themeClass,
+      menuHtml,
+      urlSessionID,
+      sessionParam,
+      sessionSuffix
+    );
   }
 
   // Main page: ZIP/provider search + channel grid
-  return serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessionID, sessionParam, sessionSuffix);
+  return serveMainPage(
+    req,
+    res,
+    parsedUrl,
+    themeClass,
+    menuHtml,
+    urlSessionID,
+    sessionParam,
+    sessionSuffix
+  );
 };
 
 // -------
 // Main page: ZIP search → provider list → channel grid
 // -------
-async function serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessionID, sessionParam, sessionSuffix) {
+async function serveMainPage(
+  req,
+  res,
+  parsedUrl,
+  themeClass,
+  menuHtml,
+  urlSessionID,
+  sessionParam,
+  sessionSuffix
+) {
   var zip = (parsedUrl.searchParams.get('zip') || '').trim().slice(0, ZIP_MAX_LENGTH);
   var lineup = (parsedUrl.searchParams.get('lineup') || '').trim().slice(0, LINEUP_MAX_LENGTH);
   var date = (parsedUrl.searchParams.get('date') || '').trim();
@@ -464,7 +533,7 @@ async function serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessi
             contentHtml = getTemplate('tv_load_channel_list_error', 'misc');
           }
         } catch (err) {
-          console.error('TV lineup channels fetch error:', err.message);
+          console.error('TV lineup channels fetch error:', err);
           contentHtml = getTemplate('tv_load_channel_list_error', 'misc');
         }
       }
@@ -481,23 +550,30 @@ async function serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessi
         if (lineupsResult.statusCode === 200) {
           var lineupList = parseLineups(lineupsResult.body);
           if (lineupList.length === 0) {
-            contentHtml = renderTemplate(getTemplate('tv_no_providers_zip_error', 'misc'), { ZIP_CODE: escape(cleanZip) });
+            contentHtml = renderTemplate(getTemplate('tv_no_providers_zip_error', 'misc'), {
+              ZIP_CODE: escape(cleanZip),
+            });
           } else {
             contentHtml = getTemplate('tv_select_provider_header', 'misc');
             for (var i = 0; i < lineupList.length; i++) {
               var li = lineupList[i];
-              var lineupUrl = buildUrl('/tv', { zip: cleanZip, lineup: li.lineupId, date: date }, sessionSuffix);
-              contentHtml += renderTemplate(getTemplate('provider_button', 'tv'), {
-                LINEUP_URL: lineupUrl,
-                LINEUP_NAME: escape(li.name),
-              }) + '\n';
+              var lineupUrl = buildUrl(
+                '/tv',
+                { zip: cleanZip, lineup: li.lineupId, date: date },
+                sessionSuffix
+              );
+              contentHtml +=
+                renderTemplate(getTemplate('provider_button', 'tv'), {
+                  LINEUP_URL: lineupUrl,
+                  LINEUP_NAME: escape(li.name),
+                }) + '\n';
             }
           }
         } else {
           contentHtml = getTemplate('tv_load_provider_list_error', 'misc');
         }
       } catch (err) {
-        console.error('TV lineups fetch error:', err.message);
+        console.error('TV lineups fetch error:', err);
         contentHtml = getTemplate('tv_load_provider_list_error', 'misc');
       }
     }
@@ -518,7 +594,17 @@ async function serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessi
 // -------
 // Station schedule sub-page: /tv/station/{slug}/{id}
 // -------
-async function serveStationPage(req, res, parsedUrl, subpath, themeClass, menuHtml, urlSessionID, sessionParam, sessionSuffix) {
+async function serveStationPage(
+  req,
+  res,
+  parsedUrl,
+  subpath,
+  themeClass,
+  menuHtml,
+  urlSessionID,
+  sessionParam,
+  sessionSuffix
+) {
   // subpath = "station/{slug}/{id}", e.g. "station/nbc-wnbc-new-york-ny/1767"
   var stationId = subpath.replace(/^station\//, '').slice(0, STATION_ID_MAX_LENGTH);
   var date = (parsedUrl.searchParams.get('date') || '').trim();
@@ -547,13 +633,15 @@ async function serveStationPage(req, res, parsedUrl, subpath, themeClass, menuHt
         var logoUrl = parseStationLogo(result.body);
         if (logoUrl) {
           var proxied = proxyImageUrl(logoUrl);
-          stationLogoHtml = renderTemplate(getTemplate('station_logo', 'tv'), { PROXIED_URL: proxied });
+          stationLogoHtml = renderTemplate(getTemplate('station_logo', 'tv'), {
+            PROXIED_URL: proxied,
+          });
         }
         var items = parseListings(result.body);
         contentHtml = stationLogoHtml + buildScheduleHtml(items);
       }
     } catch (err) {
-      console.error('TV station fetch error:', err.message);
+      console.error('TV station fetch error:', err);
       contentHtml = getTemplate('tv_load_tv_guide_error', 'misc');
     }
   } else {
@@ -564,7 +652,11 @@ async function serveStationPage(req, res, parsedUrl, subpath, themeClass, menuHt
   var backZip = (parsedUrl.searchParams.get('zip') || '').replace(/[^a-zA-Z0-9 \-]/g, '').trim();
   var backLineup = (parsedUrl.searchParams.get('lineup') || '').replace(/[^a-zA-Z0-9_\-\/]/g, '');
   var backSessionSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '';
-  var backUrl = buildUrl('/tv', { date: date, zip: backZip, lineup: backLineup }, backSessionSuffix);
+  var backUrl = buildUrl(
+    '/tv',
+    { date: date, zip: backZip, lineup: backLineup },
+    backSessionSuffix
+  );
 
   const response = renderTemplate(tv_station_template, {
     WHITE_THEME_ENABLED: themeClass,

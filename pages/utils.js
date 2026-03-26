@@ -344,9 +344,6 @@ function httpsGet(options, maxRedirects) {
 
 function reportError(message, error) {
   console.error(message, error);
-  if (typeof Sentry !== 'undefined' && typeof Sentry.captureException === 'function') {
-    Sentry.captureException(error);
-  }
 }
 
 module.exports = {

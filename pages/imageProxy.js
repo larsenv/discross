@@ -82,7 +82,7 @@ exports.imageProxy = async function imageProxy(res, URL) {
             });
             res.end(gifbuffer);
           } catch (error) {
-            console.error('Error processing image:', error.message);
+            console.error('Error processing image:', error);
             // Send original buffer instead of error
             res.writeHead(200, {
               'Content-Type': 'image/gif',
@@ -102,5 +102,6 @@ exports.imageProxy = async function imageProxy(res, URL) {
     .on('error', (err) => {
       console.error('Image proxy request error:', err);
       res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end(getTemplate('generic_error', 'misc'));    });
+      res.end(getTemplate('generic_error', 'misc'));
+    });
 };

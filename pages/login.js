@@ -3,7 +3,12 @@ const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const {
+  renderTemplate,
+  getPageThemeAttr,
+  loadAndRenderPageTemplate,
+  getTemplate,
+} = require('./utils.js');
 
 const login_template = loadAndRenderPageTemplate('login');
 const error_template = getTemplate('error', 'login');

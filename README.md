@@ -1,6 +1,6 @@
 <p align="center" dir="auto"><a href="https://discross.net/" rel="nofollow"><img src="./pages/static/resources/logo_full.png" alt="Discross Logo" style="max-width: 100%;"></a></p>
 
-**Discross** is a webhook bridge to send messages on Discord aimed at supporting all platforms that support HTML.
+**Discross** is a universal Discord client designed to work on any device with a basic HTML web browser. Access Discord on everything from retro consoles to modern smartphones.
 
 # Try it!
 
@@ -148,7 +148,7 @@ The bot will send you a verification code in DMs
 
 Go to [localhost:4000](http://localhost:4000) and use it to register
 
-### Discross is made by [circuit10](https://github.com/Heath123) (Heath123 is circuit10's GitHub username)
+
 
 ## Contributors
 

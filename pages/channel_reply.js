@@ -30,7 +30,8 @@ const channel_template = renderTemplate(channel_template_base, {
   CONTENT_EXTRA_PADDING: '',
   EMOJI_PICKER: fs.readFileSync('pages/templates/partials/emoji_picker.html', 'utf-8'),
   EMOJI_BUTTON: fs.readFileSync('pages/templates/partials/emoji_picker_button.html', 'utf-8'),
-  REPLY_MESSAGE_ID_INPUT: '<input type="hidden" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">',
+  REPLY_MESSAGE_ID_INPUT:
+    '<input type="hidden" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">',
 });
 
 // Reply-specific message wrapper templates
@@ -94,7 +95,9 @@ function buildReplyPreviewContent(message) {
     const mentionName =
       '@' +
       normalizeWeirdUnicode(
-        member ? getDisplayName(member, user) : (user.displayName ?? user.globalName ?? user.username)
+        member
+          ? getDisplayName(member, user)
+          : (user.displayName ?? user.globalName ?? user.username)
       );
     preview = preview.replace(new RegExp(`<@!?${user.id}>`, 'g'), mentionName);
   });
@@ -102,7 +105,7 @@ function buildReplyPreviewContent(message) {
   if (preview.length > REPLY_PREVIEW_MAX_LENGTH) {
     preview = preview.substring(0, REPLY_PREVIEW_MAX_LENGTH) + '...';
   }
-  if (!preview) return ""; // Prevent empty <br>
+  if (!preview) return ''; // Prevent empty <br>
   return escape(preview);
 }
 
@@ -240,7 +243,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
       let templateWithInput = renderTemplate(template, {
         INPUT: inputTpl,
         COLOR: boxColor,
-      });      const afterWebhookCheck = noWebhooks
+      });
+      const afterWebhookCheck = noWebhooks
         ? templateWithInput.replace(
             "You don't have permission to send messages in this channel.",
             "Discross bot doesn't have the Manage Webhooks permission"

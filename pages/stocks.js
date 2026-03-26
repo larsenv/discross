@@ -4,7 +4,15 @@ const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { renderTemplate, getPageThemeAttr, httpsGet, formatChangePct, changeColor, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const {
+  renderTemplate,
+  getPageThemeAttr,
+  httpsGet,
+  formatChangePct,
+  changeColor,
+  loadAndRenderPageTemplate,
+  getTemplate,
+} = require('./utils.js');
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
@@ -23,8 +31,6 @@ const DISPLAY_NAMES = {
 const stocks_template = loadAndRenderPageTemplate('stocks');
 
 const logged_in_template = getTemplate('logged_in', 'index');
-
-
 
 /**
  * Fetch daily historical data from stooq.com for a single symbol.
@@ -211,15 +217,14 @@ exports.processStocks = async function processStocks(req, res) {
       ? getTemplate('market_data_error', 'stocks')
       : renderTopIndices(quotes);
   })().catch((err) => {
-    console.error('Stocks API error:', err.message);
+    console.error('Stocks API error:', err);
     return getTemplate('fetch_error', 'stocks');
   });
 
   const credit = getTemplate('stooq_credit', 'stocks');
-  const menuOptions = renderTemplate(
-    logged_in_template,
-    {USER: escape(await auth.getUsername(discordID))}
-  );
+  const menuOptions = renderTemplate(logged_in_template, {
+    USER: escape(await auth.getUsername(discordID)),
+  });
 
   const response = renderTemplate(stocks_template, {
     WHITE_THEME_ENABLED: themeClass,

@@ -15,20 +15,13 @@ const options = {};
 
 const sentryEnabled = !!process.env.SENTRY_DSN;
 
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  sendDefaultPii: true,
-});
-
 process.on('unhandledRejection', (err) => {
   console.error(err);
-  if (sentryEnabled) Sentry.captureException(err);
 });
 
 process.on('uncaughtException', (err) => {
   console.error(err);
   if (sentryEnabled) {
-    Sentry.captureException(err);
     Sentry.flush(2000).finally(() => process.exit(1));
   } else {
     process.exit(1);
@@ -68,12 +61,12 @@ const guestsendpage = require('./pages/guest_send.js');
 const newspage = require('./pages/news.js');
 const weatherpage = require('./pages/weather.js');
 const currencypage = require('./pages/currency.js');
-const sportspage = require('./pages/sports.js')
+const sportspage = require('./pages/sports.js');
 const stockspage = require('./pages/stocks.js');
 const searchpage = require('./pages/search.js');
 const foodpage = require('./pages/food.js');
-const tvpage = require('./pages/tv.js')
-const moviespage = require('./pages/movies.js')
+const tvpage = require('./pages/tv.js');
+const moviespage = require('./pages/movies.js');
 const notFound = require('./pages/notFound.js');
 
 // Constants for imageProxy path lengths
@@ -105,20 +98,20 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
   if (!textToReplace && staticFileCache.has(filename)) {
     const cacheEntry = staticFileCache.get(filename);
 
-   // Check if file has been modified since caching
-   try {
-     const stats = fs.statSync(filename);
-     if (stats.mtime.getTime() === cacheEntry.mtime.getTime()) {
-       // File unchanged, serve from cache
-       res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
-       return res.end(cacheEntry.data);
-     }
-     // File modified, remove from cache and continue to read from disk
-     staticFileCache.delete(filename);
-   } catch (err) {
-     // If we can't stat the file, invalidate cache and continue
-     staticFileCache.delete(filename);
-   }
+    // Check if file has been modified since caching
+    try {
+      const stats = fs.statSync(filename);
+      if (stats.mtime.getTime() === cacheEntry.mtime.getTime()) {
+        // File unchanged, serve from cache
+        res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
+        return res.end(cacheEntry.data);
+      }
+      // File modified, remove from cache and continue to read from disk
+      staticFileCache.delete(filename);
+    } catch (err) {
+      // If we can't stat the file, invalidate cache and continue
+      staticFileCache.delete(filename);
+    }
     res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
     return res.end(data);
   }
@@ -141,17 +134,17 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
         if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
           staticFileCache.delete(staticFileCache.keys().next().value);
         }
-       // Get modification time and store in cache
-       try {
-         const stats = fs.statSync(filename);
-         staticFileCache.set(filename, {
-           data: data,
-           mtime: stats.mtime
-         });
-       } catch (err) {
-         // If we can't stat the file, still serve it but don't cache
-         console.warn('Could not stat file for caching:', filename, err);
-       }
+        // Get modification time and store in cache
+        try {
+          const stats = fs.statSync(filename);
+          staticFileCache.set(filename, {
+            data: data,
+            mtime: stats.mtime,
+          });
+        } catch (err) {
+          // If we can't stat the file, still serve it but don't cache
+          console.warn('Could not stat file for caching:', filename, err);
+        }
       }
       res.end(data);
     }
@@ -178,7 +171,7 @@ function setupFileWatchers() {
       console.log('Hot-reload:', filename);
     });
   } catch (err) {
-    console.error('Failed to watch pages/:', err.message);
+    console.error('Failed to watch pages/:', err);
   }
 }
 
@@ -239,7 +232,6 @@ server.on('request', async (req, res) => {
         }
       })().catch((err) => {
         console.error(err);
-        if (sentryEnabled) Sentry.captureException(err);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
       });
@@ -253,7 +245,6 @@ server.on('request', async (req, res) => {
     });
     req.on('error', (err) => {
       console.error('Error reading request body:', err);
-      if (sentryEnabled) Sentry.captureException(err);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Error reading request data');
@@ -283,7 +274,6 @@ server.on('request', async (req, res) => {
               }
             } catch (err) {
               console.error('Error toggling category:', err);
-              if (sentryEnabled) Sentry.captureException(err);
               res.writeHead(500, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ success: false, error: err.message }));
             }
@@ -295,7 +285,6 @@ server.on('request', async (req, res) => {
       } else if (parsedurl === '/senddrawing') {
         senddrawingAsync(req, res, body).catch((err) => {
           console.error(err);
-          if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' });
           res.end('Internal Server Error');
         });
@@ -310,7 +299,6 @@ server.on('request', async (req, res) => {
           }
         })().catch((err) => {
           console.error(err);
-          if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' });
           res.end('Internal Server Error');
         });
@@ -325,7 +313,6 @@ server.on('request', async (req, res) => {
           }
         })().catch((err) => {
           console.error(err);
-          if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' });
           res.end('Internal Server Error');
         });
@@ -340,7 +327,6 @@ server.on('request', async (req, res) => {
           }
         })().catch((err) => {
           console.error(err);
-          if (sentryEnabled) Sentry.captureException(err);
           res.writeHead(500, { 'Content-Type': 'text/plain' });
           res.end('Internal Server Error');
         });
@@ -352,7 +338,6 @@ server.on('request', async (req, res) => {
           }
         })().catch((err) => {
           console.error(err);
-          if (sentryEnabled) Sentry.captureException(err);
           if (!res.headersSent) {
             res.writeHead(500, { 'Content-Type': 'text/plain' });
             res.end('Internal Server Error');
@@ -536,17 +521,17 @@ server.on('request', async (req, res) => {
       } else if (args[1] === 'currency') {
         await currencypage.processCurrency(req, res);
       } else if (args[1] === 'sports') {
-        await sportspage.processSports(req, res)
+        await sportspage.processSports(req, res);
       } else if (args[1] === 'stocks') {
         await stockspage.processStocks(req, res);
       } else if (args[1] === 'search') {
         await searchpage.processSearch(req, res);
       } else if (args[1] === 'tv') {
-        await tvpage.processTV(req, res)
+        await tvpage.processTV(req, res);
       } else if (args[1] === 'movies') {
-        const discordID = await auth.checkAuth(req, res)
+        const discordID = await auth.checkAuth(req, res);
         if (discordID) {
-          await moviespage.processMovies(req, res, discordID)
+          await moviespage.processMovies(req, res, discordID);
         }
       } else if (args[1] === 'food') {
         const discordID = await auth.checkAuth(req, res);
@@ -660,7 +645,6 @@ server.on('request', async (req, res) => {
       }
     } catch (err) {
       console.error(err);
-      if (sentryEnabled) Sentry.captureException(err);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Internal Server Error');

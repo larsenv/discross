@@ -98,17 +98,17 @@ function renderDiscordMarkdown(text, options = {}) {
 
   // Fix markdown with spaces around markers (Discord-compatible)
   // Remove spaces between ** and text for bold
-  text = text.replace(/\*\*\s+(.+?)\s+\*\*/g, '**$1**');  // ** bold ** --> **bold**
-  text = text.replace(/\*\*\s+(.+?)\*\*/g, '**$1**');   // ** bold** --> **bold**
-  text = text.replace(/\*\*(.+?)\s+\*\*/g, '**$1**');   // **bold ** --> **bold**
+  text = text.replace(/\*\*\s+(.+?)\s+\*\*/g, '**$1**'); // ** bold ** --> **bold**
+  text = text.replace(/\*\*\s+(.+?)\*\*/g, '**$1**'); // ** bold** --> **bold**
+  text = text.replace(/\*\*(.+?)\s+\*\*/g, '**$1**'); // **bold ** --> **bold**
   // Remove spaces between __ and text for underline/bold
-  text = text.replace(/__\s+(.+?)\s+__/g, '__$1__');  // __ underline __ --> __underline__
-  text = text.replace(/__\s+(.+?)__/g, '__$1__');   // __ underline__ --> __underline__
-  text = text.replace(/__(.+?)\s+__/g, '__$1__');   // __underline __ --> __underline__
+  text = text.replace(/__\s+(.+?)\s+__/g, '__$1__'); // __ underline __ --> __underline__
+  text = text.replace(/__\s+(.+?)__/g, '__$1__'); // __ underline__ --> __underline__
+  text = text.replace(/__(.+?)\s+__/g, '__$1__'); // __underline __ --> __underline__
   // Remove spaces between * and text for italic (avoiding **)
-  text = text.replace(/\*(?!\*)\s+(.+?)\s+\*(?!\*)/g, '*$1*');  // * italic * --> *italic*
-  text = text.replace(/\*(?!\*)\s+(.+?)\*(?!\*)/g, '*$1*');   // * italic* --> *italic*
-  text = text.replace(/\*(?!\*)(.+?)\s+\*(?!\*)/g, '*$1*');   // *italic * --> *italic*
+  text = text.replace(/\*(?!\*)\s+(.+?)\s+\*(?!\*)/g, '*$1*'); // * italic * --> *italic*
+  text = text.replace(/\*(?!\*)\s+(.+?)\*(?!\*)/g, '*$1*'); // * italic* --> *italic*
+  text = text.replace(/\*(?!\*)(.+?)\s+\*(?!\*)/g, '*$1*'); // *italic * --> *italic*
 
   const codePlaceholders = [];
   const underlinePlaceholders = [];
@@ -397,7 +397,7 @@ function renderDiscordMarkdown(text, options = {}) {
         timeZone: timezone,
         year: 'numeric',
         month: 'numeric',
-        day: 'numeric'
+        day: 'numeric',
       }).formatToParts(dt);
       const y = parseInt(parts.find((p) => p.type === 'year').value, 10);
       const m = parseInt(parts.find((p) => p.type === 'month').value, 10);
@@ -414,7 +414,7 @@ function renderDiscordMarkdown(text, options = {}) {
         timezone,
         hour: 'numeric',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
       });
     };
 
@@ -435,25 +435,31 @@ function renderDiscordMarkdown(text, options = {}) {
           hour: 'numeric',
           minute: '2-digit',
           second: '2-digit',
-          hour12: true
+          hour12: true,
         });
         break;
       case 'f': // Long date/time
-        formatted = date.toLocaleString('en-US', {
-          timezone,
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }) + ' at ' + formatTime(date);
+        formatted =
+          date.toLocaleString('en-US', {
+            timezone,
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }) +
+          ' at ' +
+          formatTime(date);
         break;
       case 'F': // Full date/time
-        formatted = date.toLocaleString('en-US', {
-          timezone,
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }) + ' at ' + formatTime(date);
+        formatted =
+          date.toLocaleString('en-US', {
+            timezone,
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }) +
+          ' at ' +
+          formatTime(date);
         break;
       case 'R': // Relative time
         const diffMs = date.getTime() - now.getTime();
@@ -484,7 +490,7 @@ function renderDiscordMarkdown(text, options = {}) {
           timeZone,
           month: '2-digit',
           day: '2-digit',
-          year: '2-digit'
+          year: '2-digit',
         });
         break;
       case 'D': // Long date
@@ -492,7 +498,7 @@ function renderDiscordMarkdown(text, options = {}) {
           timeZone,
           year: 'numeric',
           month: 'long',
-          day: 'numeric'
+          day: 'numeric',
         });
         break;
       case 't': // Short time
@@ -504,16 +510,19 @@ function renderDiscordMarkdown(text, options = {}) {
           hour: 'numeric',
           minute: '2-digit',
           second: '2-digit',
-          hour12: true
+          hour12: true,
         });
         break;
       default:
-        formatted = date.toLocaleString('en-US', {
-          timeZone,
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }) + ' at ' + formatTime(date);
+        formatted =
+          date.toLocaleString('en-US', {
+            timeZone,
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }) +
+          ' at ' +
+          formatTime(date);
     }
     return `<span class="discord-timestamp">${formatted}</span>`;
   });

@@ -173,18 +173,21 @@ async function processServerChannels(server, member, response, sessionParam) {
           channelList += renderTemplate(category_channel_template, {
             CHANNEL_NAME: escapedName,
             CATEGORY_ID: item.id,
-          });        } else if (item.type === ChannelType.GuildForum || item.type === ChannelType.GuildMedia) {
+          });
+        } else if (item.type === ChannelType.GuildForum || item.type === ChannelType.GuildMedia) {
           channelList += renderTemplate(forum_channel_template, {
             CHANNEL_NAME: escapedName,
             CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-          });        } else if (
+          });
+        } else if (
           item.type === ChannelType.GuildAnnouncement ||
           item.type === ChannelType.GuildNews
         ) {
           channelList += renderTemplate(announcement_channel_template, {
             CHANNEL_NAME: escapedName,
             CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-          });        } else if (item.type === ChannelType.GuildVoice) {
+          });
+        } else if (item.type === ChannelType.GuildVoice) {
           const canSendMessages = member
             .permissionsIn(item)
             .has(PermissionFlagsBits.SendMessages, true);
@@ -192,16 +195,19 @@ async function processServerChannels(server, member, response, sessionParam) {
             channelList += renderTemplate(locked_channel_template, {
               CHANNEL_NAME: escapedName,
               CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-            });          } else {
+            });
+          } else {
             channelList += renderTemplate(voice_channel_template, {
               CHANNEL_NAME: escapedName,
               CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-            });          }
+            });
+          }
         } else if (item.type === ChannelType.GuildStageVoice) {
           channelList += renderTemplate(voice_channel_template, {
             CHANNEL_NAME: escapedName,
             CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-          });        } else if (!isThread && item.isTextBased()) {
+          });
+        } else if (!isThread && item.isTextBased()) {
           const canSendMessages = member
             .permissionsIn(item)
             .has(PermissionFlagsBits.SendMessages, true);
@@ -212,15 +218,18 @@ async function processServerChannels(server, member, response, sessionParam) {
             channelList += renderTemplate(rules_channel_template, {
               CHANNEL_NAME: escapedName,
               CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-            });          } else if (!canSendMessages) {
+            });
+          } else if (!canSendMessages) {
             channelList += renderTemplate(locked_channel_template, {
               CHANNEL_NAME: escapedName,
               CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-            });          } else {
+            });
+          } else {
             channelList += renderTemplate(text_channel_template, {
               CHANNEL_NAME: escapedName,
               CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-            });          }
+            });
+          }
         }
 
         // After rendering each non-category channel, add its collapsible thread group if it has threads
@@ -235,7 +244,8 @@ async function processServerChannels(server, member, response, sessionParam) {
               channelList += renderTemplate(thread_channel_template, {
                 CHANNEL_NAME: threadEscapedName,
                 CHANNEL_LINK: `../channels/${thread.id}${sessionParam}`,
-              });            });
+              });
+            });
             channelList += '</div>';
           }
         }
@@ -354,18 +364,20 @@ exports.processServer = async function (bot, req, res, args, discordID) {
       await lock.acquire(discordID, async () => {
         if (targetServer) {
           response = renderTemplate(response, {
-            DISCORD_NAME: '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' +
+            DISCORD_NAME:
+              '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' +
               escape(normalizeWeirdUnicode(targetServer.name)) +
               '</font></b><br>',
-          });          const member = await fetchAndCacheMember(targetServer, discordID);
+          });
+          const member = await fetchAndCacheMember(targetServer, discordID);
           if (member) {
             response = await processServerChannels(targetServer, member, response, sessionParam);
           } else {
             response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
           }
         } else {
-          response = response.replace("{$DISCORD_NAME}", "");
-          response = response.replace("{$CHANNEL_LIST}", "Invalid channel!");
+          response = response.replace('{$DISCORD_NAME}', '');
+          response = response.replace('{$CHANNEL_LIST}', 'Invalid channel!');
         }
       });
     } else {
@@ -454,7 +466,8 @@ function applyUserPreferences(response, req) {
   return renderTemplate(response, {
     WHITE_THEME_ENABLED: getPageThemeAttr(req),
     IMAGES_WARNING: imagesEnabled ? images_enabled_template : no_images_warning_template,
-  });}
+  });
+}
 
 function createServerHTML(server, member, imagesCookie, sessionParam) {
   const serverName = server.name
@@ -470,7 +483,8 @@ function createServerHTML(server, member, imagesCookie, sessionParam) {
     SERVER_ICON_URL: iconUrl,
     SERVER_URL: './' + server.id + (sessionParam || ''),
     SERVER_NAME: escape(normalizeWeirdUnicode(serverName)),
-  });}
+  });
+}
 
 function addUserAgentDisplay(response, req) {
   const userAgent = req.headers['user-agent'] || '';

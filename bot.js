@@ -142,7 +142,7 @@ exports.sendDM = async function (discordID, message) {
     await user.send(message);
     return { success: true };
   } catch (err) {
-    console.error('Failed to send DM to', discordID, ':', err.message || err);
+    console.error('Failed to send DM to', discordID, ':', err);
     return { success: false, error: err.message || 'Failed to send Discord DM.' };
   }
 };

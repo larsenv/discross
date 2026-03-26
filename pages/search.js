@@ -38,10 +38,9 @@ exports.processSearch = async function processSearch(req, res) {
 
   const themeClass = getPageThemeAttr(req);
 
-  const menuOptions = renderTemplate(
-    logged_in_template,
-    {USER: escape(await auth.getUsername(discordID))}
-  );
+  const menuOptions = renderTemplate(logged_in_template, {
+    USER: escape(await auth.getUsername(discordID)),
+  });
   const response = renderTemplate(search_template, {
     WHITE_THEME_ENABLED: themeClass,
     MENU_OPTIONS: menuOptions,
