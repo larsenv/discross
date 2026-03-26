@@ -1,5 +1,7 @@
 'use strict';
 const Discord = require('discord.js');
+const dns = require('dns').promises;
+const https = require('https');
 
 const auth = require('./authentication.js');
 const connectionHandler = require('./connectionHandler.js');
@@ -45,6 +47,10 @@ client.on('messageCreate', async function (msg) {
   }
 
   if (msg.content === '^connect') {
+    if (!(await shouldSendDM())) {
+      // Don't reply if not the primary server to avoid multiple replies from different instances
+      return;
+    }
     try {
       await msg.author.send(
         `Verification code:\n\`${await auth.createVerificationCode(msg.author.id)}\``
@@ -136,7 +142,49 @@ exports.getHistoryCached = async function (chnl) {
 
 exports.client = client;
 
+let cachedCheck = null;
+let lastCheckTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function shouldSendDM() {
+  const now = Date.now();
+  if (cachedCheck !== null && now - lastCheckTime < CACHE_TTL) {
+    return cachedCheck;
+  }
+
+  try {
+    // 1. Get IP of discross.net
+    const discrossIps = await dns.resolve4('discross.net');
+    const targetIp = discrossIps[0];
+
+    // 2. Get public IP of this server
+    const myIp = await new Promise((resolve, reject) => {
+      https
+        .get('https://api.ipify.org', (res) => {
+          let data = '';
+          res.on('data', (chunk) => (data += chunk));
+          res.on('end', () => resolve(data.trim()));
+        })
+        .on('error', reject);
+    });
+
+    cachedCheck = targetIp === myIp;
+    lastCheckTime = now;
+    if (!cachedCheck) {
+      console.info(`DM suppressed: Server IP (${myIp}) does not match discross.net (${targetIp})`);
+    }
+    return cachedCheck;
+  } catch (err) {
+    console.error('Error in shouldSendDM IP check:', err);
+    // On error, default to true to avoid breaking functionality
+    return true;
+  }
+}
+
 exports.sendDM = async function (discordID, message) {
+  if (!(await shouldSendDM())) {
+    return { success: false, error: 'DM suppressed: This instance is not the primary server.' };
+  }
   try {
     const user = await client.users.fetch(discordID);
     await user.send(message);
