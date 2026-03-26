@@ -6,5 +6,10 @@ if (process.env.SENTRY_DSN) {
     dsn: process.env.SENTRY_DSN,
     // Send default PII data (e.g. IP address) with error reports
     sendDefaultPii: true,
+    integrations: [
+      Sentry.captureConsoleIntegration({
+        levels: ['error', 'warn'],
+      }),
+    ],
   });
 }

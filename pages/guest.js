@@ -92,10 +92,9 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     const page = renderTemplate(TEMPLATE_NAME, {
       WHITE_THEME_ENABLED: theme.themeClass,
       CHANNEL_ID: escape(channelId),
-      ERROR: hasError
-        ? getTemplate('invalid_name_error', 'misc')
-        : '',
-    });    res.writeHead(200, { 'Content-Type': 'text/html' });
+      ERROR: hasError ? getTemplate('invalid_name_error', 'misc') : '',
+    });
+    res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(page);
     return;
   }

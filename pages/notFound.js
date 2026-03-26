@@ -11,6 +11,7 @@ exports.serve404 = function (req, res, message, backUrl, backLabel) {
     MESSAGE: message || 'Page not found.',
     BACK_URL: backUrl || '/',
     BACK_LABEL: backLabel || 'Back to Home',
-  });  res.writeHead(404, { 'Content-Type': 'text/html' });
+  });
+  res.writeHead(404, { 'Content-Type': 'text/html' });
   return res.end(html);
 };

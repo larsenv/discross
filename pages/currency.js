@@ -3,7 +3,15 @@
 const fs = require('fs');
 const escape = require('escape-html');
 
-const { renderTemplate, getPageThemeAttr, httpsGet, formatChangePct, changeColor, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const {
+  renderTemplate,
+  getPageThemeAttr,
+  httpsGet,
+  formatChangePct,
+  changeColor,
+  loadAndRenderPageTemplate,
+  getTemplate,
+} = require('./utils.js');
 
 const auth = require('../authentication.js');
 
@@ -213,8 +221,7 @@ exports.processCurrency = async function processCurrency(req, res) {
 
       if (!latestData) {
         return (
-          prefix +
-          renderTemplate(getTemplate('no_data_error', 'currency'), { BASE: escape(base) })
+          prefix + renderTemplate(getTemplate('no_data_error', 'currency'), { BASE: escape(base) })
         );
       }
       // Use all available target currencies or our default list
@@ -223,18 +230,14 @@ exports.processCurrency = async function processCurrency(req, res) {
         base === 'USD' ? DEFAULT_TARGETS.filter((c) => availableCodes.includes(c)) : availableCodes;
       return prefix + renderRatesTable(base, latestData, prevData, targets);
     } catch (err) {
-      console.error('Currency API error:', err.message);
-      return (
-        prefix +
-        getTemplate('fetch_error', 'currency')
-      );
+      console.error('Currency API error:', err);
+      return prefix + getTemplate('fetch_error', 'currency');
     }
   })();
 
-  const menuOptions = renderTemplate(
-    logged_in_template,
-    {USER: escape(await auth.getUsername(discordID))}
-  );
+  const menuOptions = renderTemplate(logged_in_template, {
+    USER: escape(await auth.getUsername(discordID)),
+  });
 
   const response = renderTemplate(currency_template, {
     WHITE_THEME_ENABLED: themeClass,

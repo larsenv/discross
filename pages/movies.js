@@ -1,91 +1,82 @@
-"use strict";
+'use strict';
 
-const fs = require("fs");
-const escape = require("escape-html");
-const he = require("he");
-const auth = require("../authentication.js");
-const { renderTemplate } = require("./utils.js");
+const fs = require('fs');
+const escape = require('escape-html');
+const he = require('he');
+const auth = require('../authentication.js');
+const { renderTemplate } = require('./utils.js');
 
-const head_partial = fs.readFileSync(
-  "pages/templates/partials/head.html",
-  "utf-8",
-);
+const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
 
 const movies_template = fs
-  .readFileSync("pages/templates/movies.html", "utf-8")
-  .split("{$COMMON_HEAD}")
+  .readFileSync('pages/templates/movies.html', 'utf-8')
+  .split('{$COMMON_HEAD}')
   .join(head_partial);
 
-const logged_in_template = fs.readFileSync(
-  "pages/templates/index/logged_in.html",
-  "utf-8",
-);
+const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
 
 const THEME_CONFIG = {
-  0: { themeClass: "" },
+  0: { themeClass: '' },
   1: { themeClass: 'class="light-theme"' },
   2: { themeClass: 'class="amoled-theme"' },
 };
 
 const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
-const RT_BASE = "https://www.rottentomatoes.com";
+const RT_BASE = 'https://www.rottentomatoes.com';
 
 // Browser-like User-Agent for Rotten Tomatoes requests
 const BROWSER_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 // RT private API type identifiers for the browse endpoint
 const TABS = [
   {
-    id: "movies_in_theaters",
-    label: "In Theaters",
-    url: "/browse/movies_in_theaters/",
-    apiType: "movies-in-theaters",
+    id: 'movies_in_theaters',
+    label: 'In Theaters',
+    url: '/browse/movies_in_theaters/',
+    apiType: 'movies-in-theaters',
   },
   {
-    id: "movies_at_home",
-    label: "At Home",
-    url: "/browse/movies_at_home/",
-    apiType: "movies-at-home",
+    id: 'movies_at_home',
+    label: 'At Home',
+    url: '/browse/movies_at_home/',
+    apiType: 'movies-at-home',
   },
   {
-    id: "tv",
-    label: "TV Shows",
-    url: "/browse/tv-series-streaming/",
-    apiType: "tv-series-browsing",
+    id: 'tv',
+    label: 'TV Shows',
+    url: '/browse/tv-series-streaming/',
+    apiType: 'tv-series-browsing',
   },
 ];
 
 function proxyImageUrl(url) {
-  return "/imageProxy/external/" + Buffer.from(url).toString("base64");
+  return '/imageProxy/external/' + Buffer.from(url).toString('base64');
 }
 
 function resolvePrefs(req) {
-  const parsedUrl = new URL(req.url, "http://localhost");
-  const urlSessionID = parsedUrl.searchParams.get("sessionID") ?? "";
-  const urlTheme = parsedUrl.searchParams.get("theme");
-  const urlImages = parsedUrl.searchParams.get("images");
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const urlSessionID = parsedUrl.searchParams.get('sessionID') ?? '';
+  const urlTheme = parsedUrl.searchParams.get('theme');
+  const urlImages = parsedUrl.searchParams.get('images');
 
   const whiteThemeCookie = req.headers.cookie
-    ?.split("; ")
-    ?.find((c) => c.startsWith("whiteThemeCookie="))
-    ?.split("=")[1];
+    ?.split('; ')
+    ?.find((c) => c.startsWith('whiteThemeCookie='))
+    ?.split('=')[1];
   const imagesCookieValue = req.headers.cookie
-    ?.split("; ")
-    ?.find((c) => c.startsWith("images="))
-    ?.split("=")[1];
+    ?.split('; ')
+    ?.find((c) => c.startsWith('images='))
+    ?.split('=')[1];
 
   const linkParamParts = [];
-  if (urlSessionID)
-    linkParamParts.push("sessionID=" + encodeURIComponent(urlSessionID));
+  if (urlSessionID) linkParamParts.push('sessionID=' + encodeURIComponent(urlSessionID));
   if (urlTheme !== null && whiteThemeCookie === undefined)
-    linkParamParts.push("theme=" + encodeURIComponent(urlTheme));
+    linkParamParts.push('theme=' + encodeURIComponent(urlTheme));
   if (urlImages !== null && imagesCookieValue === undefined)
-    linkParamParts.push("images=" + encodeURIComponent(urlImages));
-  const sessionParam = linkParamParts.length
-    ? "?" + linkParamParts.join("&")
-    : "";
+    linkParamParts.push('images=' + encodeURIComponent(urlImages));
+  const sessionParam = linkParamParts.length ? '?' + linkParamParts.join('&') : '';
 
   const themeValue =
     urlTheme !== null
@@ -101,7 +92,7 @@ function resolvePrefs(req) {
         ? parseInt(imagesCookieValue, 10)
         : 1;
 
-  const tabId = parsedUrl.searchParams.get("tab") || TABS[0].id;
+  const tabId = parsedUrl.searchParams.get('tab') || TABS[0].id;
 
   return {
     urlSessionID,
@@ -117,9 +108,9 @@ function resolvePrefs(req) {
 async function fetchHtml(url) {
   const response = await fetch(url, {
     headers: {
-      "User-Agent": BROWSER_UA,
-      Accept: "text/html,application/xhtml+xml",
-      "Accept-Language": "en-US,en;q=0.9",
+      'User-Agent': BROWSER_UA,
+      Accept: 'text/html,application/xhtml+xml',
+      'Accept-Language': 'en-US,en;q=0.9',
     },
   });
   if (!response.ok) {
@@ -136,9 +127,9 @@ async function tryFetchRTApi(apiType) {
   try {
     const response = await fetch(apiUrl, {
       headers: {
-        "User-Agent": BROWSER_UA,
-        Accept: "application/json",
-        "Accept-Language": "en-US,en;q=0.9",
+        'User-Agent': BROWSER_UA,
+        Accept: 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
     if (!response.ok) return null;
@@ -150,13 +141,13 @@ async function tryFetchRTApi(apiType) {
 
 // Normalise an item from RT's private API response
 function normalizeApiItem(x, isTv) {
-  const title = x.title || x.name || x.seriesTitle || "";
-  let url = x.url || x.mediaUrl || x.canonicalUrl || "";
+  const title = x.title || x.name || x.seriesTitle || '';
+  let url = x.url || x.mediaUrl || x.canonicalUrl || '';
   // Build URL from vanity or slug if the direct url field is absent
-  if (!url && x.vanity) url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.vanity}`;
-  if (!url && x.slug) url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.slug}`;
-  if (url && !url.startsWith("http")) url = RT_BASE + url;
-  const year = x.year || x.releaseYear || "";
+  if (!url && x.vanity) url = `${RT_BASE}/${isTv ? 'tv' : 'm'}/${x.vanity}`;
+  if (!url && x.slug) url = `${RT_BASE}/${isTv ? 'tv' : 'm'}/${x.slug}`;
+  if (url && !url.startsWith('http')) url = RT_BASE + url;
+  const year = x.year || x.releaseYear || '';
   const criticsScore = parseScore(
     // RT private API uses "tomatoScore"; also check other known field names
     x.tomatoScore ??
@@ -166,14 +157,10 @@ function normalizeApiItem(x, isTv) {
       x.rottenTomatoes?.tomatoScore ??
       x.rottenTomatoes?.criticsScore ??
       x.rottenTomatoes?.tomatometer ??
-      null,
+      null
   );
   const audienceScore = parseScore(
-    x.audienceScore ??
-      x.popcornmeter ??
-      x.audiencescore ??
-      x.rottenTomatoes?.audienceScore ??
-      null,
+    x.audienceScore ?? x.popcornmeter ?? x.audiencescore ?? x.rottenTomatoes?.audienceScore ?? null
   );
   const poster =
     // RT API returns poster under posters.thumbnail or posters.original
@@ -184,16 +171,16 @@ function normalizeApiItem(x, isTv) {
     x.thumbnail ||
     x.image ||
     x.poster ||
-    "";
+    '';
   return { title, url, year, criticsScore, audienceScore, poster };
 }
 
 // Strip HTML tags, collapse whitespace, and HTML-decode the result
 function stripHtml(html) {
-  if (!html) return "";
+  if (!html) return '';
   const noTags = html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
   return he.decode(noTags);
 }
@@ -227,8 +214,7 @@ function tryParseEmbeddedJson(html, isTv) {
   const items = [];
 
   // Look for <script type="application/json"> tags — this includes Next.js __NEXT_DATA__
-  const scriptRe =
-    /<script[^>]+type="application\/json"[^>]*>([\s\S]*?)<\/script>/gi;
+  const scriptRe = /<script[^>]+type="application\/json"[^>]*>([\s\S]*?)<\/script>/gi;
   let m;
   while ((m = scriptRe.exec(html)) !== null) {
     let data;
@@ -244,12 +230,12 @@ function tryParseEmbeddedJson(html, isTv) {
 
   // Also look for common SSR/window data patterns in regular scripts
   const winKeys = [
-    "__NEXT_DATA__",
-    "window.__data",
-    "window.rt_init_data",
-    "window.__RT_INITIAL_STATE__",
-    "window.__REACT_QUERY_STATE__",
-    "window.initialProps",
+    '__NEXT_DATA__',
+    'window.__data',
+    'window.rt_init_data',
+    'window.__RT_INITIAL_STATE__',
+    'window.__REACT_QUERY_STATE__',
+    'window.initialProps',
   ];
   for (const key of winKeys) {
     const keyIdx = html.indexOf(key);
@@ -257,21 +243,19 @@ function tryParseEmbeddedJson(html, isTv) {
     // Only consider the next 200,000 chars after the key (NEXT_DATA can be large)
     const slice = html.slice(keyIdx, keyIdx + 200000);
     // For __NEXT_DATA__ the JSON follows `=` (as window var assignment) or is tag content
-    const assignIdx = slice.indexOf("=");
-    const jsonBraceIdx = slice.indexOf("{");
+    const assignIdx = slice.indexOf('=');
+    const jsonBraceIdx = slice.indexOf('{');
     if (jsonBraceIdx === -1) continue;
     // Use whichever comes first: { after = or bare {
     const jsonStart =
-      assignIdx !== -1 && assignIdx < jsonBraceIdx
-        ? slice.indexOf("{", assignIdx)
-        : jsonBraceIdx;
+      assignIdx !== -1 && assignIdx < jsonBraceIdx ? slice.indexOf('{', assignIdx) : jsonBraceIdx;
     if (jsonStart === -1) continue;
     // Find the matching closing brace using a stack counter
     let depth = 0;
     let end = -1;
     for (let i = jsonStart; i < slice.length; i++) {
-      if (slice[i] === "{") depth++;
-      else if (slice[i] === "}") {
+      if (slice[i] === '{') depth++;
+      else if (slice[i] === '}') {
         depth--;
         if (depth === 0) {
           end = i + 1;
@@ -294,21 +278,16 @@ function tryParseEmbeddedJson(html, isTv) {
 
 // Recursively search JSON for movie/TV item arrays
 function extractItemsFromJson(data, isTv, depth) {
-  if (!data || typeof data !== "object" || (depth || 0) > 10) return [];
+  if (!data || typeof data !== 'object' || (depth || 0) > 10) return [];
 
   // Check if data itself is an array of items
   if (Array.isArray(data)) {
     const scored = data.filter(
       (x) =>
         x &&
-        typeof x === "object" &&
+        typeof x === 'object' &&
         (x.title || x.name || x.seriesTitle || x.movieTitle) &&
-        (x.url ||
-          x.vanity ||
-          x.mediaUrl ||
-          x.canonicalUrl ||
-          x.slug ||
-          x.emsId),
+        (x.url || x.vanity || x.mediaUrl || x.canonicalUrl || x.slug || x.emsId)
     );
     if (scored.length >= 2) {
       return scored
@@ -329,12 +308,12 @@ function extractItemsFromJson(data, isTv, depth) {
 // Parse a raw score value (int, float-as-number, or string) to an integer
 function parseScore(v) {
   if (v == null) return null;
-  if (typeof v === "number") return isNaN(v) ? null : Math.round(v);
-  if (typeof v === "string") {
+  if (typeof v === 'number') return isNaN(v) ? null : Math.round(v);
+  if (typeof v === 'string') {
     const n = parseInt(v, 10);
     return isNaN(n) ? null : n;
   }
-  if (typeof v === "object") {
+  if (typeof v === 'object') {
     // e.g. {score: 85}, {value: 85}, {percentage: 85}
     return parseScore(v.score ?? v.value ?? v.percentage ?? null);
   }
@@ -342,19 +321,19 @@ function parseScore(v) {
 }
 
 function normalizeJsonItem(x, isTv) {
-  const title = x.title || x.name || x.seriesTitle || x.movieTitle || "";
-  let url = x.url || x.mediaUrl || x.canonicalUrl || "";
+  const title = x.title || x.name || x.seriesTitle || x.movieTitle || '';
+  let url = x.url || x.mediaUrl || x.canonicalUrl || '';
   if (!url && x.vanity) {
-    url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.vanity}`;
+    url = `${RT_BASE}/${isTv ? 'tv' : 'm'}/${x.vanity}`;
   }
   if (!url && x.slug) {
-    url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.slug}`;
+    url = `${RT_BASE}/${isTv ? 'tv' : 'm'}/${x.slug}`;
   }
   if (!url && x.emsId) {
-    url = `${RT_BASE}/${isTv ? "tv" : "m"}/${x.emsId}`;
+    url = `${RT_BASE}/${isTv ? 'tv' : 'm'}/${x.emsId}`;
   }
-  if (url && !url.startsWith("http")) url = RT_BASE + url;
-  const year = x.year || x.releaseYear || x.premiereYear || "";
+  if (url && !url.startsWith('http')) url = RT_BASE + url;
+  const year = x.year || x.releaseYear || x.premiereYear || '';
 
   const criticsScore = parseScore(
     x.tomatoScore ??
@@ -367,7 +346,7 @@ function normalizeJsonItem(x, isTv) {
       x.rottenTomatoes?.tomatoScore ??
       x.rottenTomatoes?.criticsScore ??
       x.rottenTomatoes?.tomatometer ??
-      null,
+      null
   );
   const audienceScore = parseScore(
     x.audienceScore ??
@@ -376,7 +355,7 @@ function normalizeJsonItem(x, isTv) {
       x.scores?.audience ??
       x.scores?.audienceScore ??
       x.rottenTomatoes?.audienceScore ??
-      null,
+      null
   );
 
   const poster =
@@ -391,7 +370,7 @@ function normalizeJsonItem(x, isTv) {
     x.poster ||
     x.posterSrc ||
     x.img ||
-    "";
+    '';
   return { title, url, year, criticsScore, audienceScore, poster };
 }
 
@@ -402,14 +381,14 @@ function parseHtmlTiles(html, isTv) {
 
   // Common RT data-qa values for tile containers — include historical and current variants
   const tileQaValues = [
-    "discovery-media-list-item",
-    "discover-media-list-item",
-    "media-tile",
-    "tile",
-    "movie-tile",
-    "tv-tile",
-    "media-item",
-    "search-result-item",
+    'discovery-media-list-item',
+    'discover-media-list-item',
+    'media-tile',
+    'tile',
+    'movie-tile',
+    'tv-tile',
+    'media-item',
+    'search-result-item',
   ];
 
   for (const qa of tileQaValues) {
@@ -421,18 +400,15 @@ function parseHtmlTiles(html, isTv) {
 
       // Walk back to include the opening < of the tag so ALL attributes
       // (including scores that appear before data-qa) are in the block.
-      const tagOpenStart = html.lastIndexOf("<", tileStart);
+      const tagOpenStart = html.lastIndexOf('<', tileStart);
       // Find the end of the opening tag
-      const tagEnd = html.indexOf(">", tileStart);
+      const tagEnd = html.indexOf('>', tileStart);
       if (tagEnd === -1) break;
 
       // Extract a bounded block (5000 chars) from the tag's opening < onward.
       // 5000 chars ensures deeply-nested score child elements are always included.
       const blockStart = tagOpenStart === -1 ? tileStart : tagOpenStart;
-      const block = html.slice(
-        blockStart,
-        Math.min(html.length, blockStart + 5000),
-      );
+      const block = html.slice(blockStart, Math.min(html.length, blockStart + 5000));
       const item = extractTileItem(block, isTv);
       if (item && item.title && item.url && !seen.has(item.url)) {
         seen.add(item.url);
@@ -446,14 +422,12 @@ function parseHtmlTiles(html, isTv) {
 
   // If above didn't work, try anchor-based tile parsing (bounded per anchor)
   if (items.length === 0) {
-    const hrefRe = isTv
-      ? /href="(\/(tv|show)\/[^"#?]+)"/
-      : /href="(\/m\/[^"#?]+)"/;
+    const hrefRe = isTv ? /href="(\/(tv|show)\/[^"#?]+)"/ : /href="(\/m\/[^"#?]+)"/;
     let pos = 0;
     while (pos < html.length) {
-      const anchorStart = html.indexOf("<a ", pos);
+      const anchorStart = html.indexOf('<a ', pos);
       if (anchorStart === -1) break;
-      const tagEnd = html.indexOf(">", anchorStart);
+      const tagEnd = html.indexOf('>', anchorStart);
       if (tagEnd === -1) break;
       const tag = html.slice(anchorStart, tagEnd + 1);
       const hrefMatch = tag.match(hrefRe);
@@ -473,7 +447,7 @@ function parseHtmlTiles(html, isTv) {
       const blockEnd2 = Math.min(html.length, tagEnd + 1500);
       const block = html.slice(blockStart2, blockEnd2);
       const titleMatch = block.match(
-        /data-qa="(?:discovery-media-list-item-title|discover-media-list-item-title|media-tile-title|tile-title|media-list-item-title)"[^>]*>([\s\S]{0,200}?)<\/[a-z]+>/i,
+        /data-qa="(?:discovery-media-list-item-title|discover-media-list-item-title|media-tile-title|tile-title|media-list-item-title)"[^>]*>([\s\S]{0,200}?)<\/[a-z]+>/i
       );
       if (!titleMatch) {
         pos = tagEnd + 1;
@@ -518,7 +492,7 @@ function parseHtmlTiles(html, isTv) {
       items.push({
         title,
         url,
-        year: "",
+        year: '',
         criticsScore,
         audienceScore,
         poster,
@@ -534,15 +508,15 @@ function parseHtmlTiles(html, isTv) {
 function extractTileItem(block, isTv) {
   // Title — try all known RT data-qa name variants for the title element
   let titleMatch = block.match(
-    /data-qa="(?:discovery-media-list-item-title|discover-media-list-item-title|media-tile-title|tile-title|media-list-item-title)"[^>]*>([\s\S]*?)<\/[a-z]+>/i,
+    /data-qa="(?:discovery-media-list-item-title|discover-media-list-item-title|media-tile-title|tile-title|media-list-item-title)"[^>]*>([\s\S]*?)<\/[a-z]+>/i
   );
   if (!titleMatch) {
     // Fallback: look for any <p> or <span> with a title-like class
     titleMatch = block.match(
-      /<(?:p|span|h\d)[^>]+class="[^"]*(?:title|name|heading)[^"]*"[^>]*>([\s\S]*?)<\/(?:p|span|h\d)>/i,
+      /<(?:p|span|h\d)[^>]+class="[^"]*(?:title|name|heading)[^"]*"[^>]*>([\s\S]*?)<\/(?:p|span|h\d)>/i
     );
   }
-  const title = titleMatch ? stripHtml(titleMatch[1]).trim() : "";
+  const title = titleMatch ? stripHtml(titleMatch[1]).trim() : '';
   if (!title) return null;
 
   // URL — for TV also accept /show/ paths; allow dots and slashes in slugs
@@ -554,7 +528,7 @@ function extractTileItem(block, isTv) {
 
   // Year
   const yearMatch = block.match(/\b(19|20)\d{2}\b/);
-  const year = yearMatch ? yearMatch[0] : "";
+  const year = yearMatch ? yearMatch[0] : '';
 
   // Critics score — try multiple attribute name patterns RT uses, including
   // attributes that may be on the opening tag (before data-qa) now that the
@@ -611,7 +585,7 @@ function extractPosterFromBlock(block) {
   if (imgMatch) return imgMatch[1];
   // Fallback: any img with a CDN URL
   const anyImg = block.match(
-    /\bsrc(?!set)="(https?:\/\/[^"]{10,}(?:\.jpg|\.jpeg|\.png|\.webp)[^"]*)"/i,
+    /\bsrc(?!set)="(https?:\/\/[^"]{10,}(?:\.jpg|\.jpeg|\.png|\.webp)[^"]*)"/i
   );
   return anyImg ? anyImg[1] : null;
 }
@@ -621,9 +595,7 @@ function parseFallbackLinks(html, isTv) {
   const items = [];
   const seen = new Set();
   // Allow dots and forward-slashes in slugs; TV can be /tv/ or /show/
-  const pattern = isTv
-    ? /href="(\/(tv|show)\/[a-z0-9._/-]+)"/gi
-    : /href="(\/m\/[a-z0-9._/-]+)"/gi;
+  const pattern = isTv ? /href="(\/(tv|show)\/[a-z0-9._/-]+)"/gi : /href="(\/m\/[a-z0-9._/-]+)"/gi;
   let m;
   while ((m = pattern.exec(html)) !== null) {
     const url = RT_BASE + m[1];
@@ -633,23 +605,21 @@ function parseFallbackLinks(html, isTv) {
     const start = Math.max(0, m.index - 500);
     const end = Math.min(html.length, m.index + 500);
     const nearby = html.slice(start, end);
-    const slug = m[1].replace(/^\/(tv|show|m)\//, "").replace(/-/g, " ");
+    const slug = m[1].replace(/^\/(tv|show|m)\//, '').replace(/-/g, ' ');
     const title = slug
-      .split(" ")
-      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
-      .join(" ");
+      .split(' ')
+      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
+      .join(' ');
     // Check for a short title in nearby HTML
     const titleMatch = nearby.match(
-      /<(?:p|span|h\d|div)[^>]*>\s*([^<]{5,80})\s*<\/(?:p|span|h\d|div)>/,
+      /<(?:p|span|h\d|div)[^>]*>\s*([^<]{5,80})\s*<\/(?:p|span|h\d|div)>/
     );
-    const resolvedTitle = titleMatch
-      ? stripHtml(titleMatch[1]).trim() || title
-      : title;
+    const resolvedTitle = titleMatch ? stripHtml(titleMatch[1]).trim() || title : title;
     if (!resolvedTitle) continue;
     items.push({
       title: resolvedTitle,
       url,
-      year: "",
+      year: '',
       criticsScore: null,
       audienceScore: null,
       poster: null,
@@ -661,34 +631,34 @@ function parseFallbackLinks(html, isTv) {
 
 // Build the score badge HTML
 function buildScoreBadge(score, label) {
-  if (score == null) return "";
-  const color = score >= 60 ? "#006f2e" : "#fa320a";
+  if (score == null) return '';
+  const color = score >= 60 ? '#006f2e' : '#fa320a';
   return `<span class="movie-score-badge" style="background:${color};">${score}%</span> <span class="movie-score-label">${label}</span>`;
 }
 
 // Build a single movie card
 function buildMovieCardHtml(item, showImages) {
-  if (!item || !item.title) return "";
+  if (!item || !item.title) return '';
   const title = escape(item.title);
-  const year = item.year ? ` (${escape(String(item.year))})` : "";
-  const rtUrl = item.url || "";
+  const year = item.year ? ` (${escape(String(item.year))})` : '';
+  const rtUrl = item.url || '';
 
-  let posterHtml = "";
+  let posterHtml = '';
   if (showImages && item.poster) {
     const proxied = proxyImageUrl(item.poster);
     posterHtml = `<div class="movie-card-poster"><img src="${proxied}" alt="" class="movie-card-img" width="100" height="148"></div>`;
   }
 
-  const tomatometer = buildScoreBadge(item.criticsScore, "Tomatometer");
-  const audience = buildScoreBadge(item.audienceScore, "Audience");
+  const tomatometer = buildScoreBadge(item.criticsScore, 'Tomatometer');
+  const audience = buildScoreBadge(item.audienceScore, 'Audience');
   const scores =
     tomatometer || audience
-      ? `<div class="movie-card-scores">${tomatometer}${tomatometer && audience ? "&nbsp;&nbsp;" : ""}${audience}</div>`
-      : "";
+      ? `<div class="movie-card-scores">${tomatometer}${tomatometer && audience ? '&nbsp;&nbsp;' : ''}${audience}</div>`
+      : '';
 
   const rtLink = rtUrl
     ? `<a href="${escape(rtUrl)}" class="discross-button movie-rt-btn" target="_blank" rel="noopener noreferrer">View on RT</a>`
-    : "";
+    : '';
 
   return `<div class="movie-card">
   ${posterHtml}<div class="movie-card-body">
@@ -703,16 +673,16 @@ exports.processMovies = async function processMovies(req, res, discordID) {
   const { sessionParam, theme, imagesCookie, tabId } = resolvePrefs(req);
 
   const tab = TABS.find((t) => t.id === tabId) || TABS[0];
-  const isTv = tab.id === "tv";
+  const isTv = tab.id === 'tv';
 
   // Build tab bar HTML
   const tabsHtml = TABS.map((t) => {
-    const active = t.id === tab.id ? " movie-tab-active" : "";
+    const active = t.id === tab.id ? ' movie-tab-active' : '';
     const sep = sessionParam
-      ? sessionParam + "&tab=" + encodeURIComponent(t.id)
-      : "?tab=" + encodeURIComponent(t.id);
+      ? sessionParam + '&tab=' + encodeURIComponent(t.id)
+      : '?tab=' + encodeURIComponent(t.id);
     return `<a href="/movies${sep}" class="movie-tab${active}"><font ${FONT}>${escape(t.label)}</font></a>`;
-  }).join("\n");
+  }).join('\n');
 
   let moviesHtml;
   try {
@@ -746,26 +716,23 @@ exports.processMovies = async function processMovies(req, res, discordID) {
       moviesHtml = items
         .map((item) => buildMovieCardHtml(item, imagesCookie !== 0))
         .filter(Boolean)
-        .join("\n");
+        .join('\n');
     }
   } catch (err) {
-    console.error("Rotten Tomatoes fetch error:", err);
+    console.error('Rotten Tomatoes fetch error:', err);
     moviesHtml =
       '<p class="movie-empty">Could not load Rotten Tomatoes data. Please try again later.</p>';
   }
 
   const username = await auth.getUsername(discordID);
-  const menuOptions = renderTemplate(
-    logged_in_template,
-    {"{$USER}": escape(username)}
-  );
+  const menuOptions = renderTemplate(logged_in_template, { '{$USER}': escape(username) });
   const final = renderTemplate(movies_template, {
-    "{$WHITE_THEME_ENABLED}": theme.themeClass,
-    "{$MENU_OPTIONS}": menuOptions,
-    "{$TABS}": tabsHtml,
-    "{$MOVIES_ITEMS}": moviesHtml,
+    '{$WHITE_THEME_ENABLED}': theme.themeClass,
+    '{$MENU_OPTIONS}': menuOptions,
+    '{$TABS}': tabsHtml,
+    '{$MOVIES_ITEMS}': moviesHtml,
   });
 
-  res.writeHead(200, { "Content-Type": "text/html" });
+  res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(final);
 };

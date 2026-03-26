@@ -295,36 +295,48 @@ function formatDiscordTimestamp(unixTimestamp, format, timezone) {
           hour12: true,
         });
       case 'f': // Long date/time: March 18, 2026 at 3:06 PM
-        return date.toLocaleString('en-US', {
-          timeZone: userTimezone,
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        }).replace(',', '') + ' at ' + date.toLocaleString('en-US', {
-          timeZone: userTimezone,
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        });
+        return (
+          date
+            .toLocaleString('en-US', {
+              timeZone: userTimezone,
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            })
+            .replace(',', '') +
+          ' at ' +
+          date.toLocaleString('en-US', {
+            timeZone: userTimezone,
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })
+        );
       case 'F': // Full date/time: Wednesday, March 18, 2026 at 3:06 PM
-        return date.toLocaleString('en-US', {
-          timeZone: userTimezone,
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        }).replace(',', '') + ' at ' + date.toLocaleString('en-US', {
-          timeZone: userTimezone,
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        });
+        return (
+          date
+            .toLocaleString('en-US', {
+              timeZone: userTimezone,
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            })
+            .replace(',', '') +
+          ' at ' +
+          date.toLocaleString('en-US', {
+            timeZone: userTimezone,
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })
+        );
       case 'R': // Relative time: a minute ago, 5 months ago, etc.
         const diffNow = date.getTime() - now.getTime();
         const diffSeconds = Math.abs(Math.floor(diffNow / 1000));
@@ -337,15 +349,23 @@ function formatDiscordTimestamp(unixTimestamp, format, timezone) {
         const pastOrFuture = diffNow < 0 ? 'ago' : 'in';
 
         if (diffSeconds < 60) {
-          return diffSeconds === 1 ? 'a second ' + pastOrFuture : `${diffSeconds} seconds ` + pastOrFuture;
+          return diffSeconds === 1
+            ? 'a second ' + pastOrFuture
+            : `${diffSeconds} seconds ` + pastOrFuture;
         } else if (diffMinutes < 60) {
-          return diffMinutes === 1 ? 'a minute ' + pastOrFuture : `${diffMinutes} minutes ` + pastOrFuture;
+          return diffMinutes === 1
+            ? 'a minute ' + pastOrFuture
+            : `${diffMinutes} minutes ` + pastOrFuture;
         } else if (diffHours < 24) {
           return diffHours === 1 ? 'an hour ' + pastOrFuture : `${diffHours} hours ` + pastOrFuture;
         } else if (diffDaysFloor < 30) {
-          return diffDaysFloor === 1 ? 'a day ' + pastOrFuture : `${diffDaysFloor} days ` + pastOrFuture;
+          return diffDaysFloor === 1
+            ? 'a day ' + pastOrFuture
+            : `${diffDaysFloor} days ` + pastOrFuture;
         } else if (diffMonths < 12) {
-          return diffMonths === 1 ? 'a month ' + pastOrFuture : `${diffMonths} months ` + pastOrFuture;
+          return diffMonths === 1
+            ? 'a month ' + pastOrFuture
+            : `${diffMonths} months ` + pastOrFuture;
         } else {
           return diffYears === 1 ? 'a year ' + pastOrFuture : `${diffYears} years ` + pastOrFuture;
         }

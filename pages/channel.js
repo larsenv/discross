@@ -209,7 +209,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
       const card = renderTemplate(tmpl_file_download, {
         '{$FILE_NAME}': truncateFileName(attachment.name),
         '{$FILE_SIZE}': formatFileSize(attachment.size),
-        '{$FILE_LINK}': (!isVideo || imagesCookie !== 1) ? url : '{$FILE_LINK}'
+        '{$FILE_LINK}': !isVideo || imagesCookie !== 1 ? url : '{$FILE_LINK}',
       });
       messagetext += card;
     }
@@ -241,7 +241,9 @@ function renderStickers(messagetext, item, imagesCookie) {
     if (imagesCookie === 1) {
       messagetext += sep + renderTemplate(tmpl_sticker, { STICKER_ID: sticker.id });
     } else {
-      messagetext += sep + renderTemplate(tmpl_sticker_text, { STICKER_NAME: escape(sticker.name ?? 'Unknown') });
+      messagetext +=
+        sep +
+        renderTemplate(tmpl_sticker_text, { STICKER_NAME: escape(sticker.name ?? 'Unknown') });
     }
   });
 
@@ -759,7 +761,11 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
     CONTENT_TD: contentTd,
   });
 
-  return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px;line-height:1">' + row + '</table>';
+  return (
+    '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px;line-height:1">' +
+    row +
+    '</table>'
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -837,11 +843,24 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
   // Wrap in appropriate outer template
   const baseHtml = (() => {
     if (isContinuationBlock && !isForwarded && !lastMentioned)
-      return renderTemplate(templates.messageContinuation, {'{$MESSAGE_CONTENT}': currentmessage});
-    if (isForwarded && lastMentioned) return renderTemplate(templates.messageForwardedMentioned, {'{$MESSAGE_CONTENT}': currentmessage});
-    if (isForwarded) return renderTemplate(templates.messageForwarded, {'{$MESSAGE_CONTENT}': currentmessage});
-    if (lastMentioned) return renderTemplate(templates.messageMentioned, {'{$MESSAGE_CONTENT}': currentmessage, '{$MESSAGE_REPLY_LINK}': replyLink});
-    return renderTemplate(templates.message, {'{$MESSAGE_CONTENT}': currentmessage, '{$MESSAGE_REPLY_LINK}': replyLink});
+      return renderTemplate(templates.messageContinuation, {
+        '{$MESSAGE_CONTENT}': currentmessage,
+      });
+    if (isForwarded && lastMentioned)
+      return renderTemplate(templates.messageForwardedMentioned, {
+        '{$MESSAGE_CONTENT}': currentmessage,
+      });
+    if (isForwarded)
+      return renderTemplate(templates.messageForwarded, { '{$MESSAGE_CONTENT}': currentmessage });
+    if (lastMentioned)
+      return renderTemplate(templates.messageMentioned, {
+        '{$MESSAGE_CONTENT}': currentmessage,
+        '{$MESSAGE_REPLY_LINK}': replyLink,
+      });
+    return renderTemplate(templates.message, {
+      '{$MESSAGE_CONTENT}': currentmessage,
+      '{$MESSAGE_REPLY_LINK}': replyLink,
+    });
   })();
 
   // Forwarded metadata
@@ -898,7 +917,10 @@ async function renderMessageContent(item, context) {
     barColor,
   } = context;
 
-  const withMarkdown = renderDiscordMarkdown(item.content || '', { barColor, timezone: clientTimezone });
+  const withMarkdown = renderDiscordMarkdown(item.content || '', {
+    barColor,
+    timezone: clientTimezone,
+  });
   const withDiscordTimestamps = replaceDiscordTimestamps(withMarkdown, clientTimezone);
   const withEmojis = renderEmojis(withDiscordTimestamps, item, imagesCookie, animationsCookie);
   const withAttachments = renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload);
@@ -1074,7 +1096,9 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     const isReply = rplyData !== null;
     const replyData = rplyData ?? {};
 
-    const intData = item.interaction ? await resolveInteractionData(item, chnl, memberCache, authorText) : null;
+    const intData = item.interaction
+      ? await resolveInteractionData(item, chnl, memberCache, authorText)
+      : null;
     const isInteraction = intData !== null;
     const interactionData = intData ?? {};
 
@@ -1113,7 +1137,9 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
       hasEmbeds && reactionsHtml
         ? reactionsHtml.replace('class="reactions"', 'class="reactions embed-reactions"')
         : reactionsHtml;
-    const withReactions = renderTemplate(wrappedText, { '{$MESSAGE_REACTIONS}': finalReactionsHtml });
+    const withReactions = renderTemplate(wrappedText, {
+      '{$MESSAGE_REACTIONS}': finalReactionsHtml,
+    });
 
     // System message handling
     const isSystem = !isNormalMessage(item.type);

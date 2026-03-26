@@ -104,8 +104,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
       WHITE_THEME_ENABLED: theme.themeClass,
       CHANNEL_ID: chnl.id,
       SERVER_ID: chnl.guild.id,
-      CHANNEL_NAME:
-        (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name),
+      CHANNEL_NAME: (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name),
       MESSAGES: messagesHtml,
       SESSION_PARAM: sessionParam,
     });

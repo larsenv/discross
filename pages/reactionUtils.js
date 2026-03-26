@@ -69,7 +69,8 @@ function processReactions(
             COUNT: count,
             REACTION_BG: backgroundColor,
             REACTION_BORDER: borderColor,
-          });          return acc + reactionHtml;
+          });
+          return acc + reactionHtml;
         }
         return acc;
       } catch (err) {

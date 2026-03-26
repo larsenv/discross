@@ -213,7 +213,8 @@ function renderScoreboard(events, userTZ) {
       gameTimeDisplay = escape(formatGameTime(competition.date || event.date, userTZ));
     }
 
-    const statusLabel = stateType === 'in' ? escape(statusDetail) : stateType === 'post' ? 'Final' : '';
+    const statusLabel =
+      stateType === 'in' ? escape(statusDetail) : stateType === 'post' ? 'Final' : '';
 
     rowsHtml += renderTemplate(getTemplate('scoreboard_row', 'sports'), {
       ROW_STYLE: rowStyle,
@@ -238,7 +239,9 @@ function renderScoreboard(events, userTZ) {
 }
 
 function buildNavButtons(activeSport, urlSessionID) {
-  const sessionParam = urlSessionID ? `?sessionID=${encodeURIComponent(urlSessionID)}&sport=` : '?sport=';
+  const sessionParam = urlSessionID
+    ? `?sessionID=${encodeURIComponent(urlSessionID)}&sport=`
+    : '?sport=';
   let html = '';
   for (const s of SPORTS) {
     const isActive = s.id === activeSport;
@@ -290,7 +293,7 @@ exports.processSports = async function processSports(req, res) {
       fetchJson(`${sport.path}?dates=${yestStr}`),
     ]);
 
-    const todayEvents = todayResult.status === 'fulfilled' ? (todayResult.value?.events || []) : [];
+    const todayEvents = todayResult.status === 'fulfilled' ? todayResult.value?.events || [] : [];
 
     // Include recently finished games from yesterday (cap at 8 to avoid a wall of scores)
     const yestEvents =
@@ -303,14 +306,13 @@ exports.processSports = async function processSports(req, res) {
     const allEvents = sortEvents([...todayEvents, ...yestEvents]);
     sportsHtml = renderScoreboard(allEvents, userTZ);
   } catch (err) {
-    console.error('Sports API error:', err.message);
+    console.error('Sports API error:', err);
     sportsHtml = getTemplate('fetch_error', 'sports');
   }
 
-  const menuOptions = renderTemplate(
-    logged_in_template,
-    {USER: escape(await auth.getUsername(discordID))}
-  );
+  const menuOptions = renderTemplate(logged_in_template, {
+    USER: escape(await auth.getUsername(discordID)),
+  });
 
   const response = renderTemplate(sports_template, {
     WHITE_THEME_ENABLED: themeClass,

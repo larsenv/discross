@@ -494,7 +494,8 @@ exports.handleLoginRegister = async function (req, res, body) {
             renderTemplate(getTemplate('redirect_page', 'misc'), {
               REDIRECT_URL: he.encode(redirectPath),
             })
-          );        } else {
+          );
+        } else {
           const redirectPath = `/server/?sessionID=${encodeURIComponent(result.sessionID)}#end`;
           res.writeHead(200, {
             'Set-Cookie': [
@@ -507,7 +508,8 @@ exports.handleLoginRegister = async function (req, res, body) {
             renderTemplate(getTemplate('redirect_page', 'misc'), {
               REDIRECT_URL: he.encode(redirectPath),
             })
-          );        }
+          );
+        }
       } else {
         res.writeHead(301, {
           Location: `/login.html?errortext=${encodeURIComponent(result.reason)}`,
