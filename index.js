@@ -112,6 +112,8 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
       // If we can't stat the file, invalidate cache and continue
       staticFileCache.delete(filename);
     }
+    const cached = staticFileCache.get(filename);
+    const data = cached.data;
     res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
     return res.end(data);
   }
@@ -645,6 +647,7 @@ server.on('request', async (req, res) => {
       }
     } catch (err) {
       console.error(err);
+      if (sentryEnabled) Sentry.captureException(err);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Internal Server Error');
