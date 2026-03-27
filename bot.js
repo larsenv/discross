@@ -127,8 +127,11 @@ exports.addToCache = function (msg) {
 };
 
 exports.getHistoryCached = async function (chnl) {
-  if (!chnl.id) {
-    chnl = client.channels.cache.get(chnl);
+  if (typeof chnl === 'string') {
+    chnl = client.channels.cache.get(chnl) || (await client.channels.fetch(chnl).catch(() => null));
+  }
+  if (!chnl || !chnl.id) {
+    return [];
   }
   if (!msghistory[chnl.id]) {
     // Fetch messages - Discord.js will try to populate member data automatically if available in cache

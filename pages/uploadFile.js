@@ -102,7 +102,10 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
         return;
       }
 
-      const form = formidable({ maxFileSize: 498 * 1024 * 1024 });
+      const form = formidable({
+        maxFileSize: 498 * 1024 * 1024,
+        allowEmptyFiles: true,
+      });
 
       // Wrap form.parse in a Promise so the Lock actually waits for the upload to finish
       await new Promise((resolve, reject) => {
