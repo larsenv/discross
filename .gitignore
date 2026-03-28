@@ -11,3 +11,12 @@ package-lock.json
 .env
 db/discross.dbtoken.txt
 .DS_Store
+docs/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.zed/
+.mcp.json
+opencode.json
+todo.md
