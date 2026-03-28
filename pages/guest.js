@@ -75,10 +75,12 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     return;
   }
 
-  const canView = botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true);
+  const canView = await require('./utils.js').canViewChannel(null, botMember, chnl);
   if (!canView) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
-    res.end("The bot doesn't have permission to view this channel.");
+    res.end(
+      "The bot doesn't have permission to view this channel, or this channel type is not supported."
+    );
     return;
   }
 

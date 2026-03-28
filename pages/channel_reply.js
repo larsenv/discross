@@ -156,29 +156,29 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
     const chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
-    if (chnl) {
-      const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
-      if (!botMember) {
-        res.writeHead(503, { 'Content-Type': 'text/plain' });
-        res.end('The bot is not in this server!');
-        return;
-      }
+      if (chnl) {
+        const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
+        if (!botMember) {
+          res.writeHead(503, { 'Content-Type': 'text/plain' });
+          res.end('The bot is not in this server!');
+          return;
+        }
 
-      const member = await chnl.guild.members.fetch(discordID).catch(() => null);
-      if (!member) {
-        res.writeHead(403, { 'Content-Type': 'text/plain' });
-        res.end('You are not in this server! Please join the server to view this channel.');
-        return;
-      }
+        const member = await chnl.guild.members.fetch(discordID).catch(() => null);
+        if (!member) {
+          res.writeHead(403, { 'Content-Type': 'text/plain' });
+          res.end('You are not in this server! Please join the server to view this channel.');
+          return;
+        }
 
-      if (
-        !member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) ||
-        !botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)
-      ) {
-        res.writeHead(403, { 'Content-Type': 'text/plain' });
-        res.end("You (or the bot) don't have permission to do that!");
-        return;
-      }
+        const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
+        if (!canView) {
+          res.writeHead(403, { 'Content-Type': 'text/plain' });
+          res.end(
+            "You (or the bot) don't have permission to do that, or this channel type is not supported."
+          );
+          return;
+        }
 
       if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
         const final = renderTemplate(baseTemplate, {

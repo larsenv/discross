@@ -175,9 +175,13 @@ async function processServerChannels(server, member, response, sessionParam) {
             CATEGORY_ID: item.id,
           });
         } else if (item.type === ChannelType.GuildForum || item.type === ChannelType.GuildMedia) {
+          const iconUrl =
+            item.type === ChannelType.GuildForum
+              ? '/resources/twemoji/1f4ac.gif'
+              : '/resources/twemoji/1f39e.gif';
           channelList += renderTemplate(forum_channel_template, {
             CHANNEL_NAME: escapedName,
-            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+            ICON_URL: iconUrl,
           });
         } else if (
           item.type === ChannelType.GuildAnnouncement ||
