@@ -40,6 +40,8 @@ client.on('messageCreate', async function (msg) {
     }
   }
 
+  if (!msg.content) return;
+
   if (msg.webhookId) {
     // TODO: Do properly
     connectionHandler.sendToAll(msg.content, msg.channel.id);

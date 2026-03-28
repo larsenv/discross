@@ -111,6 +111,7 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
     } catch (err) {
       // If we can't stat the file, invalidate cache and continue
       staticFileCache.delete(filename);
+      if (typeof sentryEnabled !== 'undefined' && sentryEnabled) Sentry.captureException(err);
     }
     const cached = staticFileCache.get(filename);
     const data = cached.data;
@@ -146,6 +147,7 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
         } catch (err) {
           // If we can't stat the file, still serve it but don't cache
           console.warn('Could not stat file for caching:', filename, err);
+          if (typeof sentryEnabled !== 'undefined' && sentryEnabled) Sentry.captureException(err);
         }
       }
       res.end(data);
@@ -647,7 +649,7 @@ server.on('request', async (req, res) => {
       }
     } catch (err) {
       console.error(err);
-      if (sentryEnabled) Sentry.captureException(err);
+      if (typeof sentryEnabled !== 'undefined' && sentryEnabled) Sentry.captureException(err);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Internal Server Error');

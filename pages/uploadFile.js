@@ -104,7 +104,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
 
       const form = formidable({
         maxFileSize: 498 * 1024 * 1024,
-        allowEmptyFiles: true,
+        allowEmptyFiles: false,
       });
 
       // Wrap form.parse in a Promise so the Lock actually waits for the upload to finish
@@ -125,6 +125,17 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
 
           try {
             const channelId = Array.isArray(fields.channel) ? fields.channel[0] : fields.channel;
+            if (!channelId || channelId === 'undefined') {
+              if (isTraditionalSubmission) {
+                res.writeHead(400, { 'Content-Type': 'text/html' });
+                res.end("<script>alert('Invalid channel'); history.back();</script>");
+              } else {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: 'Invalid channel' }));
+              }
+              resolve();
+              return;
+            }
             const messageText = Array.isArray(fields.message) ? fields.message[0] : fields.message;
             const rawSessionId =
               (Array.isArray(fields.sessionID) ? fields.sessionID[0] : fields.sessionID) || '';

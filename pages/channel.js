@@ -455,8 +455,15 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
   );
 
   return messagetext.replace(/&lt;#(\d{16,20})&gt;/g, (match, id) => {
+    const { ChannelType } = require('discord.js');
     const ch = bot.client.channels.cache.get(id);
     if (!ch) return match;
+
+    // Prevent linking Forum/Media channels in mentions
+    if (ch.type === ChannelType.GuildForum || ch.type === ChannelType.GuildMedia) {
+      return '#' + escape(normalizeWeirdUnicode(ch.name));
+    }
+
     return renderTemplate(getTemplate('channel_mention', 'channel'), {
       CHANNEL_URL: `/channels/${ch.id}`,
       CHANNEL_NAME: escape(normalizeWeirdUnicode(ch.name)),
@@ -1285,13 +1292,13 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
       return;
     }
 
-    const canView =
-      member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) &&
-      botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true);
+    const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
 
     if (!canView) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
-      res.end("You (or the bot) don't have permission to do that!");
+      res.end(
+        "You (or the bot) don't have permission to do that, or this channel type is not supported."
+      );
       return;
     }
 

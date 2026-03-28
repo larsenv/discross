@@ -342,6 +342,44 @@ function httpsGet(options, maxRedirects) {
   });
 }
 
+/**
+ * Verifies if a user has permission to view a channel, including thread membership check
+ * and restricting discussion-based channels (Forum/Media).
+ *
+ * @param {import('discord.js').GuildMember} member - The user member.
+ * @param {import('discord.js').GuildMember} botMember - The bot member.
+ * @param {import('discord.js').BaseGuildTextChannel|import('discord.js').AnyThreadChannel} chnl - The channel.
+ * @returns {Promise<boolean>} True if viewable, false otherwise.
+ */
+async function canViewChannel(member, botMember, chnl) {
+  const { PermissionFlagsBits, ChannelType } = require('discord.js');
+
+  if (!botMember || !chnl) return false;
+
+  // Bot must always be able to view
+  if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) return false;
+
+  // If a member is provided, they must also be able to view
+  if (member && !member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) return false;
+
+  // Discussion based channels (Forum/Media) are not directly viewable in this app
+  if (chnl.type === ChannelType.GuildForum || chnl.type === ChannelType.GuildMedia) {
+    return false;
+  }
+
+  // Thread membership check: if member is provided, they must be a member to view
+  if (chnl.isThread() && member) {
+    try {
+      await chnl.members.fetch(member.id);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function reportError(message, error) {
   console.error(message, error);
 }
@@ -366,4 +404,5 @@ module.exports = {
   formatChangePct,
   changeColor,
   reportError,
+  canViewChannel,
 };

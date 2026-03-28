@@ -70,11 +70,12 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
       return;
     }
 
-    const canView =
-      member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true) &&
-      botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true);
+    const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
     if (!canView) {
-      res.end("You (or the bot) don't have permission to do that!");
+      res.writeHead(403, { 'Content-Type': 'text/plain' });
+      res.end(
+        "You (or the bot) don't have permission to do that, or this channel type is not supported."
+      );
       return;
     }
 
