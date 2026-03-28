@@ -10,3 +10,4 @@ pages/static/ico/server/*
 package-lock.json
 .env
 db/discross.dbtoken.txt
+.DS_Store
