@@ -82,7 +82,8 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
                     ? `${reply_message.content.substring(0, 30)}...`
                     : reply_message.content;
                 const author_id = reply_message.author.id;
-                const author_mention = `<@${author_id}>`;
+                const author_mention =
+                  author_id === discordID ? reply_message.author.username : `<@${author_id}>`;
                 return `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${resolvedMsg}`;
               } catch (err) {
                 console.error('Failed to reply:', err);
