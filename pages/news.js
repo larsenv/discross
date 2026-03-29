@@ -388,7 +388,7 @@ function parseArticlePage(html, showImages) {
 
 exports.processNews = async function processNews(req, res, args, discordID) {
   const { urlSessionID, sessionParam, theme, parsedUrl, imagesCookie } = resolvePrefs(req);
-  const timezone = getTimezoneFromIP(getClientIP(req));
+  const timezone = getTimezoneFromIP(req);
 
   // Sanitise tag: allow letters, digits, hyphens (AP News topic format)
   const rawTag = parsedUrl.searchParams.get('tag') || '';
@@ -445,7 +445,7 @@ exports.processNews = async function processNews(req, res, args, discordID) {
 
 exports.processNewsArticle = async function processNewsArticle(req, res, args, discordID) {
   const { sessionParam, theme, imagesCookie } = resolvePrefs(req);
-  const timezone = getTimezoneFromIP(getClientIP(req));
+  const timezone = getTimezoneFromIP(req);
 
   // args[2] is the article slug (letters, digits, hyphens only)
   const articleSlug = args[2] || '';

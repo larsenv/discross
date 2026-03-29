@@ -43,7 +43,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
       : imagesCookieValue !== undefined
         ? parseInt(imagesCookieValue, 10)
         : 1;
-  const clientTimezone = getTimezoneFromIP(getClientIP(req));
+  const clientTimezone = getTimezoneFromIP(req);
 
   if (!isBotReady(bot)) {
     res.writeHead(503, { 'Content-Type': 'text/plain' });

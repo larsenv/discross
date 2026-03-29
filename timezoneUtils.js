@@ -67,14 +67,30 @@ function isPrivateIP(ip) {
 }
 
 /**
- * Get timezone from IP address
- * @param {string} ip - IP address
+ * Get timezone from request (cookie, query param, or IP address)
+ * @param {Object} req - HTTP request object
  * @returns {string|null} - Timezone (e.g., 'America/New_York') or null if not found
  */
-function getTimezoneFromIP(ip) {
-  // Handle localhost and private IPs - default to UTC
+function getTimezoneFromIP(req) {
+  const { parseCookies } = require('./pages/utils.js');
+  const cookies = parseCookies(req);
+  const parsedUrl = new URL(req.url, 'http://localhost');
+  const queryTimezone = parsedUrl.searchParams.get('timezone');
+
+  // 1. Check for 'timezone' cookie
+  if (cookies.timezone && cookies.timezone !== 'null') {
+    return cookies.timezone;
+  }
+
+  // 2. Check for 'timezone' query parameter
+  if (queryTimezone && queryTimezone !== 'null') {
+    return queryTimezone;
+  }
+
+  // 3. Fallback to GeoIP based on IP address
+  const ip = getClientIP(req);
   if (isPrivateIP(ip)) {
-    return null; // Will use default behavior
+    return null; // Will use default behavior (system timezone)
   }
 
   const geo = geoip.lookup(ip);

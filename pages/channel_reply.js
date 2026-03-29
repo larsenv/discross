@@ -140,8 +140,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         ? parseInt(imagesCookieValue, 10)
         : 1;
 
-  const clientIP = getClientIP(req);
-  const clientTimezone = getTimezoneFromIP(clientIP);
+  const clientTimezone = getTimezoneFromIP(req);
 
   const emojiDisplay = urlEmoji === '1' ? '' : 'display: none;';
   // args[3] is the reply message ID — the current page's relative URL segment

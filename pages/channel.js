@@ -490,7 +490,14 @@ function renderEveryoneMentions(messagetext, item, tmpl_mention) {
 // ---------------------------------------------------------------------------
 
 function detectMention(item, member, discordID, isReply, replyData) {
-  if (item.mentions?.members?.has(discordID)) return true;
+  if (item.mentions?.members?.has(discordID)) {
+    // If it's a self-reply, only highlight if the mention is in the message content
+    if (isReply && item.author?.id === discordID && replyData?.authorId === discordID) {
+      const mentionRegex = new RegExp(`<@!?${discordID}>`);
+      if (!mentionRegex.test(item.content)) return false;
+    }
+    return true;
+  }
   if (isReply && replyData.mentionsPing && replyData.authorId === discordID) return true;
   if (item.mentions?.everyone) return true;
   if (item.mentions?.roles) {
@@ -714,7 +721,10 @@ async function resolveReplyData(
       author: getDisplayName(replyMember, replyUser),
       authorId: replyUser?.id,
       authorColor: getMemberColor(replyMember, authorText),
-      mentionsPing: item.mentions?.repliedUser !== null && item.mentions?.repliedUser !== undefined,
+      mentionsPing:
+        item.mentions?.repliedUser !== null &&
+        item.mentions?.repliedUser !== undefined &&
+        item.author?.id !== replyUser?.id,
       content: replyContent,
     };
   } catch (err) {
@@ -1269,7 +1279,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     return;
   }
 
-  const clientTimezone = getTimezoneFromIP(getClientIP(req));
+  const clientTimezone = getTimezoneFromIP(req);
 
   const chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
