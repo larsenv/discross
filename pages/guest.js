@@ -6,6 +6,7 @@ const { PermissionFlagsBits } = require('discord.js');
 
 const auth = require('../authentication.js');
 const notFound = require('./notFound.js');
+const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
 const { buildMessagesHtml } = require('./channel.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {
@@ -113,7 +114,7 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
           : 1;
     })();
 
-    const clientTimezone = getTimezoneFromIP(getClientIP(req));
+    const clientTimezone = getTimezoneFromIP(req);
     const { boxColor, authorText, replyText } = theme;
     const canSend =
       botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true) &&
