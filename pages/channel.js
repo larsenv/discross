@@ -38,7 +38,7 @@ const {
 // ---------------------------------------------------------------------------
 
 const FORWARDED_CONTENT_MAX_LENGTH = 100;
-const REPLY_CONTENT_MAX_LENGTH = 42;
+const REPLY_CONTENT_MAX_LENGTH = 35;
 const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
 
 const SYSTEM_MESSAGE_TEXT = {
@@ -489,9 +489,7 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, anim
 
 function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
   const normalizedReplyContent = (replyData.content || '').replace(/<br[^>]*>/gi, ' ').replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
-  const replyContentChars = Array.from(normalizedReplyContent);
-  const truncatedReplyPreview = replyContentChars.length > 42 ? `${replyContentChars.slice(0, 39).join('')}...` : normalizedReplyContent;
-  const contentTd = truncatedReplyPreview ? renderTemplate(getTemplate('reply_content_cell', 'channel'), { REPLY_TEXT_TOP_OFFSET: '-1', REPLY_TEXT: replyText, REPLY_PREVIEW: he.encode(truncatedReplyPreview, { useNamedReferences: true }) }) : '';
+  const contentTd = normalizedReplyContent ? renderTemplate(getTemplate('reply_content_cell', 'channel'), { REPLY_TEXT_TOP_OFFSET: '-1', REPLY_TEXT: replyText, REPLY_PREVIEW: he.encode(normalizedReplyContent, { useNamedReferences: true }) }) : '';
   return '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px;line-height:1">' + renderTemplate(getTemplate('reply_with_content', 'channel'), { BAR_COLOR: barColor, REPLY_TEXT_TOP_OFFSET: '-1', AUTHOR_COLOR: replyData.authorColor, AT_SIGN: replyData.mentionsPing ? '@' : '', AUTHOR_NAME: escape(replyData.author), CONTENT_TD: contentTd }) + '</table>';
 }
 
@@ -554,8 +552,8 @@ async function renderMessageContent(item, context) {
 // ---------------------------------------------------------------------------
 
 exports.buildMessagesHtml = async function buildMessagesHtml(params) {
-  const { bot, chnl, member, discordID, req, imagesCookie, animationsCookie = 1, authorText, replyText, barColor = '#808080', clientTimezone, channelId, messages: overrideMessages } = params;
-  const templates = { message: getTemplate('message', 'message'), messageForwarded: getTemplate('forwarded_message', 'message'), messageMentioned: getTemplate('message_mentioned', 'message'), messageForwardedMentioned: getTemplate('forwarded_message_mentioned', 'message'), firstMessageContent: getTemplate('first_message_content', 'message'), mergedMessageContent: getTemplate('merged_message_content', 'message'), mention: getTemplate('mention', 'message'), mentionHighlighted: getTemplate('mention_highlighted', 'message'), fileDownload: getTemplate('file_download', 'channel'), reactions: getTemplate('reactions', 'message'), reaction: getTemplate('reaction', 'message'), dateSeparator: getTemplate('date_separator', 'message'), messageContinuation: getTemplate('message_continuation', 'message') };
+  const { bot, chnl, member, discordID, req, imagesCookie, animationsCookie = 1, authorText, replyText, barColor = '#808080', clientTimezone, channelId, messages: overrideMessages, templates: overrideTemplates } = params;
+  const templates = overrideTemplates ?? { message: getTemplate('message', 'message'), messageForwarded: getTemplate('forwarded_message', 'message'), messageMentioned: getTemplate('message_mentioned', 'message'), messageForwardedMentioned: getTemplate('forwarded_message_mentioned', 'message'), firstMessageContent: getTemplate('first_message_content', 'message'), mergedMessageContent: getTemplate('merged_message_content', 'message'), mention: getTemplate('mention', 'message'), mentionHighlighted: getTemplate('mention_highlighted', 'message'), fileDownload: getTemplate('file_download', 'channel'), reactions: getTemplate('reactions', 'message'), reaction: getTemplate('reaction', 'message'), dateSeparator: getTemplate('date_separator', 'message'), messageContinuation: getTemplate('message_continuation', 'message') };
   const messages = overrideMessages ?? (await bot.getHistoryCached(chnl));
   const memberCache = new Map();
   const context = { bot, chnl, member, discordID, req, imagesCookie, animationsCookie, clientTimezone, memberCache, templates, barColor };

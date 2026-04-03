@@ -102,8 +102,9 @@ function buildReplyPreviewContent(message) {
     preview = preview.replace(new RegExp(`<@!?${user.id}>`, 'g'), mentionName);
   });
 
-  if (preview.length > REPLY_PREVIEW_MAX_LENGTH) {
-    preview = preview.substring(0, REPLY_PREVIEW_MAX_LENGTH) + '...';
+  const chars = Array.from(preview);
+  if (chars.length > REPLY_PREVIEW_MAX_LENGTH) {
+    preview = chars.slice(0, REPLY_PREVIEW_MAX_LENGTH).join('') + '...';
   }
   if (!preview) return ''; // Prevent empty <br>
   return escape(preview);
@@ -212,16 +213,16 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         channelId: null, // no reply links in reply context
         templates: {
           message: message_template,
-          message_forwarded: message_forwarded_template,
-          message_mentioned: message_mentioned_template,
-          message_forwarded_mentioned: message_forwarded_mentioned_template,
-          first_message_content: first_message_content_template,
-          merged_message_content: merged_message_content_template,
+          messageForwarded: message_forwarded_template,
+          messageMentioned: message_mentioned_template,
+          messageForwardedMentioned: message_forwarded_mentioned_template,
+          firstMessageContent: first_message_content_template,
+          mergedMessageContent: merged_message_content_template,
           mention: mention_template,
-          file_download: file_download_template,
+          fileDownload: file_download_template,
           reactions: reactions_template,
           reaction: reaction_template,
-          date_separator: date_separator_template,
+          dateSeparator: date_separator_template,
         },
       });
 
