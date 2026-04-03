@@ -5,12 +5,13 @@
 <tr>
 <td><font onclick="document.getElementById('message').value += {$TAG}" style="font-weight:600;color:{$AUTHOR_COLOR};cursor:pointer;margin-right:8px" face="rodin,sans-serif">{$MESSAGE_AUTHOR}</font></td>
 <td><font style="font-size:12px" face="rodin,sans-serif" class="message-date-font">{$MESSAGE_DATE}</font></td>
+<td style="padding-left:12px"><font style="font-size:12px" face="rodin,sans-serif" class="message-reply-link-font"><a href="{$MESSAGE_REPLY_LINK}" class="message-link" style="color:#00b0f4">Reply</a></font></td>
 </tr>
 </table>
 <font class="forwarded-label" style="font-size:12px;display:block;margin-bottom:4px" face="rodin,sans-serif">→ Forwarded</font>
 {$FORWARDED_CONTENT_BLOCK}
 {$FORWARDED_EMBEDS}
 {$FORWARDED_ORIGIN}
-<font style="font-size:14px;line-height:18px;word-wrap:break-word" face="rodin,sans-serif" class="messagecontent">{$MESSAGE_CONTENT}</font>
+{$MESSAGE_CONTENT}
 </td></tr>
 </table>

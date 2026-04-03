@@ -85,7 +85,14 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
   const embedsHtml = embeds
     .map((embed) => {
       // Set embed color (default to #202225 if not present)
-      const embedColor = embed.color ? `#${embed.color.toString(16).padStart(6, '0')}` : '#202225';
+      let embedColor = '#202225';
+      if (embed.color !== null && embed.color !== undefined) {
+        if (typeof embed.color === 'number') {
+          embedColor = `#${embed.color.toString(16).padStart(6, '0')}`;
+        } else if (typeof embed.color === 'string') {
+          embedColor = embed.color.startsWith('#') ? embed.color : `#${embed.color}`;
+        }
+      }
 
       // Process embed author
       const authorContent = embed.author
