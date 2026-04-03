@@ -38,7 +38,7 @@ const {
 // ---------------------------------------------------------------------------
 
 const FORWARDED_CONTENT_MAX_LENGTH = 100;
-const REPLY_CONTENT_MAX_LENGTH = 35;
+const REPLY_CONTENT_MAX_LENGTH = 25;
 const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
 
 const SYSTEM_MESSAGE_TEXT = {
