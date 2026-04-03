@@ -78,7 +78,7 @@ const date_separator_template = fs.readFileSync(
   'pages/templates/message/date_separator.html',
   'utf-8'
 );
-const REPLY_PREVIEW_MAX_LENGTH = 30;
+const REPLY_PREVIEW_MAX_LENGTH = 25;
 
 function buildReplyPreviewContent(message) {
   // If the message has attachments, show "Attachment" instead of text preview
