@@ -32,6 +32,23 @@ function validatePassword(password) {
   return { strong: errors.length === 0, errors };
 }
 
+// Username validation: alphanumeric, dots, or underscores
+function validateUsername(username) {
+  const errors = [];
+  if (!username || username.length < 3) {
+    errors.push('The username must be at least 3 characters long.');
+  }
+  if (username && username.length > 32) {
+    errors.push('The username must be at most 32 characters long.');
+  }
+  if (!/^[a-zA-Z0-9._]+$/.test(username)) {
+    errors.push(
+      'The username must be alphanumeric and can only contain dots (.) or underscores (_).'
+    );
+  }
+  return { valid: errors.length === 0, errors };
+}
+
 let https = true; // Just to make sure - determines whether cookies have the Secure; option
 
 exports.setHTTPS = function (ishttps) {
@@ -71,6 +88,10 @@ exports.createUser = async function (discordID, username, password) {
   const usernameMatch = querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username]);
   if (usernameMatch) {
     return { status: 'error', reason: 'An account with that username exists!' };
+  }
+  const usernameValidation = validateUsername(username);
+  if (!usernameValidation.valid) {
+    return { status: 'error', reason: usernameValidation.errors.join('\n') };
   }
   const discordMatch = querySingle('SELECT DISTINCT * FROM users WHERE discordID=?', [discordID]);
   if (discordMatch) {
