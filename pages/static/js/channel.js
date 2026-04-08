@@ -61,6 +61,10 @@ function insertEmoji(code) {
   } else {
     input.value += ' ' + code;
   }
+  
+  if (typeof autoResize === 'function') {
+    autoResize(input);
+  }
 }
 
 function showEmoji() {
@@ -132,4 +136,37 @@ function setHoverBg(el) {
 
 function clearBg(el) {
   el.style.background = 'none';
+}
+
+function handleMessageKeydown(event) {
+  var keyCode = event.keyCode || event.which;
+  if (keyCode === 13 && !event.shiftKey) {
+    event.preventDefault();
+    var message = document.getElementById('message');
+    if (message && message.value && message.value.replace(/^\s+|\s+$/g, '') !== "") {
+      var form = message.form;
+      if (typeof sendMessageOrFile === 'function') {
+        if (sendMessageOrFile()) {
+          form.submit();
+        }
+      } else {
+        form.submit();
+      }
+    }
+    return false;
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  var newHeight = el.scrollHeight;
+  if (newHeight > 200) newHeight = 200;
+  if (newHeight < 41) newHeight = 41;
+  el.style.height = newHeight + 'px';
+  
+  if (el.scrollHeight > 200) {
+    el.style.overflowY = 'auto';
+  } else {
+    el.style.overflowY = 'hidden';
+  }
 }
