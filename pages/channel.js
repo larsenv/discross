@@ -3,7 +3,7 @@
 const fs = require('fs');
 const escape = require('escape-html');
 const he = require('he');
-const { PermissionFlagsBits, MessageReferenceType } = require('discord.js');
+const { PermissionFlagsBits, MessageReferenceType, UserFlags } = require('discord.js');
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
 const {
@@ -441,7 +441,7 @@ async function resolveForwardData(item, chnl, bot, discordID, memberCache, clien
       if (!fwdMsg.guildId || !fwdMsg.channelId || !fwdMsg.id) return '';
       const fwdChannel = fwdMsg.channel ?? bot.client.channels.cache.get(fwdMsg.channelId);
       if (!fwdChannel) return '';
-      const chanLink = renderTemplate(getTemplate('forwarded_same_server', 'channel'), { JUMP_LINK: `/channels/${fwdMsg.channelId}/${fwdMsg.id}`, CHANNEL_NAME: escape(normalizeWeirdUnicode(fwdChannel.name)), TIME_DISPLAY: formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone) });
+      const chanLink = renderTemplate(getTemplate('forwarded_origin_channel', 'misc'), { JUMP_LINK: `/channels/${fwdMsg.channelId}/${fwdMsg.id}`, CHANNEL_NAME: escape(normalizeWeirdUnicode(fwdChannel.name)), TIME: formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone) });
       if (fwdMsg.guildId === chnl.guild.id) return renderTemplate(getTemplate('forwarded_content_block_label', 'channel'), { CONTENT: chanLink });
       const otherGuild = bot.client.guilds.cache.get(fwdMsg.guildId);
       if (!otherGuild) return '';
@@ -510,6 +510,25 @@ function buildInteractionIndicator(interactionData, textColor, barColor = '#8080
 // Flushing and Grouping
 // ---------------------------------------------------------------------------
 
+function buildAuthorPills(state) {
+  let pills = '';
+  const isVerifiedBot = state.lastIsVerified;
+  const isSlashCommand = state.lastIsInteraction;
+  const isWebhook = state.lastIsWebhook;
+  const isDiscross = state.lastIsDiscross;
+
+  if (isVerifiedBot || isSlashCommand) {
+    pills += '<span style="background-color:#4e5de9;color:#ffffff;padding:0 3px;margin-left:4px;border-radius:2px;font-size:10px;vertical-align:middle;display:inline-block;font-weight:600;font-family:rodin,sans-serif;line-height:14px;"><img src="/resources/twemoji/2611.gif" width="10" height="10" style="vertical-align:middle;margin-right:2px;border:none;"><span style="vertical-align:middle;">APP</span></span>';
+  } else if (isWebhook) {
+    pills += '<span style="background-color:#4e5de9;color:#ffffff;padding:0 3px;margin-left:4px;border-radius:2px;font-size:10px;vertical-align:middle;display:inline-block;font-weight:600;font-family:rodin,sans-serif;line-height:14px;"><span style="vertical-align:middle;">APP</span></span>';
+  }
+
+  if (isDiscross) {
+    pills += '<img src="/resources/logo.gif" width="12" height="12" style="vertical-align:middle;margin-left:4px;border:none;">';
+  }
+  return pills;
+}
+
 function flushMessageGroup(state, templates, authorText, replyText, barColor, channelId) {
   const replyLink = channelId ? `/channels/${channelId}/${state.messageid}` : 'javascript:void(0)';
   const baseHtml = (() => {
@@ -523,7 +542,7 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
   const afterForwarded = state.isForwarded ? renderTemplate(baseHtml, { '{$FORWARDED_AUTHOR}': escape(state.forwardData.author), '{$FORWARDED_CONTENT_BLOCK}': contentBlock, '{$FORWARDED_DATE}': state.forwardData.date, '{$FORWARDED_EMBEDS}': state.forwardData.embeds ?? '', '{$FORWARDED_ORIGIN}': state.forwardData.origin ?? '' }) : baseHtml;
   const authorColor = getMemberColor(state.lastmember, authorText);
   const replyIndicator = state.lastReply ? buildReplyIndicator(state.lastReplyData, replyText, barColor) : (state.lastInteraction ? buildInteractionIndicator(state.lastInteractionData, replyText, barColor) : '');
-  return renderTemplate(afterForwarded, { '{$MESSAGE_AUTHOR}': escape(getDisplayName(state.lastmember, state.lastauthor)), '{$AUTHOR_COLOR}': authorColor, '{$REPLY_INDICATOR}': replyIndicator, '{$PING_INDICATOR}': '', '{$MESSAGE_DATE}': formatDateWithTimezone(state.lastdate, state.clientTimezone), '{$TAG}': he.encode(JSON.stringify(`<@${state.lastauthor.id}>`)) });
+  return renderTemplate(afterForwarded, { '{$MESSAGE_AUTHOR}': escape(getDisplayName(state.lastmember, state.lastauthor)) + buildAuthorPills(state), '{$AUTHOR_COLOR}': authorColor, '{$REPLY_INDICATOR}': replyIndicator, '{$PING_INDICATOR}': '', '{$MESSAGE_DATE}': formatDateWithTimezone(state.lastdate, state.clientTimezone), '{$TAG}': he.encode(JSON.stringify(`<@${state.lastauthor.id}>`)) });
 }
 
 async function renderMessageContent(item, context) {
@@ -558,7 +577,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
   const memberCache = new Map();
   const context = { bot, chnl, member, discordID, req, imagesCookie, animationsCookie, clientTimezone, memberCache, templates, barColor };
   let response = '';
-  const state = { lastauthor: undefined, lastmember: undefined, lastdate: new Date('1995-12-17T03:24:00'), lastmessagedate: null, currentmessage: '', messageid: 0, isForwarded: false, forwardData: {}, lastMentioned: false, lastReply: false, lastReplyData: {}, lastForwarded: false, lastInteraction: false, lastInteractionData: {}, isContinuationBlock: false, clientTimezone };
+  const state = { lastauthor: undefined, lastmember: undefined, lastdate: new Date('1995-12-17T03:24:00'), lastmessagedate: null, currentmessage: '', messageid: 0, isForwarded: false, forwardData: {}, lastMentioned: false, lastReply: false, lastReplyData: {}, lastForwarded: false, lastInteraction: false, lastInteractionData: {}, isContinuationBlock: false, lastIsBot: false, lastIsVerified: false, lastIsWebhook: false, lastIsInteraction: false, lastIsDiscross: false, clientTimezone };
 
   const shouldStartNewGroup = (item) => !state.lastauthor || !isSameAuthor(state.lastmember, state.lastauthor, null, item.author) || item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS || !!item.reference || state.lastReply || state.lastInteraction || state.lastForwarded;
 
@@ -588,6 +607,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     if (!isSystem && !isForwarded && visibleText.length === 0 && !(item.attachments?.size || item.attachments?.length) && !(item.embeds?.length || item.embeds?.size) && !(item.stickers?.size || item.stickers?.length)) continue;
     const messageHtml = isSystem && visibleText.length === 0 ? renderTemplate(getTemplate('system_message', 'channel'), { AUTHOR_NAME: escape(getDisplayName(currentMember, item.author)), TEXT: SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action' }) : withReactions;
     state.lastauthor = item.author; state.lastmember = currentMember; state.lastdate = item.createdAt; state.messageid = item.id; state.isForwarded = isForwarded; state.forwardData = forwardData; state.lastMentioned = isMentioned; state.lastReply = isReply; state.lastReplyData = replyData; state.lastForwarded = isForwarded; state.lastInteraction = isInteraction; state.lastInteractionData = interactionData; state.currentmessage += messageHtml;
+    state.lastIsBot = !!item.author.bot; state.lastIsVerified = !!(item.author.verified || (item.author.flags && item.author.flags.has(UserFlags.VerifiedBot))); state.lastIsWebhook = !!item.webhookId; state.lastIsInteraction = !!item.interaction; state.lastIsDiscross = !!(item.webhookId && item.author.username && item.author.username.toLowerCase().includes('discross'));
   }
   response = removeExistingEndAnchors(response); response += getTemplate('end_anchor', 'channel');
   return response;
