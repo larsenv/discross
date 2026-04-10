@@ -4,7 +4,7 @@
             <td style="width: 100%; padding: 0;">
                 <textarea name="message" id="message" class="message-input-field"
                     style="width: 100%; max-width: none; background: transparent; border: none; outline: none; height: 41px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 19px; box-sizing: border-box; resize: none; overflow: hidden; display: block; margin: 0;"
-                    placeholder="Message {$CHANNEL_NAME}" onkeydown="autoResize(this); return handleMessageKeydown(event)" oninput="autoResize(this)"></textarea>
+                    placeholder="Message {$CHANNEL_NAME}" onkeydown="return handleMessageKeydown(event)" oninput="autoResize(this)"></textarea>
             </td>
             <td style="padding: 0;">
                 <input type="hidden" id="nonce" name="nonce" value="">

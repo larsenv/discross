@@ -205,6 +205,14 @@ pre code { background: none; border: none; padding: 0; }
     line-height: 22px;
     word-wrap: break-word;
 }
+.messagecontent p {
+    font-size: 17px;
+    margin: 0 0 8px 0;
+}
+.large-emoji.messagecontent p {
+    font-size: 48px;
+    line-height: 56px;
+}
 .messagecontent a { color: #00b0f4; }
 .messagecontent .message-link { color: inherit; }
 .messagecontent h1 a, .messagecontent h2 a, .messagecontent h3 a { color: inherit; }
