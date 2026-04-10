@@ -158,15 +158,20 @@ function handleMessageKeydown(event) {
 }
 
 function autoResize(el) {
+  if (!el) return;
+  var oldHeight = el.style.height;
   el.style.height = 'auto';
   var newHeight = el.scrollHeight;
   if (newHeight > 200) newHeight = 200;
   if (newHeight < 41) newHeight = 41;
-  el.style.height = newHeight + 'px';
   
-  if (el.scrollHeight > 200) {
-    el.style.overflowY = 'auto';
-  } else {
-    el.style.overflowY = 'hidden';
+  var newHeightPx = newHeight + 'px';
+  if (oldHeight !== newHeightPx) {
+    el.style.height = newHeightPx;
+  }
+  
+  var overflow = (el.scrollHeight > 200) ? 'auto' : 'hidden';
+  if (el.style.overflowY !== overflow) {
+    el.style.overflowY = overflow;
   }
 }
