@@ -1379,24 +1379,48 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         clientTimezone,
     };
 
-    /**
-     * Helper to determine if a message should start a new visual group.
-     * Groups are split if:
-     * - The author changes.
-     * - More than 7 minutes have passed.
-     * - It's a reply, forwarded message, or interaction.
-     */
-    const shouldStartNewGroup = (item) =>
-        !state.lastauthor ||
-        !isSameAuthor(state.lastmember, state.lastauthor, null, item.author) ||
-        item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
-        !!item.reference ||
-        state.lastReply ||
-        state.lastInteraction ||
-        state.lastForwarded;
-
     // We append 'null' to the end of the loop to trigger the final flushMessageGroup call.
     for (const item of [...messages, null]) {
+        // Pre-calculate Discross/UA for the current item to decide on grouping
+        let currentIsDiscross = false;
+        let currentUserAgent = null;
+
+        if (item) {
+            const isBotSelf = item.author.id === bot.client.user.id;
+            const isDiscrossWebhook =
+                item.webhookId &&
+                auth.dbQuerySingle('SELECT webhookID FROM webhooks WHERE webhookID=?', [
+                    item.webhookId,
+                ]);
+            currentIsDiscross = !!(isBotSelf || isDiscrossWebhook);
+            if (currentIsDiscross) {
+                const uaRow = auth.dbQuerySingle(
+                    'SELECT userAgent FROM message_user_agents WHERE messageID=?',
+                    [item.id]
+                );
+                currentUserAgent = uaRow ? uaRow.userAgent : null;
+            }
+        }
+
+        /**
+         * Helper to determine if a message should start a new visual group.
+         * Groups are split if:
+         * - The author changes.
+         * - More than 7 minutes have passed.
+         * - It's a reply, forwarded message, or interaction.
+         * - The Discross client (User-Agent) changed.
+         */
+        const shouldStartNewGroup = (item) =>
+            !state.lastauthor ||
+            !isSameAuthor(state.lastmember, state.lastauthor, null, item.author) ||
+            item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
+            !!item.reference ||
+            state.lastReply ||
+            state.lastInteraction ||
+            state.lastForwarded ||
+            (currentIsDiscross && currentUserAgent !== state.lastUserAgent) ||
+            (!currentIsDiscross && state.lastIsDiscross);
+
         // --- Flush Logic ---
         if (state.lastauthor) {
             if (!item || shouldStartNewGroup(item)) {
@@ -1489,7 +1513,9 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
             isReply ||
             isInteraction ||
-            state.lastReply;
+            state.lastReply ||
+            (currentIsDiscross && currentUserAgent !== state.lastUserAgent) ||
+            (!currentIsDiscross && state.lastIsDiscross);
 
         // Apply "First" or "Merged" content templates.
         // First: Includes the message text and potential reactions.
@@ -1572,26 +1598,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         state.lastIsWebhook = !!item.webhookId;
         state.lastIsInteraction = !!item.interaction;
 
-        // Discross Check:
-        // 1. If it's the bot user itself, it's definitely Discross.
-        // 2. If it's a webhook, check if the webhook ID is in our database.
-        const isBotSelf = item.author.id === bot.client.user.id;
-        const isDiscrossWebhook =
-            item.webhookId &&
-            auth.dbQuerySingle('SELECT webhookID FROM webhooks WHERE webhookID=?', [
-                item.webhookId,
-            ]);
-
-        state.lastIsDiscross = !!(isBotSelf || isDiscrossWebhook);
-        if (state.lastIsDiscross) {
-            const uaRow = auth.dbQuerySingle(
-                'SELECT userAgent FROM message_user_agents WHERE messageID=?',
-                [item.id]
-            );
-            state.lastUserAgent = uaRow ? uaRow.userAgent : null;
-        } else {
-            state.lastUserAgent = null;
-        }
+        state.lastIsDiscross = currentIsDiscross;
+        state.lastUserAgent = currentUserAgent;
     }
     // Cleanup anchors and add the final scrolling target.
     response = removeExistingEndAnchors(response);
