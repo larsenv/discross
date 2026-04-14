@@ -20,20 +20,20 @@ const _systemTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
  * @returns {string} - Client IP address
  */
 function getClientIP(req) {
-  // Check for common proxy headers
-  const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) {
-    // x-forwarded-for can contain multiple IPs, the first one is the client
-    return forwarded.split(',')[0].trim();
-  }
+    // Check for common proxy headers
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+        // x-forwarded-for can contain multiple IPs, the first one is the client
+        return forwarded.split(',')[0].trim();
+    }
 
-  const realIP = req.headers['x-real-ip'];
-  if (realIP) {
-    return realIP;
-  }
+    const realIP = req.headers['x-real-ip'];
+    if (realIP) {
+        return realIP;
+    }
 
-  // Fallback to socket remote address
-  return req.socket?.remoteAddress || '127.0.0.1';
+    // Fallback to socket remote address
+    return req.socket?.remoteAddress || '127.0.0.1';
 }
 
 /**
@@ -42,28 +42,28 @@ function getClientIP(req) {
  * @returns {boolean} - True if private/local, false otherwise
  */
 function isPrivateIP(ip) {
-  // IPv4 localhost
-  if (ip === '127.0.0.1') return true;
+    // IPv4 localhost
+    if (ip === '127.0.0.1') return true;
 
-  // IPv6 localhost
-  if (ip === '::1') return true;
+    // IPv6 localhost
+    if (ip === '::1') return true;
 
-  // IPv4 private ranges
-  if (ip.startsWith('192.168.')) return true;
-  if (ip.startsWith('10.')) return true;
+    // IPv4 private ranges
+    if (ip.startsWith('192.168.')) return true;
+    if (ip.startsWith('10.')) return true;
 
-  // IPv4 172.16.0.0/12 range (172.16.x.x to 172.31.x.x)
-  const parts = ip.split('.');
-  if (parts.length === 4 && parts[0] === '172') {
-    const second = parseInt(parts[1], 10);
-    if (second >= 16 && second <= 31) return true;
-  }
+    // IPv4 172.16.0.0/12 range (172.16.x.x to 172.31.x.x)
+    const parts = ip.split('.');
+    if (parts.length === 4 && parts[0] === '172') {
+        const second = parseInt(parts[1], 10);
+        if (second >= 16 && second <= 31) return true;
+    }
 
-  // IPv6 private ranges
-  if (ip.startsWith('fc') || ip.startsWith('fd')) return true; // fc00::/7
-  if (ip.startsWith('fe80:')) return true; // fe80::/10
+    // IPv6 private ranges
+    if (ip.startsWith('fc') || ip.startsWith('fd')) return true; // fc00::/7
+    if (ip.startsWith('fe80:')) return true; // fe80::/10
 
-  return false;
+    return false;
 }
 
 /**
@@ -72,33 +72,33 @@ function isPrivateIP(ip) {
  * @returns {string|null} - Timezone (e.g., 'America/New_York') or null if not found
  */
 function getTimezoneFromIP(req) {
-  const { parseCookies } = require('./pages/utils.js');
-  const cookies = parseCookies(req);
-  const parsedUrl = new URL(req.url, 'http://localhost');
-  const queryTimezone = parsedUrl.searchParams.get('timezone');
+    const { parseCookies } = require('./pages/utils.js');
+    const cookies = parseCookies(req);
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const queryTimezone = parsedUrl.searchParams.get('timezone');
 
-  // 1. Check for 'timezone' cookie
-  if (cookies.timezone && cookies.timezone !== 'null') {
-    return cookies.timezone;
-  }
+    // 1. Check for 'timezone' cookie
+    if (cookies.timezone && cookies.timezone !== 'null') {
+        return cookies.timezone;
+    }
 
-  // 2. Check for 'timezone' query parameter
-  if (queryTimezone && queryTimezone !== 'null') {
-    return queryTimezone;
-  }
+    // 2. Check for 'timezone' query parameter
+    if (queryTimezone && queryTimezone !== 'null') {
+        return queryTimezone;
+    }
 
-  // 3. Fallback to GeoIP based on IP address
-  const ip = getClientIP(req);
-  if (isPrivateIP(ip)) {
-    return null; // Will use default behavior (system timezone)
-  }
+    // 3. Fallback to GeoIP based on IP address
+    const ip = getClientIP(req);
+    if (isPrivateIP(ip)) {
+        return null; // Will use default behavior (system timezone)
+    }
 
-  const geo = geoip.lookup(ip);
-  if (geo && geo.timezone) {
-    return geo.timezone;
-  }
+    const geo = geoip.lookup(ip);
+    if (geo && geo.timezone) {
+        return geo.timezone;
+    }
 
-  return null;
+    return null;
 }
 
 /**
@@ -108,23 +108,23 @@ function getTimezoneFromIP(req) {
  * @returns {Object} - Object with year, month (1-indexed), and day
  */
 function getDateComponentsInTimezone(date, timezone) {
-  const formatter =
-    _dateFormatterCache.get(timezone) ??
-    (() => {
-      const f = new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-      });
-      _dateFormatterCache.set(timezone, f);
-      return f;
-    })();
-  const parts = formatter.formatToParts(date);
-  const year = parseInt(parts.find((p) => p.type === 'year').value, 10);
-  const month = parseInt(parts.find((p) => p.type === 'month').value, 10); // 1-indexed (1-12)
-  const day = parseInt(parts.find((p) => p.type === 'day').value, 10);
-  return { year, month, day };
+    const formatter =
+        _dateFormatterCache.get(timezone) ??
+        (() => {
+            const f = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezone,
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+            });
+            _dateFormatterCache.set(timezone, f);
+            return f;
+        })();
+    const parts = formatter.formatToParts(date);
+    const year = parseInt(parts.find((p) => p.type === 'year').value, 10);
+    const month = parseInt(parts.find((p) => p.type === 'month').value, 10); // 1-indexed (1-12)
+    const day = parseInt(parts.find((p) => p.type === 'day').value, 10);
+    return { year, month, day };
 }
 
 /**
@@ -134,56 +134,60 @@ function getDateComponentsInTimezone(date, timezone) {
  * @returns {string} - Formatted date string (e.g., "Today at 12:30PM", "Yesterday at 3:45AM", "01/15/26, 9:00PM")
  */
 function formatDateWithTimezone(date, timezone) {
-  try {
-    const userTimezone = timezone || _systemTimezone;
+    try {
+        const userTimezone = timezone || _systemTimezone;
 
-    // Get current date/time
-    const now = new Date();
+        // Get current date/time
+        const now = new Date();
 
-    // Extract date components in the target timezone for both dates
-    const messageComps = getDateComponentsInTimezone(date, userTimezone);
-    const todayComps = getDateComponentsInTimezone(now, userTimezone);
+        // Extract date components in the target timezone for both dates
+        const messageComps = getDateComponentsInTimezone(date, userTimezone);
+        const todayComps = getDateComponentsInTimezone(now, userTimezone);
 
-    // Create date-only objects in UTC for comparison
-    // Note: Date.UTC expects 0-indexed months (0-11), so we subtract 1
-    const messageDateOnly = Date.UTC(messageComps.year, messageComps.month - 1, messageComps.day);
-    const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
+        // Create date-only objects in UTC for comparison
+        // Note: Date.UTC expects 0-indexed months (0-11), so we subtract 1
+        const messageDateOnly = Date.UTC(
+            messageComps.year,
+            messageComps.month - 1,
+            messageComps.day
+        );
+        const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
 
-    // Calculate difference in days
-    const diffTime = todayDateOnly - messageDateOnly;
-    const diffDays = Math.round(diffTime / MILLISECONDS_PER_DAY);
+        // Calculate difference in days
+        const diffTime = todayDateOnly - messageDateOnly;
+        const diffDays = Math.round(diffTime / MILLISECONDS_PER_DAY);
 
-    // Format time part (e.g., "12:30PM")
-    const timeOptions = {
-      timeZone: userTimezone,
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    };
-    const timeStr = date.toLocaleString('en-US', timeOptions);
+        // Format time part (e.g., "12:30PM")
+        const timeOptions = {
+            timeZone: userTimezone,
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        };
+        const timeStr = date.toLocaleString('en-US', timeOptions);
 
-    if (diffDays === 0) {
-      // Today - just show time
-      return timeStr;
-    } else if (diffDays === 1) {
-      // Yesterday
-      return `Yesterday at ${timeStr}`;
-    } else {
-      // 2+ days ago - use locale-aware date format
-      const dateOptions = {
-        timeZone: userTimezone,
-        month: '2-digit',
-        day: '2-digit',
-        year: '2-digit',
-      };
-      const dateStr = date.toLocaleString('en-US', dateOptions);
-      return `${dateStr}, ${timeStr}`;
+        if (diffDays === 0) {
+            // Today - just show time
+            return timeStr;
+        } else if (diffDays === 1) {
+            // Yesterday
+            return `Yesterday at ${timeStr}`;
+        } else {
+            // 2+ days ago - use locale-aware date format
+            const dateOptions = {
+                timeZone: userTimezone,
+                month: '2-digit',
+                day: '2-digit',
+                year: '2-digit',
+            };
+            const dateStr = date.toLocaleString('en-US', dateOptions);
+            return `${dateStr}, ${timeStr}`;
+        }
+    } catch (err) {
+        // If timezone is invalid, fall back to default format
+        console.error('Error formatting date with timezone:', err);
+        return `${date.toLocaleTimeString('en-US')} ${date.toDateString()}`;
     }
-  } catch (err) {
-    // If timezone is invalid, fall back to default format
-    console.error('Error formatting date with timezone:', err);
-    return `${date.toLocaleTimeString('en-US')} ${date.toDateString()}`;
-  }
 }
 
 /**
@@ -193,21 +197,21 @@ function formatDateWithTimezone(date, timezone) {
  * @returns {string} - Formatted date separator string (e.g., "January 25, 2026")
  */
 function formatDateSeparator(date, timezone) {
-  try {
-    const userTimezone = timezone || _systemTimezone;
+    try {
+        const userTimezone = timezone || _systemTimezone;
 
-    const options = {
-      timeZone: userTimezone,
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    };
+        const options = {
+            timeZone: userTimezone,
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+        };
 
-    return date.toLocaleString('en-US', options);
-  } catch (err) {
-    console.error('Error formatting date separator:', err);
-    return date.toDateString();
-  }
+        return date.toLocaleString('en-US', options);
+    } catch (err) {
+        console.error('Error formatting date separator:', err);
+        return date.toDateString();
+    }
 }
 
 /**
@@ -218,23 +222,23 @@ function formatDateSeparator(date, timezone) {
  * @returns {boolean} - True if dates are on different days (or date2 is null)
  */
 function areDifferentDays(date1, date2, timezone) {
-  if (!date2) {
-    return true; // First message, always show separator
-  }
+    if (!date2) {
+        return true; // First message, always show separator
+    }
 
-  try {
-    const userTimezone = timezone || _systemTimezone;
+    try {
+        const userTimezone = timezone || _systemTimezone;
 
-    // Extract date components for both dates
-    const comp1 = getDateComponentsInTimezone(date1, userTimezone);
-    const comp2 = getDateComponentsInTimezone(date2, userTimezone);
+        // Extract date components for both dates
+        const comp1 = getDateComponentsInTimezone(date1, userTimezone);
+        const comp2 = getDateComponentsInTimezone(date2, userTimezone);
 
-    // Compare year, month, and day
-    return comp1.year !== comp2.year || comp1.month !== comp2.month || comp1.day !== comp2.day;
-  } catch (err) {
-    console.error('Error comparing dates:', err);
-    return false;
-  }
+        // Compare year, month, and day
+        return comp1.year !== comp2.year || comp1.month !== comp2.month || comp1.day !== comp2.day;
+    } catch (err) {
+        console.error('Error comparing dates:', err);
+        return false;
+    }
 }
 
 /**
@@ -246,36 +250,40 @@ function areDifferentDays(date1, date2, timezone) {
  * @returns {string} - Formatted time or date string
  */
 function formatForwardedTimestamp(date, timezone) {
-  try {
-    const userTimezone = timezone || _systemTimezone;
+    try {
+        const userTimezone = timezone || _systemTimezone;
 
-    const now = new Date();
-    const messageComps = getDateComponentsInTimezone(date, userTimezone);
-    const todayComps = getDateComponentsInTimezone(now, userTimezone);
+        const now = new Date();
+        const messageComps = getDateComponentsInTimezone(date, userTimezone);
+        const todayComps = getDateComponentsInTimezone(now, userTimezone);
 
-    const messageDateOnly = Date.UTC(messageComps.year, messageComps.month - 1, messageComps.day);
-    const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
-    const diffDays = Math.round((todayDateOnly - messageDateOnly) / MILLISECONDS_PER_DAY);
+        const messageDateOnly = Date.UTC(
+            messageComps.year,
+            messageComps.month - 1,
+            messageComps.day
+        );
+        const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
+        const diffDays = Math.round((todayDateOnly - messageDateOnly) / MILLISECONDS_PER_DAY);
 
-    if (diffDays === 0) {
-      return date.toLocaleString('en-US', {
-        timeZone: userTimezone,
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      });
-    } else {
-      return date.toLocaleString('en-US', {
-        timeZone: userTimezone,
-        month: '2-digit',
-        day: '2-digit',
-        year: '2-digit',
-      });
+        if (diffDays === 0) {
+            return date.toLocaleString('en-US', {
+                timeZone: userTimezone,
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            });
+        } else {
+            return date.toLocaleString('en-US', {
+                timeZone: userTimezone,
+                month: '2-digit',
+                day: '2-digit',
+                year: '2-digit',
+            });
+        }
+    } catch (err) {
+        console.error('Error formatting forwarded timestamp:', err);
+        return date.toLocaleDateString('en-US');
     }
-  } catch (err) {
-    console.error('Error formatting forwarded timestamp:', err);
-    return date.toLocaleDateString('en-US');
-  }
 }
 
 /**
@@ -286,141 +294,149 @@ function formatForwardedTimestamp(date, timezone) {
  * @returns {string} - Formatted timestamp string
  */
 function formatDiscordTimestamp(unixTimestamp, format, timezone) {
-  try {
-    const date = new Date(unixTimestamp * 1000);
-    const userTimezone = timezone || _systemTimezone;
-    const now = new Date();
+    try {
+        const date = new Date(unixTimestamp * 1000);
+        const userTimezone = timezone || _systemTimezone;
+        const now = new Date();
 
-    const messageComps = getDateComponentsInTimezone(date, userTimezone);
-    const todayComps = getDateComponentsInTimezone(now, userTimezone);
-    const messageDateOnly = Date.UTC(messageComps.year, messageComps.month - 1, messageComps.day);
-    const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
-    const diffDays = Math.round((todayDateOnly - messageDateOnly) / MILLISECONDS_PER_DAY);
-    const diffTime = messageDateOnly - todayDateOnly;
-
-    switch (format) {
-      case 'S': // Short date/time: 3/18/26, 3:05:06 PM
-        return date.toLocaleString('en-US', {
-          timeZone: userTimezone,
-          month: '2-digit',
-          day: '2-digit',
-          year: '2-digit',
-          hour: 'numeric',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true,
-        });
-      case 'f': // Long date/time: March 18, 2026 at 3:06 PM
-        return (
-          date
-            .toLocaleString('en-US', {
-              timeZone: userTimezone,
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true,
-            })
-            .replace(',', '') +
-          ' at ' +
-          date.toLocaleString('en-US', {
-            timeZone: userTimezone,
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })
+        const messageComps = getDateComponentsInTimezone(date, userTimezone);
+        const todayComps = getDateComponentsInTimezone(now, userTimezone);
+        const messageDateOnly = Date.UTC(
+            messageComps.year,
+            messageComps.month - 1,
+            messageComps.day
         );
-      case 'F': // Full date/time: Wednesday, March 18, 2026 at 3:06 PM
-        return (
-          date
-            .toLocaleString('en-US', {
-              timeZone: userTimezone,
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true,
-            })
-            .replace(',', '') +
-          ' at ' +
-          date.toLocaleString('en-US', {
-            timeZone: userTimezone,
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })
-        );
-      case 'R': // Relative time: a minute ago, 5 months ago, etc.
-        const diffNow = date.getTime() - now.getTime();
-        const diffSeconds = Math.abs(Math.floor(diffNow / 1000));
-        const diffMinutes = Math.abs(Math.floor(diffNow / (1000 * 60)));
-        const diffHours = Math.abs(Math.floor(diffNow / (1000 * 60 * 60)));
-        const diffDaysFloor = Math.abs(Math.floor(diffNow / (1000 * 60 * 60 * 24)));
-        const diffMonths = Math.abs(Math.floor(diffDaysFloor / 30));
-        const diffYears = Math.abs(Math.floor(diffDaysFloor / 365));
+        const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
+        const diffDays = Math.round((todayDateOnly - messageDateOnly) / MILLISECONDS_PER_DAY);
+        const diffTime = messageDateOnly - todayDateOnly;
 
-        const pastOrFuture = diffNow < 0 ? 'ago' : 'in';
+        switch (format) {
+            case 'S': // Short date/time: 3/18/26, 3:05:06 PM
+                return date.toLocaleString('en-US', {
+                    timeZone: userTimezone,
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: '2-digit',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                });
+            case 'f': // Long date/time: March 18, 2026 at 3:06 PM
+                return (
+                    date
+                        .toLocaleString('en-US', {
+                            timeZone: userTimezone,
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true,
+                        })
+                        .replace(',', '') +
+                    ' at ' +
+                    date.toLocaleString('en-US', {
+                        timeZone: userTimezone,
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                    })
+                );
+            case 'F': // Full date/time: Wednesday, March 18, 2026 at 3:06 PM
+                return (
+                    date
+                        .toLocaleString('en-US', {
+                            timeZone: userTimezone,
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true,
+                        })
+                        .replace(',', '') +
+                    ' at ' +
+                    date.toLocaleString('en-US', {
+                        timeZone: userTimezone,
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                    })
+                );
+            case 'R': // Relative time: a minute ago, 5 months ago, etc.
+                const diffNow = date.getTime() - now.getTime();
+                const diffSeconds = Math.abs(Math.floor(diffNow / 1000));
+                const diffMinutes = Math.abs(Math.floor(diffNow / (1000 * 60)));
+                const diffHours = Math.abs(Math.floor(diffNow / (1000 * 60 * 60)));
+                const diffDaysFloor = Math.abs(Math.floor(diffNow / (1000 * 60 * 60 * 24)));
+                const diffMonths = Math.abs(Math.floor(diffDaysFloor / 30));
+                const diffYears = Math.abs(Math.floor(diffDaysFloor / 365));
 
-        if (diffSeconds < 60) {
-          return diffSeconds === 1
-            ? 'a second ' + pastOrFuture
-            : `${diffSeconds} seconds ` + pastOrFuture;
-        } else if (diffMinutes < 60) {
-          return diffMinutes === 1
-            ? 'a minute ' + pastOrFuture
-            : `${diffMinutes} minutes ` + pastOrFuture;
-        } else if (diffHours < 24) {
-          return diffHours === 1 ? 'an hour ' + pastOrFuture : `${diffHours} hours ` + pastOrFuture;
-        } else if (diffDaysFloor < 30) {
-          return diffDaysFloor === 1
-            ? 'a day ' + pastOrFuture
-            : `${diffDaysFloor} days ` + pastOrFuture;
-        } else if (diffMonths < 12) {
-          return diffMonths === 1
-            ? 'a month ' + pastOrFuture
-            : `${diffMonths} months ` + pastOrFuture;
-        } else {
-          return diffYears === 1 ? 'a year ' + pastOrFuture : `${diffYears} years ` + pastOrFuture;
+                const pastOrFuture = diffNow < 0 ? 'ago' : 'in';
+
+                if (diffSeconds < 60) {
+                    return diffSeconds === 1
+                        ? 'a second ' + pastOrFuture
+                        : `${diffSeconds} seconds ` + pastOrFuture;
+                } else if (diffMinutes < 60) {
+                    return diffMinutes === 1
+                        ? 'a minute ' + pastOrFuture
+                        : `${diffMinutes} minutes ` + pastOrFuture;
+                } else if (diffHours < 24) {
+                    return diffHours === 1
+                        ? 'an hour ' + pastOrFuture
+                        : `${diffHours} hours ` + pastOrFuture;
+                } else if (diffDaysFloor < 30) {
+                    return diffDaysFloor === 1
+                        ? 'a day ' + pastOrFuture
+                        : `${diffDaysFloor} days ` + pastOrFuture;
+                } else if (diffMonths < 12) {
+                    return diffMonths === 1
+                        ? 'a month ' + pastOrFuture
+                        : `${diffMonths} months ` + pastOrFuture;
+                } else {
+                    return diffYears === 1
+                        ? 'a year ' + pastOrFuture
+                        : `${diffYears} years ` + pastOrFuture;
+                }
+            case 'd': // Short date: 3/18/26
+                return date.toLocaleString('en-US', {
+                    timeZone: userTimezone,
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: '2-digit',
+                });
+            case 'D': // Long date: March 18, 2026
+                return date.toLocaleString('en-US', {
+                    timeZone: userTimezone,
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                });
+            case 't': // Short time: 3:05 PM
+                return date.toLocaleString('en-US', {
+                    timeZone: userTimezone,
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                });
+            case 'T': // Long time: 3:05:06 PM
+                return date.toLocaleString('en-US', {
+                    timeZone: userTimezone,
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                });
+            default: // Default to S format
+                return formatDiscordTimestamp(unixTimestamp, 'S', timezone);
         }
-      case 'd': // Short date: 3/18/26
-        return date.toLocaleString('en-US', {
-          timeZone: userTimezone,
-          month: '2-digit',
-          day: '2-digit',
-          year: '2-digit',
-        });
-      case 'D': // Long date: March 18, 2026
-        return date.toLocaleString('en-US', {
-          timeZone: userTimezone,
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-      case 't': // Short time: 3:05 PM
-        return date.toLocaleString('en-US', {
-          timeZone: userTimezone,
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        });
-      case 'T': // Long time: 3:05:06 PM
-        return date.toLocaleString('en-US', {
-          timeZone: userTimezone,
-          hour: 'numeric',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true,
-        });
-      default: // Default to S format
-        return formatDiscordTimestamp(unixTimestamp, 'S', timezone);
+    } catch (err) {
+        console.error('Error formatting Discord timestamp:', err);
+        return String(unixTimestamp);
     }
-  } catch (err) {
-    console.error('Error formatting Discord timestamp:', err);
-    return String(unixTimestamp);
-  }
 }
 
 /**
@@ -430,25 +446,25 @@ function formatDiscordTimestamp(unixTimestamp, format, timezone) {
  * @returns {string} - Text with timestamps formatted
  */
 function replaceDiscordTimestamps(text, timezone) {
-  if (!text || typeof text !== 'string') return text;
+    if (!text || typeof text !== 'string') return text;
 
-  return text.replace(/<t:(\d+):?([A-Za-z])?>/g, (match, timestamp, format) => {
-    const ts = parseInt(timestamp, 10);
-    const fmt = format || 'f';
-    const formatted = formatDiscordTimestamp(ts, fmt, timezone);
-    return renderTemplate(getTemplate('timestamp_span', 'misc'), {
-      FORMATTED_TIME: formatted,
+    return text.replace(/<t:(\d+):?([A-Za-z])?>/g, (match, timestamp, format) => {
+        const ts = parseInt(timestamp, 10);
+        const fmt = format || 'f';
+        const formatted = formatDiscordTimestamp(ts, fmt, timezone);
+        return renderTemplate(getTemplate('timestamp_span', 'misc'), {
+            FORMATTED_TIME: formatted,
+        });
     });
-  });
 }
 
 module.exports = {
-  getClientIP,
-  getTimezoneFromIP,
-  formatDateWithTimezone,
-  formatDateSeparator,
-  areDifferentDays,
-  formatForwardedTimestamp,
-  formatDiscordTimestamp,
-  replaceDiscordTimestamps,
+    getClientIP,
+    getTimezoneFromIP,
+    formatDateWithTimezone,
+    formatDateSeparator,
+    areDifferentDays,
+    formatForwardedTimestamp,
+    formatDiscordTimestamp,
+    replaceDiscordTimestamps,
 };

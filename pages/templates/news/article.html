@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" class="page-news">
+  <head>
+    {$COMMON_HEAD}
+    <title>Discross - AP News - {$HEADLINE}</title>
+  </head>
+
+  <body {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+      <a href="/news{$SESSION_PARAM}" class="menu-button">
+        <img
+          src="/resources/twemoji/2b05.gif"
+          alt="Back"
+          width="24"
+          height="24"
+          style="width: 24px; height: 24px"
+        />
+      </a>
+      <div style="">
+        <div style="padding: 16px">
+          <h1><font face="'rodin', Arial, Helvetica, sans-serif">{$HEADLINE}</font></h1>
+          <p class="news-article-meta">{$BYLINE}{$DATE}</p>
+          {$LEAD_IMAGE}
+          <div class="news-article-content">{$ARTICLE_CONTENT}</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

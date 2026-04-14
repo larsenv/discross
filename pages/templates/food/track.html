@@ -1,46 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="page-food">
-<head>
-  {$COMMON_HEAD}
-  <title>Discross - Pizza Tracker</title>
-</head>
-<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
-  <div id="wrapper">
-    <table style="width: 100%;">
-      <tr valign="middle">
-        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
-        <td>
-          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
-        </td>
-        <td width="100%" align="right">
-          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a href="/food/{$SESSION_PARAM}" style="color:#dddddd">Order Pizza</a>&#160;&#160;
-            <a href="/food/cart{$SESSION_PARAM}" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
-            <a href="/food/receipts{$SESSION_PARAM}" style="color:#dddddd">Orders</a>&#160;&#160;
-            <a href="/food/track{$SESSION_PARAM}" style="color:#dddddd">Track</a>&#160;&#160;
-          </font>
-        </td>
-        <td valign="middle">
-          <a href="/switchtheme{$SESSION_PARAM}"><img src="/resources/twemoji/1f313.gif" alt="Switch theme" width="36" height="36" style="background: none; border: none;"></a>
-        </td>
-      </tr>
-    </table>
-    <hr style="margin: 0;">
-    <br>
-    <div class="food-container">
-      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Pizza Tracker</b></font><br><br>
-      <div class="food-card">
-        <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">
-          To protect your privacy, Discross does not store phone numbers. You can track your order directly on the Domino's website using your order details below.
-        </font><br><br>
-        <div id="order-info">
-          <!-- injected by server if order exists -->
-          {$ORDER_INFO}
+  <head>
+    {$COMMON_HEAD}
+    <title>Discross - Pizza Tracker</title>
+  </head>
+  <body style="margin: 0" {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+      <table style="width: 100%">
+        <tr valign="middle">
+          <td>
+            <a href="/"><img src="/resources/logo.gif" alt="Logo" /></a>
+          </td>
+          <td>
+            <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >discross</font
+            >
+          </td>
+          <td width="100%" align="right">
+            <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >&#160;&#160;
+              <a href="/food/{$SESSION_PARAM}" style="color: #dddddd">Order Pizza</a>&#160;&#160;
+              <a href="/food/cart{$SESSION_PARAM}" style="color: #dddddd">Cart ({$CART_COUNT})</a
+              >&#160;&#160;
+              <a href="/food/receipts{$SESSION_PARAM}" style="color: #dddddd">Orders</a>&#160;&#160;
+              <a href="/food/track{$SESSION_PARAM}" style="color: #dddddd">Track</a>&#160;&#160;
+            </font>
+          </td>
+          <td valign="middle" style="padding-right: 8px;">
+            <a href="/switchtheme{$SESSION_PARAM}"
+              ><img
+                src="/resources/twemoji/1f313.gif"
+                alt="Switch theme"
+                width="36"
+                height="36"
+                style="background: none; border: none"
+            /></a>
+          </td>
+        </tr>
+      </table>
+      <hr style="margin: 0" />
+      <br />
+      <div class="food-container">
+        <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+          ><b>Pizza Tracker</b></font
+        ><br /><br />
+        <div class="food-card">
+          <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1">
+            To protect your privacy, Discross does not store phone numbers. You can track your order
+            directly on the Domino's website using your order details below. </font
+          ><br /><br />
+          <div id="order-info">
+            <!-- injected by server if order exists -->
+            {$ORDER_INFO}
+          </div>
+          <br />
+          <a
+            href="https://www.dominos.com/en/pages/tracker/"
+            class="food-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Track on Domino's Website</a
+          >
         </div>
-        <br>
-        <a href="https://www.dominos.com/en/pages/tracker/" class="food-btn" target="_blank" rel="noopener noreferrer">Track on Domino's Website</a>
       </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>

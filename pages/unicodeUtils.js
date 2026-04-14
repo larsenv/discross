@@ -25,58 +25,59 @@ const ASCII_MAX = 0x80;
 
 // Typographic punctuation substitutions: fancy/smart chars → plain ASCII equivalents
 const TYPOGRAPHIC_MAP = {
-  '\u2018': "'", // LEFT SINGLE QUOTATION MARK  ' → '
-  '\u2019': "'", // RIGHT SINGLE QUOTATION MARK (Oxford apostrophe)  ' → '
-  '\u201A': "'", // SINGLE LOW-9 QUOTATION MARK  ‚ → '
-  '\u201B': "'", // SINGLE HIGH-REVERSED-9 QUOTATION MARK  ‛ → '
-  '\u201C': '"', // LEFT DOUBLE QUOTATION MARK  " → "
-  '\u201D': '"', // RIGHT DOUBLE QUOTATION MARK  " → "
-  '\u201E': '"', // DOUBLE LOW-9 QUOTATION MARK  „ → "
-  '\u201F': '"', // DOUBLE HIGH-REVERSED-9 QUOTATION MARK  ‟ → "
-  '\u2010': '-', // HYPHEN  ‐ → -
-  '\u2011': '-', // NON-BREAKING HYPHEN  ‑ → -
-  '\u2012': '-', // FIGURE DASH  ‒ → -
-  '\u2013': '-', // EN DASH  – → -
-  '\u2014': '-', // EM DASH  — → -
-  '\u2015': '-', // HORIZONTAL BAR  ― → -
-  '\u2026': '...', // HORIZONTAL ELLIPSIS  … → ...
-  '\u02BC': "'", // MODIFIER LETTER APOSTROPHE  ʼ → '
-  '\u02B9': "'", // MODIFIER LETTER PRIME  ʹ → '
-  '\u2032': "'", // PRIME  ′ → '
-  '\u2033': '"', // DOUBLE PRIME  ″ → "
+    '\u2018': "'", // LEFT SINGLE QUOTATION MARK  ' → '
+    '\u2019': "'", // RIGHT SINGLE QUOTATION MARK (Oxford apostrophe)  ' → '
+    '\u201A': "'", // SINGLE LOW-9 QUOTATION MARK  ‚ → '
+    '\u201B': "'", // SINGLE HIGH-REVERSED-9 QUOTATION MARK  ‛ → '
+    '\u201C': '"', // LEFT DOUBLE QUOTATION MARK  " → "
+    '\u201D': '"', // RIGHT DOUBLE QUOTATION MARK  " → "
+    '\u201E': '"', // DOUBLE LOW-9 QUOTATION MARK  „ → "
+    '\u201F': '"', // DOUBLE HIGH-REVERSED-9 QUOTATION MARK  ‟ → "
+    '\u2010': '-', // HYPHEN  ‐ → -
+    '\u2011': '-', // NON-BREAKING HYPHEN  ‑ → -
+    '\u2012': '-', // FIGURE DASH  ‒ → -
+    '\u2013': '-', // EN DASH  – → -
+    '\u2014': '-', // EM DASH  — → -
+    '\u2015': '-', // HORIZONTAL BAR  ― → -
+    '\u2026': '...', // HORIZONTAL ELLIPSIS  … → ...
+    '\u02BC': "'", // MODIFIER LETTER APOSTROPHE  ʼ → '
+    '\u02B9': "'", // MODIFIER LETTER PRIME  ʹ → '
+    '\u2032': "'", // PRIME  ′ → '
+    '\u2033': '"', // DOUBLE PRIME  ″ → "
 };
 
 function normalizeWeirdUnicode(str) {
-  if (!str) return str;
+    if (!str) return str;
 
-  return Array.from(str)
-    .map((char) => {
-      const code = char.codePointAt(0);
+    return Array.from(str)
+        .map((char) => {
+            const code = char.codePointAt(0);
 
-      // Typographic punctuation substitutions (curly quotes, dashes, ellipsis, etc.)
-      if (TYPOGRAPHIC_MAP[char] !== undefined) return TYPOGRAPHIC_MAP[char];
+            // Typographic punctuation substitutions (curly quotes, dashes, ellipsis, etc.)
+            if (TYPOGRAPHIC_MAP[char] !== undefined) return TYPOGRAPHIC_MAP[char];
 
-      // Full-width ASCII variants: U+FF01-U+FF5E → ASCII (subtract 0xFEE0)
-      // Note: excludes U+FF61-U+FF9F (Half-width Katakana) which is legitimate Japanese
-      if (code >= 0xff01 && code <= 0xff5e) return String.fromCodePoint(code - 0xfee0);
+            // Full-width ASCII variants: U+FF01-U+FF5E → ASCII (subtract 0xFEE0)
+            // Note: excludes U+FF61-U+FF9F (Half-width Katakana) which is legitimate Japanese
+            if (code >= 0xff01 && code <= 0xff5e) return String.fromCodePoint(code - 0xfee0);
 
-      // Mathematical Alphanumeric Symbols: U+1D400-U+1D7FF
-      // Styled versions of Latin letters and digits (bold, italic, script, fraktur, etc.)
-      if (code >= 0x1d400 && code <= 0x1d7ff) return char.normalize('NFKC');
+            // Mathematical Alphanumeric Symbols: U+1D400-U+1D7FF
+            // Styled versions of Latin letters and digits (bold, italic, script, fraktur, etc.)
+            if (code >= 0x1d400 && code <= 0x1d7ff) return char.normalize('NFKC');
 
-      // Enclosed Alphanumerics: U+2460-U+24FF (circled letters/numbers: Ⓐ, ①, etc.)
-      // Enclosed Alphanumeric Supplement: U+1F100-U+1F1FF
-      if ((code >= 0x2460 && code <= 0x24ff) || (code >= 0x1f100 && code <= 0x1f1ff)) {
-        const normalized = char.normalize('NFKC');
-        // Only replace if normalized result is purely ASCII (single character)
-        if (normalized.length === 1 && normalized.codePointAt(0) < ASCII_MAX) return normalized;
-      }
+            // Enclosed Alphanumerics: U+2460-U+24FF (circled letters/numbers: Ⓐ, ①, etc.)
+            // Enclosed Alphanumeric Supplement: U+1F100-U+1F1FF
+            if ((code >= 0x2460 && code <= 0x24ff) || (code >= 0x1f100 && code <= 0x1f1ff)) {
+                const normalized = char.normalize('NFKC');
+                // Only replace if normalized result is purely ASCII (single character)
+                if (normalized.length === 1 && normalized.codePointAt(0) < ASCII_MAX)
+                    return normalized;
+            }
 
-      return char;
-    })
-    .join('');
+            return char;
+        })
+        .join('');
 }
 
 module.exports = {
-  normalizeWeirdUnicode,
+    normalizeWeirdUnicode,
 };

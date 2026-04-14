@@ -33,7 +33,7 @@ ctx.lineJoin = 'round';
 ctx.lineWidth = currSize;
 ctx.strokeStyle = currColor;
 // Fill canvas with white immediately (transparent canvas turns black on some Wii conversions)
-ctx.fillStyle = "#ffffff";
+ctx.fillStyle = '#ffffff';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 ctx.fillStyle = currColor;
 
@@ -84,7 +84,8 @@ if (window.addEventListener) {
 // Fallback (Firefox <39 and other browsers without offsetX):
 // Use pageX/pageY (document-relative) + canvas document-offset traversal.
 function getCanvasPagePos() {
-    let left = 0, top = 0;
+    let left = 0,
+        top = 0;
     let el = canvas;
     while (el) {
         left += el.offsetLeft || 0;
@@ -115,17 +116,17 @@ function getPos(e) {
     if (e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
-            y: e.offsetY * (canvas.height / canvasDisplayH)
+            y: e.offsetY * (canvas.height / canvasDisplayH),
         };
     }
     // Fallback: pageX/pageY + canvas page offset
     const scroll = getScrollOffset();
-    const pageX = e.pageX !== undefined ? e.pageX : (e.clientX + scroll.x);
-    const pageY = e.pageY !== undefined ? e.pageY : (e.clientY + scroll.y);
+    const pageX = e.pageX !== undefined ? e.pageX : e.clientX + scroll.x;
+    const pageY = e.pageY !== undefined ? e.pageY : e.clientY + scroll.y;
     const cp = getCanvasPagePos();
     return {
         x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
-        y: (pageY - cp.top) * (canvas.height / canvasDisplayH)
+        y: (pageY - cp.top) * (canvas.height / canvasDisplayH),
     };
 }
 
@@ -152,8 +153,8 @@ function flushDrawQueue() {
 setInterval(flushDrawQueue, 30);
 
 // --- DRAWING EVENTS ---
-canvas.onmousedown = function(e) {
-    if(e.preventDefault) e.preventDefault(); // Stop Wii Drag
+canvas.onmousedown = function (e) {
+    if (e.preventDefault) e.preventDefault(); // Stop Wii Drag
     const pos = getPos(e);
     if (currTool === 'fill') {
         floodFill(pos.x, pos.y);
@@ -165,19 +166,19 @@ canvas.onmousedown = function(e) {
     lastDrawnX = pos.x;
     lastDrawnY = pos.y;
     pointQueue = [];
-    
+
     ctx.beginPath();
-    ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
+    ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
     ctx.fillStyle = currColor;
     ctx.fill();
     ctx.beginPath();
-    
+
     return false;
 };
 
-canvas.onmousemove = function(e) {
+canvas.onmousemove = function (e) {
     if (!isDrawing) return;
-    if(e.preventDefault) e.preventDefault(); 
+    if (e.preventDefault) e.preventDefault();
 
     const pos = getPos(e);
     pointQueue.push({ x: pos.x, y: pos.y });
@@ -185,8 +186,14 @@ canvas.onmousemove = function(e) {
     lastY = pos.y;
 };
 
-canvas.onmouseup = function() { flushDrawQueue(); isDrawing = false; };
-canvas.onmouseout = function() { flushDrawQueue(); isDrawing = false; };
+canvas.onmouseup = function () {
+    flushDrawQueue();
+    isDrawing = false;
+};
+canvas.onmouseout = function () {
+    flushDrawQueue();
+    isDrawing = false;
+};
 
 // --- TOUCH SUPPORT FOR MOBILE ---
 // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
@@ -194,78 +201,94 @@ function getTouchPos(e) {
     if (!e.touches || e.touches.length === 0) return null;
     const touch = e.touches[0];
     const scroll = getScrollOffset();
-    const pageX = touch.pageX !== undefined ? touch.pageX : (touch.clientX + scroll.x);
-    const pageY = touch.pageY !== undefined ? touch.pageY : (touch.clientY + scroll.y);
+    const pageX = touch.pageX !== undefined ? touch.pageX : touch.clientX + scroll.x;
+    const pageY = touch.pageY !== undefined ? touch.pageY : touch.clientY + scroll.y;
     const cp = getCanvasPagePos();
     return {
         x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
-        y: (pageY - cp.top) * (canvas.height / canvasDisplayH)
+        y: (pageY - cp.top) * (canvas.height / canvasDisplayH),
     };
 }
 
-canvas.addEventListener('touchstart', function(e) {
-    if(e.preventDefault) e.preventDefault(); // Prevent scrolling
-    const pos = getTouchPos(e);
-    if (!pos) return;
-    if (currTool === 'fill') {
-        floodFill(pos.x, pos.y);
-        return;
-    }
-    isDrawing = true;
-    lastX = pos.x;
-    lastY = pos.y;
-    lastDrawnX = pos.x;
-    lastDrawnY = pos.y;
-    pointQueue = [];
-    
-    ctx.beginPath();
-    ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
-    ctx.fillStyle = currColor;
-    ctx.fill();
-    ctx.beginPath();
-}, false);
+canvas.addEventListener(
+    'touchstart',
+    function (e) {
+        if (e.preventDefault) e.preventDefault(); // Prevent scrolling
+        const pos = getTouchPos(e);
+        if (!pos) return;
+        if (currTool === 'fill') {
+            floodFill(pos.x, pos.y);
+            return;
+        }
+        isDrawing = true;
+        lastX = pos.x;
+        lastY = pos.y;
+        lastDrawnX = pos.x;
+        lastDrawnY = pos.y;
+        pointQueue = [];
 
-canvas.addEventListener('touchmove', function(e) {
-    if (!isDrawing) return;
-    if(e.preventDefault) e.preventDefault(); // Prevent scrolling
-    
-    const pos = getTouchPos(e);
-    if (!pos) return;
-    pointQueue.push({ x: pos.x, y: pos.y });
-    lastX = pos.x;
-    lastY = pos.y;
-}, false);
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
+        ctx.fillStyle = currColor;
+        ctx.fill();
+        ctx.beginPath();
+    },
+    false
+);
 
-canvas.addEventListener('touchend', function(e) {
-    if(e.preventDefault) e.preventDefault();
-    flushDrawQueue();
-    isDrawing = false;
-}, false);
+canvas.addEventListener(
+    'touchmove',
+    function (e) {
+        if (!isDrawing) return;
+        if (e.preventDefault) e.preventDefault(); // Prevent scrolling
 
-canvas.addEventListener('touchcancel', function(e) {
-    if(e.preventDefault) e.preventDefault();
-    flushDrawQueue();
-    isDrawing = false;
-}, false);
+        const pos = getTouchPos(e);
+        if (!pos) return;
+        pointQueue.push({ x: pos.x, y: pos.y });
+        lastX = pos.x;
+        lastY = pos.y;
+    },
+    false
+);
+
+canvas.addEventListener(
+    'touchend',
+    function (e) {
+        if (e.preventDefault) e.preventDefault();
+        flushDrawQueue();
+        isDrawing = false;
+    },
+    false
+);
+
+canvas.addEventListener(
+    'touchcancel',
+    function (e) {
+        if (e.preventDefault) e.preventDefault();
+        flushDrawQueue();
+        isDrawing = false;
+    },
+    false
+);
 
 // --- UI FUNCTIONS ---
 function setColor(col, id) {
     currColor = col;
     ctx.strokeStyle = currColor;
-    
+
     // Reset borders
-    for(let i=1; i<=16; i++) {
-        const el = document.getElementById('c'+i);
-        if(el) el.style.border = "2px solid #555";
+    for (let i = 1; i <= 16; i++) {
+        const el = document.getElementById('c' + i);
+        if (el) el.style.border = '2px solid #555';
     }
-    document.getElementById(id).style.border = "2px solid white";
+    document.getElementById(id).style.border = '2px solid white';
 }
 
 function setTool(tool) {
-    currTool = (currTool === tool) ? 'draw' : tool;
+    currTool = currTool === tool ? 'draw' : tool;
     const fillBtn = document.getElementById('btn-fill');
     if (fillBtn) {
-        fillBtn.style.outline = (currTool === 'fill') ? '2px solid white' : '';
+        fillBtn.style.outline = currTool === 'fill' ? '2px solid white' : '';
     }
 }
 
@@ -307,7 +330,7 @@ function floodFill(startX, startY) {
         const dg = data[i + 1] - targetG;
         const db = data[i + 2] - targetB;
         const da = data[i + 3] - targetA;
-        if (dr*dr + dg*dg + db*db + da*da > tolSq) continue;
+        if (dr * dr + dg * dg + db * db + da * da > tolSq) continue;
         data[i] = fillR;
         data[i + 1] = fillG;
         data[i + 2] = fillB;
@@ -324,15 +347,15 @@ function setSize(s, id) {
     currSize = s;
     ctx.lineWidth = currSize;
 
-    for(let i=1; i<=4; i++) {
-        const el = document.getElementById('s'+i);
-        if(el) el.style.border = "2px solid #000";
+    for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('s' + i);
+        if (el) el.style.border = '2px solid #000';
     }
-    document.getElementById(id).style.border = "2px solid blue";
+    document.getElementById(id).style.border = '2px solid blue';
 }
 
 function wipe() {
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = currColor;
 }
@@ -341,7 +364,7 @@ function wipe() {
 function prepareAndSend() {
     const inputField = document.getElementById('drawinginput');
     const form = document.getElementById('sendform');
-    const data = canvas.toDataURL("image/png");
+    const data = canvas.toDataURL('image/png');
     inputField.value = data;
     form.submit();
 }

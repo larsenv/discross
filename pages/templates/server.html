@@ -1,29 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="page-server">
-
-<head>
+  <head>
     {$COMMON_HEAD}
     <title>Discross - Menu</title>
     <script src="/js/server.js"></script>
-</head>
+  </head>
 
-<body {$WHITE_THEME_ENABLED}>
+  <body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <table>
-            <tr>
-                <td valign="top" style="vertical-align: top; text-align: center;">
-                    <a href="/server/{$SESSION_PARAM}"><img src="/resources/logo.gif" alt="Home"></a><br>
-                    <hr noshade>
-                    {$SERVER_LIST}
-                </td>
-                <td valign="top" style="vertical-align: top;">
-                    {$DISCORD_NAME}
-
-                    {$CHANNEL_LIST}
-                </td>
-            </tr>
-        </table>
+      <table>
+        <tr>
+          <td valign="top" style="vertical-align: top; text-align: center">
+            <a href="/server/{$SESSION_PARAM}"><img src="/resources/logo.gif" alt="Home" /></a
+            ><br />
+            <hr noshade />
+            {$SERVER_LIST}
+          </td>
+          <td valign="top" style="vertical-align: top">{$DISCORD_NAME} {$CHANNEL_LIST}</td>
+        </tr>
+      </table>
     </div>
-</body>
-
+  </body>
 </html>

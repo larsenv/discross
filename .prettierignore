@@ -1,2 +1,3 @@
-node_modules/
-pages/static/
+node_modules
+package-lock.json
+pages/templates/**/*.html

@@ -10,13 +10,13 @@ const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html
 const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
 
 exports.processPrivacy = async function (bot, req, res, args) {
-  const discordID = await auth.checkAuth(req, res, true);
-  const menuOptions = discordID
-    ? renderTemplate(logged_in_template, { USER: escape(await auth.getUsername(discordID)) })
-    : logged_out_template;
-  const response = renderTemplate(privacy_template, {
-    MENU_OPTIONS: menuOptions,
-    WHITE_THEME_ENABLED: getPageThemeAttr(req),
-  });
-  res.end(response);
+    const discordID = await auth.checkAuth(req, res, true);
+    const menuOptions = discordID
+        ? renderTemplate(logged_in_template, { USER: escape(await auth.getUsername(discordID)) })
+        : logged_out_template;
+    const response = renderTemplate(privacy_template, {
+        MENU_OPTIONS: menuOptions,
+        WHITE_THEME_ENABLED: getPageThemeAttr(req),
+    });
+    res.end(response);
 };

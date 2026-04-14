@@ -7,17 +7,17 @@ const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../t
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText } = require('./emojiUtils');
 const {
-  renderTemplate,
-  parseCookies,
-  resolveTheme,
-  buildSessionParam,
-  loadAndRenderPageTemplate,
-  getTemplate,
+    renderTemplate,
+    parseCookies,
+    resolveTheme,
+    buildSessionParam,
+    loadAndRenderPageTemplate,
+    getTemplate,
 } = require('./utils.js');
 
-const news_template = loadAndRenderPageTemplate('news');
+const news_template = loadAndRenderPageTemplate('index', 'news');
 
-const article_template = loadAndRenderPageTemplate('news_article');
+const article_template = loadAndRenderPageTemplate('article', 'news');
 
 const AP_BASE = 'https://apnews.com';
 const DEFAULT_TOPIC = 'apf-topnews';
@@ -27,87 +27,87 @@ const MAX_ARTICLE_ELEMENTS = 150;
 
 // Browser-like User-Agent for AP News requests
 const BROWSER_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 function proxyImageUrl(url) {
-  return `/imageProxy/external/${Buffer.from(url).toString('base64')}`;
+    return `/imageProxy/external/${Buffer.from(url).toString('base64')}`;
 }
 
 // Escape text for safe HTML output with the same Unicode processing used for
 // Discord messages: normalize weird Unicode → HTML-escape → replace emoji with
 // Twemoji img tags (only when images are enabled).
 function escapeContent(text, showImages) {
-  if (!text) return '';
-  const normalized = normalizeWeirdUnicode(text);
-  const escaped = escape(normalized);
-  if (!showImages) return escaped;
-  return processUnicodeEmojiInText(escaped, 18, '1.125em');
+    if (!text) return '';
+    const normalized = normalizeWeirdUnicode(text);
+    const escaped = escape(normalized);
+    if (!showImages) return escaped;
+    return processUnicodeEmojiInText(escaped, 18, '1.125em');
 }
 
 // Strip all HTML tags from a string, preserving text content only.
 // Block-level elements become newlines; all tag markup is removed entirely.
 // Output is always passed through he.decode + escape-html before rendering.
 function stripHtml(html) {
-  if (!html) return '';
-  return he
-    .decode(
-      html
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/p>/gi, '\n')
-        .replace(/<\/div>/gi, '\n')
-        .replace(/<[^>]*>/g, '') // Remove all HTML tags and their attributes
-        .replace(/</g, '') // Remove any stray '<' left by malformed attribute values
-    )
-    .trim();
+    if (!html) return '';
+    return he
+        .decode(
+            html
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n')
+                .replace(/<\/div>/gi, '\n')
+                .replace(/<[^>]*>/g, '') // Remove all HTML tags and their attributes
+                .replace(/</g, '') // Remove any stray '<' left by malformed attribute values
+        )
+        .trim();
 }
 
 // Returns true if the paragraph text is a CTA / live-update callout that
 // should not appear in the article body (e.g. "▶ Follow live updates…").
 function isCTAParagraph(text) {
-  // AP News prepends ▶ (U+25B6) to live-blog follow links
-  return text.startsWith('\u25B6') || text.startsWith('▶');
+    // AP News prepends ▶ (U+25B6) to live-blog follow links
+    return text.startsWith('\u25B6') || text.startsWith('▶');
 }
 
 function resolvePrefs(req) {
-  const parsedUrl = new URL(req.url, 'http://localhost');
-  const urlSessionID = parsedUrl.searchParams.get('sessionID') ?? '';
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const urlImages = parsedUrl.searchParams.get('images');
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const urlSessionID = parsedUrl.searchParams.get('sessionID') ?? '';
+    const urlTheme = parsedUrl.searchParams.get('theme');
+    const urlImages = parsedUrl.searchParams.get('images');
 
-  const { whiteThemeCookie, images: imagesCookieValue } = parseCookies(req);
+    const { whiteThemeCookie, images: imagesCookieValue } = parseCookies(req);
 
-  const sessionParam = buildSessionParam(
-    urlSessionID,
-    urlTheme,
-    whiteThemeCookie,
-    urlImages,
-    imagesCookieValue
-  );
+    const sessionParam = buildSessionParam(
+        urlSessionID,
+        urlTheme,
+        whiteThemeCookie,
+        urlImages,
+        imagesCookieValue
+    );
 
-  const theme = resolveTheme(req);
-  const imagesCookie =
-    urlImages !== null
-      ? parseInt(urlImages, 10)
-      : imagesCookieValue !== undefined
-        ? parseInt(imagesCookieValue, 10)
-        : 1;
+    const theme = resolveTheme(req);
+    const imagesCookie =
+        urlImages !== null
+            ? parseInt(urlImages, 10)
+            : imagesCookieValue !== undefined
+              ? parseInt(imagesCookieValue, 10)
+              : 1;
 
-  return { urlSessionID, sessionParam, theme, imagesCookie, parsedUrl };
+    return { urlSessionID, sessionParam, theme, imagesCookie, parsedUrl };
 }
 
 async function fetchHtml(url) {
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': BROWSER_UA,
-      Accept: 'text/html,application/xhtml+xml',
-    },
-  });
-  if (!response.ok) {
-    const err = new Error(`HTTP ${response.status} fetching ${url}`);
-    err.statusCode = response.status;
-    throw err;
-  }
-  return response.text();
+    const response = await fetch(url, {
+        headers: {
+            'User-Agent': BROWSER_UA,
+            Accept: 'text/html,application/xhtml+xml',
+        },
+    });
+    if (!response.ok) {
+        const err = new Error(`HTTP ${response.status} fetching ${url}`);
+        err.statusCode = response.status;
+        throw err;
+    }
+    return response.text();
 }
 
 // AP News image src regex: matches src="https://dims.apnews.com/..." or assets.apnews.com
@@ -117,375 +117,379 @@ const AP_IMG_SRC_RE = /\bsrc(?!set)="(https?:\/\/(?:dims|assets)\.apnews\.com\/[
 // Extract the inner content of a <div> block starting at contentStart
 // (i.e., just after the opening tag), bounded by tracking div nesting depth.
 function extractDivContent(html, contentStart) {
-  let depth = 1;
-  let i = contentStart;
+    let depth = 1;
+    let i = contentStart;
 
-  while (i < html.length && depth > 0) {
-    // Use indexOf('<div', i) then verify the next char is whitespace or '>'
-    // so we don't count <divider> or other elements starting with 'div'.
-    let nextOpen = -1;
-    let pos = i;
-    while (pos < html.length) {
-      const candidate = html.indexOf('<div', pos);
-      if (candidate === -1) break;
-      const c = html[candidate + 4];
-      if (c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '>') {
-        nextOpen = candidate;
-        break;
-      }
-      pos = candidate + 1;
+    while (i < html.length && depth > 0) {
+        // Use indexOf('<div', i) then verify the next char is whitespace or '>'
+        // so we don't count <divider> or other elements starting with 'div'.
+        let nextOpen = -1;
+        let pos = i;
+        while (pos < html.length) {
+            const candidate = html.indexOf('<div', pos);
+            if (candidate === -1) break;
+            const c = html[candidate + 4];
+            if (c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '>') {
+                nextOpen = candidate;
+                break;
+            }
+            pos = candidate + 1;
+        }
+
+        const nextClose = html.indexOf('</div>', i);
+
+        if (nextClose === -1) break;
+
+        if (nextOpen !== -1 && nextOpen < nextClose) {
+            depth++;
+            i = nextOpen + 4;
+        } else {
+            depth--;
+            if (depth === 0) return html.slice(contentStart, nextClose);
+            i = nextClose + 6;
+        }
     }
 
-    const nextClose = html.indexOf('</div>', i);
-
-    if (nextClose === -1) break;
-
-    if (nextOpen !== -1 && nextOpen < nextClose) {
-      depth++;
-      i = nextOpen + 4;
-    } else {
-      depth--;
-      if (depth === 0) return html.slice(contentStart, nextClose);
-      i = nextClose + 6;
-    }
-  }
-
-  return html.slice(contentStart, i);
+    return html.slice(contentStart, i);
 }
 
 // Scrape the AP News hub HTML page for feed items.
 // Mirrors the approach used by RSSHub topics.ts but also extracts images.
 function parseHubHtml(html) {
-  const items = [];
-  const seen = new Set();
+    const items = [];
+    const seen = new Set();
 
-  // Each article on the hub page is a div.PagePromo
-  const PROMO_OPEN_RE = /<div[^>]+class="[^"]*\bPagePromo\b[^"]*"[^>]*>/gi;
-  let m;
+    // Each article on the hub page is a div.PagePromo
+    const PROMO_OPEN_RE = /<div[^>]+class="[^"]*\bPagePromo\b[^"]*"[^>]*>/gi;
+    let m;
 
-  while ((m = PROMO_OPEN_RE.exec(html)) !== null) {
-    const contentStart = m.index + m[0].length;
+    while ((m = PROMO_OPEN_RE.exec(html)) !== null) {
+        const contentStart = m.index + m[0].length;
 
-    // Timestamp lives as a data attribute on the PagePromo div itself
-    const tsMatch = m[0].match(/data-posted-date-timestamp="(\d+)"/);
-    const timestamp = tsMatch ? parseInt(tsMatch[1], 10) : 0;
+        // Timestamp lives as a data attribute on the PagePromo div itself
+        const tsMatch = m[0].match(/data-posted-date-timestamp="(\d+)"/);
+        const timestamp = tsMatch ? parseInt(tsMatch[1], 10) : 0;
 
-    const block = extractDivContent(html, contentStart);
+        const block = extractDivContent(html, contentStart);
 
-    // Skip nested PagePromos by jumping past this block
-    PROMO_OPEN_RE.lastIndex = contentStart + block.length;
+        // Skip nested PagePromos by jumping past this block
+        PROMO_OPEN_RE.lastIndex = contentStart + block.length;
 
-    // Article URL — prefer /article/ links to skip live-blog/hub links
-    const urlMatch = block.match(/href="((?:https:\/\/apnews\.com)?\/article\/[^"#]+)"/i);
-    if (!urlMatch) continue;
+        // Article URL — prefer /article/ links to skip live-blog/hub links
+        const urlMatch = block.match(/href="((?:https:\/\/apnews\.com)?\/article\/[^"#]+)"/i);
+        if (!urlMatch) continue;
 
-    // Headline text from the PagePromoContentIcons-text span
-    const titleMatch = block.match(
-      /<span[^>]+class="[^"]*PagePromoContentIcons-text[^"]*"[^>]*>([\s\S]*?)<\/span>/i
-    );
-    if (!titleMatch) continue;
+        // Headline text from the PagePromoContentIcons-text span
+        const titleMatch = block.match(
+            /<span[^>]+class="[^"]*PagePromoContentIcons-text[^"]*"[^>]*>([\s\S]*?)<\/span>/i
+        );
+        if (!titleMatch) continue;
 
-    const url = urlMatch[1].startsWith('http') ? urlMatch[1] : `${AP_BASE}${urlMatch[1]}`;
-    const title = stripHtml(titleMatch[1]).trim();
-    if (!title || !url || seen.has(url)) continue;
-    seen.add(url);
+        const url = urlMatch[1].startsWith('http') ? urlMatch[1] : `${AP_BASE}${urlMatch[1]}`;
+        const title = stripHtml(titleMatch[1]).trim();
+        if (!title || !url || seen.has(url)) continue;
+        seen.add(url);
 
-    // Lead image: src from an img tag at dims/assets.apnews.com (not srcset)
-    const imgMatch = block.match(AP_IMG_SRC_RE);
-    const altMatch = block.match(/<img[^>]+alt="([^"]*)"[^>]*>/i);
-    const captionMatch = block.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
+        // Lead image: src from an img tag at dims/assets.apnews.com (not srcset)
+        const imgMatch = block.match(AP_IMG_SRC_RE);
+        const altMatch = block.match(/<img[^>]+alt="([^"]*)"[^>]*>/i);
+        const captionMatch = block.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
 
-    items.push({
-      url,
-      title,
-      publishDateStamp: timestamp,
-      imageUrl: imgMatch ? imgMatch[1] : null,
-      imageAlt: altMatch ? altMatch[1] : title,
-      imageCaption: captionMatch ? stripHtml(captionMatch[1]) : '',
-    });
-  }
+        items.push({
+            url,
+            title,
+            publishDateStamp: timestamp,
+            imageUrl: imgMatch ? imgMatch[1] : null,
+            imageAlt: altMatch ? altMatch[1] : title,
+            imageCaption: captionMatch ? stripHtml(captionMatch[1]) : '',
+        });
+    }
 
-  return items;
+    return items;
 }
 
 // Extract the article slug from an AP News article URL
 function articleUrlToSlug(url) {
-  if (!url) return null;
-  try {
-    const parsed = new URL(url, AP_BASE);
-    const parts = parsed.pathname.split('/').filter(Boolean);
-    if (parts[0] === 'article' && parts[1]) return parts[1];
-    return null;
-  } catch {
-    return null;
-  }
+    if (!url) return null;
+    try {
+        const parsed = new URL(url, AP_BASE);
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        if (parts[0] === 'article' && parts[1]) return parts[1];
+        return null;
+    } catch {
+        return null;
+    }
 }
 
 function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
-  if (!item) return '';
-  const { url, title, publishDateStamp, imageUrl, imageAlt, imageCaption } = item;
-  if (!title || !url) return '';
+    if (!item) return '';
+    const { url, title, publishDateStamp, imageUrl, imageAlt, imageCaption } = item;
+    if (!title || !url) return '';
 
-  const slug = articleUrlToSlug(url);
-  if (!slug) return '';
+    const slug = articleUrlToSlug(url);
+    if (!slug) return '';
 
-  const headline = escapeContent(title, showImages);
-  const date = publishDateStamp ? new Date(publishDateStamp) : null;
-  const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
-  const articleUrl = `/news/${encodeURIComponent(slug)}${sessionParam}`;
+    const headline = escapeContent(title, showImages);
+    const date = publishDateStamp ? new Date(publishDateStamp) : null;
+    const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
+    const articleUrl = `/news/${encodeURIComponent(slug)}${sessionParam}`;
 
-  const imageHtml =
-    showImages && imageUrl
-      ? (() => {
-          const proxied = proxyImageUrl(imageUrl);
-          const alt = escapeContent(imageAlt || title, showImages);
-          const caption = escapeContent(imageCaption || '', showImages);
-          return renderTemplate(getTemplate('news_card_image', 'news'), {
-            PROXIED_URL: proxied,
-            ALT_TEXT: alt,
-            CAPTION_HTML: caption
-              ? renderTemplate(getTemplate('caption', 'news'), {
-                  CLASS: 'news-card-caption',
-                  CAPTION: caption,
-                })
-              : '',
-          });
-        })()
-      : '';
+    const imageHtml =
+        showImages && imageUrl
+            ? (() => {
+                  const proxied = proxyImageUrl(imageUrl);
+                  const alt = escapeContent(imageAlt || title, showImages);
+                  const caption = escapeContent(imageCaption || '', showImages);
+                  return renderTemplate(getTemplate('news_card_image', 'news'), {
+                      PROXIED_URL: proxied,
+                      ALT_TEXT: alt,
+                      CAPTION_HTML: caption
+                          ? renderTemplate(getTemplate('caption', 'news'), {
+                                CLASS: 'news-card-caption',
+                                CAPTION: caption,
+                            })
+                          : '',
+                  });
+              })()
+            : '';
 
-  return renderTemplate(getTemplate('news_card', 'news'), {
-    IMAGE_HTML: imageHtml,
-    TITLE_HTML: renderTemplate(getTemplate('news_card_title', 'news'), { HEADLINE: headline }),
-    DATE_META_HTML: dateStr
-      ? renderTemplate(getTemplate('news_card_meta', 'news'), { DATE_STR: dateStr })
-      : '',
-    READ_BUTTON_HTML: renderTemplate(getTemplate('news_read_button', 'news'), {
-      ARTICLE_URL: articleUrl,
-    }),
-  });
+    return renderTemplate(getTemplate('news_card', 'news'), {
+        IMAGE_HTML: imageHtml,
+        TITLE_HTML: renderTemplate(getTemplate('news_card_title', 'news'), { HEADLINE: headline }),
+        DATE_META_HTML: dateStr
+            ? renderTemplate(getTemplate('news_card_meta', 'news'), { DATE_STR: dateStr })
+            : '',
+        READ_BUTTON_HTML: renderTemplate(getTemplate('news_read_button', 'news'), {
+            ARTICLE_URL: articleUrl,
+        }),
+    });
 }
 
 // Extract the inner content of div.RichTextStoryBody, tightly bounded by div
 // depth tracking so we never leak into the related-articles section below.
 function extractStoryBody(html) {
-  const m = html.match(/<div[^>]+class="[^"]*RichTextStoryBody[^"]*"[^>]*>/i);
-  if (!m) return '';
-  return extractDivContent(html, m.index + m[0].length);
+    const m = html.match(/<div[^>]+class="[^"]*RichTextStoryBody[^"]*"[^>]*>/i);
+    if (!m) return '';
+    return extractDivContent(html, m.index + m[0].length);
 }
 
 // Parse an AP News article HTML page.
 // Extracts headline/author/date from JSON-LD, with a GTM dataLayer fallback.
 // Body text and inline images come from div.RichTextStoryBody only.
 function parseArticlePage(html, showImages) {
-  let headline = '',
-    bylines = '',
-    date = null;
+    let headline = '',
+        bylines = '',
+        date = null;
 
-  // Primary: JSON-LD structured data
-  const ldMatch = html.match(/<script[^>]+id="link-ld-json"[^>]*>([\s\S]*?)<\/script>/i);
-  if (ldMatch) {
-    try {
-      const raw = JSON.parse(ldMatch[1]);
-      const article = Array.isArray(raw)
-        ? raw.find((e) => e['@type'] === 'NewsArticle')
-        : raw['@type'] === 'NewsArticle'
-          ? raw
-          : null;
-      if (article) {
-        headline = article.headline || '';
-        if (article.author) {
-          const authors = Array.isArray(article.author) ? article.author : [article.author];
-          bylines = authors
-            .map((a) => a.name || (typeof a === 'string' ? a : ''))
-            .filter(Boolean)
-            .join(', ');
+    // Primary: JSON-LD structured data
+    const ldMatch = html.match(/<script[^>]+id="link-ld-json"[^>]*>([\s\S]*?)<\/script>/i);
+    if (ldMatch) {
+        try {
+            const raw = JSON.parse(ldMatch[1]);
+            const article = Array.isArray(raw)
+                ? raw.find((e) => e['@type'] === 'NewsArticle')
+                : raw['@type'] === 'NewsArticle'
+                  ? raw
+                  : null;
+            if (article) {
+                headline = article.headline || '';
+                if (article.author) {
+                    const authors = Array.isArray(article.author)
+                        ? article.author
+                        : [article.author];
+                    bylines = authors
+                        .map((a) => a.name || (typeof a === 'string' ? a : ''))
+                        .filter(Boolean)
+                        .join(', ');
+                }
+                if (article.datePublished) date = new Date(article.datePublished);
+            }
+        } catch {
+            /* ignore */
         }
-        if (article.datePublished) date = new Date(article.datePublished);
-      }
-    } catch {
-      /* ignore */
     }
-  }
 
-  // Fallback: GTM dataLayer meta tag
-  if (!headline) {
-    const gtmMatch = html.match(/name="gtm-dataLayer"[^>]+content="([^"]+)"/);
-    if (gtmMatch) {
-      try {
-        const gtm = JSON.parse(gtmMatch[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
-        headline = gtm.headline || '';
-        bylines = gtm.author || '';
-        if (gtm.publication_date) date = new Date(gtm.publication_date);
-      } catch {
-        /* ignore */
-      }
+    // Fallback: GTM dataLayer meta tag
+    if (!headline) {
+        const gtmMatch = html.match(/name="gtm-dataLayer"[^>]+content="([^"]+)"/);
+        if (gtmMatch) {
+            try {
+                const gtm = JSON.parse(gtmMatch[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
+                headline = gtm.headline || '';
+                bylines = gtm.author || '';
+                if (gtm.publication_date) date = new Date(gtm.publication_date);
+            } catch {
+                /* ignore */
+            }
+        }
     }
-  }
 
-  // Extract article body — ONLY what's inside div.RichTextStoryBody
-  const body = extractStoryBody(html);
+    // Extract article body — ONLY what's inside div.RichTextStoryBody
+    const body = extractStoryBody(html);
 
-  const leadImageHtml =
-    body && showImages
-      ? (() => {
-          const imgTagRe = /<img(\s[^>]*)>/gi;
-          let imgMatch;
-          while ((imgMatch = imgTagRe.exec(body)) !== null) {
-            const srcMatch = imgMatch[0].match(AP_IMG_SRC_RE);
-            if (!srcMatch) continue;
-            const imgUrl = srcMatch[1];
-            const proxied = proxyImageUrl(imgUrl);
-            const tagEnd = imgMatch.index + imgMatch[0].length;
-            const searchStart = Math.max(0, imgMatch.index - 3000);
-            const nearby = body.slice(searchStart, tagEnd + 5000);
-            const captionMatch = nearby.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
-            const caption = captionMatch
-              ? escapeContent(stripHtml(captionMatch[1]), showImages)
-              : '';
-            return (
-              renderTemplate(getTemplate('news_article_image', 'news'), {
-                PROXIED_URL: proxied,
-                ALT_TEXT: '', // alt is empty here, as in the original
-                CAPTION_HTML: caption
-                  ? renderTemplate(getTemplate('caption', 'news'), {
-                      CLASS: 'news-article-caption',
-                      CAPTION: caption,
-                    })
-                  : '',
-              }) + '\n'
-            );
-          }
-          return '';
-        })()
-      : '';
+    const leadImageHtml =
+        body && showImages
+            ? (() => {
+                  const imgTagRe = /<img(\s[^>]*)>/gi;
+                  let imgMatch;
+                  while ((imgMatch = imgTagRe.exec(body)) !== null) {
+                      const srcMatch = imgMatch[0].match(AP_IMG_SRC_RE);
+                      if (!srcMatch) continue;
+                      const imgUrl = srcMatch[1];
+                      const proxied = proxyImageUrl(imgUrl);
+                      const tagEnd = imgMatch.index + imgMatch[0].length;
+                      const searchStart = Math.max(0, imgMatch.index - 3000);
+                      const nearby = body.slice(searchStart, tagEnd + 5000);
+                      const captionMatch = nearby.match(
+                          /<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i
+                      );
+                      const caption = captionMatch
+                          ? escapeContent(stripHtml(captionMatch[1]), showImages)
+                          : '';
+                      return (
+                          renderTemplate(getTemplate('news_article_image', 'news'), {
+                              PROXIED_URL: proxied,
+                              ALT_TEXT: '', // alt is empty here, as in the original
+                              CAPTION_HTML: caption
+                                  ? renderTemplate(getTemplate('caption', 'news'), {
+                                        CLASS: 'news-article-caption',
+                                        CAPTION: caption,
+                                    })
+                                  : '',
+                          }) + '\n'
+                      );
+                  }
+                  return '';
+              })()
+            : '';
 
-  const contentHtml = (() => {
-    if (!body) return getTemplate('news_article_text_error', 'news');
-    const pRe = /<p(\s|>)/gi;
-    let match;
-    let count = 0;
-    const paragraphs = [];
-    while ((match = pRe.exec(body)) !== null && count < MAX_ARTICLE_ELEMENTS) {
-      const end = body.indexOf('</p>', match.index);
-      if (end === -1) continue;
-      pRe.lastIndex = end + 4;
-      const el = body.slice(match.index, end + 4);
-      const text = stripHtml(el).trim();
-      if (text.length > 10 && !isCTAParagraph(text)) {
-        paragraphs.push(
-          renderTemplate(getTemplate('news_article_paragraph', 'news'), {
-            CONTENT: escapeContent(text, showImages),
-          }) + '\n'
-        );
-        count++;
-      }
-    }
-    return paragraphs.join('') || getTemplate('news_article_text_error', 'news');
-  })();
+    const contentHtml = (() => {
+        if (!body) return getTemplate('news_article_text_error', 'news');
+        const pRe = /<p(\s|>)/gi;
+        let match;
+        let count = 0;
+        const paragraphs = [];
+        while ((match = pRe.exec(body)) !== null && count < MAX_ARTICLE_ELEMENTS) {
+            const end = body.indexOf('</p>', match.index);
+            if (end === -1) continue;
+            pRe.lastIndex = end + 4;
+            const el = body.slice(match.index, end + 4);
+            const text = stripHtml(el).trim();
+            if (text.length > 10 && !isCTAParagraph(text)) {
+                paragraphs.push(
+                    renderTemplate(getTemplate('news_article_paragraph', 'news'), {
+                        CONTENT: escapeContent(text, showImages),
+                    }) + '\n'
+                );
+                count++;
+            }
+        }
+        return paragraphs.join('') || getTemplate('news_article_text_error', 'news');
+    })();
 
-  return { headline, bylines, date, leadImageHtml, contentHtml };
+    return { headline, bylines, date, leadImageHtml, contentHtml };
 }
 
 exports.processNews = async function processNews(req, res, args, discordID) {
-  const { urlSessionID, sessionParam, theme, parsedUrl, imagesCookie } = resolvePrefs(req);
-  const timezone = getTimezoneFromIP(req);
+    const { urlSessionID, sessionParam, theme, parsedUrl, imagesCookie } = resolvePrefs(req);
+    const timezone = getTimezoneFromIP(req);
 
-  // Sanitise tag: allow letters, digits, hyphens (AP News topic format)
-  const rawTag = parsedUrl.searchParams.get('tag') || '';
-  const tag = rawTag.replace(/[^a-zA-Z0-9-]/g, '') || DEFAULT_TOPIC;
-  const displayTag = tag === DEFAULT_TOPIC ? 'Top News' : escape(tag);
-  const tagInputValue = escape(tag === DEFAULT_TOPIC ? '' : tag);
+    // Sanitise tag: allow letters, digits, hyphens (AP News topic format)
+    const rawTag = parsedUrl.searchParams.get('tag') || '';
+    const tag = rawTag.replace(/[^a-zA-Z0-9-]/g, '') || DEFAULT_TOPIC;
+    const displayTag = tag === DEFAULT_TOPIC ? 'Top News' : escape(tag);
+    const tagInputValue = escape(tag === DEFAULT_TOPIC ? '' : tag);
 
-  try {
-    // Scrape the hub HTML page — gives us titles, dates, URLs, and lead images
-    const html = await fetchHtml(`${AP_BASE}/hub/${tag}`);
-    const feedItems = parseHubHtml(html);
+    try {
+        // Scrape the hub HTML page — gives us titles, dates, URLs, and lead images
+        const html = await fetchHtml(`${AP_BASE}/hub/${tag}`);
+        const feedItems = parseHubHtml(html);
 
-    const cards = feedItems
-      .map((item) => buildNewsCardHtml(item, timezone, sessionParam, imagesCookie !== 0))
-      .filter(Boolean);
+        const cards = feedItems
+            .map((item) => buildNewsCardHtml(item, timezone, sessionParam, imagesCookie !== 0))
+            .filter(Boolean);
 
-    const newsItemsHtml =
-      cards.length > 0 ? cards.join('\n') : getTemplate('news_no_articles_error', 'news');
-    const sessionHidden = [
-      urlSessionID
-        ? renderTemplate(getTemplate('hidden_input', 'news'), {
-            NAME: 'sessionID',
-            VALUE: escape(urlSessionID),
-          })
-        : '',
-      theme.themeValue !== 0
-        ? renderTemplate(getTemplate('hidden_input', 'news'), {
-            NAME: 'theme',
-            VALUE: theme.themeValue.toString(),
-          })
-        : '',
-    ].join('');
+        const newsItemsHtml =
+            cards.length > 0 ? cards.join('\n') : getTemplate('news_no_articles_error', 'news');
+        const sessionHidden = [
+            urlSessionID
+                ? renderTemplate(getTemplate('hidden_input', 'news'), {
+                      NAME: 'sessionID',
+                      VALUE: escape(urlSessionID),
+                  })
+                : '',
+            theme.themeValue !== 0
+                ? renderTemplate(getTemplate('hidden_input', 'news'), {
+                      NAME: 'theme',
+                      VALUE: theme.themeValue.toString(),
+                  })
+                : '',
+        ].join('');
 
-    const final = renderTemplate(news_template, {
-      WHITE_THEME_ENABLED: theme.themeClass,
-      TAG_DISPLAY: displayTag,
-      TAG_VALUE: tagInputValue,
-      SESSION_PARAM: sessionParam,
-      SESSION_HIDDEN: sessionHidden,
-      NEWS_ITEMS: newsItemsHtml,
-    });
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(final);
-  } catch (err) {
-    console.error('AP News feed error:', err);
-    const msg =
-      err.statusCode === 404
-        ? getTemplate('news_category_not_found_error', 'misc')
-        : getTemplate('news_load_feed_error', 'misc');
-    res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
-    res.end(msg);
-  }
+        const final = renderTemplate(news_template, {
+            WHITE_THEME_ENABLED: theme.themeClass,
+            TAG_DISPLAY: displayTag,
+            TAG_VALUE: tagInputValue,
+            SESSION_PARAM: sessionParam,
+            SESSION_HIDDEN: sessionHidden,
+            NEWS_ITEMS: newsItemsHtml,
+        });
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(final);
+    } catch (err) {
+        console.error('AP News feed error:', err);
+        const msg =
+            err.statusCode === 404
+                ? getTemplate('news_category_not_found_error', 'misc')
+                : getTemplate('news_load_feed_error', 'misc');
+        res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
+        res.end(msg);
+    }
 };
 
 exports.processNewsArticle = async function processNewsArticle(req, res, args, discordID) {
-  const { sessionParam, theme, imagesCookie } = resolvePrefs(req);
-  const timezone = getTimezoneFromIP(req);
+    const { sessionParam, theme, imagesCookie } = resolvePrefs(req);
+    const timezone = getTimezoneFromIP(req);
 
-  // args[2] is the article slug (letters, digits, hyphens only)
-  const articleSlug = args[2] || '';
-  if (!articleSlug || /[^a-zA-Z0-9-]/.test(articleSlug)) {
-    res.writeHead(400, { 'Content-Type': 'text/plain' });
-    res.end(getTemplate('news_invalid_article_id_error', 'misc'));
-    return;
-  }
+    // args[2] is the article slug (letters, digits, hyphens only)
+    const articleSlug = args[2] || '';
+    if (!articleSlug || /[^a-zA-Z0-9-]/.test(articleSlug)) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end(getTemplate('news_invalid_article_id_error', 'misc'));
+        return;
+    }
 
-  const articleUrl = `${AP_BASE}/article/${articleSlug}`;
+    const articleUrl = `${AP_BASE}/article/${articleSlug}`;
 
-  try {
-    const html = await fetchHtml(articleUrl);
-    const { headline, bylines, date, leadImageHtml, contentHtml } = parseArticlePage(
-      html,
-      imagesCookie !== 0
-    );
+    try {
+        const html = await fetchHtml(articleUrl);
+        const { headline, bylines, date, leadImageHtml, contentHtml } = parseArticlePage(
+            html,
+            imagesCookie !== 0
+        );
 
-    const headlineEscaped = escapeContent(headline || 'Untitled', imagesCookie !== 0);
-    const bylinesEscaped = bylines ? `${escapeContent(bylines, imagesCookie !== 0)} - ` : '';
-    const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
+        const headlineEscaped = escapeContent(headline || 'Untitled', imagesCookie !== 0);
+        const bylinesEscaped = bylines ? `${escapeContent(bylines, imagesCookie !== 0)} - ` : '';
+        const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
 
-    const final = renderTemplate(article_template, {
-      WHITE_THEME_ENABLED: theme.themeClass,
-      HEADLINE: headlineEscaped,
-      BYLINE: bylinesEscaped,
-      DATE: dateStr,
-      SESSION_PARAM: sessionParam,
-      LEAD_IMAGE: leadImageHtml,
-      ARTICLE_CONTENT: contentHtml,
-    });
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(final);
-  } catch (err) {
-    console.error('AP News article error:', err);
-    const msg =
-      err.statusCode === 404
-        ? getTemplate('news_article_not_found_error', 'misc')
-        : getTemplate('news_load_article_error', 'misc');
-    res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
-    res.end(msg);
-  }
+        const final = renderTemplate(article_template, {
+            WHITE_THEME_ENABLED: theme.themeClass,
+            HEADLINE: headlineEscaped,
+            BYLINE: bylinesEscaped,
+            DATE: dateStr,
+            SESSION_PARAM: sessionParam,
+            LEAD_IMAGE: leadImageHtml,
+            ARTICLE_CONTENT: contentHtml,
+        });
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(final);
+    } catch (err) {
+        console.error('AP News article error:', err);
+        const msg =
+            err.statusCode === 404
+                ? getTemplate('news_article_not_found_error', 'misc')
+                : getTemplate('news_load_article_error', 'misc');
+        res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
+        res.end(msg);
+    }
 };

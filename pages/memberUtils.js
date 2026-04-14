@@ -16,14 +16,14 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
  * @returns {string} Display name to show
  */
 function getDisplayName(member, author) {
-  const name =
-    (member && member.nickname) ||
-    (member && member.user && member.user.globalName) ||
-    (member && member.user && member.user.username) ||
-    (member && member.displayName) ||
-    (author && author.globalName) ||
-    (author && author.username);
-  return normalizeWeirdUnicode(name || 'Unknown User');
+    const name =
+        (member && member.nickname) ||
+        (member && member.user && member.user.globalName) ||
+        (member && member.user && member.user.username) ||
+        (member && member.displayName) ||
+        (author && author.globalName) ||
+        (author && author.username);
+    return normalizeWeirdUnicode(name || 'Unknown User');
 }
 
 /**
@@ -34,18 +34,18 @@ function getDisplayName(member, author) {
  * @returns {string} Hex color string (e.g., "#ffffff")
  */
 function getMemberColor(member, defaultColor = '#ffffff') {
-  if (!member || !member.roles) {
-    return defaultColor;
-  }
+    if (!member || !member.roles) {
+        return defaultColor;
+    }
 
-  // member.roles.color returns the highest role that has a non-zero color set
-  const colorRole = member.roles.color;
-  if (!colorRole) {
-    return defaultColor;
-  }
+    // member.roles.color returns the highest role that has a non-zero color set
+    const colorRole = member.roles.color;
+    if (!colorRole) {
+        return defaultColor;
+    }
 
-  // Convert Discord color integer to hex
-  return `#${colorRole.color.toString(16).padStart(6, '0')}`;
+    // Convert Discord color integer to hex
+    return `#${colorRole.color.toString(16).padStart(6, '0')}`;
 }
 
 /**
@@ -62,55 +62,57 @@ function getMemberColor(member, defaultColor = '#ffffff') {
  * @returns {Promise<Object|null>} GuildMember object or null if fetch fails
  */
 async function ensureMemberData(message, guild, cache = null) {
-  // If there's no author or guild, we can't fetch member data
-  if (!message.author || !guild) {
-    console.warn('ensureMemberData: Missing author or guild');
-    return null;
-  }
-
-  // Application webhooks (slash command bot responses) have applicationId === webhookId.
-  // For those, we can fetch the bot member by author ID to get role colors.
-  const isAppWebhook =
-    message.webhookId && message.applicationId && message.webhookId === message.applicationId;
-
-  // Check cache first if provided (use webhook:username for plain webhook messages)
-  const cacheKey =
-    message.webhookId && !isAppWebhook ? `webhook:${message.author.username}` : message.author.id;
-  if (cache && cache.has(cacheKey)) {
-    return cache.get(cacheKey);
-  }
-
-  // For regular (non-webhook) messages and application webhook messages, fetch from
-  // guild to get a fully-resolved member object with all roles populated (Discord.js
-  // serves this from its own member cache when available, so repeated calls are cheap).
-  if (!message.webhookId || isAppWebhook) {
-    try {
-      const member = await guild.members.fetch(message.author.id);
-      if (cache) {
-        cache.set(cacheKey, member);
-      }
-      return member;
-    } catch (error) {
-      // guild.members.fetch() failed (e.g. bot lost access). Fall back to the
-      // partial message.member — role colors may not be resolved in this case.
-      const fallback = message.member || null;
-      if (cache) {
-        cache.set(cacheKey, fallback);
-      }
-      return fallback;
+    // If there's no author or guild, we can't fetch member data
+    if (!message.author || !guild) {
+        console.warn('ensureMemberData: Missing author or guild');
+        return null;
     }
-  }
 
-  // For plain webhook messages, message.member will be null; return it as-is
-  const result = message.member || null;
-  if (cache) {
-    cache.set(cacheKey, result);
-  }
-  return result;
+    // Application webhooks (slash command bot responses) have applicationId === webhookId.
+    // For those, we can fetch the bot member by author ID to get role colors.
+    const isAppWebhook =
+        message.webhookId && message.applicationId && message.webhookId === message.applicationId;
+
+    // Check cache first if provided (use webhook:username for plain webhook messages)
+    const cacheKey =
+        message.webhookId && !isAppWebhook
+            ? `webhook:${message.author.username}`
+            : message.author.id;
+    if (cache && cache.has(cacheKey)) {
+        return cache.get(cacheKey);
+    }
+
+    // For regular (non-webhook) messages and application webhook messages, fetch from
+    // guild to get a fully-resolved member object with all roles populated (Discord.js
+    // serves this from its own member cache when available, so repeated calls are cheap).
+    if (!message.webhookId || isAppWebhook) {
+        try {
+            const member = await guild.members.fetch(message.author.id);
+            if (cache) {
+                cache.set(cacheKey, member);
+            }
+            return member;
+        } catch (error) {
+            // guild.members.fetch() failed (e.g. bot lost access). Fall back to the
+            // partial message.member — role colors may not be resolved in this case.
+            const fallback = message.member || null;
+            if (cache) {
+                cache.set(cacheKey, fallback);
+            }
+            return fallback;
+        }
+    }
+
+    // For plain webhook messages, message.member will be null; return it as-is
+    const result = message.member || null;
+    if (cache) {
+        cache.set(cacheKey, result);
+    }
+    return result;
 }
 
 module.exports = {
-  getDisplayName,
-  getMemberColor,
-  ensureMemberData,
+    getDisplayName,
+    getMemberColor,
+    ensureMemberData,
 };

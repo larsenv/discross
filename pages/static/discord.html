@@ -1,58 +1,61 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Discross - Discord OAuth middleware</title>
+    </head>
 
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width">
-  <title>Discross - Discord OAuth middleware</title>
-</head>
+    <body style="margin: 0" bgcolor="#303338">
+        <table>
+            <tr>
+                <td>
+                    <a><img src="/resources/logo.gif" alt="Logo" /></a>
+                </td>
+                <td>&nbsp;&nbsp;</td>
+                <td>
+                    <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd"
+                        >discross</font
+                    >
+                </td>
+                <td width="100%" align="right"></td>
+            </tr>
+        </table>
+        <hr style="margin: 0; position: relative; bottom: 4px" />
+        <br />
+        <table>
+            <tr>
+                <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                <td>
+                    <p style="font-size: xx-large; color: #dddddd">Please wait...</p>
+                </td>
+            </tr>
+        </table>
+    </body>
+    <script>
+        window.onload = function () {
+            var hashParams = window.location.hash.slice(1);
+            var params = {};
+            var pairs = hashParams.split('&');
+            for (var i = 0; i < pairs.length; i++) {
+                var pair = pairs[i].split('=');
+                params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+            }
 
-<body style="margin: 0;" bgcolor="#303338">
-  <table>
-      <tr>
-        <td><a><img src="/resources/logo.gif" alt="Logo"></a></td>
-        <td>&nbsp;&nbsp;</td>
-        <td>
-          <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
-        </td>
-        <td width="100%" align="right">
-        </td>
-      </tr>
-  </table>
-  <hr style="margin: 0; position: relative; bottom: 4px;">
-  <br>
-  <table>
-      <tr>
-        <td>
-          &nbsp;&nbsp;&nbsp;&nbsp;
-        </td>
-        <td>
-          <p style="font-size: xx-large; color: #dddddd">Please wait...</p>
-        </td>
-      </tr>
-  </table>
-</body>
-<script>
-  window.onload = function() {
-    var hashParams = window.location.hash.slice(1);
-    var params = {};
-    var pairs = hashParams.split('&');
-    for (var i = 0; i < pairs.length; i++) {
-      var pair = pairs[i].split('=');
-      params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
-    }
-    
-    var accessToken = params['access_token'];
-    var tokenType = params['token_type'];
-    
-    if (!accessToken) {
-      window.location.href = '/';
-    }
-    
-    var queryString = 'access_token=' + encodeURIComponent(accessToken) + '&token_type=' + encodeURIComponent(tokenType);
-    window.location.href = '/discord?' + queryString;
-  };
-</script>
+            var accessToken = params['access_token'];
+            var tokenType = params['token_type'];
 
+            if (!accessToken) {
+                window.location.href = '/';
+            }
+
+            var queryString =
+                'access_token=' +
+                encodeURIComponent(accessToken) +
+                '&token_type=' +
+                encodeURIComponent(tokenType);
+            window.location.href = '/discord?' + queryString;
+        };
+    </script>
 </html>

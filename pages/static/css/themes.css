@@ -1,31 +1,31 @@
 /* Default Dark Theme */
 body {
-  background: #303338;
-  color: #dddddd;
+    background: #303338;
+    color: #dddddd;
 }
 
 #wrapper {
-  background: #303338;
-  color: #dddddd;
+    background: #303338;
+    color: #dddddd;
 }
 
 body.light-theme,
 .light-theme html,
 .light-theme #wrapper,
-.light-theme .content-padding, 
+.light-theme .content-padding,
 .light-theme .scrollable-content {
-  background: #f9f9f9 !important;
-  color: #060607 !important;
+    background: #f9f9f9 !important;
+    color: #060607 !important;
 }
 
 /* Header & Menus */
 .light-theme .menu-button {
-  background: transparent !important; /* Transparent hamburger */
-  border: none !important;
+    background: transparent !important; /* Transparent hamburger */
+    border: none !important;
 }
 
 .light-theme .header-title,
-.light-theme .header-menu, 
+.light-theme .header-menu,
 .light-theme .header-menu-link {
     color: #060607 !important;
 }
@@ -36,40 +36,40 @@ body.light-theme,
 
 /* Message List & Content */
 .light-theme .message {
-  border-bottom-color: #e3e5e8 !important;
-  background: transparent !important;
+    border-bottom-color: #e3e5e8 !important;
+    background: transparent !important;
 }
 
 .light-theme .message:hover {
-  background: #f2f3f5 !important;
+    background: #f2f3f5 !important;
 }
 
 .light-theme .message-author {
-  color: #060607 !important;
+    color: #060607 !important;
 }
 
 .light-theme .message-date {
-  color: #5c5e66 !important;
+    color: #5c5e66 !important;
 }
 
 .light-theme .messagecontent {
-  color: #060607 !important;
+    color: #060607 !important;
 }
 
 /* Message Input Area */
 .light-theme .message-form-container {
-  background: #f9f9f9 !important;
-  border-top-color: #e3e5e8 !important;
+    background: #f9f9f9 !important;
+    border-top-color: #e3e5e8 !important;
 }
 
 .light-theme .message-input-wrapper,
 .light-theme .message-input-disabled {
-  background: #ebedef !important;
+    background: #ebedef !important;
 }
 
 .light-theme .message-input,
 .light-theme .message-input-disabled input {
-  color: #060607 !important;
+    color: #060607 !important;
 }
 
 .light-theme .icon-button:hover {
@@ -79,15 +79,15 @@ body.light-theme,
 /* Links & Buttons */
 .light-theme a,
 .light-theme .message-link {
-  color: #0067e0 !important;
+    color: #0067e0 !important;
 }
 
 /* Code Blocks */
-.light-theme pre, 
+.light-theme pre,
 .light-theme code {
-  background: #f2f3f5 !important;
-  border-color: #e3e5e8 !important;
-  color: #2e3338 !important;
+    background: #f2f3f5 !important;
+    border-color: #e3e5e8 !important;
+    color: #2e3338 !important;
 }
 
 /* Embeds & Forwards */
@@ -99,7 +99,7 @@ body.light-theme,
 
 .light-theme .forwarded-text,
 .light-theme .reaction-count {
-    color: #62636D !important;
+    color: #62636d !important;
 }
 
 /* Emojis & Reactions */
@@ -114,13 +114,12 @@ body.light-theme,
     border: 1px solid transparent;
 }
 .light-theme .embed-reactions .reaction {
-    background: #EFE9E3 !important;
+    background: #efe9e3 !important;
 }
 .light-theme .reaction:hover {
     border-color: #e3e5e8 !important;
     background: #ebedef !important;
 }
-
 
 /* =========================================
    AMOLED THEME
@@ -130,53 +129,53 @@ body.light-theme,
 body.amoled-theme,
 .amoled-theme html,
 .amoled-theme #wrapper,
-.amoled-theme .content-padding, 
+.amoled-theme .content-padding,
 .amoled-theme .scrollable-content {
-  background: #000000 !important;
-  color: #ffffff !important;
+    background: #000000 !important;
+    color: #ffffff !important;
 }
 
 /* FIX: Ensure Sidebar and Server Note are black */
 .amoled-theme .server-sidebar,
 .amoled-theme .server-select-note,
 .amoled-theme .server-main {
-  background: #000000 !important;
-  border-color: #333333 !important;
+    background: #000000 !important;
+    border-color: #333333 !important;
 }
 
 /* Header & Menus */
 .amoled-theme .menu-button {
-  background: transparent !important;
-  border: none !important;
+    background: transparent !important;
+    border: none !important;
 }
 
 /* Message List */
 .amoled-theme .message {
-  border-bottom-color: #1a1a1a !important;
-  background: #000000 !important;
+    border-bottom-color: #1a1a1a !important;
+    background: #000000 !important;
 }
 
 .amoled-theme .message:hover {
-  background: #111111 !important;
+    background: #111111 !important;
 }
 
 .amoled-theme .messagecontent {
-  color: #ffffff !important;
+    color: #ffffff !important;
 }
 
 .amoled-theme .message-date {
-  color: #a0a0a0 !important;
+    color: #a0a0a0 !important;
 }
 
 /* Input Area */
 .amoled-theme .message-form-container {
-  background: #000000 !important;
-  border-top: 1px solid #333333 !important;
+    background: #000000 !important;
+    border-top: 1px solid #333333 !important;
 }
 
 .amoled-theme .message-input-wrapper,
 .amoled-theme .message-input-disabled {
-  background: #000000 !important;
+    background: #000000 !important;
 }
 
 .amoled-theme .message-input {
@@ -186,9 +185,9 @@ body.amoled-theme,
 /* Code Blocks */
 .amoled-theme pre,
 .amoled-theme code {
-  background: #0a0a0a !important;
-  border-color: #222222 !important;
-  color: #ffffff !important;
+    background: #0a0a0a !important;
+    border-color: #222222 !important;
+    color: #ffffff !important;
 }
 
 /* Embeds */
