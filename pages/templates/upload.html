@@ -1,24 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="page-simple">
-
-<head>
+  <head>
     {$COMMON_HEAD}
     <title>Discross - Upload File</title>
-</head>
+  </head>
 
-<body {$WHITE_THEME_ENABLED}>
-    <div style="padding: 16px;">
-        <p><a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}">&lt; Back to #{$CHANNEL_NAME}</a></p>
-        <p><font face="'rodin', Arial, sans-serif" color="#dddddd">Upload a file to #{$CHANNEL_NAME}:</font></p>
-        <form action="/uploadFile?traditional=true&sessionID={$SESSION_ID}" method="POST" enctype="multipart/form-data">
-            <input type="hidden" name="channel" value="{$CHANNEL_ID}">
-            <input type="hidden" name="message" value="">
-            <input type="hidden" name="sessionID" value="{$SESSION_ID}">
-            <input type="file" name="file">
-            <br><br>
-            <input type="submit" value="Upload">
-        </form>
+  <body {$WHITE_THEME_ENABLED}>
+    <div style="padding: 16px">
+      <p><a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}">&lt; Back to #{$CHANNEL_NAME}</a></p>
+      <p>
+        <font face="'rodin', Arial, sans-serif" color="#dddddd"
+          >Upload a file to #{$CHANNEL_NAME}:</font
+        >
+      </p>
+      <form
+        action="/uploadFile?traditional=true&sessionID={$SESSION_ID}"
+        method="POST"
+        enctype="multipart/form-data"
+      >
+        <input type="hidden" name="channel" value="{$CHANNEL_ID}" />
+        <input type="hidden" name="message" value="" />
+        <input type="hidden" name="sessionID" value="{$SESSION_ID}" />
+        <input type="file" name="file" />
+        <br /><br />
+        <input type="submit" value="Upload" />
+      </form>
     </div>
-</body>
-
+  </body>
 </html>

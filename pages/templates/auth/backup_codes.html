@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en" class="page-simple">
+  <head>
+    {$COMMON_HEAD}
+    <title>Discross - 2FA Backup Codes</title>
+  </head>
+
+  <body style="margin: 0" {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+      <table style="width: 100%">
+        <tr valign="middle">
+          <td>
+            <a href="/"><img src="/resources/logo.gif" alt="Logo" /></a>
+          </td>
+          <td>
+            <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >discross</font
+            >
+          </td>
+          <td width="100%" align="right">
+            <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >&#160;&#160; {$MENU_OPTIONS}</font
+            >
+          </td>
+          <td valign="middle" style="padding-right: 8px;">
+            <a href="/switchtheme"
+              ><img
+                src="/resources/twemoji/1f313.gif"
+                alt="Switch theme"
+                width="36"
+                height="36"
+                style="background: none; border: none"
+            /></a>
+          </td>
+        </tr>
+      </table>
+      <hr style="margin: 0" />
+      <br />
+      <table>
+        <tr>
+          <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+          <td>
+            <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >2FA Enabled!</font
+            ><br /><br />
+            <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+              <font size="5" color="#ff9900"><b>Write down these backup codes now!</b></font
+              ><br /><br />
+              These codes will only be shown once and cannot be recovered. Each code can only be
+              used once.<br /><br />
+              {$BACKUP_CODES_LIST}
+              <br />
+              <a
+                href="/server/"
+                style="
+                  display: inline-block;
+                  color: #ffffff;
+                  height: 44px;
+                  line-height: 44px;
+                  padding: 0 24px;
+                  border: none;
+                  background: #5865f2;
+                  border-radius: 8px;
+                  font-family: 'rodin', Arial, Helvetica, sans-serif;
+                  font-size: 16px;
+                  font-weight: 500;
+                  cursor: pointer;
+                  text-decoration: none;
+                "
+              >
+                Done
+              </a>
+            </font>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

@@ -2,12 +2,16 @@
 // nextElementSibling and previousElementSibling are IE9+ only.
 function nextElemSibling(el) {
     var s = el.nextSibling;
-    while (s && s.nodeType !== 1) { s = s.nextSibling; }
+    while (s && s.nodeType !== 1) {
+        s = s.nextSibling;
+    }
     return s;
 }
 function prevElemSibling(el) {
     var s = el.previousSibling;
-    while (s && s.nodeType !== 1) { s = s.previousSibling; }
+    while (s && s.nodeType !== 1) {
+        s = s.previousSibling;
+    }
     return s;
 }
 
@@ -22,11 +26,18 @@ function addClass(el, cls) {
 }
 function removeClass(el, cls) {
     var re = new RegExp('(^|\\s)' + cls + '(\\s|$)', 'g');
-    el.className = el.className.replace(re, ' ').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+    el.className = el.className
+        .replace(re, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/^\s+|\s+$/g, '');
 }
 function toggleClass(el, cls) {
-    if (hasClass(el, cls)) { removeClass(el, cls); return false; }
-    addClass(el, cls); return true;
+    if (hasClass(el, cls)) {
+        removeClass(el, cls);
+        return false;
+    }
+    addClass(el, cls);
+    return true;
 }
 
 // Category collapse/expand functionality (#17)
@@ -48,7 +59,9 @@ function toggleCategory(element) {
     if (categoryDiv) {
         var isCollapsed = toggleClass(categoryDiv, 'collapsed');
         if (arrow) {
-            arrow.src = isCollapsed ? '/resources/twemoji/25b6.gif' : '/resources/twemoji/1f53d.gif';
+            arrow.src = isCollapsed
+                ? '/resources/twemoji/25b6.gif'
+                : '/resources/twemoji/1f53d.gif';
             arrow.alt = isCollapsed ? '>' : 'v';
         }
 
@@ -81,7 +94,9 @@ function toggleThreads(element) {
     if (threadDiv) {
         var isCollapsed = toggleClass(threadDiv, 'collapsed');
         if (arrow) {
-            arrow.src = isCollapsed ? '/resources/twemoji/25b6.gif' : '/resources/twemoji/1f53d.gif';
+            arrow.src = isCollapsed
+                ? '/resources/twemoji/25b6.gif'
+                : '/resources/twemoji/1f53d.gif';
             arrow.alt = isCollapsed ? '>' : 'v';
         }
 
@@ -97,7 +112,7 @@ function toggleThreads(element) {
 }
 
 // Restore category and thread group states on page load
-window.onload = function() {
+window.onload = function () {
     try {
         const categories = document.querySelectorAll('.category-channels');
         for (let i = 0; i < categories.length; i++) {

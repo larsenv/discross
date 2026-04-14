@@ -8,513 +8,535 @@ const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode } = require('./emojiUtils');
 const {
-  renderTemplate,
-  isBotReady,
-  getPageThemeAttr,
-  buildSessionParam,
-  parseCookies,
-  loadAndRenderPageTemplate,
+    renderTemplate,
+    isBotReady,
+    getPageThemeAttr,
+    buildSessionParam,
+    parseCookies,
+    loadAndRenderPageTemplate,
 } = require('./utils.js');
 
 // Templates for viewing the channels in a server
 const server_template = loadAndRenderPageTemplate('server');
 
 const text_channel_template = fs.readFileSync(
-  'pages/templates/channellist/textchannel.html',
-  'utf-8'
+    'pages/templates/channellist/textchannel.html',
+    'utf-8'
 );
 const announcement_channel_template = fs.readFileSync(
-  'pages/templates/channellist/announcementchannel.html',
-  'utf-8'
+    'pages/templates/channellist/announcementchannel.html',
+    'utf-8'
 );
 const category_channel_template = fs.readFileSync(
-  'pages/templates/channellist/categorychannel.html',
-  'utf-8'
+    'pages/templates/channellist/categorychannel.html',
+    'utf-8'
 );
 const voice_channel_template = fs.readFileSync(
-  'pages/templates/channellist/voicechannel.html',
-  'utf-8'
+    'pages/templates/channellist/voicechannel.html',
+    'utf-8'
 );
 const thread_channel_template = fs.readFileSync(
-  'pages/templates/channellist/threadchannel.html',
-  'utf-8'
+    'pages/templates/channellist/threadchannel.html',
+    'utf-8'
 );
 const thread_group_header_template = fs.readFileSync(
-  'pages/templates/channellist/threadgroupheader.html',
-  'utf-8'
+    'pages/templates/channellist/threadgroupheader.html',
+    'utf-8'
 );
 const forum_channel_template = fs.readFileSync(
-  'pages/templates/channellist/forumchannel.html',
-  'utf-8'
+    'pages/templates/channellist/forumchannel.html',
+    'utf-8'
 );
 const locked_channel_template = fs.readFileSync(
-  'pages/templates/channellist/lockedchannel.html',
-  'utf-8'
+    'pages/templates/channellist/lockedchannel.html',
+    'utf-8'
 );
 const rules_channel_template = fs.readFileSync(
-  'pages/templates/channellist/ruleschannel.html',
-  'utf-8'
+    'pages/templates/channellist/ruleschannel.html',
+    'utf-8'
 );
 
 const server_icon_template = fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8');
 
 const server_list_only_template = fs.readFileSync(
-  'pages/templates/server/server_list_only.html',
-  'utf-8'
+    'pages/templates/server/server_list_only.html',
+    'utf-8'
 );
 const sync_warning_template = fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8');
 const no_images_warning_template = fs.readFileSync(
-  'pages/templates/server/no_images_warning.html',
-  'utf-8'
+    'pages/templates/server/no_images_warning.html',
+    'utf-8'
 );
 const images_enabled_template = fs.readFileSync(
-  'pages/templates/server/images_enabled.html',
-  'utf-8'
+    'pages/templates/server/images_enabled.html',
+    'utf-8'
 );
 
 const cachedMembers = {}; // TODO: Find a better way
 const MAX_CACHED_MEMBERS = 250; // evict oldest user's data when the cap is hit
 
 function evictOldestCachedMember() {
-  const keys = Object.keys(cachedMembers);
-  if (keys.length >= MAX_CACHED_MEMBERS) {
-    delete cachedMembers[keys[0]];
-  }
+    const keys = Object.keys(cachedMembers);
+    if (keys.length >= MAX_CACHED_MEMBERS) {
+        delete cachedMembers[keys[0]];
+    }
 }
 
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 
 async function processServerChannels(server, member, response, sessionParam) {
-  try {
-    const discordID = member.id;
+    try {
+        const discordID = member.id;
 
-    // Fetch active threads for this server
-    const activeThreadsList = await server.channels
-      .fetchActiveThreads()
-      .then((r) => [...r.threads.values()])
-      .catch((err) => {
-        console.error('Failed to fetch active threads:', err);
-        return [];
-      });
-
-    // For each active thread, check if this specific user is a member.
-    // fetchActiveThreads() only populates the bot's own membership in the cache,
-    // so we must call thread.members.fetch(userId) per thread to check the real user.
-    // We do all checks in parallel to minimise latency.
-    const userThreadIds = new Set();
-    if (activeThreadsList.length > 0) {
-      await Promise.allSettled(
-        activeThreadsList.map(async (thread) => {
-          try {
-            await thread.members.fetch(discordID);
-            userThreadIds.add(thread.id);
-          } catch {
-            // user is not a member of this thread — skip it
-          }
-        })
-      );
-    }
-
-    // Build threadsByParent using only threads the user is in
-    const threadsByParent = new Map();
-    activeThreadsList.forEach((thread) => {
-      if (!thread.parentId) return;
-      if (!userThreadIds.has(thread.id)) return;
-      if (!threadsByParent.has(thread.parentId)) {
-        threadsByParent.set(thread.parentId, []);
-      }
-      threadsByParent.get(thread.parentId).push(thread);
-    });
-
-    const categories = server.channels.cache.filter(
-      (channel) => channel.type === ChannelType.GuildCategory
-    );
-    const categoriesSorted = categories.sort((a, b) => a.position - b.position);
-
-    // Helper: check if a channel should be shown in the channel list
-    const isDisplayableChannel = (channel) =>
-      channel.isTextBased() ||
-      channel.type === ChannelType.GuildVoice ||
-      channel.type === ChannelType.GuildForum ||
-      channel.type === ChannelType.GuildMedia;
-
-    // Start with lone text channels (no category), voice channels, and forum/media channels
-    const channelsSorted = [
-      ...server.channels.cache
-        .filter((channel) => isDisplayableChannel(channel) && !channel.parent)
-        .values(),
-    ].sort((a, b) => a.position - b.position);
-
-    categoriesSorted.forEach((category) => {
-      channelsSorted.push(
-        category,
-        ...[...category.children.cache.sort((a, b) => a.position - b.position).values()].filter(
-          isDisplayableChannel
-        )
-      );
-    });
-
-    let channelList = '';
-    let currentCategoryId = null;
-
-    channelsSorted.forEach((item, index) => {
-      const isThread =
-        item.type === ChannelType.PublicThread || item.type === ChannelType.PrivateThread;
-      // Check if the member has permission to view the channel
-      if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
-        const escapedName = escape(normalizeWeirdUnicode(item.name));
-        if (item.type === ChannelType.GuildCategory) {
-          // Close previous category if exists
-          if (currentCategoryId !== null) {
-            channelList += '</div>'; // Close previous category-channels div
-          }
-          currentCategoryId = item.id;
-          channelList += renderTemplate(category_channel_template, {
-            CHANNEL_NAME: escapedName,
-            CATEGORY_ID: item.id,
-          });
-        } else if (item.type === ChannelType.GuildForum || item.type === ChannelType.GuildMedia) {
-          const iconUrl =
-            item.type === ChannelType.GuildForum
-              ? '/resources/twemoji/1f4ac.gif'
-              : '/resources/twemoji/1f39e.gif';
-          channelList += renderTemplate(forum_channel_template, {
-            CHANNEL_NAME: escapedName,
-            ICON_URL: iconUrl,
-          });
-        } else if (
-          item.type === ChannelType.GuildAnnouncement ||
-          item.type === ChannelType.GuildNews
-        ) {
-          channelList += renderTemplate(announcement_channel_template, {
-            CHANNEL_NAME: escapedName,
-            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-          });
-        } else if (item.type === ChannelType.GuildVoice) {
-          const canSendMessages = member
-            .permissionsIn(item)
-            .has(PermissionFlagsBits.SendMessages, true);
-          if (!canSendMessages) {
-            channelList += renderTemplate(locked_channel_template, {
-              CHANNEL_NAME: escapedName,
-              CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+        // Fetch active threads for this server
+        const activeThreadsList = await server.channels
+            .fetchActiveThreads()
+            .then((r) => [...r.threads.values()])
+            .catch((err) => {
+                console.error('Failed to fetch active threads:', err);
+                return [];
             });
-          } else {
-            channelList += renderTemplate(voice_channel_template, {
-              CHANNEL_NAME: escapedName,
-              CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-            });
-          }
-        } else if (item.type === ChannelType.GuildStageVoice) {
-          channelList += renderTemplate(voice_channel_template, {
-            CHANNEL_NAME: escapedName,
-            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-          });
-        } else if (!isThread && item.isTextBased()) {
-          const canSendMessages = member
-            .permissionsIn(item)
-            .has(PermissionFlagsBits.SendMessages, true);
 
-          const isRulesChannel = item.name.toLowerCase().includes('rule');
-
-          if (isRulesChannel) {
-            channelList += renderTemplate(rules_channel_template, {
-              CHANNEL_NAME: escapedName,
-              CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-            });
-          } else if (!canSendMessages) {
-            channelList += renderTemplate(locked_channel_template, {
-              CHANNEL_NAME: escapedName,
-              CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-            });
-          } else {
-            channelList += renderTemplate(text_channel_template, {
-              CHANNEL_NAME: escapedName,
-              CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
-            });
-          }
+        // For each active thread, check if this specific user is a member.
+        // fetchActiveThreads() only populates the bot's own membership in the cache,
+        // so we must call thread.members.fetch(userId) per thread to check the real user.
+        // We do all checks in parallel to minimise latency.
+        const userThreadIds = new Set();
+        if (activeThreadsList.length > 0) {
+            await Promise.allSettled(
+                activeThreadsList.map(async (thread) => {
+                    try {
+                        await thread.members.fetch(discordID);
+                        userThreadIds.add(thread.id);
+                    } catch {
+                        // user is not a member of this thread — skip it
+                    }
+                })
+            );
         }
 
-        // After rendering each non-category channel, add its collapsible thread group if it has threads
-        if (item.type !== ChannelType.GuildCategory && threadsByParent.has(item.id)) {
-          const channelThreads = threadsByParent
-            .get(item.id)
-            .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-          if (channelThreads.length > 0) {
-            channelList += renderTemplate(thread_group_header_template, { CHANNEL_ID: item.id });
-            channelThreads.forEach((thread) => {
-              const threadEscapedName = escape(normalizeWeirdUnicode(thread.name));
-              channelList += renderTemplate(thread_channel_template, {
-                CHANNEL_NAME: threadEscapedName,
-                CHANNEL_LINK: `../channels/${thread.id}${sessionParam}`,
-              });
-            });
+        // Build threadsByParent using only threads the user is in
+        const threadsByParent = new Map();
+        activeThreadsList.forEach((thread) => {
+            if (!thread.parentId) return;
+            if (!userThreadIds.has(thread.id)) return;
+            if (!threadsByParent.has(thread.parentId)) {
+                threadsByParent.set(thread.parentId, []);
+            }
+            threadsByParent.get(thread.parentId).push(thread);
+        });
+
+        const categories = server.channels.cache.filter(
+            (channel) => channel.type === ChannelType.GuildCategory
+        );
+        const categoriesSorted = categories.sort((a, b) => a.position - b.position);
+
+        // Helper: check if a channel should be shown in the channel list
+        const isDisplayableChannel = (channel) =>
+            channel.isTextBased() ||
+            channel.type === ChannelType.GuildVoice ||
+            channel.type === ChannelType.GuildForum ||
+            channel.type === ChannelType.GuildMedia;
+
+        // Start with lone text channels (no category), voice channels, and forum/media channels
+        const channelsSorted = [
+            ...server.channels.cache
+                .filter((channel) => isDisplayableChannel(channel) && !channel.parent)
+                .values(),
+        ].sort((a, b) => a.position - b.position);
+
+        categoriesSorted.forEach((category) => {
+            channelsSorted.push(
+                category,
+                ...[
+                    ...category.children.cache.sort((a, b) => a.position - b.position).values(),
+                ].filter(isDisplayableChannel)
+            );
+        });
+
+        let channelList = '';
+        let currentCategoryId = null;
+
+        channelsSorted.forEach((item, index) => {
+            const isThread =
+                item.type === ChannelType.PublicThread || item.type === ChannelType.PrivateThread;
+            // Check if the member has permission to view the channel
+            if (member.permissionsIn(item).has(PermissionFlagsBits.ViewChannel, true)) {
+                const escapedName = escape(normalizeWeirdUnicode(item.name));
+                if (item.type === ChannelType.GuildCategory) {
+                    // Close previous category if exists
+                    if (currentCategoryId !== null) {
+                        channelList += '</div>'; // Close previous category-channels div
+                    }
+                    currentCategoryId = item.id;
+                    channelList += renderTemplate(category_channel_template, {
+                        CHANNEL_NAME: escapedName,
+                        CATEGORY_ID: item.id,
+                    });
+                } else if (
+                    item.type === ChannelType.GuildForum ||
+                    item.type === ChannelType.GuildMedia
+                ) {
+                    const iconUrl =
+                        item.type === ChannelType.GuildForum
+                            ? '/resources/twemoji/1f4ac.gif'
+                            : '/resources/twemoji/1f39e.gif';
+                    channelList += renderTemplate(forum_channel_template, {
+                        CHANNEL_NAME: escapedName,
+                        ICON_URL: iconUrl,
+                    });
+                } else if (
+                    item.type === ChannelType.GuildAnnouncement ||
+                    item.type === ChannelType.GuildNews
+                ) {
+                    channelList += renderTemplate(announcement_channel_template, {
+                        CHANNEL_NAME: escapedName,
+                        CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                    });
+                } else if (item.type === ChannelType.GuildVoice) {
+                    const canSendMessages = member
+                        .permissionsIn(item)
+                        .has(PermissionFlagsBits.SendMessages, true);
+                    if (!canSendMessages) {
+                        channelList += renderTemplate(locked_channel_template, {
+                            CHANNEL_NAME: escapedName,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                        });
+                    } else {
+                        channelList += renderTemplate(voice_channel_template, {
+                            CHANNEL_NAME: escapedName,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                        });
+                    }
+                } else if (item.type === ChannelType.GuildStageVoice) {
+                    channelList += renderTemplate(voice_channel_template, {
+                        CHANNEL_NAME: escapedName,
+                        CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                    });
+                } else if (!isThread && item.isTextBased()) {
+                    const canSendMessages = member
+                        .permissionsIn(item)
+                        .has(PermissionFlagsBits.SendMessages, true);
+
+                    const isRulesChannel = item.name.toLowerCase().includes('rule');
+
+                    if (isRulesChannel) {
+                        channelList += renderTemplate(rules_channel_template, {
+                            CHANNEL_NAME: escapedName,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                        });
+                    } else if (!canSendMessages) {
+                        channelList += renderTemplate(locked_channel_template, {
+                            CHANNEL_NAME: escapedName,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                        });
+                    } else {
+                        channelList += renderTemplate(text_channel_template, {
+                            CHANNEL_NAME: escapedName,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                        });
+                    }
+                }
+
+                // After rendering each non-category channel, add its collapsible thread group if it has threads
+                if (item.type !== ChannelType.GuildCategory && threadsByParent.has(item.id)) {
+                    const channelThreads = threadsByParent
+                        .get(item.id)
+                        .sort(
+                            (a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0)
+                        );
+                    if (channelThreads.length > 0) {
+                        channelList += renderTemplate(thread_group_header_template, {
+                            CHANNEL_ID: item.id,
+                        });
+                        channelThreads.forEach((thread) => {
+                            const threadEscapedName = escape(normalizeWeirdUnicode(thread.name));
+                            channelList += renderTemplate(thread_channel_template, {
+                                CHANNEL_NAME: threadEscapedName,
+                                CHANNEL_LINK: `../channels/${thread.id}${sessionParam}`,
+                            });
+                        });
+                        channelList += '</div>';
+                    }
+                }
+            }
+        });
+
+        // Close the last category if exists
+        if (currentCategoryId !== null) {
             channelList += '</div>';
-          }
         }
-      }
-    });
 
-    // Close the last category if exists
-    if (currentCategoryId !== null) {
-      channelList += '</div>';
+        // Replace the channel list in the response
+        response = renderTemplate(response, { CHANNEL_LIST: channelList });
+    } catch (err) {
+        console.error('Error processing server channels:', err);
+        response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
     }
 
-    // Replace the channel list in the response
-    response = renderTemplate(response, { CHANNEL_LIST: channelList });
-  } catch (err) {
-    console.error('Error processing server channels:', err);
-    response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
-  }
-
-  return response;
+    return response;
 }
 
 exports.processServer = async function (bot, req, res, args, discordID) {
-  try {
-    let serverList = '';
-    let serversDeleted = 0; // Track if servers were deleted due to sync issues
-    const clientIsReady = isBotReady(bot);
+    try {
+        let serverList = '';
+        let serversDeleted = 0; // Track if servers were deleted due to sync issues
+        const clientIsReady = isBotReady(bot);
 
-    if (!clientIsReady) {
-      res.writeHead(503, { 'Content-Type': 'text/plain' });
-      res.end("The bot isn't connected, try again in a moment");
-      return;
-    }
+        if (!clientIsReady) {
+            res.writeHead(503, { 'Content-Type': 'text/plain' });
+            res.end("The bot isn't connected, try again in a moment");
+            return;
+        }
 
-    const parsedUrl = new URL(req.url, 'http://localhost');
-    const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
-    const urlTheme = parsedUrl.searchParams.get('theme');
-    const urlImages = parsedUrl.searchParams.get('images');
+        const parsedUrl = new URL(req.url, 'http://localhost');
+        const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
+        const urlTheme = parsedUrl.searchParams.get('theme');
+        const urlImages = parsedUrl.searchParams.get('images');
 
-    // Read cookies up front to decide whether URL params need to be propagated
-    const { whiteThemeCookie: whiteThemeCookieForParam, images: imagesCookieForParam } =
-      parseCookies(req);
+        // Read cookies up front to decide whether URL params need to be propagated
+        const { whiteThemeCookie: whiteThemeCookieForParam, images: imagesCookieForParam } =
+            parseCookies(req);
 
-    // Build combined URL params for links — only include preference params when the
-    // corresponding cookie is absent (i.e. the browser doesn't support cookies)
-    const sessionParam = buildSessionParam(
-      urlSessionID,
-      urlTheme,
-      whiteThemeCookieForParam,
-      urlImages,
-      imagesCookieForParam
-    );
+        // Build combined URL params for links — only include preference params when the
+        // corresponding cookie is absent (i.e. the browser doesn't support cookies)
+        const sessionParam = buildSessionParam(
+            urlSessionID,
+            urlTheme,
+            whiteThemeCookieForParam,
+            urlImages,
+            imagesCookieForParam
+        );
 
-    // Acquire lock for this user to prevent race conditions where users might see other users' servers
-    await lock.acquire(discordID, async () => {
-      const data = auth.dbQueryAll('SELECT * FROM servers WHERE discordID=?', [discordID]);
+        // Acquire lock for this user to prevent race conditions where users might see other users' servers
+        await lock.acquire(discordID, async () => {
+            const data = auth.dbQueryAll('SELECT * FROM servers WHERE discordID=?', [discordID]);
 
-      for (const serverData of data) {
-        const serverID = serverData.serverID;
-        const server = bot.client.guilds.cache.get(serverID);
+            for (const serverData of data) {
+                const serverID = serverData.serverID;
+                const server = bot.client.guilds.cache.get(serverID);
 
-        if (server) {
-          let member = cachedMembers[discordID]?.[server.id];
-          if (clientIsReady && !member) {
-            try {
-              member = await server.members.fetch(discordID);
-              if (!cachedMembers[discordID]) evictOldestCachedMember();
-              cachedMembers[discordID] = { ...cachedMembers[discordID], [server.id]: member };
-            } catch (err) {
-              // Delete from database if member isn't found
-              auth.dbQueryRun('DELETE FROM servers WHERE serverID=? AND discordID=?', [
-                server.id,
-                discordID,
-              ]);
-              serversDeleted++;
-              continue;
+                if (server) {
+                    let member = cachedMembers[discordID]?.[server.id];
+                    if (clientIsReady && !member) {
+                        try {
+                            member = await server.members.fetch(discordID);
+                            if (!cachedMembers[discordID]) evictOldestCachedMember();
+                            cachedMembers[discordID] = {
+                                ...cachedMembers[discordID],
+                                [server.id]: member,
+                            };
+                        } catch (err) {
+                            // Delete from database if member isn't found
+                            auth.dbQueryRun(
+                                'DELETE FROM servers WHERE serverID=? AND discordID=?',
+                                [server.id, discordID]
+                            );
+                            serversDeleted++;
+                            continue;
+                        }
+                    }
+
+                    // Construct server list HTML if the member is valid
+                    if (member && member.user) {
+                        const imagesCookie =
+                            urlImages !== null
+                                ? parseInt(urlImages, 10)
+                                : imagesCookieForParam !== undefined
+                                  ? parseInt(imagesCookieForParam, 10)
+                                  : 1;
+                        const serverHTML = createServerHTML(
+                            server,
+                            member,
+                            imagesCookie,
+                            sessionParam
+                        );
+                        serverList += serverHTML;
+                    }
+                } else {
+                    // Only delete the server from the DB if the bot client is ready.
+                    // If the bot hasn't connected yet, skip deletion so servers are preserved during boot.
+                    if (clientIsReady) {
+                        // bot is connected and the guild truly isn't in cache -> safe to delete
+                        auth.dbQueryRun('DELETE FROM servers WHERE serverID=?', [serverID]);
+                        serversDeleted++;
+                    } else {
+                        // bot not ready / not connected: do not delete the server row; treat as temporarily missing
+                        console.warn(
+                            `Skipping deletion of server ${serverID} because bot client is not ready.`
+                        );
+                        continue;
+                    }
+                }
             }
-          }
+        });
 
-          // Construct server list HTML if the member is valid
-          if (member && member.user) {
-            const imagesCookie =
-              urlImages !== null
+        let response = renderTemplate(server_template, { SERVER_LIST: serverList });
+
+        // syncNeeded already parsed via parsedUrl above
+        const syncNeeded = parsedUrl.searchParams.get('sync_needed');
+
+        // Process specific server if `args[2]` is given
+        if (args[2]) {
+            const targetServer = bot.client.guilds.cache.get(args[2]);
+            await lock.acquire(discordID, async () => {
+                if (targetServer) {
+                    response = renderTemplate(response, {
+                        DISCORD_NAME:
+                            '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' +
+                            escape(normalizeWeirdUnicode(targetServer.name)) +
+                            '</font></b><br>',
+                    });
+                    const member = await fetchAndCacheMember(targetServer, discordID);
+                    if (member) {
+                        response = await processServerChannels(
+                            targetServer,
+                            member,
+                            response,
+                            sessionParam
+                        );
+                    } else {
+                        response = renderTemplate(response, {
+                            CHANNEL_LIST: sync_warning_template,
+                        });
+                    }
+                } else {
+                    response = response.replace('{$DISCORD_NAME}', '');
+                    response = response.replace('{$CHANNEL_LIST}', 'Invalid channel!');
+                }
+            });
+        } else {
+            // If no specific server is selected, choose template based on whether user has servers
+            if (serverList.trim() === '') {
+                response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
+            } else if (syncNeeded === 'true' || serversDeleted > 0) {
+                response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
+            } else {
+                response = renderTemplate(response, { CHANNEL_LIST: server_list_only_template });
+            }
+            response = renderTemplate(response, { DISCORD_NAME: '' });
+        }
+
+        const imagesCookie =
+            urlImages !== null
                 ? parseInt(urlImages, 10)
                 : imagesCookieForParam !== undefined
                   ? parseInt(imagesCookieForParam, 10)
                   : 1;
-            const serverHTML = createServerHTML(server, member, imagesCookie, sessionParam);
-            serverList += serverHTML;
-          }
-        } else {
-          // Only delete the server from the DB if the bot client is ready.
-          // If the bot hasn't connected yet, skip deletion so servers are preserved during boot.
-          if (clientIsReady) {
-            // bot is connected and the guild truly isn't in cache -> safe to delete
-            auth.dbQueryRun('DELETE FROM servers WHERE serverID=?', [serverID]);
-            serversDeleted++;
-          } else {
-            // bot not ready / not connected: do not delete the server row; treat as temporarily missing
-            console.warn(
-              `Skipping deletion of server ${serverID} because bot client is not ready.`
-            );
-            continue;
-          }
+
+        // Handle theme and images preferences
+        response = applyUserPreferences(response, req);
+
+        if (response.match?.(emojiRegex) && imagesCookie === 1) {
+            const unicode_emoji_matches = [...response.match?.(emojiRegex)];
+            unicode_emoji_matches.forEach((match) => {
+                const output = unicodeToTwemojiCode(match);
+                response = response.replaceAll(
+                    match,
+                    `<img src="/resources/twemoji/${output}.gif" width="22" height="22" style="width: 6%;vertical-align:top;" alt="emoji">`
+                );
+            });
         }
-      }
-    });
 
-    let response = renderTemplate(server_template, { SERVER_LIST: serverList });
+        const custom_emoji_matches = [
+            ...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})?(?:(?!\1).)*&gt;/g),
+        ]; // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
+        if (custom_emoji_matches[0] && imagesCookie === 1)
+            custom_emoji_matches.forEach(async (match) => {
+                // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
+                response = response.replaceAll(
+                    match[0],
+                    `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? 'gif' : 'png'}" width="22" height="22" style="width: 6%;"  alt="emoji">`
+                ); // Make it smaller if inline
+            });
 
-    // syncNeeded already parsed via parsedUrl above
-    const syncNeeded = parsedUrl.searchParams.get('sync_needed');
+        // Parse and add user agent display
+        response = addUserAgentDisplay(response, req);
 
-    // Process specific server if `args[2]` is given
-    if (args[2]) {
-      const targetServer = bot.client.guilds.cache.get(args[2]);
-      await lock.acquire(discordID, async () => {
-        if (targetServer) {
-          response = renderTemplate(response, {
-            DISCORD_NAME:
-              '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' +
-              escape(normalizeWeirdUnicode(targetServer.name)) +
-              '</font></b><br>',
-          });
-          const member = await fetchAndCacheMember(targetServer, discordID);
-          if (member) {
-            response = await processServerChannels(targetServer, member, response, sessionParam);
-          } else {
-            response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
-          }
-        } else {
-          response = response.replace('{$DISCORD_NAME}', '');
-          response = response.replace('{$CHANNEL_LIST}', 'Invalid channel!');
-        }
-      });
-    } else {
-      // If no specific server is selected, choose template based on whether user has servers
-      if (serverList.trim() === '') {
-        response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
-      } else if (syncNeeded === 'true' || serversDeleted > 0) {
-        response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
-      } else {
-        response = renderTemplate(response, { CHANNEL_LIST: server_list_only_template });
-      }
-      response = renderTemplate(response, { DISCORD_NAME: '' });
-    }
+        // Inject URL parameters into template links
+        response = response.split('{$SESSION_PARAM}').join(sessionParam);
 
-    const imagesCookie =
-      urlImages !== null
-        ? parseInt(urlImages, 10)
-        : imagesCookieForParam !== undefined
-          ? parseInt(imagesCookieForParam, 10)
-          : 1;
-
-    // Handle theme and images preferences
-    response = applyUserPreferences(response, req);
-
-    if (response.match?.(emojiRegex) && imagesCookie === 1) {
-      const unicode_emoji_matches = [...response.match?.(emojiRegex)];
-      unicode_emoji_matches.forEach((match) => {
-        const output = unicodeToTwemojiCode(match);
-        response = response.replaceAll(
-          match,
-          `<img src="/resources/twemoji/${output}.gif" width="22" height="22" style="width: 6%;vertical-align:top;" alt="emoji">`
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(response);
+    } catch (err) {
+        console.error(err);
+        res.writeHead(500);
+        res.end(
+            'An error occurred. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error'
         );
-      });
     }
-
-    const custom_emoji_matches = [
-      ...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})?(?:(?!\1).)*&gt;/g),
-    ]; // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
-    if (custom_emoji_matches[0] && imagesCookie === 1)
-      custom_emoji_matches.forEach(async (match) => {
-        // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
-        response = response.replaceAll(
-          match[0],
-          `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? 'gif' : 'png'}" width="22" height="22" style="width: 6%;"  alt="emoji">`
-        ); // Make it smaller if inline
-      });
-
-    // Parse and add user agent display
-    response = addUserAgentDisplay(response, req);
-
-    // Inject URL parameters into template links
-    response = response.split('{$SESSION_PARAM}').join(sessionParam);
-
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(response);
-  } catch (err) {
-    console.error(err);
-    res.writeHead(500);
-    res.end(
-      'An error occurred. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error'
-    );
-  }
 };
 
 async function fetchAndCacheMember(server, discordID) {
-  if (cachedMembers[discordID]?.[server.id]) {
-    return cachedMembers[discordID][server.id];
-  }
-  try {
-    const member = await server.members.fetch(discordID);
-    if (!cachedMembers[discordID]) evictOldestCachedMember();
-    cachedMembers[discordID] = { ...cachedMembers[discordID], [server.id]: member };
-    return member;
-  } catch {
-    return null;
-  }
+    if (cachedMembers[discordID]?.[server.id]) {
+        return cachedMembers[discordID][server.id];
+    }
+    try {
+        const member = await server.members.fetch(discordID);
+        if (!cachedMembers[discordID]) evictOldestCachedMember();
+        cachedMembers[discordID] = { ...cachedMembers[discordID], [server.id]: member };
+        return member;
+    } catch {
+        return null;
+    }
 }
 
 function applyUserPreferences(response, req) {
-  const parsedUrl = new URL(req.url, 'http://localhost');
-  const urlImages = parsedUrl.searchParams.get('images');
-  const { images: imagesCookie } = parseCookies(req);
-  const imagesEnabled =
-    urlImages !== null ? urlImages === '1' : imagesCookie === '1' || imagesCookie === undefined; // Default to enabled (1) if not set
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const urlImages = parsedUrl.searchParams.get('images');
+    const { images: imagesCookie } = parseCookies(req);
+    const imagesEnabled =
+        urlImages !== null ? urlImages === '1' : imagesCookie === '1' || imagesCookie === undefined; // Default to enabled (1) if not set
 
-  return renderTemplate(response, {
-    WHITE_THEME_ENABLED: getPageThemeAttr(req),
-    IMAGES_WARNING: imagesEnabled ? images_enabled_template : no_images_warning_template,
-  });
+    return renderTemplate(response, {
+        WHITE_THEME_ENABLED: getPageThemeAttr(req),
+        IMAGES_WARNING: imagesEnabled ? images_enabled_template : no_images_warning_template,
+    });
 }
 
 function createServerHTML(server, member, imagesCookie, sessionParam) {
-  const serverName = server.name
-    .replace(/<a?:[^:]+:\d+>/g, '')
-    .replace(emojiRegex, '')
-    .trim();
+    const serverName = server.name
+        .replace(/<a?:[^:]+:\d+>/g, '')
+        .replace(emojiRegex, '')
+        .trim();
 
-  const iconUrl = server.icon
-    ? `/ico/server/${server.id}/${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
-    : '/discord-mascot.gif';
+    const iconUrl = server.icon
+        ? `/ico/server/${server.id}/${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
+        : '/discord-mascot.gif';
 
-  return renderTemplate(server_icon_template, {
-    SERVER_ICON_URL: iconUrl,
-    SERVER_URL: './' + server.id + (sessionParam || ''),
-    SERVER_NAME: escape(normalizeWeirdUnicode(serverName)),
-  });
+    return renderTemplate(server_icon_template, {
+        SERVER_ICON_URL: iconUrl,
+        SERVER_URL: './' + server.id + (sessionParam || ''),
+        SERVER_NAME: escape(normalizeWeirdUnicode(serverName)),
+    });
 }
 
 function addUserAgentDisplay(response, req) {
-  const userAgent = req.headers['user-agent'] || '';
-  const parser = new UAParser(userAgent);
-  const uaResult = parser.getResult();
+    const userAgent = req.headers['user-agent'] || '';
+    const parser = new UAParser(userAgent);
+    const uaResult = parser.getResult();
 
-  const browserName = escape(uaResult.browser.name || '');
-  const browserVersion = escape(uaResult.browser.version || '');
-  const osName = escape(uaResult.os.name || '');
-  const osVersion = escape(uaResult.os.version || '');
-  const deviceVendor = escape(uaResult.device.vendor || '');
-  const deviceModel = escape(uaResult.device.model || '');
+    const browserName = escape(uaResult.browser.name || '');
+    const browserVersion = escape(uaResult.browser.version || '');
+    const osName = escape(uaResult.os.name || '');
+    const osVersion = escape(uaResult.os.version || '');
+    const deviceVendor = escape(uaResult.device.vendor || '');
+    const deviceModel = escape(uaResult.device.model || '');
 
-  const browserInfo = browserName
-    ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}`
-    : '';
-  const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
-  const deviceInfo =
-    deviceVendor || deviceModel
-      ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})`
-      : '';
+    const browserInfo = browserName
+        ? `${browserName}${browserVersion ? ' ' + browserVersion : ''}`
+        : '';
+    const osInfo = osName ? `${osName}${osVersion ? ' ' + osVersion : ''}` : '';
+    const deviceInfo =
+        deviceVendor || deviceModel
+            ? ` (${[deviceVendor, deviceModel].filter(Boolean).join(' ')})`
+            : '';
 
-  const platform = browserInfo && osInfo ? `${browserInfo} on ${osInfo}` : browserInfo || osInfo;
-  const userAgentDisplay = platform
-    ? `<font color="#aaaaaa" size="2">Platform: ${platform}${deviceInfo}</font>`
-    : '';
+    const platform = browserInfo && osInfo ? `${browserInfo} on ${osInfo}` : browserInfo || osInfo;
+    const userAgentDisplay = platform
+        ? `<font color="#aaaaaa" size="2">Platform: ${platform}${deviceInfo}</font>`
+        : '';
 
-  return renderTemplate(response, { USER_AGENT: userAgentDisplay });
+    return renderTemplate(response, { USER_AGENT: userAgentDisplay });
 }

@@ -8,12 +8,12 @@ const MAX_NONCE_LENGTH = 128;
 const seenNonces = new Map();
 
 function cleanupOldNonces() {
-  const now = Date.now();
-  for (const [key, timestamp] of seenNonces) {
-    if (now - timestamp > NONCE_TTL_MS) {
-      seenNonces.delete(key);
+    const now = Date.now();
+    for (const [key, timestamp] of seenNonces) {
+        if (now - timestamp > NONCE_TTL_MS) {
+            seenNonces.delete(key);
+        }
     }
-  }
 }
 
 // Run periodic cleanup every 5 minutes to keep the map from growing unbounded
@@ -27,18 +27,18 @@ setInterval(cleanupOldNonces, 5 * 60 * 1000).unref();
  * old clients without nonce support continue to work normally.
  */
 exports.checkAndMarkNonce = function checkAndMarkNonce(nonce) {
-  if (
-    !nonce ||
-    typeof nonce !== 'string' ||
-    nonce.trim() === '' ||
-    nonce.length > MAX_NONCE_LENGTH
-  ) {
+    if (
+        !nonce ||
+        typeof nonce !== 'string' ||
+        nonce.trim() === '' ||
+        nonce.length > MAX_NONCE_LENGTH
+    ) {
+        return false;
+    }
+    cleanupOldNonces();
+    if (seenNonces.has(nonce)) {
+        return true;
+    }
+    seenNonces.set(nonce, Date.now());
     return false;
-  }
-  cleanupOldNonces();
-  if (seenNonces.has(nonce)) {
-    return true;
-  }
-  seenNonces.set(nonce, Date.now());
-  return false;
 };

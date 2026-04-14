@@ -1,26 +1,32 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="page-channel">
-
-<head>
+  <head>
     {$COMMON_HEAD}
     <title>Discross - Pinned Messages - {$CHANNEL_NAME}</title>
-</head>
+  </head>
 
-<body {$WHITE_THEME_ENABLED}>
+  <body {$WHITE_THEME_ENABLED}>
     <div id="wrapper">
-        <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}" class="menu-button">
-            <img src="/resources/twemoji/2b05.gif" alt="Back" width="24" height="24" style="width: 24px; height: 24px;">
-        </a>
+      <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}" class="menu-button">
+        <img
+          src="/resources/twemoji/2b05.gif"
+          alt="Back"
+          width="24"
+          height="24"
+          style="width: 24px; height: 24px"
+        />
+      </a>
 
-        <div style="">
-            <div style="padding: 16px;">
-                <b><font size="5" face="'rodin', Arial, Helvetica, sans-serif">Pinned Messages in {$CHANNEL_NAME}</font></b><br>
-                <div id="msgcontainer">
-                    {$MESSAGES}
-                </div>
-            </div>
+      <div style="">
+        <div style="padding: 16px">
+          <b
+            ><font size="5" face="'rodin', Arial, Helvetica, sans-serif"
+              >Pinned Messages in {$CHANNEL_NAME}</font
+            ></b
+          ><br />
+          <div id="msgcontainer">{$MESSAGES}</div>
         </div>
+      </div>
     </div>
-</body>
-
+  </body>
 </html>

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en" class="page-simple">
+  <head>
+    {$COMMON_HEAD}
+    <title>Discross - Register</title>
+  </head>
+
+  <body style="margin: 0" {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+      <table style="width: 100%">
+        <tr valign="middle">
+          <td>
+            <a href="/"><img src="/resources/logo.gif" alt="Logo" /></a>
+          </td>
+          <td>
+            <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >discross</font
+            >
+          </td>
+          <td width="100%" align="right">
+            <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >&#160;&#160; {$MENU_OPTIONS}</font
+            >
+          </td>
+          <td valign="middle" style="padding-right: 8px;">
+            <a href="/switchtheme"
+              ><img
+                src="/resources/twemoji/1f313.gif"
+                alt="Switch theme"
+                width="36"
+                height="36"
+                style="background: none; border: none"
+            /></a>
+          </td>
+        </tr>
+      </table>
+      <hr style="margin: 0" />
+      <br />
+      <table>
+        <tr>
+          <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+          <td>
+            <form action="/register" method="post">
+              <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+                >Register</font
+              ><br /><br />
+              <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+                Username:<br /><br />(alphanumeric, dots, or underscores) <br /><br />
+                <div style="padding: 16px; background: #222327; max-width: 300px; width: 100%">
+                  <input
+                    type="text"
+                    name="username"
+                    id="username"
+                    value=""
+                    style="
+                      color: #dddddd;
+                      background: #222327;
+                      border: none;
+                      width: 100%;
+                      outline: none;
+                    "
+                    placeholder="Username"
+                  />
+                </div>
+                <br />
+                Password:<br /><br />(don't use your Discord password) <br /><br />
+                <div style="padding: 16px; background: #222327; max-width: 300px; width: 100%">
+                  <input
+                    type="password"
+                    name="password"
+                    id="password"
+                    value=""
+                    style="
+                      color: #dddddd;
+                      background: #222327;
+                      border: none;
+                      width: 100%;
+                      outline: none;
+                    "
+                    placeholder="Password"
+                  />
+                </div>
+                <br />
+                Confirm password:
+                <br /><br />
+                <div style="padding: 16px; background: #222327; max-width: 300px; width: 100%">
+                  <input
+                    type="password"
+                    name="confirm"
+                    id="confirm"
+                    value=""
+                    style="
+                      color: #dddddd;
+                      background: #222327;
+                      border: none;
+                      width: 100%;
+                      outline: none;
+                    "
+                    placeholder="Confirm password"
+                  />
+                </div>
+                <br />
+                Verification code:
+                <br /><br />
+                Type ^connect on a server with Discross to get this.
+                <br /><br />
+                <div style="padding: 16px; background: #222327; max-width: 300px; width: 100%">
+                  <input
+                    type="text"
+                    name="token"
+                    id="token"
+                    value=""
+                    style="
+                      color: #dddddd;
+                      background: #222327;
+                      border: none;
+                      width: 100%;
+                      outline: none;
+                    "
+                    placeholder="Verification code"
+                  />
+                </div>
+                {$ERROR}<br />
+                <input
+                  type="submit"
+                  style="
+                    color: #ffffff;
+                    height: 44px;
+                    width: 150px;
+                    border: none;
+                    background: #5865f2;
+                    border-radius: 8px;
+                    font-family: 'rodin', Arial, Helvetica, sans-serif;
+                    font-size: 16px;
+                    font-weight: 500;
+                    cursor: pointer;
+                  "
+                  value="Register"
+                />
+              </font>
+            </form>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

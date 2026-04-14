@@ -1,64 +1,96 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="page-simple">
+  <head>
+    {$COMMON_HEAD}
+    <title>Discross - Privacy Policy</title>
+  </head>
 
-<head>
-  {$COMMON_HEAD}
-  <title>Discross - Privacy Policy</title>
-</head>
-
-<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
-  <div id="wrapper">
-    <table style="width: 100%;">
-      <tr valign="middle">
-        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
-        <td>
-          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
-        </td>
-        <td width="100%" align="right">
-          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160; {$MENU_OPTIONS}</font>
-        </td>
-        <td valign="middle">
-          <a href="/switchtheme"><img src="/resources/twemoji/1f313.gif" alt="Switch theme" width="36" height="36" style="background: none; border: none;"></a>
-        </td>
-      </tr>
-    </table>
-    <hr style="margin: 0;">
-    <br>
-    <table>
-        <tr>
+  <body style="margin: 0" {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+      <table style="width: 100%">
+        <tr valign="middle">
           <td>
-            &nbsp;&nbsp;&nbsp;&nbsp;
+            <a href="/"><img src="/resources/logo.gif" alt="Logo" /></a>
           </td>
           <td>
+            <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >discross</font
+            >
+          </td>
+          <td width="100%" align="right">
+            <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >&#160;&#160; {$MENU_OPTIONS}</font
+            >
+          </td>
+          <td valign="middle" style="padding-right: 8px;">
+            <a href="/switchtheme"
+              ><img
+                src="/resources/twemoji/1f313.gif"
+                alt="Switch theme"
+                width="36"
+                height="36"
+                style="background: none; border: none"
+            /></a>
+          </td>
+        </tr>
+      </table>
+      <hr style="margin: 0" />
+      <br />
+      <table>
+        <tr>
+          <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+          <td>
             <font size="3" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
-              <font size="5" style="font-weight: normal;">Privacy Policy</font><br><br>
+              <font size="5" style="font-weight: normal">Privacy Policy</font><br /><br />
               <p><strong>Last Updated:</strong> November 5, 2025</p>
 
               <div>
-                <font size="4" style="font-weight: normal;">Introduction</font><br>
-                <p>Welcome to <strong>Discross</strong> (the "Service"), available at 
-                <a style="color: #647dcd;" href="https://discross.net/">https://discross.net/</a>. Discross is a project that allows users 
-                to communicate on Discord through any web browser. This Privacy Policy explains how we handle 
-                and protect your information when you use our service.</p>
+                <font size="4" style="font-weight: normal">Introduction</font><br />
+                <p>
+                  Welcome to <strong>Discross</strong> (the "Service"), available at
+                  <a style="color: #647dcd" href="https://discross.net/">https://discross.net/</a>.
+                  Discross is a project that allows users to communicate on Discord through any web
+                  browser. This Privacy Policy explains how we handle and protect your information
+                  when you use our service.
+                </p>
               </div>
 
               <div>
-                <font size="4" style="font-weight: normal;">Information We Collect</font><br>
-                <p>We collect and store the following information to provide the core functionality of Discross:</p>
+                <font size="4" style="font-weight: normal">Information We Collect</font><br />
+                <p>
+                  We collect and store the following information to provide the core functionality
+                  of Discross:
+                </p>
                 <ul>
-                  <li><strong>Discord User IDs:</strong> Used to authenticate and identify you when communicating via Discord.</li>
-                  <li><strong>Discord Server IDs:</strong> Used to track which servers you have access to.</li>
-                  <li><strong>Discross Username:</strong> Your chosen name for use on our platform.</li>
-                  <li><strong>Discross Password:</strong> Stored securely, hashed using bcrypt with 10 rounds.</li>
+                  <li>
+                    <strong>Discord User IDs:</strong> Used to authenticate and identify you when
+                    communicating via Discord.
+                  </li>
+                  <li>
+                    <strong>Discord Server IDs:</strong> Used to track which servers you have access
+                    to.
+                  </li>
+                  <li>
+                    <strong>Discross Username:</strong> Your chosen name for use on our platform.
+                  </li>
+                  <li>
+                    <strong>Discross Password:</strong> Stored securely, hashed using bcrypt with 10
+                    rounds.
+                  </li>
                   <li><strong>Session IDs:</strong> Used to manage active logins.</li>
-                  <li><strong>Verification Codes:</strong> Temporarily stored to verify your account.</li>
+                  <li>
+                    <strong>Verification Codes:</strong> Temporarily stored to verify your account.
+                  </li>
                   <li><strong>Webhooks:</strong> Stored to send messages to Discord servers.</li>
                 </ul>
-                <p>We do not store Discord messages, IP addresses, or access logs. Messages appear only when you load the relevant Discord channel.</p>
+                <p>
+                  We do not store Discord messages, IP addresses, or access logs. Messages appear
+                  only when you load the relevant Discord channel.
+                </p>
               </div>
 
               <div>
-                <font size="4" style="font-weight: normal;">Cookies</font><br>
+                <font size="4" style="font-weight: normal">Cookies</font><br />
                 <p>We use a single cookie:</p>
                 <ul>
                   <li><strong>sessionID</strong> Stores your session ID to keep you logged in.</li>
@@ -67,47 +99,75 @@
               </div>
 
               <div>
-                <font size="4" style="font-weight: normal;">Connection Security</font><br>
-                <p>Discross supports both <strong>HTTP</strong> and <strong>HTTPS</strong> to maintain compatibility with browsers that do not support HTTPS.</p>
-                <p>Our HTTPS implementation supports ciphers ranging from <strong>SSL v3</strong> to <strong>TLS 1.3</strong>. We strongly recommend using HTTPS whenever possible for your security.</p>
+                <font size="4" style="font-weight: normal">Connection Security</font><br />
+                <p>
+                  Discross supports both <strong>HTTP</strong> and <strong>HTTPS</strong> to
+                  maintain compatibility with browsers that do not support HTTPS.
+                </p>
+                <p>
+                  Our HTTPS implementation supports ciphers ranging from <strong>SSL v3</strong> to
+                  <strong>TLS 1.3</strong>. We strongly recommend using HTTPS whenever possible for
+                  your security.
+                </p>
               </div>
 
               <div>
-                <font size="4" style="font-weight: normal;">Server Location</font><br>
-                <p>Our servers are hosted in <strong>Ashburn, Virginia, USA</strong>, using <strong>Oracle Cloud Infrastructure</strong>.</p>
+                <font size="4" style="font-weight: normal">Server Location</font><br />
+                <p>
+                  Our servers are hosted in <strong>Ashburn, Virginia, USA</strong>, using
+                  <strong>Oracle Cloud Infrastructure</strong>.
+                </p>
               </div>
 
               <div>
-                <font size="4" style="font-weight: normal;">Discord OAuth Integration</font><br>
-                <p>We use <strong>Discord OAuth</strong> to identify which servers you are a member of. This determines which Discord servers you can access through Discross.</p>
+                <font size="4" style="font-weight: normal">Discord OAuth Integration</font><br />
+                <p>
+                  We use <strong>Discord OAuth</strong> to identify which servers you are a member
+                  of. This determines which Discord servers you can access through Discross.
+                </p>
               </div>
 
               <div>
-                <font size="4" style="font-weight: normal;">Data Retention and Deletion</font><br>
-                <p>We retain only the data necessary to maintain your account and provide the Service. If you wish to delete your data in accordance with GDPR, please contact:</p>
-                <p><a style="color: #647dcd;" href="mailto:admin@discross.net">admin@discross.net</a></p>
+                <font size="4" style="font-weight: normal">Data Retention and Deletion</font><br />
+                <p>
+                  We retain only the data necessary to maintain your account and provide the
+                  Service. If you wish to delete your data in accordance with GDPR, please contact:
+                </p>
+                <p>
+                  <a style="color: #647dcd" href="mailto:admin@discross.net">admin@discross.net</a>
+                </p>
               </div>
 
               <div>
-                <font size="4" style="font-weight: normal;">Security Vulnerabilities</font><br>
-                <p>If you discover any security vulnerabilities or risks associated with Discross, please notify us immediately at:</p>
-                <p><a style="color: #647dcd;" href="mailto:admin@discross.net">admin@discross.net</a></p>
+                <font size="4" style="font-weight: normal">Security Vulnerabilities</font><br />
+                <p>
+                  If you discover any security vulnerabilities or risks associated with Discross,
+                  please notify us immediately at:
+                </p>
+                <p>
+                  <a style="color: #647dcd" href="mailto:admin@discross.net">admin@discross.net</a>
+                </p>
               </div>
 
               <div>
-                <font size="4" style="font-weight: normal;">Eligibility</font><br>
-                <p>Discross is not limited to users aged 13 and older. Users of any age may use the platform, though parental supervision is encouraged for minors.</p>
+                <font size="4" style="font-weight: normal">Eligibility</font><br />
+                <p>
+                  Discross is not limited to users aged 13 and older. Users of any age may use the
+                  platform, though parental supervision is encouraged for minors.
+                </p>
               </div>
 
               <div>
-                <font size="4" style="font-weight: normal;">Changes to This Policy</font><br>
-                <p>We may update this Privacy Policy periodically. Continued use of Discross after updates means you agree to the revised policy</p>
+                <font size="4" style="font-weight: normal">Changes to This Policy</font><br />
+                <p>
+                  We may update this Privacy Policy periodically. Continued use of Discross after
+                  updates means you agree to the revised policy
+                </p>
               </div>
             </font>
           </td>
         </tr>
-    </table>
-  </div>
-</body>
-
+      </table>
+    </div>
+  </body>
 </html>

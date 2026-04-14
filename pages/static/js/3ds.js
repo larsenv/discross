@@ -1,4 +1,4 @@
-(function() {
+(function () {
     if (screen.height != 240) return;
 
     var msgContainer = document.getElementById('msgcontainer');
@@ -19,16 +19,16 @@
     }
 
     // Wait for messages to load
-    var check = setInterval(function() {
+    var check = setInterval(function () {
         if (msgContainer.children && msgContainer.children.length > 0) {
             clearInterval(check);
-            
-            // Add padding to the BOTTOM to force the browser to let you scroll 
+
+            // Add padding to the BOTTOM to force the browser to let you scroll
             // past the fixed toolbar (150px gives a safe buffer for the ~80px toolbar)
             msgContainer.style.paddingBottom = '80px';
-            
+
             // Single scroll 1 second (1000ms) after load
-            setTimeout(function() {
+            setTimeout(function () {
                 var targetScroll = (document.body ? document.body.scrollHeight : 999999) + 500;
                 window.scrollTo(0, targetScroll);
             }, 3000);

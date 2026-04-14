@@ -14,15 +14,15 @@ const fs = require('fs');
  * @returns {string} The template content.
  */
 function getTemplate(name, folder = 'channel') {
-  const filePath = `pages/templates/${folder}/${name}.html`;
-  try {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    // Remove #end comments that might be present in some templates
-    return content.replace(/#end(?=["'])/g, '');
-  } catch (err) {
-    console.error(`Failed to load template ${filePath}:`, err);
-    return '';
-  }
+    const filePath = `pages/templates/${folder}/${name}.html`;
+    try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        // Remove #end comments that might be present in some templates
+        return content.replace(/#end(?=["'])/g, '');
+    } catch (err) {
+        console.error(`Failed to load template ${filePath}:`, err);
+        return '';
+    }
 }
 
 /**
@@ -34,10 +34,10 @@ function getTemplate(name, folder = 'channel') {
  * @returns {string} The rendered page content.
  */
 function loadAndRenderPageTemplate(name, folder = '', data = {}) {
-  const headPartial = getTemplate('head', 'partials');
-  const mainTemplate = getTemplate(name, folder);
-  const templateWithHead = renderTemplate(mainTemplate, { COMMON_HEAD: headPartial });
-  return renderTemplate(templateWithHead, data);
+    const headPartial = getTemplate('head', 'partials');
+    const mainTemplate = getTemplate(name, folder);
+    const templateWithHead = renderTemplate(mainTemplate, { COMMON_HEAD: headPartial });
+    return renderTemplate(templateWithHead, data);
 }
 
 /**
@@ -48,18 +48,18 @@ function loadAndRenderPageTemplate(name, folder = '', data = {}) {
  * @returns {string} The rendered template.
  */
 function renderTemplate(template, data) {
-  if (!template || !data) return template || '';
-  let result = template;
-  for (const [key, value] of Object.entries(data)) {
-    // Normalize key: remove surrounding {$$} if present
-    let normalizedKey = key;
-    if (normalizedKey.startsWith('{$') && normalizedKey.endsWith('}')) {
-      normalizedKey = normalizedKey.slice(2, -1);
+    if (!template || !data) return template || '';
+    let result = template;
+    for (const [key, value] of Object.entries(data)) {
+        // Normalize key: remove surrounding {$$} if present
+        let normalizedKey = key;
+        if (normalizedKey.startsWith('{$') && normalizedKey.endsWith('}')) {
+            normalizedKey = normalizedKey.slice(2, -1);
+        }
+        const placeholder = `{$${normalizedKey}}`;
+        result = result.split(placeholder).join(value ?? '');
     }
-    const placeholder = `{$${normalizedKey}}`;
-    result = result.split(placeholder).join(value ?? '');
-  }
-  return result;
+    return result;
 }
 
 /**
@@ -69,7 +69,7 @@ function renderTemplate(template, data) {
  * @returns {boolean}
  */
 function isValidSnowflake(id) {
-  return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
+    return typeof id === 'string' && /^[0-9]{16,20}$/.test(id);
 }
 
 /**
@@ -79,13 +79,13 @@ function isValidSnowflake(id) {
  * @returns {boolean}
  */
 function isBotReady(bot) {
-  return (
-    bot !== null &&
-    bot !== undefined &&
-    bot.client !== null &&
-    bot.client !== undefined &&
-    (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime)
-  );
+    return (
+        bot !== null &&
+        bot !== undefined &&
+        bot.client !== null &&
+        bot.client !== undefined &&
+        (typeof bot.client.isReady === 'function' ? bot.client.isReady() : !!bot.client.uptime)
+    );
 }
 
 /**
@@ -95,8 +95,8 @@ function isBotReady(bot) {
  * @returns {string}
  */
 function getBaseUrl(req) {
-  const scheme = req.socket && req.socket.encrypted ? 'https' : 'http';
-  return scheme + '://' + (req.headers.host || 'localhost');
+    const scheme = req.socket && req.socket.encrypted ? 'https' : 'http';
+    return scheme + '://' + (req.headers.host || 'localhost');
 }
 
 /**
@@ -106,40 +106,40 @@ function getBaseUrl(req) {
  * @returns {Record<string, string>}
  */
 function parseCookies(req) {
-  const result = {};
-  const raw = req.headers.cookie;
-  if (!raw) return result;
-  raw.split(';').forEach((cookie) => {
-    const parts = cookie.split('=');
-    result[parts.shift().trim()] = decodeURIComponent(parts.join('='));
-  });
-  return result;
+    const result = {};
+    const raw = req.headers.cookie;
+    if (!raw) return result;
+    raw.split(';').forEach((cookie) => {
+        const parts = cookie.split('=');
+        result[parts.shift().trim()] = decodeURIComponent(parts.join('='));
+    });
+    return result;
 }
 
 /**
  * Theme configuration for dark (0), light (1), and AMOLED (2) themes.
  */
 const THEME_CONFIG = {
-  0: {
-    boxColor: '#222327',
-    authorText: '#ffffff',
-    replyText: '#b5bac1',
-    barColor: '#808080',
-  },
-  1: {
-    boxColor: '#ffffff',
-    authorText: '#000000',
-    replyText: '#000000',
-    barColor: '#808080',
-    themeClass: 'class="light-theme"',
-  },
-  2: {
-    boxColor: '#141416',
-    authorText: '#ffffff',
-    replyText: '#b5bac1',
-    barColor: '#808080',
-    themeClass: 'class="amoled-theme"',
-  },
+    0: {
+        boxColor: '#222327',
+        authorText: '#ffffff',
+        replyText: '#b5bac1',
+        barColor: '#808080',
+    },
+    1: {
+        boxColor: '#ffffff',
+        authorText: '#000000',
+        replyText: '#000000',
+        barColor: '#808080',
+        themeClass: 'class="light-theme"',
+    },
+    2: {
+        boxColor: '#141416',
+        authorText: '#ffffff',
+        replyText: '#b5bac1',
+        barColor: '#808080',
+        themeClass: 'class="amoled-theme"',
+    },
 };
 
 /** Random emoji codepoints used in the channel input area. */
@@ -156,20 +156,20 @@ const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389',
  * @returns {string}
  */
 function getPageThemeAttr(req) {
-  const parsedurl = new URL(req.url, 'http://localhost');
-  const urlTheme = parsedurl.searchParams.get('theme');
-  const cookieHeader = req.headers.cookie || '';
-  const cookieTheme = cookieHeader.split('; ').find((c) => c.startsWith('whiteThemeCookie='));
-  const cookieVal = cookieTheme ? cookieTheme.split('=')[1] : undefined;
-  const theme =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : cookieVal !== undefined
-        ? parseInt(cookieVal, 10)
-        : 0;
-  if (theme === 1) return 'class="light-theme"';
-  if (theme === 2) return 'class="amoled-theme"';
-  return 'bgcolor="303338"';
+    const parsedurl = new URL(req.url, 'http://localhost');
+    const urlTheme = parsedurl.searchParams.get('theme');
+    const cookieHeader = req.headers.cookie || '';
+    const cookieTheme = cookieHeader.split('; ').find((c) => c.startsWith('whiteThemeCookie='));
+    const cookieVal = cookieTheme ? cookieTheme.split('=')[1] : undefined;
+    const theme =
+        urlTheme !== null
+            ? parseInt(urlTheme, 10)
+            : cookieVal !== undefined
+              ? parseInt(cookieVal, 10)
+              : 0;
+    if (theme === 1) return 'class="light-theme"';
+    if (theme === 2) return 'class="amoled-theme"';
+    return 'bgcolor="303338"';
 }
 
 /**
@@ -183,19 +183,19 @@ function getPageThemeAttr(req) {
  * @returns {{ boxColor: string, authorText: string, replyText: string, themeClass: string }}
  */
 function resolveTheme(req) {
-  const parsedUrl = new URL(req.url, 'http://localhost');
-  const urlTheme = parsedUrl.searchParams.get('theme');
-  const cookieTheme = req.headers.cookie
-    ?.split('; ')
-    ?.find((c) => c.startsWith('whiteThemeCookie='))
-    ?.split('=')[1];
-  const themeValue =
-    urlTheme !== null
-      ? parseInt(urlTheme, 10)
-      : cookieTheme !== undefined
-        ? parseInt(cookieTheme, 10)
-        : 0;
-  return { ...(THEME_CONFIG[themeValue] ?? THEME_CONFIG[0]), themeValue };
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const urlTheme = parsedUrl.searchParams.get('theme');
+    const cookieTheme = req.headers.cookie
+        ?.split('; ')
+        ?.find((c) => c.startsWith('whiteThemeCookie='))
+        ?.split('=')[1];
+    const themeValue =
+        urlTheme !== null
+            ? parseInt(urlTheme, 10)
+            : cookieTheme !== undefined
+              ? parseInt(cookieTheme, 10)
+              : 0;
+    return { ...(THEME_CONFIG[themeValue] ?? THEME_CONFIG[0]), themeValue };
 }
 
 /**
@@ -211,13 +211,13 @@ function resolveTheme(req) {
  * @returns {string} Query string (e.g. "?sessionID=abc&theme=1") or empty string.
  */
 function buildSessionParam(urlSessionID, urlTheme, cookieTheme, urlImages, cookieImages) {
-  const parts = [];
-  if (urlSessionID) parts.push('sessionID=' + encodeURIComponent(urlSessionID));
-  if (urlTheme !== null && cookieTheme === undefined)
-    parts.push('theme=' + encodeURIComponent(urlTheme));
-  if (urlImages !== null && cookieImages === undefined)
-    parts.push('images=' + encodeURIComponent(urlImages));
-  return parts.length ? '?' + parts.join('&') : '';
+    const parts = [];
+    if (urlSessionID) parts.push('sessionID=' + encodeURIComponent(urlSessionID));
+    if (urlTheme !== null && cookieTheme === undefined)
+        parts.push('theme=' + encodeURIComponent(urlTheme));
+    if (urlImages !== null && cookieImages === undefined)
+        parts.push('images=' + encodeURIComponent(urlImages));
+    return parts.length ? '?' + parts.join('&') : '';
 }
 
 /**
@@ -230,10 +230,10 @@ function buildSessionParam(urlSessionID, urlTheme, cookieTheme, urlImages, cooki
  * @returns {string} URL with `emoji=1` added (to open) or removed (to close).
  */
 function buildEmojiToggleUrl(baseUrl, emojiOpen, sessionParam) {
-  if (emojiOpen) {
-    return baseUrl + sessionParam;
-  }
-  return baseUrl + '?emoji=1' + (sessionParam ? sessionParam.replace('?', '&') : '');
+    if (emojiOpen) {
+        return baseUrl + sessionParam;
+    }
+    return baseUrl + '?emoji=1' + (sessionParam ? sessionParam.replace('?', '&') : '');
 }
 
 /**
@@ -243,11 +243,11 @@ function buildEmojiToggleUrl(baseUrl, emojiOpen, sessionParam) {
  * @returns {string} Sanitized name (max 32 chars, only printable Unicode).
  */
 function sanitizeGuestName(name) {
-  if (!name || typeof name !== 'string') return '';
-  return name
-    .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '')
-    .trim()
-    .slice(0, 32);
+    if (!name || typeof name !== 'string') return '';
+    return name
+        .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '')
+        .trim()
+        .slice(0, 32);
 }
 
 /**
@@ -256,9 +256,9 @@ function sanitizeGuestName(name) {
  * @returns {string} Formatted percentage string
  */
 function formatChangePct(pct) {
-  if (pct === null) return '--';
-  const sign = pct >= 0 ? '+' : '';
-  return sign + pct.toFixed(2) + '%';
+    if (pct === null) return '--';
+    const sign = pct >= 0 ? '+' : '';
+    return sign + pct.toFixed(2) + '%';
 }
 
 /**
@@ -267,8 +267,8 @@ function formatChangePct(pct) {
  * @returns {string} Color hex code (green for positive, red for negative, gray for null)
  */
 function changeColor(change) {
-  if (change === null) return '#72767d';
-  return change >= 0 ? '#57f287' : '#ed4245';
+    if (change === null) return '#72767d';
+    return change >= 0 ? '#57f287' : '#ed4245';
 }
 
 /**
@@ -280,25 +280,25 @@ function changeColor(change) {
  * @returns {Promise<string>} Text with @User#1234 patterns replaced by <@id> mention syntax.
  */
 async function resolveMentions(text, guild) {
-  const regex = /@([^#]{2,32}#\d{4})/g;
-  let result = text;
-  // Collect matches upfront so we iterate the original match list even as `result` changes.
-  const matches = [...result.matchAll(regex)];
-  for (const m of matches) {
-    const mentioneduser =
-      guild.members.cache.find((member) => member.user.tag === m[1]) ??
-      (await guild.members
-        .fetch()
-        .then((members) => members.find((member) => member.user.tag === m[1]))
-        .catch((err) => {
-          console.error('Failed to fetch members for mention:', err);
-          return null;
-        }));
-    if (mentioneduser) {
-      result = result.replaceAll(m[0], `<@${mentioneduser.id}>`);
+    const regex = /@([^#]{2,32}#\d{4})/g;
+    let result = text;
+    // Collect matches upfront so we iterate the original match list even as `result` changes.
+    const matches = [...result.matchAll(regex)];
+    for (const m of matches) {
+        const mentioneduser =
+            guild.members.cache.find((member) => member.user.tag === m[1]) ??
+            (await guild.members
+                .fetch()
+                .then((members) => members.find((member) => member.user.tag === m[1]))
+                .catch((err) => {
+                    console.error('Failed to fetch members for mention:', err);
+                    return null;
+                }));
+        if (mentioneduser) {
+            result = result.replaceAll(m[0], `<@${mentioneduser.id}>`);
+        }
     }
-  }
-  return result;
+    return result;
 }
 
 /**
@@ -310,36 +310,36 @@ async function resolveMentions(text, guild) {
  * @returns {Promise<{statusCode: number, body: string}>}
  */
 function httpsGet(options, maxRedirects) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      const status = res.statusCode;
-      if (status >= 300 && status < 400 && res.headers.location && maxRedirects > 0) {
-        res.resume(); // Discard body
-        const newLoc = (() => {
-          try {
-            const loc = new URL(res.headers.location);
-            return Object.assign({}, options, {
-              hostname: loc.hostname,
-              path: loc.pathname + loc.search,
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            const status = res.statusCode;
+            if (status >= 300 && status < 400 && res.headers.location && maxRedirects > 0) {
+                res.resume(); // Discard body
+                const newLoc = (() => {
+                    try {
+                        const loc = new URL(res.headers.location);
+                        return Object.assign({}, options, {
+                            hostname: loc.hostname,
+                            path: loc.pathname + loc.search,
+                        });
+                    } catch (e) {
+                        // Relative redirect — keep existing hostname
+                        return Object.assign({}, options, { path: res.headers.location });
+                    }
+                })();
+                return httpsGet(newLoc, maxRedirects - 1)
+                    .then(resolve)
+                    .catch(reject);
+            }
+            let body = '';
+            res.on('data', (chunk) => {
+                body += chunk;
             });
-          } catch (e) {
-            // Relative redirect — keep existing hostname
-            return Object.assign({}, options, { path: res.headers.location });
-          }
-        })();
-        return httpsGet(newLoc, maxRedirects - 1)
-          .then(resolve)
-          .catch(reject);
-      }
-      let body = '';
-      res.on('data', (chunk) => {
-        body += chunk;
-      });
-      res.on('end', () => resolve({ statusCode: status, body }));
+            res.on('end', () => resolve({ statusCode: status, body }));
+        });
+        req.on('error', reject);
+        req.end();
     });
-    req.on('error', reject);
-    req.end();
-  });
 }
 
 /**
@@ -352,57 +352,58 @@ function httpsGet(options, maxRedirects) {
  * @returns {Promise<boolean>} True if viewable, false otherwise.
  */
 async function canViewChannel(member, botMember, chnl) {
-  const { PermissionFlagsBits, ChannelType } = require('discord.js');
+    const { PermissionFlagsBits, ChannelType } = require('discord.js');
 
-  if (!botMember || !chnl) return false;
+    if (!botMember || !chnl) return false;
 
-  // Bot must always be able to view
-  if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) return false;
+    // Bot must always be able to view
+    if (!botMember.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) return false;
 
-  // If a member is provided, they must also be able to view
-  if (member && !member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true)) return false;
+    // If a member is provided, they must also be able to view
+    if (member && !member.permissionsIn(chnl).has(PermissionFlagsBits.ViewChannel, true))
+        return false;
 
-  // Discussion based channels (Forum/Media) are not directly viewable in this app
-  if (chnl.type === ChannelType.GuildForum || chnl.type === ChannelType.GuildMedia) {
-    return false;
-  }
-
-  // Thread membership check: if member is provided, they must be a member to view
-  if (chnl.isThread() && member) {
-    try {
-      await chnl.members.fetch(member.id);
-      return true;
-    } catch {
-      return false;
+    // Discussion based channels (Forum/Media) are not directly viewable in this app
+    if (chnl.type === ChannelType.GuildForum || chnl.type === ChannelType.GuildMedia) {
+        return false;
     }
-  }
 
-  return true;
+    // Thread membership check: if member is provided, they must be a member to view
+    if (chnl.isThread() && member) {
+        try {
+            await chnl.members.fetch(member.id);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function reportError(message, error) {
-  console.error(message, error);
+    console.error(message, error);
 }
 
 module.exports = {
-  getTemplate,
-  renderTemplate,
-  loadAndRenderPageTemplate,
-  isValidSnowflake,
-  isBotReady,
-  getBaseUrl,
-  parseCookies,
-  getPageThemeAttr,
-  resolveTheme,
-  THEME_CONFIG,
-  RANDOM_EMOJIS,
-  buildSessionParam,
-  buildEmojiToggleUrl,
-  sanitizeGuestName,
-  resolveMentions,
-  httpsGet,
-  formatChangePct,
-  changeColor,
-  reportError,
-  canViewChannel,
+    getTemplate,
+    renderTemplate,
+    loadAndRenderPageTemplate,
+    isValidSnowflake,
+    isBotReady,
+    getBaseUrl,
+    parseCookies,
+    getPageThemeAttr,
+    resolveTheme,
+    THEME_CONFIG,
+    RANDOM_EMOJIS,
+    buildSessionParam,
+    buildEmojiToggleUrl,
+    sanitizeGuestName,
+    resolveMentions,
+    httpsGet,
+    formatChangePct,
+    changeColor,
+    reportError,
+    canViewChannel,
 };

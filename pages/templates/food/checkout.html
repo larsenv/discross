@@ -1,135 +1,278 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="page-food">
-<head>
-  {$COMMON_HEAD}
-  <title>Discross - Checkout</title>
-</head>
-<body style="margin: 0;" {$WHITE_THEME_ENABLED}>
-  <div id="wrapper">
-    <table style="width: 100%;">
-      <tr valign="middle">
-        <td><a href="/"><img src="/resources/logo.gif" alt="Logo"></a></td>
-        <td>
-          <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">discross</font>
-        </td>
-        <td width="100%" align="right">
-          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">&#160;&#160;
-            <a href="/food/{$SESSION_PARAM}" style="color:#dddddd">Order Pizza</a>&#160;&#160;
-            <a href="/food/cart{$SESSION_PARAM}" style="color:#dddddd">Cart ({$CART_COUNT})</a>&#160;&#160;
-            <a href="/food/receipts{$SESSION_PARAM}" style="color:#dddddd">Orders</a>&#160;&#160;
-            <a href="/food/track{$SESSION_PARAM}" style="color:#dddddd">Track</a>&#160;&#160;
+  <head>
+    {$COMMON_HEAD}
+    <title>Discross - Checkout</title>
+  </head>
+  <body style="margin: 0" {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+      <table style="width: 100%">
+        <tr valign="middle">
+          <td>
+            <a href="/"><img src="/resources/logo.gif" alt="Logo" /></a>
+          </td>
+          <td>
+            <font size="7" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >discross</font
+            >
+          </td>
+          <td width="100%" align="right">
+            <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              >&#160;&#160;
+              <a href="/food/{$SESSION_PARAM}" style="color: #dddddd">Order Pizza</a>&#160;&#160;
+              <a href="/food/cart{$SESSION_PARAM}" style="color: #dddddd">Cart ({$CART_COUNT})</a
+              >&#160;&#160;
+              <a href="/food/receipts{$SESSION_PARAM}" style="color: #dddddd">Orders</a>&#160;&#160;
+              <a href="/food/track{$SESSION_PARAM}" style="color: #dddddd">Track</a>&#160;&#160;
+            </font>
+          </td>
+          <td valign="middle" style="padding-right: 8px;">
+            <a href="/switchtheme{$SESSION_PARAM}"
+              ><img
+                src="/resources/twemoji/1f313.gif"
+                alt="Switch theme"
+                width="36"
+                height="36"
+                style="background: none; border: none"
+            /></a>
+          </td>
+        </tr>
+      </table>
+      <hr style="margin: 0" />
+      <br />
+      <div class="food-container">
+        <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+          ><b>Checkout</b></font
+        ><br /><br />
+        <div class="food-warning-box">
+          <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
+            <b>This will place a real order.</b> Completing this form sends an actual order to a
+            Domino's store. You will pay with <b>cash upon delivery</b>. Please only proceed if you
+            genuinely intend to order. We recommend using <b>HTTPS</b> to protect your personal
+            information.
           </font>
-        </td>
-        <td valign="middle">
-          <a href="/switchtheme{$SESSION_PARAM}"><img src="/resources/twemoji/1f313.gif" alt="Switch theme" width="36" height="36" style="background: none; border: none;"></a>
-        </td>
-      </tr>
-    </table>
-    <hr style="margin: 0;">
-    <br>
-    <div class="food-container">
-      <font size="6" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Checkout</b></font><br><br>
-      <div class="food-warning-box">
-        <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
-          <b>This will place a real order.</b> Completing this form sends an actual order to a Domino's store.
-          You will pay with <b>cash upon delivery</b>. Please only proceed if you genuinely intend to order.
-          We recommend using <b>HTTPS</b> to protect your personal information.
-        </font>
-      </div>
-      {$ERROR}
-      <div class="food-checkout-grid">
-        <div class="food-card">
-          <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Order Summary</b></font><br><br>
-          <div id="order-summary">{$ORDER_SUMMARY}</div>
-          <div class="food-summary-total">
-            <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Total:</font>
-            <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">$<strong>{$ORDER_TOTAL}</strong></font>
-          </div>
-          <div style="margin-top:12px;padding:10px;background:#2a2d31;border-radius:6px;">
-            <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">Payment: Cash upon delivery</font><br>
-            <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="2">Delivery surcharge and tax will be added by the store.</font>
-          </div>
-          {$STORE_ADDRESS}
         </div>
-        <div>
-          <form method="POST" action="/food/request-verify{$SESSION_PARAM}" id="checkout-form">
-            <div class="food-card">
-              <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"><b>Delivery Info</b></font><br><br>
-              <div class="food-form-row">
-                <div class="food-form-group">
-                  <input type="text" name="firstName" class="food-input" required maxlength="50" placeholder="First name" autocomplete="given-name">
-                </div>
-                <div class="food-form-group">
-                  <input type="text" name="lastName" class="food-input" required maxlength="50" placeholder="Last name" autocomplete="family-name">
-                </div>
-              </div>
-              <div class="food-form-row" style="margin-bottom:14px">
-                <div class="food-form-group">
-                  <input type="text" name="street" class="food-input" required maxlength="100" placeholder="Street address" autocomplete="street-address">
-                </div>
-                <div class="food-form-group food-form-group-sm">
-                  <input type="text" name="apt" class="food-input" maxlength="20" placeholder="Apt/Unit" autocomplete="address-line2">
-                </div>
-                <div class="food-form-group food-form-group-sm">
-                  <select name="addressType" class="food-input food-select">
-                    <option value="House">House</option>
-                    <option value="Apartment">Apartment</option>
-                    <option value="Business">Business</option>
-                    <option value="Hotel">Hotel</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
-              <div class="food-form-row">
-                <div class="food-form-group">
-                  <input type="text" name="city" class="food-input" required maxlength="50" placeholder="City" autocomplete="address-level2">
-                </div>
-                <div class="food-form-group food-form-group-sm">
-                  <input type="text" name="region" class="food-input" required maxlength="2" placeholder="State" autocomplete="address-level1">
-                </div>
-                <div class="food-form-group food-form-group-sm">
-                  <input type="text" name="postalCode" class="food-input" required maxlength="10" placeholder="ZIP code" autocomplete="postal-code">
-                </div>
-              </div>
-              <div class="food-form-row">
-                <div class="food-form-group">
-                  <input type="email" name="email" class="food-input" required maxlength="100" placeholder="Email address" autocomplete="email">
-                </div>
-                <div class="food-form-group">
-                  <input type="tel" name="phone" class="food-input" required maxlength="10" placeholder="Phone (10 digits, no dashes)" autocomplete="tel-national">
-                </div>
-              </div>
-              <div class="food-form-group">
-                <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">Tip (optional)</font>
-                <div class="food-tip-row">
-                  <label><input type="radio" name="tip" value="0" checked> <span class="food-tip-btn">No tip</span></label>
-                  <label><input type="radio" name="tip" value="2"> <span class="food-tip-btn">$2</span></label>
-                  <label><input type="radio" name="tip" value="3"> <span class="food-tip-btn">$3</span></label>
-                  <label><input type="radio" name="tip" value="5"> <span class="food-tip-btn">$5</span></label>
-                  <label><input type="radio" name="tip" value="10"> <span class="food-tip-btn">$10</span></label>
-                </div>
-                <div style="margin-top:8px;">
-                  <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">Custom amount: $</font>
-                  <input type="number" name="tip_custom" min="0" max="100" step="0.01" placeholder="0.00" style="width:80px;font-family:'rodin',Arial,Helvetica,sans-serif;background:#222327;color:#dddddd;border:none;border-radius:6px;padding:4px 8px;">
-                  <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="2">(overrides selection above)</font>
-                </div>
-              </div>
-              <div style="margin-top:4px;padding:8px;background:#2a2d31;border-radius:6px;">
-                <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">Your name, address, email, and phone are used only to place your order and are never stored on Discross servers. Only your order items, total, and store are saved for your receipt.</font>
-              </div>
+        {$ERROR}
+        <div class="food-checkout-grid">
+          <div class="food-card">
+            <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+              ><b>Order Summary</b></font
+            ><br /><br />
+            <div id="order-summary">{$ORDER_SUMMARY}</div>
+            <div class="food-summary-total">
+              <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">Total:</font>
+              <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+                >$<strong>{$ORDER_TOTAL}</strong></font
+              >
             </div>
-            <div style="margin-top:16px;padding:12px;background:#2a2d31;border-radius:8px;">
-              <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3">A 6-digit verification code will be sent to your Discord DMs to confirm your order.</font>
+            <div style="margin-top: 12px; padding: 10px; background: #2a2d31; border-radius: 6px">
+              <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3"
+                >Payment: Cash upon delivery</font
+              ><br />
+              <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="2"
+                >Delivery surcharge and tax will be added by the store.</font
+              >
             </div>
-            <div style="margin-top:16px">
-              <button type="submit" class="food-btn food-btn-large">Send Verification Code &#8594;</button>
-              &#160;&#160;
-              <a href="/food/cart{$SESSION_PARAM}" class="food-btn food-btn-secondary">Cancel</a>
-            </div>
-          </form>
+            {$STORE_ADDRESS}
+          </div>
+          <div>
+            <form method="POST" action="/food/request-verify{$SESSION_PARAM}" id="checkout-form">
+              <div class="food-card">
+                <font size="4" face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd"
+                  ><b>Delivery Info</b></font
+                ><br /><br />
+                <div class="food-form-row">
+                  <div class="food-form-group">
+                    <input
+                      type="text"
+                      name="firstName"
+                      class="food-input"
+                      required
+                      maxlength="50"
+                      placeholder="First name"
+                      autocomplete="given-name"
+                    />
+                  </div>
+                  <div class="food-form-group">
+                    <input
+                      type="text"
+                      name="lastName"
+                      class="food-input"
+                      required
+                      maxlength="50"
+                      placeholder="Last name"
+                      autocomplete="family-name"
+                    />
+                  </div>
+                </div>
+                <div class="food-form-row" style="margin-bottom: 14px">
+                  <div class="food-form-group">
+                    <input
+                      type="text"
+                      name="street"
+                      class="food-input"
+                      required
+                      maxlength="100"
+                      placeholder="Street address"
+                      autocomplete="street-address"
+                    />
+                  </div>
+                  <div class="food-form-group food-form-group-sm">
+                    <input
+                      type="text"
+                      name="apt"
+                      class="food-input"
+                      maxlength="20"
+                      placeholder="Apt/Unit"
+                      autocomplete="address-line2"
+                    />
+                  </div>
+                  <div class="food-form-group food-form-group-sm">
+                    <select name="addressType" class="food-input food-select">
+                      <option value="House">House</option>
+                      <option value="Apartment">Apartment</option>
+                      <option value="Business">Business</option>
+                      <option value="Hotel">Hotel</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="food-form-row">
+                  <div class="food-form-group">
+                    <input
+                      type="text"
+                      name="city"
+                      class="food-input"
+                      required
+                      maxlength="50"
+                      placeholder="City"
+                      autocomplete="address-level2"
+                    />
+                  </div>
+                  <div class="food-form-group food-form-group-sm">
+                    <input
+                      type="text"
+                      name="region"
+                      class="food-input"
+                      required
+                      maxlength="2"
+                      placeholder="State"
+                      autocomplete="address-level1"
+                    />
+                  </div>
+                  <div class="food-form-group food-form-group-sm">
+                    <input
+                      type="text"
+                      name="postalCode"
+                      class="food-input"
+                      required
+                      maxlength="10"
+                      placeholder="ZIP code"
+                      autocomplete="postal-code"
+                    />
+                  </div>
+                </div>
+                <div class="food-form-row">
+                  <div class="food-form-group">
+                    <input
+                      type="email"
+                      name="email"
+                      class="food-input"
+                      required
+                      maxlength="100"
+                      placeholder="Email address"
+                      autocomplete="email"
+                    />
+                  </div>
+                  <div class="food-form-group">
+                    <input
+                      type="tel"
+                      name="phone"
+                      class="food-input"
+                      required
+                      maxlength="10"
+                      placeholder="Phone (10 digits, no dashes)"
+                      autocomplete="tel-national"
+                    />
+                  </div>
+                </div>
+                <div class="food-form-group">
+                  <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3"
+                    >Tip (optional)</font
+                  >
+                  <div class="food-tip-row">
+                    <label
+                      ><input type="radio" name="tip" value="0" checked />
+                      <span class="food-tip-btn">No tip</span></label
+                    >
+                    <label
+                      ><input type="radio" name="tip" value="2" />
+                      <span class="food-tip-btn">$2</span></label
+                    >
+                    <label
+                      ><input type="radio" name="tip" value="3" />
+                      <span class="food-tip-btn">$3</span></label
+                    >
+                    <label
+                      ><input type="radio" name="tip" value="5" />
+                      <span class="food-tip-btn">$5</span></label
+                    >
+                    <label
+                      ><input type="radio" name="tip" value="10" />
+                      <span class="food-tip-btn">$10</span></label
+                    >
+                  </div>
+                  <div style="margin-top: 8px">
+                    <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3"
+                      >Custom amount: $</font
+                    >
+                    <input
+                      type="number"
+                      name="tip_custom"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="0.00"
+                      style="
+                        width: 80px;
+                        font-family: 'rodin', Arial, Helvetica, sans-serif;
+                        background: #222327;
+                        color: #dddddd;
+                        border: none;
+                        border-radius: 6px;
+                        padding: 4px 8px;
+                      "
+                    />
+                    <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="2"
+                      >(overrides selection above)</font
+                    >
+                  </div>
+                </div>
+                <div style="margin-top: 4px; padding: 8px; background: #2a2d31; border-radius: 6px">
+                  <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3"
+                    >Your name, address, email, and phone are used only to place your order and are
+                    never stored on Discross servers. Only your order items, total, and store are
+                    saved for your receipt.</font
+                  >
+                </div>
+              </div>
+              <div style="margin-top: 16px; padding: 12px; background: #2a2d31; border-radius: 8px">
+                <font face="'rodin', Arial, Helvetica, sans-serif" color="#b5bac1" size="3"
+                  >A 6-digit verification code will be sent to your Discord DMs to confirm your
+                  order.</font
+                >
+              </div>
+              <div style="margin-top: 16px">
+                <button type="submit" class="food-btn food-btn-large">
+                  Send Verification Code &#8594;
+                </button>
+                &#160;&#160;
+                <a href="/food/cart{$SESSION_PARAM}" class="food-btn food-btn-secondary">Cancel</a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>
