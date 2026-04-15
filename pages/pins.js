@@ -79,9 +79,9 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
             return;
         }
 
-        // Fetch pinned messages; fetchPins returns newest-pinned-first
-        const pinnedCollection = await chnl.messages.fetchPins();
-        const pinnedMessages = Array.from(pinnedCollection.values());
+        // Fetch pinned messages; fetchPins returns a paginated response with newest-pinned-first
+        const pinnedResponse = await chnl.messages.fetchPins();
+        const pinnedMessages = pinnedResponse.items.map((pin) => pin.message);
 
         const messagesHtml =
             pinnedMessages.length === 0
