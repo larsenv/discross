@@ -15,7 +15,7 @@ const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'ut
  * @returns {string} Proxy path ready to embed in HTML
  */
 function proxyExternalImageUrl(url) {
-    return `/imageProxy/external/${Buffer.from(url).toString('base64')}`;
+    if (url.includes('discross.net') || url.startsWith('/')) return url; return `/imageProxy/external/${Buffer.from(url).toString('base64')}`;
 }
 
 /**
@@ -223,6 +223,11 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             // Process embed footer
             const footerHtml = (() => {
                 if (!embed.footer && !embed.timestamp) return '';
+                const footerIconHtml = (embed.footer && embed.footer.icon_url && imagesCookie === 1)
+                    ? renderTemplate(getTemplate('footer_icon', 'embed'), {
+                        URL: proxyExternalImageUrl(embed.footer.icon_url)
+                      })
+                    : '';
                 const footerText = embed.footer
                     ? renderTemplate(getTemplate('footer_text', 'embed'), {
                           CONTENT: escape(normalizeWeirdUnicode(embed.footer.text)),
@@ -239,6 +244,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                       })
                     : '';
                 return renderTemplate(getTemplate('message_footer', 'misc'), {
+                    FOOTER_ICON: footerIconHtml,
                     FOOTER_TEXT: footerText,
                     SEPARATOR: separator,
                     TIMESTAMP: timestamp,

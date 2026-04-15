@@ -107,31 +107,16 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                     : '';
 
             const userAgentStr = req.headers['user-agent'];
-            const client = parseUserAgent(userAgentStr);
-            const clientName = client ? client.name : 'Unknown Client';
-            const clientIcon = client
-                ? `${baseUrl}/resources/images/clients/${client.id}.png`
-                : `${baseUrl}/resources/logo.gif`;
+            
+            // Reverted to plain content sending by default
+            const finalMessage = replyInfo + resolvedMsg;
 
             const sendOptions = {
+                content: finalMessage,
                 username: normalizeWeirdUnicode(member.displayName || member.user.tag),
                 avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
                 disableEveryone: true,
-                embeds: [
-                    {
-                        description: resolvedMsg,
-                        footer: {
-                            text: `Sent using Discross from ${clientName}`,
-                            icon_url: clientIcon,
-                        },
-                        color: 0x5865f2, // Blurple
-                    },
-                ],
             };
-
-            if (replyInfo) {
-                sendOptions.content = replyInfo;
-            }
 
             if (channel.isThread()) {
                 sendOptions.threadId = channel.id;
@@ -161,4 +146,3 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
         req_res.end();
     }
 };
-
