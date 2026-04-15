@@ -453,6 +453,13 @@ server.on('request', async (req, res) => {
                 if (discordID) {
                     await pinspage.processPins(bot, req, res, args, discordID);
                 }
+            } else if (args[1] === 'signmessage') {
+                const discordID = await auth.checkAuth(req, res);
+                if (discordID) {
+                    const channelId = args[2];
+                    const sendMetaPage = require('./pages/sendMeta.js');
+                    await sendMetaPage.sendMeta(bot, req, res, channelId);
+                }
             } else if (args[1] === 'news') {
                 const discordID = await auth.checkAuth(req, res);
                 if (discordID) {
