@@ -7,7 +7,9 @@ const { getOrCreateWebhook } = require('./webhookCache');
 const { isValidSnowflake, isBotReady, getBaseUrl, resolveMentions } = require('./utils.js');
 const { checkAndMarkNonce } = require('./messageDedup.js');
 
-exports.sendMessage = async function sendMessage(bot, req, res, args, discordID) {
+const { parseUserAgent } = require('./userAgentUtils');
+
+exports.sendMessage = async function sendMessage(bot, req, req_res, args, discordID) {
     const baseUrl = getBaseUrl(req);
     try {
         const parsedurl = new URL(req.url, 'http://localhost');
@@ -20,10 +22,10 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
                 const redirectChannel = parsedurl.searchParams.get('channel') || args?.[2] || '';
                 const sessionID = parsedurl.searchParams.get('sessionID') || '';
                 const sessionPart = sessionID ? `?sessionID=${encodeURIComponent(sessionID)}` : '';
-                res.writeHead(302, {
+                req_res.writeHead(302, {
                     Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}`,
                 });
-                res.end();
+                req_res.end();
                 return;
             }
 
@@ -31,15 +33,15 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
 
             // Check if bot is connected
             if (!isBotReady(bot)) {
-                res.writeHead(503, { 'Content-Type': 'text/plain' });
-                res.end("The bot isn't connected, try again in a moment");
+                req_res.writeHead(503, { 'Content-Type': 'text/plain' });
+                req_res.end("The bot isn't connected, try again in a moment");
                 return;
             }
 
             // Validate channel id format early
             if (!channelId || !isValidSnowflake(channelId)) {
-                res.writeHead(404, { 'Content-Type': 'text/plain' });
-                res.end('Invalid channel!');
+                req_res.writeHead(404, { 'Content-Type': 'text/plain' });
+                req_res.end('Invalid channel!');
                 return;
             }
 
@@ -50,8 +52,8 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
             });
 
             if (!channel) {
-                res.writeHead(404, { 'Content-Type': 'text/plain' });
-                res.end('Invalid channel!');
+                req_res.writeHead(404, { 'Content-Type': 'text/plain' });
+                req_res.end('Invalid channel!');
                 return;
             }
 
@@ -65,7 +67,7 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
                 !member ||
                 !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)
             ) {
-                res.end("You don't have permission to do that!");
+                req_res.end("You don't have permission to do that!");
                 return;
             }
 
@@ -77,14 +79,13 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
             );
 
             // Handle reply if reply_message_id is present
-            const processedmessage =
+            const replyInfo =
                 query.reply_message_id && isValidSnowflake(query.reply_message_id)
                     ? await (async () => {
                           try {
                               const reply_message = await channel.messages.fetch(
                                   query.reply_message_id
                               );
-                              // Verify the reply message belongs to the channel to prevent reply spoofing
                               if (reply_message.channelId !== channel.id) {
                                   throw new Error('Reply message does not belong to this channel');
                               }
@@ -97,45 +98,67 @@ exports.sendMessage = async function sendMessage(bot, req, res, args, discordID)
                                   author_id === discordID
                                       ? reply_message.author.username
                                       : `<@${author_id}>`;
-                              return `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${resolvedMsg}`;
+                              return `> Replying to "${reply_message_content}" from ${author_mention}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n`;
                           } catch (err) {
-                              console.error('Failed to reply:', err);
-                              return resolvedMsg;
+                              console.error('Failed to fetch reply info:', err);
+                              return '';
                           }
                       })()
-                    : resolvedMsg;
+                    : '';
+
+            const userAgentStr = req.headers['user-agent'];
+            const client = parseUserAgent(userAgentStr);
+            const clientName = client ? client.name : 'Unknown Client';
+            const clientIcon = client
+                ? `${baseUrl}/resources/images/clients/${client.id}.png`
+                : `${baseUrl}/resources/logo.gif`;
 
             const sendOptions = {
-                content: processedmessage,
                 username: normalizeWeirdUnicode(member.displayName || member.user.tag),
                 avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
                 disableEveryone: true,
+                embeds: [
+                    {
+                        description: resolvedMsg,
+                        footer: {
+                            text: `Sent using Discross from ${clientName}`,
+                            icon_url: clientIcon,
+                        },
+                        color: 0x5865f2, // Blurple
+                    },
+                ],
             };
+
+            if (replyInfo) {
+                sendOptions.content = replyInfo;
+            }
+
             if (channel.isThread()) {
                 sendOptions.threadId = channel.id;
             }
+
             const message = await webhook.send(sendOptions);
 
-            const userAgent = req.headers['user-agent'];
-            if (userAgent && message && message.id) {
+            if (userAgentStr && message && message.id) {
                 auth.dbQueryRun(
                     'INSERT OR REPLACE INTO message_user_agents (messageID, userAgent) VALUES (?, ?)',
-                    [message.id, userAgent]
+                    [message.id, userAgentStr]
                 );
             }
 
             bot.addToCache(message);
         }
 
-        // redirect back to the channel (use the provided channel id if available)
+        // redirect back to the channel
         const redirectChannel = parsedurl.searchParams.get('channel') || args?.[2] || '';
         const sessionID = parsedurl.searchParams.get('sessionID') || '';
         const sessionPart = sessionID ? `?sessionID=${encodeURIComponent(sessionID)}` : '';
-        res.writeHead(302, { Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}` });
-        res.end();
+        req_res.writeHead(302, { Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}` });
+        req_res.end();
     } catch (err) {
         console.error('Error sending message:', err);
-        res.writeHead(302, { Location: `${baseUrl}/server/` });
-        res.end();
+        req_res.writeHead(302, { Location: `${baseUrl}/server/` });
+        req_res.end();
     }
 };
+
