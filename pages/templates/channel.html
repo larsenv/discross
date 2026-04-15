@@ -138,7 +138,7 @@
             </a>
             <a
               href="javascript:void(0)"
-              onclick="var f=document.getElementById('message-form'); if(f && document.getElementById('message').value.trim()){ f.action='/signmessage/{$CHANNEL_ID}{$SESSION_PARAM}'; f.submit(); }"
+              onclick="var f=document.getElementById('message-form'); if(f){ f.action='/signmessage/{$CHANNEL_ID}{$SESSION_PARAM}'; f.submit(); }"
               class="message-action-btn"
               title="Sign Your Message"
             >

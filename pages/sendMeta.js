@@ -3,7 +3,7 @@
 const auth = require('../authentication.js');
 const { getOrCreateWebhook } = require('./webhookCache');
 const { parseUserAgent } = require('./userAgentUtils');
-const { normalizeWeirdUnicode } = require('./utils.js');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const discord = require('discord.js');
 
 exports.sendMeta = async function (bot, req, res, channelId) {
@@ -20,7 +20,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
     try {
         const parsedurl = new URL(req.url, 'http://localhost');
         const query = Object.fromEntries(parsedurl.searchParams);
-        const resolvedMsg = query.message || 'Hi';
+        const resolvedMsg = query.message;
 
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
         if (
@@ -35,11 +35,21 @@ exports.sendMeta = async function (bot, req, res, channelId) {
 
         const userAgentStr = req.headers['user-agent'];
         const client = parseUserAgent(userAgentStr);
-        const clientName = client ? client.name : 'Unknown Client';
-        const baseUrl = `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}`;
+        
+        // Use discross.net as fallback if host is local or not provided, 
+        // to help Discord's proxy fetch the icons.
+        let baseUrl = 'http://discross.net';
+        const host = req.headers.host;
+        if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+            const proto = req.headers['x-forwarded-proto'] || 'http';
+            baseUrl = `${proto}://${host}`;
+        }
+        
         const clientIcon = client
             ? `${baseUrl}/resources/images/clients/${client.id}.png`
-            : `${baseUrl}/resources/logo.gif`;
+            : `${baseUrl}/favicon.ico`;
+
+        const footerText = client ? `Sent from ${client.name}` : 'Sent using Discross';
 
         const payload = {
             username: normalizeWeirdUnicode(member.displayName || member.user.tag),
@@ -47,9 +57,11 @@ exports.sendMeta = async function (bot, req, res, channelId) {
             embeds: [
                 {
                     color: 0x5865f2,
-                    description: resolvedMsg,
+                    title: 'Discross',
+                    url: 'http://discross.net/',
+                    description: resolvedMsg || '\u200b',
                     footer: {
-                        text: `Sent using Discross from ${clientName}`,
+                        text: footerText,
                         icon_url: clientIcon,
                     },
                 },
@@ -79,4 +91,3 @@ exports.sendMeta = async function (bot, req, res, channelId) {
         res.end('Failed to send message');
     }
 };
-
