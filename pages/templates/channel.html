@@ -20,6 +20,7 @@
         {$CHANNEL_REPLY} {$EMOJI_PICKER}
 
         <form
+          id="message-form"
           action="/send"
           method="GET"
           onsubmit="return sendMessageOrFile();"
@@ -136,7 +137,8 @@
               />
             </a>
             <a
-              href="/signmessage/{$CHANNEL_ID}{$SESSION_PARAM}"
+              href="javascript:void(0)"
+              onclick="var f=document.getElementById('message-form'); if(f && document.getElementById('message').value.trim()){ f.action='/signmessage/{$CHANNEL_ID}{$SESSION_PARAM}'; f.submit(); }"
               class="message-action-btn"
               title="Sign Your Message"
             >

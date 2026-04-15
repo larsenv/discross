@@ -18,6 +18,10 @@ exports.sendMeta = async function (bot, req, res, channelId) {
     }
 
     try {
+        const parsedurl = new URL(req.url, 'http://localhost');
+        const query = Object.fromEntries(parsedurl.searchParams);
+        const resolvedMsg = query.message || 'Hi';
+
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
         if (
             !member ||
@@ -43,7 +47,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
             embeds: [
                 {
                     color: 0x5865f2,
-                    description: 'Hi',
+                    description: resolvedMsg,
                     footer: {
                         text: `Sent using Discross from ${clientName}`,
                         icon_url: clientIcon,
