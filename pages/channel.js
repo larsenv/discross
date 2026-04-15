@@ -1056,23 +1056,11 @@ function buildAuthorPills(state) {
     const isVerifiedBot = state.lastIsVerified;
     const isSlashCommand = state.lastIsInteraction;
     const isWebhook = state.lastIsWebhook;
-    const isDiscross = state.lastIsDiscross;
 
-    if (isDiscross) {
-        const client = parseUserAgent(state.lastUserAgent);
-        const icon = client ? `/resources/images/clients/${client.id}.png` : '/resources/logo.gif';
-        const alt = client ? `Sent using ${client.name}` : 'Sent with an unknown client';
-
-        pills += renderTemplate(getTemplate('discross_pill', 'channel'), {
-            CLIENT_ICON: icon,
-            CLIENT_ALT: alt,
-        });
-    } else {
-        if (isVerifiedBot || isSlashCommand) {
-            pills += getTemplate('verified_app_pill', 'channel');
-        } else if (isWebhook) {
-            pills += getTemplate('app_pill', 'channel');
-        }
+    if (isVerifiedBot || isSlashCommand) {
+        pills += getTemplate('verified_app_pill', 'channel');
+    } else if (isWebhook) {
+        pills += getTemplate('app_pill', 'channel');
     }
     return pills;
 }
