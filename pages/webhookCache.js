@@ -16,26 +16,36 @@ async function getOrCreateWebhook(channel, guildID) {
         return _webhookCache.get(channelId);
     }
 
-    const existingWebhooks = await webhookChannel.fetchWebhooks();
-    let webhook = existingWebhooks.find(
-        (w) => w.owner && (w.owner.username === 'discross beta' || w.owner.username === 'Discross')
-    );
+    try {
+        const existingWebhooks = await webhookChannel.fetchWebhooks();
+        let webhook = existingWebhooks.find(
+            (w) =>
+                w.owner && (w.owner.username === 'discross beta' || w.owner.username === 'Discross')
+        );
 
-    if (!webhook) {
-        webhook = await webhookChannel.createWebhook({
-            name: 'Discross',
-            avatar: 'pages/static/resources/logo.png',
-            reason: 'Discross uses webhooks to send messages',
-        });
-        auth.dbQueryRun('INSERT INTO webhooks VALUES (?,?,?)', [
-            guildID,
-            webhook.id,
-            webhook.token,
-        ]);
+        if (!webhook) {
+            webhook = await webhookChannel.createWebhook({
+                name: 'Discross',
+                avatar: 'pages/static/resources/logo.png',
+                reason: 'Discross uses webhooks to send messages',
+            });
+            auth.dbQueryRun('INSERT INTO webhooks VALUES (?,?,?)', [
+                guildID,
+                webhook.id,
+                webhook.token,
+            ]);
+        }
+
+        _webhookCache.set(channelId, webhook);
+        return webhook;
+    } catch (err) {
+        if (err.code === 50013) {
+            throw new Error(
+                'Discross requires the "Manage Webhooks" permission in this channel to send messages.'
+            );
+        }
+        throw err;
     }
-
-    _webhookCache.set(channelId, webhook);
-    return webhook;
 }
 
 module.exports = { getOrCreateWebhook };
