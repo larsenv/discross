@@ -44,7 +44,7 @@ exports.imageProxy = async function imageProxy(res, URL) {
             // If the upstream server returned an error, return a 1x1 transparent GIF so the
             // browser renders nothing rather than showing a broken image or error text.
             if (proxyRes.statusCode < 200 || proxyRes.statusCode >= 300) {
-                console.warn(`Image proxy: upstream returned ${proxyRes.statusCode} for ${URL}`);
+                console.log(`Image proxy: upstream returned ${proxyRes.statusCode} for ${URL}`);
                 // Drain the response to free the socket
                 proxyRes.resume();
                 res.writeHead(200, {
@@ -95,7 +95,7 @@ exports.imageProxy = async function imageProxy(res, URL) {
                     }
                 })
                 .on('error', (err) => {
-                    console.error('Error fetching image:', err);
+                    console.log('Error fetching image:', err.message || err);
                     res.writeHead(500, { 'Content-Type': 'text/plain' });
                     res.end(
                         'An error occurred. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error'
@@ -103,7 +103,7 @@ exports.imageProxy = async function imageProxy(res, URL) {
                 });
         })
         .on('error', (err) => {
-            console.error('Image proxy request error:', err);
+            console.log('Image proxy request error:', err.message || err);
             res.writeHead(500, { 'Content-Type': 'text/plain' });
             res.end(getTemplate('generic_error', 'misc'));
         });

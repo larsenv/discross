@@ -714,9 +714,10 @@ exports.processMovies = async function processMovies(req, res, discordID) {
         // Fall back to HTML scraping if the API didn't return items
         if (items.length === 0) {
             const html = await fetchHtml(RT_BASE + tab.url);
-            items = parseRTPage(html, isTv);
+            if (html) {
+                items = parseRTPage(html, isTv);
+            }
         }
-
         if (items.length === 0) {
             moviesHtml =
                 '<p class="movie-empty">No results found. Rotten Tomatoes may have updated their page layout.</p>';

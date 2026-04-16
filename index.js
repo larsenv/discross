@@ -186,7 +186,7 @@ async function senddrawingAsync(req, res, body) {
 
     // Validate body is not empty
     if (!body || body.trim() === '') {
-        console.error('Error: senddrawingAsync received empty body');
+        console.log('Error: senddrawingAsync received empty body');
         res.writeHead(400, { 'Content-Type': 'text/plain' });
         res.end('No data received');
         return;
@@ -196,9 +196,7 @@ async function senddrawingAsync(req, res, body) {
     const urlQuery = Object.fromEntries(new URLSearchParams(body));
 
     if (!urlQuery || !urlQuery.drawinginput) {
-        console.error('Error: senddrawingAsync - drawinginput not found in parsed URL query');
-        console.error('Body length:', body.length);
-        console.error('Query keys:', Object.keys(urlQuery || {}));
+        console.log('Error: senddrawingAsync - drawinginput not found in parsed URL query');
         res.writeHead(400, { 'Content-Type': 'text/plain' });
         res.end('Invalid drawing data');
         return;
@@ -692,6 +690,15 @@ server.on('request', async (req, res) => {
                 res.end('Internal Server Error');
             }
         }
+    }
+});
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port 4000 is already in use. Failed to start server.`);
+        process.exit(1);
+    } else {
+        console.error('Server error:', err);
     }
 });
 

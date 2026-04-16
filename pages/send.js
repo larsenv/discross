@@ -107,7 +107,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                     : '';
 
             const userAgentStr = req.headers['user-agent'];
-            
+
             // Reverted to plain content sending by default
             const finalMessage = replyInfo + resolvedMsg;
 
@@ -138,7 +138,9 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
         const redirectChannel = parsedurl.searchParams.get('channel') || args?.[2] || '';
         const sessionID = parsedurl.searchParams.get('sessionID') || '';
         const sessionPart = sessionID ? `?sessionID=${encodeURIComponent(sessionID)}` : '';
-        req_res.writeHead(302, { Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}` });
+        req_res.writeHead(302, {
+            Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}`,
+        });
         req_res.end();
     } catch (err) {
         console.error('Error sending message:', err);

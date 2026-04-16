@@ -20,7 +20,11 @@ const CLIENTS = [
     { id: 'edgecanary', name: 'Microsoft Edge Canary', keywords: ['Canary/'] },
     { id: 'firefoxdev', name: 'Firefox Developer Edition', keywords: ['a1', 'a2'] },
     { id: 'firefox', name: 'Firefox', keywords: ['Firefox/'] },
-    { id: 'dreamcast', name: 'Sega Dreamcast', keywords: ['Sega Dreamcast', 'Planetweb', 'DreamKey'] },
+    {
+        id: 'dreamcast',
+        name: 'Sega Dreamcast',
+        keywords: ['Sega Dreamcast', 'Planetweb', 'DreamKey'],
+    },
     { id: 'dsi', name: 'Nintendo DSi', keywords: ['Nintendo DSi'] },
     { id: 'ds', name: 'Nintendo DS', keywords: ['Nitro'] },
     { id: 'duckduckgo', name: 'DuckDuckGo', keywords: ['DuckDuckGo/'] },
@@ -40,7 +44,11 @@ const CLIENTS = [
     { id: 'ps4', name: 'PlayStation 4', keywords: ['PlayStation 4'] },
     { id: 'psp', name: 'PSP', keywords: ['PSP (PlayStation Portable)'] },
     { id: 'psvita', name: 'PlayStation Vita', keywords: ['PlayStation Vita'] },
-    { id: 'safaritech', name: 'Safari Technology Preview', keywords: ['Safari Technology Preview'] },
+    {
+        id: 'safaritech',
+        name: 'Safari Technology Preview',
+        keywords: ['Safari Technology Preview'],
+    },
     { id: 'samsung', name: 'Samsung Internet', keywords: ['SamsungBrowser/'] },
     { id: 'saturn', name: 'Sega Saturn', keywords: ['Sega Saturn'] },
     { id: 'silk', name: 'Amazon Silk', keywords: ['Silk/'] },
@@ -86,8 +94,27 @@ function parseUserAgent(userAgent) {
                     // Chrome is often in Edge, Brave, Opera, Arc, etc.
                     const isOther = CLIENTS.some(
                         (c) =>
-                            ['edge', 'edgebeta', 'edgedev', 'edgecanary', 'brave', 'opera', 'operagx', 'operadev', 'operacrypto', 'operaneon', 'arc', 'kindle', 'vivaldi', 'yandex', 'samsung', 'uc', 'duckduckgo', 'atlas', 'supermium'].includes(c.id) &&
-                            c.keywords.some((k) => userAgent.includes(k))
+                            [
+                                'edge',
+                                'edgebeta',
+                                'edgedev',
+                                'edgecanary',
+                                'brave',
+                                'opera',
+                                'operagx',
+                                'operadev',
+                                'operacrypto',
+                                'operaneon',
+                                'arc',
+                                'kindle',
+                                'vivaldi',
+                                'yandex',
+                                'samsung',
+                                'uc',
+                                'duckduckgo',
+                                'atlas',
+                                'supermium',
+                            ].includes(c.id) && c.keywords.some((k) => userAgent.includes(k))
                     );
                     if (isOther) continue;
                 }
@@ -95,8 +122,32 @@ function parseUserAgent(userAgent) {
                     // Safari is in Chrome, Edge, etc.
                     const isOther = CLIENTS.some(
                         (c) =>
-                            ['chrome', 'edge', 'edgebeta', 'edgedev', 'edgecanary', 'brave', 'opera', 'operagx', 'operadev', 'operacrypto', 'operaneon', 'arc', 'kindle', 'ps4', 'switch', 'psvita', 'vivaldi', 'yandex', 'samsung', 'uc', 'duckduckgo', 'atlas', 'supermium', 'safaritech'].includes(c.id) &&
-                            c.keywords.some((k) => userAgent.includes(k))
+                            [
+                                'chrome',
+                                'edge',
+                                'edgebeta',
+                                'edgedev',
+                                'edgecanary',
+                                'brave',
+                                'opera',
+                                'operagx',
+                                'operadev',
+                                'operacrypto',
+                                'operaneon',
+                                'arc',
+                                'kindle',
+                                'ps4',
+                                'switch',
+                                'psvita',
+                                'vivaldi',
+                                'yandex',
+                                'samsung',
+                                'uc',
+                                'duckduckgo',
+                                'atlas',
+                                'supermium',
+                                'safaritech',
+                            ].includes(c.id) && c.keywords.some((k) => userAgent.includes(k))
                     );
                     if (isOther) continue;
                 }

@@ -23,10 +23,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
         const resolvedMsg = query.message;
 
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
-        if (
-            !member ||
-            !member.permissionsIn(chnl).has(discord.PermissionFlagsBits.SendMessages)
-        ) {
+        if (!member || !member.permissionsIn(chnl).has(discord.PermissionFlagsBits.SendMessages)) {
             res.end("You don't have permission to do that!");
             return;
         }
@@ -35,8 +32,8 @@ exports.sendMeta = async function (bot, req, res, channelId) {
 
         const userAgentStr = req.headers['user-agent'];
         const client = parseUserAgent(userAgentStr);
-        
-        // Use discross.net as fallback if host is local or not provided, 
+
+        // Use discross.net as fallback if host is local or not provided,
         // to help Discord's proxy fetch the icons.
         let baseUrl = 'http://discross.net';
         const host = req.headers.host;
@@ -44,7 +41,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
             const proto = req.headers['x-forwarded-proto'] || 'http';
             baseUrl = `${proto}://${host}`;
         }
-        
+
         const clientIcon = client
             ? `${baseUrl}/resources/images/clients/${client.id}.png`
             : `${baseUrl}/favicon.ico`;

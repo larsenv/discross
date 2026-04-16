@@ -113,7 +113,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             await new Promise((resolve, reject) => {
                 form.parse(req, async (err, fields, files) => {
                     if (err) {
-                        console.error('Error parsing form:', err);
+                        console.log('Error parsing form:', err.message || err);
                         if (isTraditionalSubmission) {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
                             res.end(
@@ -209,9 +209,30 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             return;
                         }
 
-                        const webhook = await getOrCreateWebhook(channel, channel.guild.id);
-                        if (webhook.channelId !== channel.id) {
-                            await webhook.edit({ channel: channel.id });
+                        let webhook;
+                        try {
+                            webhook = await getOrCreateWebhook(channel, channel.guild.id);
+                            if (webhook.channelId !== channel.id) {
+                                await webhook.edit({ channel: channel.id });
+                            }
+                        } catch (err) {
+                            console.log('Webhook error:', err.message || err);
+                            if (isTraditionalSubmission) {
+                                res.writeHead(403, { 'Content-Type': 'text/html' });
+                                res.end(
+                                    `<script>alert('Failed to send message. Discross needs "Manage Webhooks" permission.'); history.back();</script>`
+                                );
+                            } else {
+                                res.writeHead(403, { 'Content-Type': 'application/json' });
+                                res.end(
+                                    JSON.stringify({
+                                        success: false,
+                                        error: 'Failed to send message. Discross needs "Manage Webhooks" permission.',
+                                    })
+                                );
+                            }
+                            resolve();
+                            return;
                         }
 
                         const cleanMessage = messageText

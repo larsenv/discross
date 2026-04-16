@@ -350,11 +350,16 @@ exports.verifyAndEnableTOTP = async function (discordID, password, token) {
     if (!pending) {
         return { success: false, error: 'Setup session expired. Please start again.' };
     }
-    const result = otplib.verifySync({
-        type: 'totp',
-        token: (token || '').trim(),
-        secret: pending.secret,
-    });
+    let result = { valid: false };
+    try {
+        result = otplib.verifySync({
+            type: 'totp',
+            token: (token || '').trim(),
+            secret: pending.secret,
+        });
+    } catch (e) {
+        // Ignore TokenLengthError and other otplib validation errors
+    }
     if (!result.valid) {
         return { success: false, error: 'Invalid code. Please try again.' };
     }
