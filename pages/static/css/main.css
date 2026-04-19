@@ -333,6 +333,18 @@ pre code {
     width: 100%;
     border-collapse: collapse;
 }
+.video-embed {
+    max-width: 432px;
+}
+.video-embed .embed-content {
+    padding: 6px 10px;
+}
+.video-embed .embed-content > div {
+    margin-top: 4px !important;
+}
+.video-embed .embed-content > div:first-child {
+    margin-bottom: 4px !important;
+}
 .embed-color-bar {
     display: table-cell;
     width: 4px;

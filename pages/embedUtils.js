@@ -262,6 +262,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                 '{$EMBED_IMAGE}': imageHtml,
                 '{$EMBED_THUMBNAIL}': thumbnailHtml,
                 '{$EMBED_FOOTER}': footerHtml,
+                '{$VIDEO_CLASS}': embed.isVideo ? ' video-embed' : '',
             });
 
             // Margin right wrapper
