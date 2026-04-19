@@ -394,6 +394,31 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
             urlMatchesDomain(embed.url, 'youtube.com') ||
             urlMatchesDomain(embed.url, 'youtu.be');
 
+        const isVimeo =
+            embed.provider?.name === 'Vimeo' || urlMatchesDomain(embed.url, 'vimeo.com');
+
+        const isOtherVideo =
+            [
+                'Streamable',
+                'Twitch',
+                'TikTok',
+                'Instagram',
+                'Twitter',
+                'Twitter (X)',
+                'X',
+            ].includes(embed.provider?.name) ||
+            urlMatchesDomain(embed.url, 'streamable.com') ||
+            urlMatchesDomain(embed.url, 'twitch.tv') ||
+            urlMatchesDomain(embed.url, 'clips.twitch.tv') ||
+            urlMatchesDomain(embed.url, 'tiktok.com') ||
+            urlMatchesDomain(embed.url, 'vxtiktok.com') ||
+            urlMatchesDomain(embed.url, 'instagram.com') ||
+            urlMatchesDomain(embed.url, 'ddinstagram.com') ||
+            urlMatchesDomain(embed.url, 'twitter.com') ||
+            urlMatchesDomain(embed.url, 'x.com') ||
+            urlMatchesDomain(embed.url, 'fxtwitter.com') ||
+            urlMatchesDomain(embed.url, 'vxtwitter.com');
+
         // If images are disabled, we only show text-based rich embeds (including YouTube meta).
         if (imagesCookie !== 1) {
             if (!isTenor && !isGiphy) {
@@ -404,13 +429,28 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
                         author: embed.author,
                         title: embed.title,
                         url: embed.url,
-                        description: embed.description,
+                        description: null,
                         fields: embed.fields,
                         image: embed.image,
                         thumbnail: embed.thumbnail,
                         footer: embed.footer,
                         timestamp: embed.timestamp,
                         data: embed.data,
+                        isVideo: true,
+                    });
+                } else if (isVimeo || isOtherVideo) {
+                    richEmbeds.push({
+                        author: embed.author,
+                        title: embed.title,
+                        url: embed.url,
+                        description: null,
+                        fields: embed.fields,
+                        image: embed.image,
+                        thumbnail: embed.thumbnail,
+                        footer: embed.footer,
+                        timestamp: embed.timestamp,
+                        data: embed.data,
+                        isVideo: true,
                     });
                 } else {
                     richEmbeds.push(embed);
@@ -443,13 +483,29 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
                 author: embed.author,
                 title: embed.title,
                 url: embed.url,
-                description: embed.description,
+                description: null,
                 fields: embed.fields,
                 image: embed.image ?? embed.thumbnail,
                 thumbnail: null,
                 footer: embed.footer,
                 timestamp: embed.timestamp,
                 data: embed.data,
+                isVideo: true,
+            });
+        } else if (isVimeo || isOtherVideo) {
+            // Video platforms are rendered as rich embeds but with thumbnails promoted to large images.
+            richEmbeds.push({
+                author: embed.author,
+                title: embed.title,
+                url: embed.url,
+                description: null,
+                fields: embed.fields,
+                image: embed.image ?? embed.thumbnail,
+                thumbnail: null,
+                footer: embed.footer,
+                timestamp: embed.timestamp,
+                data: embed.data,
+                isVideo: true,
             });
         } else if (embed.data?.type === 'poll_result') {
             // Discord native poll results are sent as special embeds.
