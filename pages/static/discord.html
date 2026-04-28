@@ -1,75 +1,110 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="page-simple">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width" />
         <title>Discross - Discord OAuth middleware</title>
+        <link rel="stylesheet" href="/css/main.css" />
+        <script>
+            (function () {
+                var cookieTheme = document.cookie.split('; ').find(function (c) {
+                    return c.startsWith('whiteThemeCookie=');
+                });
+                var theme = cookieTheme ? cookieTheme.split('=')[1] : '0';
+                var themeClass = '';
+                if (theme === '1') themeClass = 'light-theme';
+                else if (theme === '2') themeClass = 'amoled-theme';
+
+                if (themeClass) {
+                    document.documentElement.className += ' ' + themeClass;
+                }
+            })();
+        </script>
     </head>
 
     <body style="margin: 0" bgcolor="#303338">
-        <table>
-            <tr>
-                <td>
-                    <a><img src="/resources/logo.gif" alt="Logo" /></a>
-                </td>
-                <td>&nbsp;&nbsp;</td>
-                <td>
-                    <font size="7" face="Arial, Helvetica, sans-serif" color="#dddddd"
-                        >discross</font
-                    >
-                </td>
-                <td width="100%" align="right"></td>
-            </tr>
-        </table>
-        <hr style="margin: 0; position: relative; bottom: 4px" />
-        <br />
-        <table>
-            <tr>
-                <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-                <td>
-                    <p style="font-size: xx-large; color: #dddddd">Please wait...</p>
-                </td>
-            </tr>
-        </table>
+        <script>
+            (function () {
+                var cookieTheme = document.cookie.split('; ').find(function (c) {
+                    return c.startsWith('whiteThemeCookie=');
+                });
+                var theme = cookieTheme ? cookieTheme.split('=')[1] : '0';
+                if (theme === '1') {
+                    document.body.className = 'light-theme';
+                } else if (theme === '2') {
+                    document.body.className = 'amoled-theme';
+                }
+            })();
+        </script>
+        <div id="wrapper">
+            <table>
+                <tr>
+                    <td>
+                        <a href="/"><img src="/resources/logo.gif" alt="Logo" /></a>
+                    </td>
+                    <td>&nbsp;&nbsp;</td>
+                    <td>
+                        <font
+                            size="7"
+                            face="'rodin', Arial, Helvetica, sans-serif"
+                            color="#dddddd"
+                            >discross</font
+                        >
+                    </td>
+                    <td width="100%" align="right"></td>
+                </tr>
+            </table>
+            <hr style="margin: 0; position: relative; bottom: 4px" />
+            <br />
+            <table>
+                <tr>
+                    <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                    <td>
+                        <p style="font-size: xx-large; color: #dddddd">Please wait...</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <script>
+            window.onload = function () {
+                var hashParams = window.location.hash.slice(1);
+                var params = {};
+                var pairs = hashParams.split('&');
+                for (var i = 0; i < pairs.length; i++) {
+                    var pair = pairs[i].split('=');
+                    if (pair[0])
+                        params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+                }
+
+                // Also check query parameters (Discord sends 'code' in the query string)
+                var queryParams = new URLSearchParams(window.location.search);
+                var code = queryParams.get('code');
+                var state = queryParams.get('state') || params['state'];
+                var accessToken = params['access_token'];
+                var tokenType = params['token_type'];
+
+                if (!accessToken && !code) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                var queryString = '';
+                if (code) {
+                    queryString = 'code=' + encodeURIComponent(code);
+                } else {
+                    queryString =
+                        'access_token=' +
+                        encodeURIComponent(accessToken) +
+                        '&token_type=' +
+                        encodeURIComponent(tokenType);
+                }
+
+                if (state) {
+                    queryString += '&state=' + encodeURIComponent(state);
+                }
+                window.location.href = '/discord?' + queryString;
+            };
+        </script>
     </body>
-    <script>
-        window.onload = function () {
-            var hashParams = window.location.hash.slice(1);
-            var params = {};
-            var pairs = hashParams.split('&');
-            for (var i = 0; i < pairs.length; i++) {
-                var pair = pairs[i].split('=');
-                if (pair[0]) params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
-            }
-
-            // Also check query parameters (Discord sends 'code' in the query string)
-            var queryParams = new URLSearchParams(window.location.search);
-            var code = queryParams.get('code');
-            var state = queryParams.get('state') || params['state'];
-            var accessToken = params['access_token'];
-            var tokenType = params['token_type'];
-
-            if (!accessToken && !code) {
-                window.location.href = '/';
-                return;
-            }
-
-            var queryString = '';
-            if (code) {
-                queryString = 'code=' + encodeURIComponent(code);
-            } else {
-                queryString =
-                    'access_token=' +
-                    encodeURIComponent(accessToken) +
-                    '&token_type=' +
-                    encodeURIComponent(tokenType);
-            }
-
-            if (state) {
-                queryString += '&state=' + encodeURIComponent(state);
-            }
-            window.location.href = '/discord?' + queryString;
-        };
-    </script>
 </html>
