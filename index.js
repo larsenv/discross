@@ -75,15 +75,10 @@ const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
 
 bot.startBot();
 
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN || process.env.TOKEN;
-const DISCORD_CLIENT_ID =
-    process.env.DISCORD_CLIENT_ID ||
-    (DISCORD_TOKEN ? Buffer.from(DISCORD_TOKEN.split('.')[0], 'base64').toString() : '968999890640338955');
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URL =
-    process.env.DISCORD_REDIRECT_URL ||
-    process.env.DISCORD_REDIRECT_URI ||
-    'https://discross.net/discord.html';
+const DISCORD_REDIRECT_URL = process.env.DISCORD_REDIRECT_URL;
 
 exports.DISCORD_TOKEN = DISCORD_TOKEN;
 exports.DISCORD_CLIENT_ID = DISCORD_CLIENT_ID;
