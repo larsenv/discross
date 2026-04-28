@@ -11,7 +11,7 @@ You can try out Discross there without having to invite the bot to your own serv
 
 ### All of these steps have to be performed on a modern device that can access Discord.com
 
-1. Use the [link](https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=8) to add Discross to your server. Not necessary if you're already on a server with the bot.
+1. Use the [link](https://discordapp.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot&permissions=8) to add Discross to your server (replace YOUR_CLIENT_ID with your bot's Client ID). Not necessary if you're already on a server with the bot.
 2. Type `^connect` on the server to get your verification code
 3. Go to [discross.net](https://discross.net/)
 4. Register on the website with that code
@@ -85,7 +85,7 @@ npm install
 replace the token in the line below with your bot's token
 
 ```bash
-export TOKEN=discord_bot_token_here
+export DISCORD_TOKEN=discord_bot_token_here
 npm start
 ```
 
@@ -111,7 +111,7 @@ touch db/discross.db
 cp .env.example .env
 ```
 
-replace the token in .env with your bot's token
+replace the token in .env with your bot's token (DISCORD_TOKEN=...)
 
 ```bash
 docker compose up -d

@@ -91,6 +91,19 @@ client.on('messageCreate', async function (msg) {
 
     // TODO: Do properly
     connectionHandler.sendToAll(msg.content, msg.channel.id);
+
+    // Auto-sync server membership when a registered user sends a message
+    // This ensures active servers are added to the user's list without manual sync.
+    if (msg.guild && msg.author && !msg.author.bot) {
+        const user = auth.dbQuerySingle('SELECT discordID FROM users WHERE discordID=?', [
+            msg.author.id,
+        ]);
+        if (user) {
+            auth.insertServers([
+                { serverID: msg.guild.id, discordID: msg.author.id, icon: msg.guild.icon },
+            ]);
+        }
+    }
 });
 
 // Auto-sync server membership when GuildMembers intent is enabled
@@ -116,11 +129,12 @@ if (guildMembersIntentEnabled) {
 }
 
 exports.startBot = async function () {
-    if (process.env.TOKEN) {
-        client.login(process.env.TOKEN);
+    const token = process.env.DISCORD_TOKEN || process.env.TOKEN;
+    if (token) {
+        client.login(token);
     } else {
         console.error(
-            'No token found! Please set the TOKEN environment variable to your bot token.'
+            'No token found! Please set the DISCORD_TOKEN or TOKEN environment variable to your bot token.'
         );
         process.exit(1);
     }

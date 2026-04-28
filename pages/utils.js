@@ -48,9 +48,28 @@ function loadAndRenderPageTemplate(name, folder = '', data = {}) {
  * @returns {string} The rendered template.
  */
 function renderTemplate(template, data) {
-    if (!template || !data) return template || '';
+    if (!template) return '';
+    if (!data) data = {};
+
+    // Global template variables
+    const discordToken = process.env.DISCORD_TOKEN || process.env.TOKEN;
+    const redirectUrl =
+        process.env.DISCORD_REDIRECT_URL ||
+        process.env.DISCORD_REDIRECT_URI ||
+        'https://discross.net/discord.html';
+    const globalData = {
+        DISCORD_CLIENT_ID:
+            process.env.DISCORD_CLIENT_ID ||
+            (discordToken ? Buffer.from(discordToken.split('.')[0], 'base64').toString() : '968999890640338955'),
+        DISCORD_REDIRECT_URL: redirectUrl,
+        DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent(redirectUrl),
+    };
+
+    // Merge global data with provided data (provided data takes precedence)
+    const mergedData = { ...globalData, ...data };
+
     let result = template;
-    for (const [key, value] of Object.entries(data)) {
+    for (const [key, value] of Object.entries(mergedData)) {
         // Normalize key: remove surrounding {$$} if present
         let normalizedKey = key;
         if (normalizedKey.startsWith('{$') && normalizedKey.endsWith('}')) {
