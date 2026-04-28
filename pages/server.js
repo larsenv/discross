@@ -276,7 +276,7 @@ async function processServerChannels(server, member, response, sessionParam) {
         response = renderTemplate(response, { CHANNEL_LIST: channelList });
     } catch (err) {
         console.error('Error processing server channels:', err);
-        response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
+        response = renderTemplate(response, { CHANNEL_LIST: server_list_only_template });
     }
 
     return response;
@@ -408,7 +408,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                         );
                     } else {
                         response = renderTemplate(response, {
-                            CHANNEL_LIST: sync_warning_template,
+                            CHANNEL_LIST: server_list_only_template,
                         });
                     }
                 } else {
@@ -421,7 +421,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             if (serverList.trim() === '') {
                 response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
             } else if (syncNeeded === 'true' || serversDeleted > 0) {
-                response = renderTemplate(response, { CHANNEL_LIST: sync_warning_template });
+                response = renderTemplate(response, { CHANNEL_LIST: server_list_only_template });
             } else {
                 response = renderTemplate(response, { CHANNEL_LIST: server_list_only_template });
             }
