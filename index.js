@@ -75,6 +75,21 @@ const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
 
 bot.startBot();
 
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN || process.env.TOKEN;
+const DISCORD_CLIENT_ID =
+    process.env.DISCORD_CLIENT_ID ||
+    (DISCORD_TOKEN ? Buffer.from(DISCORD_TOKEN.split('.')[0], 'base64').toString() : '968999890640338955');
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+const DISCORD_REDIRECT_URL =
+    process.env.DISCORD_REDIRECT_URL ||
+    process.env.DISCORD_REDIRECT_URI ||
+    'https://discross.net/discord.html';
+
+exports.DISCORD_TOKEN = DISCORD_TOKEN;
+exports.DISCORD_CLIENT_ID = DISCORD_CLIENT_ID;
+exports.DISCORD_CLIENT_SECRET = DISCORD_CLIENT_SECRET;
+exports.DISCORD_REDIRECT_URL = DISCORD_REDIRECT_URL;
+
 const { isValidSnowflake, parseCookies } = require('./pages/utils.js');
 
 // create a server object:
@@ -130,8 +145,14 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
             }
         }
         res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
+
+        let content = data.toString();
+        // Always apply global replacements for client-side JS and other static files
+        content = content.replaceAll('{{DISCORD_CLIENT_ID}}', DISCORD_CLIENT_ID);
+        content = content.replaceAll('{{DISCORD_REDIRECT_URL}}', DISCORD_REDIRECT_URL);
+
         if (textToReplace && replacement) {
-            res.end(data.toString().replace(textToReplace, replacement));
+            res.end(content.replace(textToReplace, replacement));
         } else {
             if (data.length <= STATIC_CACHE_MAX_BYTES) {
                 if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
@@ -151,7 +172,7 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
                         Sentry.captureException(err);
                 }
             }
-            res.end(data);
+            res.end(content);
         }
     });
 }
@@ -580,9 +601,53 @@ server.on('request', async (req, res) => {
                 if (discordID) {
                     try {
                         const query = new URLSearchParams(req.url.split('?')[1]);
-                        const oauthClient = new SnowTransfer(
-                            `${query.get('token_type')} ${query.get('access_token')}`
-                        );
+                        let accessToken = query.get('access_token');
+                        let tokenType = query.get('token_type') || 'Bearer';
+
+                        const code = query.get('code');
+                        if (code) {
+                            if (!DISCORD_CLIENT_SECRET) {
+                                res.writeHead(500);
+                                res.end('DISCORD_CLIENT_SECRET not configured');
+                                return;
+                            }
+                            // Trade code for token
+                            const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+                                method: 'POST',
+                                body: new URLSearchParams({
+                                    client_id: DISCORD_CLIENT_ID,
+                                    client_secret: DISCORD_CLIENT_SECRET,
+                                    grant_type: 'authorization_code',
+                                    code: code,
+                                    redirect_uri: DISCORD_REDIRECT_URL,
+                                }),
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                            });
+                            const tokenData = await tokenResponse.json();
+                            if (tokenData.access_token) {
+                                accessToken = tokenData.access_token;
+                                tokenType = tokenData.token_type || 'Bearer';
+                                // Save tokens
+                                auth.saveDiscordTokens(
+                                    discordID,
+                                    tokenData.access_token,
+                                    tokenData.refresh_token,
+                                    Math.floor(Date.now() / 1000) + (tokenData.expires_in || 0)
+                                );
+                            } else {
+                                throw new Error('Failed to exchange code: ' + JSON.stringify(tokenData));
+                            }
+                        }
+
+                        if (!accessToken) {
+                            res.writeHead(302, { Location: '/' });
+                            res.end();
+                            return;
+                        }
+
+                        const oauthClient = new SnowTransfer(`${tokenType} ${accessToken}`);
                         const user = await oauthClient.user.getSelf();
                         if (user && user.id === discordID) {
                             const guilds = await oauthClient.user.getGuilds();
@@ -634,13 +699,22 @@ server.on('request', async (req, res) => {
                                     }
                                 }
                             }
-                            res.writeHead(302, { Location: '/server/' });
-                            res.end();
+
+                            if (query.get('state') === 'sync') {
+                                res.writeHead(200, { 'Content-Type': 'text/html' });
+                                res.end(
+                                    '<script>if(window.parent)window.parent.postMessage("discross_sync_complete","*");</script>'
+                                );
+                            } else {
+                                res.writeHead(302, { Location: '/server/' });
+                                res.end();
+                            }
                         } else {
                             res.writeHead(302, { Location: '/' });
                             res.end();
                         }
-                    } catch {
+                    } catch (e) {
+                        console.error('OAuth error:', e);
                         res.writeHead(302, { Location: '/' });
                         res.end();
                     }

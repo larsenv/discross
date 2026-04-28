@@ -161,4 +161,47 @@ window.onload = function () {
     } catch (e) {
         // localStorage might not be available
     }
+
+    // Background server list sync (#refresh-sync)
+    // Only trigger if we are on the server list page (not viewing a specific server)
+    // and if we haven't synced in this session yet.
+    var pathParts = window.location.pathname.split('/').filter(Boolean);
+    var isServerListPage =
+        pathParts.length === 1 && (pathParts[0] === 'server' || pathParts[0] === 'server.html');
+
+    if (isServerListPage && typeof sessionStorage !== 'undefined') {
+        if (!sessionStorage.getItem('discross_synced')) {
+            var protocol = window.location.protocol;
+            var host = window.location.host;
+            var origin = protocol + '//' + host;
+
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            // Use the hardcoded client_id from the sync_warning template
+            var clientId = '{{DISCORD_CLIENT_ID}}';
+            var redirectUri = encodeURIComponent(origin + '/discord.html');
+            iframe.src =
+                'https://discord.com/oauth2/authorize?client_id=' +
+                clientId +
+                '&response_type=code&redirect_uri=' +
+                redirectUri +
+                '&scope=identify+guilds&prompt=none&state=sync';
+
+            document.body.appendChild(iframe);
+            sessionStorage.setItem('discross_synced', 'true');
+
+            // Listen for completion message from the iframe
+            var onMessage = function (event) {
+                if (event.data === 'discross_sync_complete') {
+                    // Sync complete - server-side refresh will handle it next time
+                }
+            };
+
+            if (window.addEventListener) {
+                window.addEventListener('message', onMessage, false);
+            } else if (window.attachEvent) {
+                window.attachEvent('onmessage', onMessage);
+            }
+        }
+    }
 };

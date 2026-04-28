@@ -221,6 +221,11 @@ function setup() {
     try {
         queryRun('ALTER TABLE users ADD COLUMN totp_secret TEXT');
     } catch (_) {}
+    try {
+        queryRun('ALTER TABLE users ADD COLUMN discord_access_token TEXT');
+        queryRun('ALTER TABLE users ADD COLUMN discord_refresh_token TEXT');
+        queryRun('ALTER TABLE users ADD COLUMN discord_token_expires INTEGER');
+    } catch (_) {}
     queryRun('CREATE TABLE IF NOT EXISTS sessions (discordID TEXT, sessionID STRING, expires INT)');
     queryRun('CREATE TABLE IF NOT EXISTS webhooks (serverID TEXT, webhookID TEXT, token STRING)');
     queryRun(
@@ -661,4 +666,18 @@ exports.toggleGuestChannel = function (channelID) {
         queryRun('INSERT INTO guest_channels VALUES (?)', [channelID]);
         return true;
     }
+};
+
+exports.saveDiscordTokens = function (discordID, accessToken, refreshToken, expiresAt) {
+    return queryRun(
+        'UPDATE users SET discord_access_token=?, discord_refresh_token=?, discord_token_expires=? WHERE discordID=?',
+        [accessToken, refreshToken, expiresAt, discordID]
+    );
+};
+
+exports.getDiscordTokens = function (discordID) {
+    return querySingle(
+        'SELECT discord_access_token, discord_refresh_token, discord_token_expires FROM users WHERE discordID=?',
+        [discordID]
+    );
 };

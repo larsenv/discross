@@ -40,21 +40,35 @@
             var pairs = hashParams.split('&');
             for (var i = 0; i < pairs.length; i++) {
                 var pair = pairs[i].split('=');
-                params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+                if (pair[0]) params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
             }
 
+            // Also check query parameters (Discord sends 'code' in the query string)
+            var queryParams = new URLSearchParams(window.location.search);
+            var code = queryParams.get('code');
+            var state = queryParams.get('state') || params['state'];
             var accessToken = params['access_token'];
             var tokenType = params['token_type'];
 
-            if (!accessToken) {
+            if (!accessToken && !code) {
                 window.location.href = '/';
+                return;
             }
 
-            var queryString =
-                'access_token=' +
-                encodeURIComponent(accessToken) +
-                '&token_type=' +
-                encodeURIComponent(tokenType);
+            var queryString = '';
+            if (code) {
+                queryString = 'code=' + encodeURIComponent(code);
+            } else {
+                queryString =
+                    'access_token=' +
+                    encodeURIComponent(accessToken) +
+                    '&token_type=' +
+                    encodeURIComponent(tokenType);
+            }
+
+            if (state) {
+                queryString += '&state=' + encodeURIComponent(state);
+            }
             window.location.href = '/discord?' + queryString;
         };
     </script>
