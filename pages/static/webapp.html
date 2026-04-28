@@ -82,10 +82,30 @@
                 width: 100%;
                 height: 100%;
             }
+
+            body.light-theme {
+                background-color: #f9f9f9 !important;
+            }
+            body.amoled-theme {
+                background-color: #000000 !important;
+            }
         </style>
     </head>
 
     <body bgcolor="#303338" style="margin: 0">
+        <script>
+            (function () {
+                var cookieTheme = document.cookie.split('; ').find(function (c) {
+                    return c.startsWith('whiteThemeCookie=');
+                });
+                var theme = cookieTheme ? cookieTheme.split('=')[1] : '0';
+                if (theme === '1') {
+                    document.body.className = 'light-theme';
+                } else if (theme === '2') {
+                    document.body.className = 'amoled-theme';
+                }
+            })();
+        </script>
         <iframe src="index.html"></iframe>
     </body>
 </html>
