@@ -129,12 +129,12 @@ if (guildMembersIntentEnabled) {
 }
 
 exports.startBot = async function () {
-    const token = process.env.DISCORD_TOKEN || process.env.TOKEN;
+    const token = process.env.DISCORD_TOKEN;
     if (token) {
         client.login(token);
     } else {
         console.error(
-            'No token found! Please set the DISCORD_TOKEN or TOKEN environment variable to your bot token.'
+            'No token found! Please set the DISCORD_TOKEN environment variable to your bot token.'
         );
         process.exit(1);
     }

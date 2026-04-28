@@ -52,17 +52,10 @@ function renderTemplate(template, data) {
     if (!data) data = {};
 
     // Global template variables
-    const discordToken = process.env.DISCORD_TOKEN || process.env.TOKEN;
-    const redirectUrl =
-        process.env.DISCORD_REDIRECT_URL ||
-        process.env.DISCORD_REDIRECT_URI ||
-        'https://discross.net/discord.html';
     const globalData = {
-        DISCORD_CLIENT_ID:
-            process.env.DISCORD_CLIENT_ID ||
-            (discordToken ? Buffer.from(discordToken.split('.')[0], 'base64').toString() : '968999890640338955'),
-        DISCORD_REDIRECT_URL: redirectUrl,
-        DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent(redirectUrl),
+        DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
+        DISCORD_REDIRECT_URL: process.env.DISCORD_REDIRECT_URL,
+        DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent(process.env.DISCORD_REDIRECT_URL || ''),
     };
 
     // Merge global data with provided data (provided data takes precedence)
