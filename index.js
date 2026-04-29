@@ -141,19 +141,48 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
         }
         res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
 
-        let content = data.toString();
-        // Always apply global replacements for client-side JS and other static files
-        content = content.replaceAll('{{DISCORD_CLIENT_ID}}', DISCORD_CLIENT_ID);
-        content = content.replaceAll('{{DISCORD_REDIRECT_URL}}', DISCORD_REDIRECT_URL);
+        const isText =
+            type &&
+            (type.startsWith('text/') ||
+                type === 'application/javascript' ||
+                type === 'application/json' ||
+                type === 'image/svg+xml');
 
-        if (textToReplace && replacement) {
-            res.end(content.replace(textToReplace, replacement));
+        if (isText) {
+            let content = data.toString();
+            // Always apply global replacements for client-side JS and other static files
+            content = content.replaceAll('{{DISCORD_CLIENT_ID}}', DISCORD_CLIENT_ID);
+            content = content.replaceAll('{{DISCORD_REDIRECT_URL}}', DISCORD_REDIRECT_URL);
+
+            if (textToReplace && replacement) {
+                res.end(content.replace(textToReplace, replacement));
+            } else {
+                if (data.length <= STATIC_CACHE_MAX_BYTES) {
+                    if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
+                        staticFileCache.delete(staticFileCache.keys().next().value);
+                    }
+                    // Get modification time and store in cache
+                    try {
+                        const stats = fs.statSync(filename);
+                        staticFileCache.set(filename, {
+                            data: data,
+                            mtime: stats.mtime,
+                        });
+                    } catch (err) {
+                        // If we can't stat the file, still serve it but don't cache
+                        console.warn('Could not stat file for caching:', filename, err);
+                        if (typeof sentryEnabled !== 'undefined' && sentryEnabled)
+                            Sentry.captureException(err);
+                    }
+                }
+                res.end(content);
+            }
         } else {
+            // Binary file (fonts, images, etc.) - serve as raw buffer without replacements
             if (data.length <= STATIC_CACHE_MAX_BYTES) {
                 if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
                     staticFileCache.delete(staticFileCache.keys().next().value);
                 }
-                // Get modification time and store in cache
                 try {
                     const stats = fs.statSync(filename);
                     staticFileCache.set(filename, {
@@ -161,13 +190,12 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
                         mtime: stats.mtime,
                     });
                 } catch (err) {
-                    // If we can't stat the file, still serve it but don't cache
                     console.warn('Could not stat file for caching:', filename, err);
                     if (typeof sentryEnabled !== 'undefined' && sentryEnabled)
                         Sentry.captureException(err);
                 }
             }
-            res.end(content);
+            res.end(data);
         }
     });
 }
