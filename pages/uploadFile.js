@@ -3,6 +3,7 @@ const fs = require('fs');
 const https = require('https');
 const bot = require('../bot.js');
 const discord = require('discord.js');
+const auth = require('../authentication.js');
 const { formidable } = require('formidable');
 const { isBotReady } = require('./utils.js');
 const { getOrCreateWebhook } = require('./webhookCache');
@@ -273,6 +274,14 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             username: member.displayName || member.user.tag,
                             avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
                         });
+
+                        const userAgentStr = req.headers['user-agent'];
+                        if (userAgentStr && message && message.id) {
+                            auth.dbQueryRun(
+                                'INSERT OR REPLACE INTO message_user_agents (messageID, userAgent) VALUES (?, ?)',
+                                [message.id, userAgentStr]
+                            );
+                        }
 
                         bot.addToCache(message);
 

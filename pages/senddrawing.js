@@ -1,5 +1,6 @@
 'use strict';
 const discord = require('discord.js');
+const auth = require('../authentication.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
 const { resolveMentions, getTemplate } = require('./utils.js');
@@ -92,6 +93,15 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         }
 
         const message = await webhook.send(webhookOptions);
+
+        const userAgentStr = req.headers['user-agent'];
+        if (userAgentStr && message && message.id) {
+            auth.dbQueryRun(
+                'INSERT OR REPLACE INTO message_user_agents (messageID, userAgent) VALUES (?, ?)',
+                [message.id, userAgentStr]
+            );
+        }
+
         bot.addToCache(message);
 
         res.writeHead(302, { Location: `/channels/${parsedurl.channel}#end` });

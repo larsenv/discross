@@ -1,5 +1,6 @@
 'use strict';
 const discord = require('discord.js');
+const auth = require('../authentication.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
 const { isBotReady, resolveMentions } = require('./utils.js');
@@ -83,6 +84,14 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
                 avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
                 disableEveryone: true,
             });
+
+            const userAgentStr = req.headers['user-agent'];
+            if (userAgentStr && message && message.id) {
+                auth.dbQueryRun(
+                    'INSERT OR REPLACE INTO message_user_agents (messageID, userAgent) VALUES (?, ?)',
+                    [message.id, userAgentStr]
+                );
+            }
 
             bot.addToCache(message);
         }
