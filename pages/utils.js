@@ -119,7 +119,7 @@ function getBaseUrl(req) {
  */
 function parseCookies(req) {
     const result = {};
-    const raw = req.headers.cookie;
+    const raw = req?.headers?.cookie;
     if (!raw) return result;
     raw.split(';').forEach((cookie) => {
         const parts = cookie.split('=');
