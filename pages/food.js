@@ -23,7 +23,7 @@ function unixTime() {
 
 // Format a Unix timestamp using the user's detected timezone (IP-based)
 function formatTimestamp(ts, req) {
-    const timezone = req ? getTimezoneFromIP(getClientIP(req)) : null;
+    const timezone = req ? getTimezoneFromIP(req) : null;
     return formatDateWithTimezone(new Date(ts * 1000), timezone);
 }
 
