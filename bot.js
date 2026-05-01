@@ -221,3 +221,15 @@ exports.sendDM = async function (discordID, message) {
         return { success: false, error: err.message || 'Failed to send Discord DM.' };
     }
 };
+
+/**
+ * Sends a 6-digit verification code to the user for a pizza order.
+ * @param {string} discordID
+ * @param {string} code
+ * @returns {Promise<boolean>} True if sent successfully
+ */
+exports.sendPizzaVerification = async function (discordID, code) {
+    const message = `**Your Discross Pizza verification code is:**\n\n# \`${code}\`\n\nIf you did not request this code, please ignore this message.`;
+    const result = await exports.sendDM(discordID, message);
+    return result.success;
+};
