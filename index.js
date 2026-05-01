@@ -253,6 +253,12 @@ async function senddrawingAsync(req, res, body) {
 }
 
 server.on('request', async (req, res) => {
+    if (req.url.startsWith('//')) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Invalid request URL');
+        return;
+    }
+
     if (req.method === 'POST') {
         const parsedurl = new URL(req.url, 'http://localhost').pathname;
 
@@ -402,6 +408,12 @@ server.on('request', async (req, res) => {
             }
         });
     } else {
+        if (req.url.startsWith('//')) {
+            res.writeHead(400, { 'Content-Type': 'text/plain' });
+            res.end('Invalid request URL');
+            return;
+        }
+
         try {
             const parsedurl = new URL(req.url, 'http://localhost');
 

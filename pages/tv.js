@@ -345,7 +345,7 @@ function parseStationLogo(html) {
 // zip and lineup are passed so station links can include them for a working back button.
 function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
     if (channels.length === 0) {
-        return getTemplate('tv_no_channels_provider_error', 'misc');
+        return getTemplate('tv_no_channels_provider_error', 'tv');
     }
 
     var cols = 3;
@@ -540,16 +540,16 @@ async function serveMainPage(
                                 sessionSuffix
                             );
                         } else {
-                            contentHtml = getTemplate('tv_no_channels_provider_error', 'misc');
+                            contentHtml = getTemplate('tv_no_channels_provider_error', 'tv');
                         }
                     } else if (lineupResult.statusCode === 404) {
-                        contentHtml = getTemplate('tv_provider_not_found_error', 'misc');
+                        contentHtml = getTemplate('tv_provider_not_found_error', 'tv');
                     } else {
-                        contentHtml = getTemplate('tv_load_channel_list_error', 'misc');
+                        contentHtml = getTemplate('tv_load_channel_list_error', 'tv');
                     }
                 } catch (err) {
                     console.error('TV lineup channels fetch error:', err);
-                    contentHtml = getTemplate('tv_load_channel_list_error', 'misc');
+                    contentHtml = getTemplate('tv_load_channel_list_error', 'tv');
                 }
             }
         } else {
@@ -566,13 +566,13 @@ async function serveMainPage(
                     var lineupList = parseLineups(lineupsResult.body);
                     if (lineupList.length === 0) {
                         contentHtml = renderTemplate(
-                            getTemplate('tv_no_providers_zip_error', 'misc'),
+                            getTemplate('tv_no_providers_zip_error', 'tv'),
                             {
                                 ZIP_CODE: escape(cleanZip),
                             }
                         );
                     } else {
-                        contentHtml = getTemplate('tv_select_provider_header', 'misc');
+                        contentHtml = getTemplate('tv_select_provider_header', 'tv');
                         for (var i = 0; i < lineupList.length; i++) {
                             var li = lineupList[i];
                             var lineupUrl = buildUrl(
@@ -588,11 +588,11 @@ async function serveMainPage(
                         }
                     }
                 } else {
-                    contentHtml = getTemplate('tv_load_provider_list_error', 'misc');
+                    contentHtml = getTemplate('tv_load_provider_list_error', 'tv');
                 }
             } catch (err) {
                 console.error('TV lineups fetch error:', err);
-                contentHtml = getTemplate('tv_load_provider_list_error', 'misc');
+                contentHtml = getTemplate('tv_load_provider_list_error', 'tv');
             }
         }
     }
@@ -643,9 +643,9 @@ async function serveStationPage(
             var result = await fetchPage('/tv-listings/stations/' + cleanId + '/' + date, cookie);
 
             if (result.statusCode === 404) {
-                contentHtml = getTemplate('tv_station_not_found_error', 'misc');
+                contentHtml = getTemplate('tv_station_not_found_error', 'tv');
             } else if (result.statusCode !== 200) {
-                contentHtml = getTemplate('tv_load_tv_guide_error', 'misc');
+                contentHtml = getTemplate('tv_load_tv_guide_error', 'tv');
             } else {
                 stationName = parseStationName(result.body);
                 var logoUrl = parseStationLogo(result.body);
@@ -660,10 +660,10 @@ async function serveStationPage(
             }
         } catch (err) {
             console.error('TV station fetch error:', err);
-            contentHtml = getTemplate('tv_load_tv_guide_error', 'misc');
+            contentHtml = getTemplate('tv_load_tv_guide_error', 'tv');
         }
     } else {
-        contentHtml = getTemplate('tv_invalid_station_id_error', 'misc');
+        contentHtml = getTemplate('tv_invalid_station_id_error', 'tv');
     }
 
     // Build back URL preserving zip/lineup/date parameters
