@@ -42,24 +42,24 @@ body {
    ================================================================ */
 
 h1 {
-    margin: 24px 0 12px 0;
-    font-size: 2rem;
-    font-weight: 600;
-    line-height: 1.25;
+    margin: 8px 0 4px 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
     font-family: inherit;
 }
 h2 {
-    margin: 20px 0 10px 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    line-height: 1.25;
+    margin: 8px 0 4px 0;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
     font-family: inherit;
 }
 h3 {
-    margin: 16px 0 8px 0;
-    font-size: 1.125rem;
-    font-weight: 600;
-    line-height: 1.25;
+    margin: 8px 0 4px 0;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
     font-family: inherit;
 }
 p,
@@ -287,6 +287,23 @@ pre code {
 .messagecontent h2 a,
 .messagecontent h3 a {
     color: inherit;
+}
+.messagecontent h1,
+.messagecontent h2,
+.messagecontent h3 {
+    display: block;
+    width: 100%;
+}
+.messagecontent h1:first-child,
+.messagecontent h2:first-child,
+.messagecontent h3:first-child {
+    margin-top: 0 !important;
+}
+/* Ensure headings aren't smaller than paragraph text (17px) */
+.messagecontent h1,
+.messagecontent h2,
+.messagecontent h3 {
+    font-weight: 700;
 }
 .firstmessage {
     margin: 0;

@@ -1501,10 +1501,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         const currentMember = await ensureMemberData(item, chnl.guild, memberCache);
 
         // Date Separators: Insert a visual "March 15, 2024" bar when the day changes.
-        if (
-            clientTimezone &&
-            areDifferentDays(item.createdAt, state.lastmessagedate, clientTimezone)
-        )
+        if (areDifferentDays(item.createdAt, state.lastmessagedate, clientTimezone))
             response += renderTemplate(templates.dateSeparator, {
                 '{$DATE_SEPARATOR}': formatDateSeparator(item.createdAt, clientTimezone),
             });
