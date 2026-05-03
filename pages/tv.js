@@ -234,68 +234,166 @@ function parseLineups(html) {
     return lineups;
 }
 
+// Smart title case for station names
+function smartTitleCase(str) {
+    if (!str) return '';
+
+    // Common TV network acronyms
+    var acronyms = [
+        'tv', 'hd', 'dt', 'fm', 'am', 'hbo', 'cnn', 'mtv', 'vh1', 'amc', 'tbs', 'tnt', 'espn',
+        'hgtv', 'fox', 'nbc', 'abc', 'cbs', 'pbs', 'cw', 'tbn', 'ion', 'up', 'bet', 'ctv',
+        'msnbc', 'cnbc', 'syfy', 'fxx', 'fx', 'usa', 'ifc', 'hsn', 'qvc', 'tcm', 'e!', 
+        'disney', 'nick', 'bravo', 'tlc', 'own', 'oxgn', 'ngc', 'disc', 'apl', 'id', 'ads', 
+        'uni', 'tele'
+    ];
+    
+    // US States and Canadian Provinces
+    var states = [
+        'al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'dc', 'fl', 'ga', 'hi', 'id', 'il', 'in', 'ia', 'ks', 'ky', 'la', 'me', 'md', 'ma', 'mi', 'mn', 'ms', 'mo', 'mt', 'ne', 'nv', 'nh', 'nj', 'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri', 'sc', 'sd', 'tn', 'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 'wy',
+        'ab', 'bc', 'mb', 'nb', 'nl', 'ns', 'on', 'pe', 'qc', 'sk', 'nt', 'nu', 'yt'
+    ];
+
+    var smallWords = ['of', 'the', 'and', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'a', 'an'];
+
+    // 1. Process chunks separated by spaces, commas, or parentheses
+    var result = str.replace(/([a-z0-9\-]+)|([^a-z0-9\-]+)/gi, function(match, word, sep, index) {
+        if (sep) return sep;
+        
+        // If the "word" contains hyphens, split and process each part
+        if (word.indexOf('-') !== -1) {
+            return word.split('-').map(function(part, i) {
+                var lowerPart = part.toLowerCase();
+                if (acronyms.indexOf(lowerPart) !== -1) return lowerPart.toUpperCase();
+                if (lowerPart.length === 2 && states.indexOf(lowerPart) !== -1) return lowerPart.toUpperCase();
+                if (/^[kwcx][a-z0-9]{2,3}$/i.test(part)) return part.toUpperCase();
+                return lowerPart.charAt(0).toUpperCase() + lowerPart.slice(1);
+            }).join('-');
+        }
+
+        var lower = word.toLowerCase();
+        if (word !== word.toUpperCase() && word !== word.toLowerCase()) return word;
+        if (acronyms.indexOf(lower) !== -1) return lower.toUpperCase();
+        if (lower.length === 2 && states.indexOf(lower) !== -1) return lower.toUpperCase();
+        if (/^[kwcx][a-z0-9]{2,3}$/i.test(word)) return word.toUpperCase();
+        if (index > 0 && smallWords.indexOf(lower) !== -1) return lower;
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
+    });
+
+    // 2. Deduplicate similar words (e.g. "WNBC WNBC-DT" -> "WNBC-DT")
+    // Also remove network names in parentheses if they are part of the callsign (e.g. "WNBC (NBC)" -> "WNBC")
+    var parts = result.split(/\s+/);
+    var finalParts = [];
+    for (var i = 0; i < parts.length; i++) {
+        var p = parts[i].replace(/[()]/g, '');
+        if (!p) continue;
+        var isRedundant = false;
+        for (var j = 0; j < parts.length; j++) {
+            if (i === j) continue;
+            var other = parts[j].replace(/[()]/g, '');
+            // If p is a substring of other and they are both likely IDs (acronyms or callsigns)
+            if (other.indexOf(p) !== -1 && other.length > p.length && (acronyms.indexOf(p.toLowerCase()) !== -1 || /^[kwcx][a-z0-9\-]+$/i.test(p))) {
+                isRedundant = true;
+                break;
+            }
+        }
+        if (!isRedundant) finalParts.push(parts[i]);
+    }
+    
+    return finalParts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
 // Parse channels from a TVPassport lineup page.
 // Returns array of {name, callsign, stationId, logoUrl} objects.
 function parseLineupChannels(html, date) {
     var channels = [];
     var seen = new Set();
 
-    // Find all station page links in the format /tv-listings/stations/{slug}/{id} or /{slug}/{id}/{date}.
-    // Capture group 1: full station site_id (e.g. "nbc-wnbc-new-york-ny/1767")
-    // Capture group 2: station slug (e.g. "nbc-wnbc-new-york-ny")
-    // Capture group 3: numeric station id (e.g. "1767")
+    // 1. Find all station link matches first to determine boundaries
     var stationLinkRegex =
         /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/stations\/(([a-z0-9\-]+)\/(\d+))(?:\/\d{4}-\d{2}-\d{2})?"/gi;
+    
+    var matches = [];
     var m;
-
     while ((m = stationLinkRegex.exec(html)) !== null) {
-        var stationId = m[1]; // e.g. "nbc-wnbc-new-york-ny/1767"
-        var stationSlug = m[2];
-        if (seen.has(stationId)) continue;
-
-        // Search context around the link for logo and channel name
-        var contextStart = Math.max(0, m.index - 600);
-        var contextEnd = Math.min(html.length, m.index + 600);
-        var context = html.substring(contextStart, contextEnd);
-
-        // Find channel logo (cdn.tvpassport.com image)
-        var logoMatch = context.match(
-            /src="(?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[0-9x]+\/([a-z0-9\-]+)\.png"/i
-        );
-        var callsign = logoMatch ? logoMatch[1] : '';
-        var logoUrl = callsign
-            ? '//cdn.tvpassport.com/image/station/240x135/' + callsign + '.png'
-            : '';
-
-        // Try to find data-callsign if logo not found
-        if (!callsign) {
-            var csMatch = context.match(/data-callsign="([^"]+)"/i);
-            if (csMatch) {
-                callsign = csMatch[1].toLowerCase();
-                logoUrl = '//cdn.tvpassport.com/image/station/240x135/' + callsign + '.png';
-            }
-        }
-
-        // Extract channel name from nearby text — look for anchor text or heading
-        var nameMatch = context.match(/<a[^>]+>([^<]{3,60})<\/a>/i);
-        var name = '';
-        if (nameMatch) {
-            name = he.decode(stripTags(nameMatch[1])).trim();
-        }
-        if (!name || name.length < 2) {
-            // Fall back to title-casing the slug: "nbc-wnbc-new-york-ny" -> "Nbc Wnbc New York Ny"
-            name = stationSlug.replace(/-/g, ' ').replace(/\b\w/g, function (c) {
-                return c.toUpperCase();
-            });
-        }
-        name = stripAngleBrackets(name);
-
-        seen.add(stationId);
-        channels.push({ stationId: stationId, name: name, callsign: callsign, logoUrl: logoUrl });
+        matches.push({
+            index: m.index,
+            fullMatch: m[0],
+            stationId: m[1],
+            stationSlug: m[2]
+        });
     }
+
+    // 2. Process each match using boundaries to avoid picking up data from other rows
+    for (var i = 0; i < matches.length; i++) {
+        var match = matches[i];
+        if (seen.has(match.stationId)) continue;
+
+        // Isolate the row: from start of previous match to end of next match (roughly)
+        var start = i === 0 ? 0 : matches[i-1].index + matches[i-1].fullMatch.length;
+        var end = i === matches.length - 1 ? html.length : matches[i+1].index;
+        
+        // Refine context: look primarily BEFORE the link, as logos usually precede text
+        // But also look slightly after just in case.
+        var context = html.substring(start, end);
+
+        // Logo detection within isolated row
+        var logoUrl = '';
+        var callsign = '';
+        
+        // a. Try to find the callsign from a CDN image URL
+        var logoMatch = context.match(
+            /(?:src|data-src|data-original)="(?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[^"\/]+\/([a-z0-9\-]+)\.(?:png|jpg|gif|svg)/i
+        );
+        if (logoMatch) {
+            callsign = logoMatch[1];
+        } else {
+            // b. Try data-callsign attribute
+            var csMatch = context.match(/data-(?:stn-)?callsign="([^"]+)"/i);
+            if (csMatch) callsign = csMatch[1].toLowerCase();
+        }
+
+        if (callsign) {
+            logoUrl = '//cdn.tvpassport.com/image/station/240x135/' + callsign + '.png';
+        } else {
+            // c. Last resort: any station image in this row
+            var genericMatch = context.match(/(?:src|data-src|data-original)="((?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[^"]+)"/i);
+            if (genericMatch) logoUrl = genericMatch[1];
+        }
+
+        // Name detection within isolated row
+        var name = '';
+        
+        // Find the text of the link itself (the anchor text)
+        var anchorMatch = context.match(new RegExp('>([\\s\\S]*?)</a>', 'i'));
+        if (anchorMatch) {
+            name = he.decode(stripTags(anchorMatch[1])).trim();
+        }
+
+        // Fallbacks for name
+        if (!name || name.length < 2 || /^\d{4}-\d{2}-\d{2}$/.test(name)) {
+            var altMatch = context.match(/alt="([^"]{3,60})"/i) || context.match(/title="([^"]{3,60})"/i);
+            if (altMatch) name = he.decode(altMatch[1]);
+            else name = match.stationSlug.replace(/-/g, ' ');
+        }
+
+        name = smartTitleCase(name);
+
+        seen.add(match.stationId);
+        channels.push({ stationId: match.stationId, name: name, callsign: callsign, logoUrl: logoUrl });
+    }
+
+    // Sort by name for a better list experience
+    channels.sort(function(a, b) {
+        return a.name.localeCompare(b.name);
+    });
 
     return channels;
 }
+
+
+
+
+
 
 // Parse schedule listings from a station page.
 function parseListings(html) {
@@ -308,12 +406,17 @@ function parseListings(html) {
     var m;
     while ((m = itemTagRegex.exec(sectionHtml)) !== null) {
         var tagHtml = m[0];
+        
+        // Try 'duration' first, then 'dr' as a common shorthand
+        var duration = parseDataAttr(tagHtml, 'duration');
+        if (!duration) duration = parseDataAttr(tagHtml, 'dr');
+
         items.push({
             showName: stripAngleBrackets(parseDataAttr(tagHtml, 'showName')),
             episodeTitle: stripAngleBrackets(parseDataAttr(tagHtml, 'episodeTitle')),
             description: stripAngleBrackets(parseDataAttr(tagHtml, 'description')),
             startTime: parseDataAttr(tagHtml, 'st'),
-            duration: stripAngleBrackets(parseDataAttr(tagHtml, 'duration')),
+            duration: stripAngleBrackets(duration),
             rating: stripAngleBrackets(parseDataAttr(tagHtml, 'rating')),
             showType: stripAngleBrackets(parseDataAttr(tagHtml, 'showType')),
         });
@@ -329,7 +432,7 @@ function parseStationName(html) {
             .decode(m[1])
             .replace(/^TV (?:Schedule|Listings?) for /i, '')
             .trim();
-        return stripAngleBrackets(name);
+        return smartTitleCase(stripAngleBrackets(name));
     }
     return '';
 }
@@ -341,20 +444,17 @@ function parseStationLogo(html) {
     return '';
 }
 
-// Build the HTML channel grid (table-based, 3 columns, backwards compatible).
+// Build the HTML channel grid (single column list).
 // zip and lineup are passed so station links can include them for a working back button.
 function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
     if (channels.length === 0) {
         return getTemplate('tv_no_channels_provider_error', 'tv');
     }
 
-    var cols = 3;
     var rowsHtml = '';
 
     for (var i = 0; i < channels.length; i++) {
         var ch = channels[i];
-        if (i % cols === 0) rowsHtml += getTemplate('channel_grid_row_start', 'tv');
-
         var logoHtml = '';
         if (ch.logoUrl) {
             var proxied = proxyImageUrl(ch.logoUrl);
@@ -378,13 +478,11 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
             FONT: FONT,
             NAME_HTML: nameHtml,
         });
-
-        if ((i + 1) % cols === 0 || i === channels.length - 1)
-            rowsHtml += getTemplate('channel_grid_row_end', 'tv');
     }
 
     return renderTemplate(getTemplate('channel_grid', 'tv'), { ROWS: rowsHtml });
 }
+
 
 // Build the HTML schedule table for a station page.
 function buildScheduleHtml(items) {
@@ -399,7 +497,7 @@ function buildScheduleHtml(items) {
         var timeStr = escape(formatTime(item.startTime));
         var durationStr = item.duration
             ? renderTemplate(getTemplate('duration_html', 'tv'), {
-                  DURATION: escape(item.duration),
+                  DURATION_STR: escape(item.duration),
               })
             : '';
         var showName = escape(item.showName || '(Unknown)');

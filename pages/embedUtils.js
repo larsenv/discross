@@ -160,7 +160,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
 
                         if (!field.inline) {
                             if (rowOpen) {
-                                body += '</tr>';
+                                body += getTemplate('row_close', 'embed');
                                 rowOpen = false;
                                 inlineCount = 0;
                             }
@@ -172,7 +172,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                             });
                         } else {
                             if (!rowOpen) {
-                                body += '<tr>';
+                                body += getTemplate('row_open', 'embed');
                                 rowOpen = true;
                                 inlineCount = 0;
                             }
@@ -185,7 +185,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                             inlineCount++;
                             const nextField = embed.fields[i + 1];
                             if (inlineCount >= 3 || !nextField || !nextField.inline) {
-                                body += '</tr>';
+                                body += getTemplate('row_close', 'embed');
                                 rowOpen = false;
                                 inlineCount = 0;
                             }
@@ -194,7 +194,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                     },
                     { body: '', rowOpen: false, inlineCount: 0 }
                 );
-                const closingTag = lastRowOpen ? '</tr>' : '';
+                const closingTag = lastRowOpen ? getTemplate('row_close', 'embed') : '';
                 return renderTemplate(getTemplate('fields_table', 'embed'), {
                     BODY: tableBody + closingTag,
                 });
