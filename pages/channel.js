@@ -249,7 +249,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
                 // Videos are not supported for inline playback yet, so they are just downloads.
                 '{$FILE_LINK}': !isVideo || imagesCookie !== 1 ? url : '{$FILE_LINK}',
             });
-            result = (result ? result + '<br>' : '') + card;
+            result = (result ? result + getTemplate('br', 'misc') : '') + card;
         }
     }
 
@@ -291,7 +291,7 @@ function renderStickers(messagetext, item, imagesCookie) {
 
     for (const sticker of list) {
         if (!sticker) continue;
-        const sep = result ? '<br>' : '';
+        const sep = result ? getTemplate('br', 'misc') : '';
         if (imagesCookie === 1) {
             result += sep + renderTemplate(tmpl_sticker, { STICKER_ID: sticker.id });
         } else {
@@ -509,7 +509,7 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
             });
         } else if (embed.data?.type === 'poll_result') {
             // Discord native poll results are sent as special embeds.
-            result = (result ? result + '<br>' : '') + renderPollResultEmbed(embed);
+            result = (result ? result + getTemplate('br', 'misc') : '') + renderPollResultEmbed(embed);
         } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
             // Raw image/GIFV embeds are inlined directly.
             const rawUrl = embed.thumbnail?.url ?? embed.image?.url;
@@ -529,6 +529,146 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
     // Process all collected rich embeds at once.
     if (richEmbeds.length > 0) {
         result += processEmbeds(req, richEmbeds, imagesCookie, animationsCookie, clientTimezone);
+    }
+
+    return result;
+}
+
+/**
+ * Detects Discord event links in message content and renders them as embeds.
+ *
+ * @param {string} messagetext - The current message HTML.
+ * @param {object} item - The Discord message object.
+ * @param {object} bot - The bot instance.
+ * @param {number} imagesCookie - User preference for images.
+ * @param {string} clientTimezone - The user's timezone.
+ * @returns {Promise<string>} The updated message HTML.
+ */
+async function renderDiscordEvents(messagetext, item, bot, imagesCookie, clientTimezone) {
+    let result = messagetext || '';
+    if (!item?.content) return result;
+
+    const eventRegex = /https?:\/\/(?:www\.)?discord(?:app)?\.com\/events\/(\d+)\/(\d+)/gi;
+    const matches = [...item.content.matchAll(eventRegex)];
+
+    if (matches.length === 0) return result;
+
+    const processedLinks = new Set();
+
+    for (const match of matches) {
+        const link = match[0];
+        if (processedLinks.has(link)) continue;
+        processedLinks.add(link);
+
+        const guildId = match[1];
+        const eventId = match[2];
+
+        try {
+            const guild = bot.client.guilds.cache.get(guildId);
+            if (!guild) continue;
+
+            const event = await guild.scheduledEvents.fetch(eventId).catch(() => null);
+            if (!event) continue;
+
+            const iconUrl = guild.iconURL({ size: 128 });
+            const guildIconHtml =
+                iconUrl && imagesCookie === 1
+                    ? renderTemplate(getTemplate('event_guild_icon', 'embed'), {
+                          ICON_URL: `/imageProxy/external/${Buffer.from(iconUrl).toString('base64')}`,
+                      })
+                    : renderTemplate(getTemplate('event_guild_icon_none', 'embed'), {});
+
+            let locationHtml = '';
+            if (event.entityMetadata?.location) {
+                locationHtml = renderTemplate(getTemplate('event_location_external', 'embed'), {
+                    LOCATION: escape(event.entityMetadata.location),
+                });
+            } else if (event.channelId) {
+                const chan = bot.client.channels.cache.get(event.channelId);
+                locationHtml = renderTemplate(getTemplate('event_location_voice', 'embed'), {
+                    CHANNEL_NAME: escape(chan?.name || 'Voice Channel'),
+                });
+            }
+
+            const descriptionHtml = event.description
+                ? renderTemplate(getTemplate('event_description', 'embed'), {
+                      DESCRIPTION: renderDiscordMarkdown(event.description),
+                  })
+                : '';
+
+            const interestedHtml = renderTemplate(getTemplate('event_interested_count', 'embed'), {
+                COUNT: (event.userCount || 0).toLocaleString(),
+            });
+
+            const imageHtml =
+                event.coverImageURL() && imagesCookie === 1
+                    ? renderTemplate(getTemplate('event_image', 'embed'), {
+                          IMAGE_URL: `/imageProxy/external/${Buffer.from(
+                              event.coverImageURL({ size: 512 })
+                          ).toString('base64')}`,
+                      })
+                    : '';
+
+            const eventEmbed = renderTemplate(getTemplate('event', 'embed'), {
+                GUILD_ICON: guildIconHtml,
+                GUILD_NAME: escape(guild.name),
+                EVENT_NAME: escape(event.name),
+                EVENT_TIME: formatDateWithTimezone(event.scheduledStartAt, clientTimezone),
+                EVENT_LOCATION: locationHtml,
+                EVENT_DESCRIPTION: descriptionHtml,
+                EVENT_INTERESTED: interestedHtml,
+                EVENT_IMAGE: imageHtml,
+            });
+
+            result = replaceOrAppendMedia(result, match[0], eventEmbed);
+        } catch (err) {
+            console.error('Error rendering Discord event embed:', err);
+        }
+    }
+
+    return result;
+}
+
+async function renderDiscordInvites(messagetext, item, bot, imagesCookie) {
+    let result = messagetext || '';
+    if (!item?.content) return result;
+
+    const inviteRegex = /discord(?:app)?\.(?:gg|com\/invite)\/([a-zA-Z0-9-]+)/gi;
+    const matches = [...item.content.matchAll(inviteRegex)];
+
+    if (matches.length === 0) return result;
+
+    const processedInvites = new Set();
+
+    for (const match of matches) {
+        const inviteCode = match[1];
+        if (processedInvites.has(inviteCode)) continue;
+        processedInvites.add(inviteCode);
+
+        try {
+            const invite = await bot.client.fetchInvite(inviteCode).catch(() => null);
+            if (!invite || !invite.guild) continue;
+
+            const iconUrl = invite.guild.iconURL({ size: 128 });
+            const iconHtml =
+                iconUrl && imagesCookie === 1
+                    ? renderTemplate(getTemplate('invite_icon', 'embed'), {
+                          ICON_URL: `/imageProxy/external/${Buffer.from(iconUrl).toString('base64')}`,
+                      })
+                    : renderTemplate(getTemplate('invite_icon_none', 'embed'), {});
+
+            const inviteEmbed = renderTemplate(getTemplate('invite', 'embed'), {
+                GUILD_NAME: escape(invite.guild.name),
+                ONLINE_COUNT: (invite.presenceCount || 0).toLocaleString(),
+                MEMBER_COUNT: (invite.memberCount || 0).toLocaleString(),
+                INVITE_ICON: iconHtml,
+                INVITE_URL: `https://discord.gg/${inviteCode}`,
+            });
+
+            result = replaceOrAppendMedia(result, match[0], inviteEmbed);
+        } catch (err) {
+            console.error('Error rendering Discord invite embed:', err);
+        }
     }
 
     return result;
@@ -1032,18 +1172,19 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
               REPLY_PREVIEW: he.encode(normalizedReplyContent, { useNamedReferences: true }),
           })
         : '';
-    return (
-        '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px;line-height:1">' +
-        renderTemplate(getTemplate('reply_with_content', 'channel'), {
-            BAR_COLOR: barColor,
-            REPLY_TEXT_TOP_OFFSET: '-1',
-            AUTHOR_COLOR: replyData.authorColor,
-            AT_SIGN: replyData.mentionsPing ? '@' : '',
-            AUTHOR_NAME: escape(replyData.author),
-            CONTENT_TD: contentTd,
-        }) +
-        '</table>'
-    );
+
+    const replyContent = renderTemplate(getTemplate('reply_with_content', 'channel'), {
+        BAR_COLOR: barColor,
+        REPLY_TEXT_TOP_OFFSET: '-1',
+        AUTHOR_COLOR: replyData.authorColor,
+        AT_SIGN: replyData.mentionsPing ? '@' : '',
+        AUTHOR_NAME: escape(replyData.author),
+        CONTENT_TD: contentTd,
+    });
+
+    return renderTemplate(getTemplate('reply_container', 'channel'), {
+        CONTENT: replyContent,
+    });
 }
 
 /**
@@ -1083,17 +1224,17 @@ async function resolveInteractionData(item, chnl, memberCache, authorText) {
 }
 
 function buildInteractionIndicator(interactionData, textColor, barColor = '#808080') {
-    return (
-        '<table cellpadding="0" cellspacing="0" style="margin-bottom:4px"><tr>' +
-        renderTemplate(getTemplate('interaction_indicator', 'channel'), {
-            BAR_COLOR: barColor,
-            AUTHOR_COLOR: interactionData.authorColor,
-            AUTHOR_NAME: escape(interactionData.author),
-            TEXT_COLOR: textColor,
-            COMMAND_NAME: escape(interactionData.commandName),
-        }) +
-        '</tr></table>'
-    );
+    const content = renderTemplate(getTemplate('interaction_indicator', 'channel'), {
+        BAR_COLOR: barColor,
+        AUTHOR_COLOR: interactionData.authorColor,
+        AUTHOR_NAME: escape(interactionData.author),
+        TEXT_COLOR: textColor,
+        COMMAND_NAME: escape(interactionData.commandName),
+    });
+
+    return renderTemplate(getTemplate('interaction_container', 'channel'), {
+        CONTENT: content,
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -1281,7 +1422,17 @@ async function renderMessageContent(item, context) {
         clientTimezone
     );
 
-    const withPoll = item?.poll ? withEmbeds + processPoll(item.poll, imagesCookie) : withEmbeds;
+    const withEvents = await renderDiscordEvents(
+        withEmbeds,
+        item,
+        bot,
+        imagesCookie,
+        clientTimezone
+    );
+
+    const withInvites = await renderDiscordInvites(withEvents, item, bot, imagesCookie);
+
+    const withPoll = item?.poll ? withInvites + processPoll(item.poll, imagesCookie) : withInvites;
 
     const withKnownMentions = renderKnownMentions(withPoll, item, discordID, member, templates);
 

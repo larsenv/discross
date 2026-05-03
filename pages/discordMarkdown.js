@@ -239,12 +239,14 @@ function renderDiscordMarkdown(text, options = {}) {
 
     function resolveNested(str) {
         str = str.replace(/\uE000SPOILER(\d+)\uE001/g, (m, i) => {
-            return renderTemplate(tmpl.spoiler, {
+            return renderTemplate(getTemplate('spoiler', 'discordMarkdown'), {
                 '{$SPOILER_CONTENT}': md.renderInline(spoilerPlaceholders[parseInt(i, 10)]),
             });
         });
         str = str.replace(/\uE000UNDERLINE(\d+)\uE001/g, (m, i) => {
-            return `<u>${md.renderInline(underlinePlaceholders[parseInt(i, 10)])}</u>`;
+            return renderTemplate(getTemplate('underline', 'discordMarkdown'), {
+                CONTENT: md.renderInline(underlinePlaceholders[parseInt(i, 10)]),
+            });
         });
         return str;
     }
@@ -252,50 +254,72 @@ function renderDiscordMarkdown(text, options = {}) {
     let final = resolveNested(rendered);
     final = final.replace(/\uE000HEADER(\d+)\uE001/g, (m, i) => {
         const h = headerPlaceholders[parseInt(i, 10)];
-        return `<h${h.level}>${resolveNested(md.renderInline(h.content))}</h${h.level}>`;
+        return renderTemplate(getTemplate('header', 'discordMarkdown'), {
+            LEVEL: h.level.toString(),
+            CONTENT: resolveNested(md.renderInline(h.content)),
+        });
     });
     final = final.replace(/\uE000SUBTEXT(\d+)\uE001/g, (m, i) => {
-        return `<small class="subtext">${resolveNested(md.renderInline(subtextPlaceholders[parseInt(i, 10)]))}</small>`;
+        return renderTemplate(getTemplate('subtext', 'discordMarkdown'), {
+            CONTENT: resolveNested(md.renderInline(subtextPlaceholders[parseInt(i, 10)])),
+        });
     });
     final = final.replace(/\uE000BLOCKQUOTE(\d+)\uE001/g, (m, i) => {
         const lines = blockQuotePlaceholders[parseInt(i, 10)];
         const processed = lines
             .map((l) => (l ? resolveNested(md.renderInline(l)) : '\u00A0'))
-            .join('<br>');
-        return `<table class="blockquote-container" cellpadding="0" cellspacing="0"><tr><td class="blockquote-bar" style="background:${barColor};"></td><td class="discord-quote">${processed}</td></tr></table>`;
+            .join(getTemplate('br', 'misc'));
+        return renderTemplate(getTemplate('blockquote', 'discordMarkdown'), {
+            BAR_COLOR: barColor,
+            CONTENT: processed,
+        });
     });
     final = final.replace(/\uE000BULLETLIST(\d+)\uE001/g, (m, i) => {
         const items = bulletListPlaceholders[parseInt(i, 10)];
-        let html = '<ul>',
-            currentLevel = 0,
-            openTags = 1;
+        let html = '';
+        let currentLevel = 0;
+        let stack = [];
+
         items.forEach((item) => {
             const level = Math.floor(item.indent / 2);
             while (level > currentLevel) {
-                html += '<ul>';
-                openTags++;
+                stack.push(html);
+                html = '';
                 currentLevel++;
             }
             while (level < currentLevel) {
-                html += '</ul>';
-                openTags--;
+                const inner = renderTemplate(getTemplate('list', 'discordMarkdown'), {
+                    CONTENT: html,
+                });
+                html = stack.pop() + inner;
                 currentLevel--;
             }
-            html += `<li>${resolveNested(md.renderInline(item.content))}</li>`;
+            html += renderTemplate(getTemplate('list_item', 'discordMarkdown'), {
+                CONTENT: resolveNested(md.renderInline(item.content)),
+            });
         });
-        while (openTags > 0) {
-            html += '</ul>';
-            openTags--;
+
+        while (currentLevel > 0) {
+            const inner = renderTemplate(getTemplate('list', 'discordMarkdown'), {
+                CONTENT: html,
+            });
+            html = stack.pop() + inner;
+            currentLevel--;
         }
-        return html;
+
+        return renderTemplate(getTemplate('list', 'discordMarkdown'), { CONTENT: html });
     });
-    final = final.replace(
-        /\uE000CODEINLINE(\d+)\uE001/g,
-        (m, i) => `<code>${escapeHtml(codePlaceholders[parseInt(i, 10)].content)}</code>`
-    );
+    final = final.replace(/\uE000CODEINLINE(\d+)\uE001/g, (m, i) => {
+        return renderTemplate(getTemplate('inline_code', 'discordMarkdown'), {
+            CONTENT: escapeHtml(codePlaceholders[parseInt(i, 10)].content),
+        });
+    });
     final = final.replace(/\uE000CODEBLOCK(\d+)\uE001/g, (m, i) => {
         const item = codePlaceholders[parseInt(i, 10)];
-        return `<pre><code${item.lang ? ` class="language-${item.lang}"` : ''}>${highlightCode(item.content, item.lang)}</code></pre>`;
+        return renderTemplate(getTemplate('block_code', 'discordMarkdown'), {
+            LANG_CLASS: item.lang ? ` class="language-${item.lang}"` : '',
+            CONTENT: highlightCode(item.content, item.lang),
+        });
     });
     final = final.replace(
         /<a\s+href="https:\/\/discord\.com\/channels\/\d{16,20}\/(\d{16,20})\/(\d{16,20})"/gi,
@@ -397,7 +421,7 @@ function renderDiscordMarkdown(text, options = {}) {
                     ' at ' +
                     formatTime(date);
         }
-        return `<span class="discord-timestamp">${formatted}</span>`;
+        return renderTemplate(getTemplate('timestamp', 'discordMarkdown'), { CONTENT: formatted });
     });
 
     return final;

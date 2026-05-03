@@ -30,8 +30,7 @@ const channel_template = renderTemplate(channel_template_base, {
     CONTENT_EXTRA_PADDING: '',
     EMOJI_PICKER: fs.readFileSync('pages/templates/partials/emoji_picker.html', 'utf-8'),
     EMOJI_BUTTON: fs.readFileSync('pages/templates/partials/emoji_picker_button.html', 'utf-8'),
-    REPLY_MESSAGE_ID_INPUT:
-        '<input type="hidden" name="reply_message_id" value="{$REPLY_MESSAGE_ID}">',
+    REPLY_MESSAGE_ID_INPUT: getTemplate('reply_message_id_input', 'channel'),
 });
 
 // Reply-specific message wrapper templates
