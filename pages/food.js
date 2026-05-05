@@ -200,7 +200,8 @@ function buildToppingDict(menuData, productType) {
     const toppingsSection = menuData.Toppings?.[productType] || {};
     for (const group of Object.values(toppingsSection)) {
         for (const item of Object.values(group || {})) {
-            if (item.Code) toppingDict[item.Code] = { name: item.Name, code: item.Code, Tags: item.Tags };
+            if (item.Code)
+                toppingDict[item.Code] = { name: item.Name, code: item.Code, Tags: item.Tags };
         }
     }
     return toppingDict;
@@ -220,7 +221,9 @@ function parseAvailableToppings(str) {
         codeSet.add(code);
         if (eqIdx !== -1) {
             const pStr = part.slice(eqIdx + 1);
-            const pList = pStr.includes(':') ? pStr.split(':').map(p => p.trim()) : [pStr.split('/')[0].trim()];
+            const pList = pStr.includes(':')
+                ? pStr.split(':').map((p) => p.trim())
+                : [pStr.split('/')[0].trim()];
             portions.set(code, pList.filter(Boolean));
         }
     });
@@ -246,13 +249,20 @@ function classifyToppings(toppingDict, codeSet) {
 // Helper: parse cart options into {code: amount} map
 function parseOptions(params) {
     const defaultsMap = (() => {
-        try { return params.default_options ? JSON.parse(decodeURIComponent(params.default_options)) : {}; }
-        catch (e) { return {}; }
+        try {
+            return params.default_options
+                ? JSON.parse(decodeURIComponent(params.default_options))
+                : {};
+        } catch (e) {
+            return {};
+        }
     })();
 
     const options = {};
-    const hasFormFields = Object.keys(params).some(k => k.startsWith('topping_') || k.startsWith('sauce_'));
-    
+    const hasFormFields = Object.keys(params).some(
+        (k) => k.startsWith('topping_') || k.startsWith('sauce_')
+    );
+
     for (const [key, amount] of Object.entries(params)) {
         if (key.startsWith('topping_') || key.startsWith('sauce_')) {
             const code = key.split('_').slice(1).join('_');
@@ -278,7 +288,7 @@ function buildToppingRow(item, inputName, normalizedDefaults, portions, template
     const rawPortions = portions.get(item.code) || DEFAULT_PORTIONS;
     const portionSet = new Set(rawPortions);
     if (defaultAmt !== '0') portionSet.add(defaultAmt);
-    
+
     const optHtml = Array.from(portionSet)
         .sort((a, b) => parseFloat(a) - parseFloat(b))
         .map((p) => {
@@ -313,9 +323,12 @@ exports.handleGet = async function (bot, req, res, discordID) {
         urlCheckoutEncoded: parsedurl.searchParams.get('pizzaCheckout') || '',
     };
     const _pParts = [];
-    if (sessionData.urlSessionID) _pParts.push('sessionID=' + encodeURIComponent(sessionData.urlSessionID));
-    if (sessionData.urlCartEncoded) _pParts.push('pizzaCart=' + encodeURIComponent(sessionData.urlCartEncoded));
-    if (sessionData.urlCheckoutEncoded) _pParts.push('pizzaCheckout=' + encodeURIComponent(sessionData.urlCheckoutEncoded));
+    if (sessionData.urlSessionID)
+        _pParts.push('sessionID=' + encodeURIComponent(sessionData.urlSessionID));
+    if (sessionData.urlCartEncoded)
+        _pParts.push('pizzaCart=' + encodeURIComponent(sessionData.urlCartEncoded));
+    if (sessionData.urlCheckoutEncoded)
+        _pParts.push('pizzaCheckout=' + encodeURIComponent(sessionData.urlCheckoutEncoded));
     sessionData.persistentParam = _pParts.length ? '?' + _pParts.join('&') : '';
     sessionData.persistentSuffix = _pParts.length ? '&' + _pParts.join('&') : '';
 
@@ -382,18 +395,34 @@ exports.handleGet = async function (bot, req, res, discordID) {
                                 '{$WAIT_HTML}',
                                 wait ? strReplace(templates.storeWait, '{$WAIT}', wait) : ''
                             );
-                            card = strReplace(card, '{$COUNTRY}', s.Market === 'CANADA' ? 'ca' : 'us');
-                            card = strReplace(card, '{$SESSION_ID_SUFFIX}', sessionData.persistentSuffix);
+                            card = strReplace(
+                                card,
+                                '{$COUNTRY}',
+                                s.Market === 'CANADA' ? 'ca' : 'us'
+                            );
+                            card = strReplace(
+                                card,
+                                '{$SESSION_ID_SUFFIX}',
+                                sessionData.persistentSuffix
+                            );
                             return card;
                         })
                         .join('');
                     return header + cards;
                 } else {
-                    return strReplace(templates.errorBox, '{$MESSAGE}', 'No stores found near that address. Try a different zip code or city name.');
+                    return strReplace(
+                        templates.errorBox,
+                        '{$MESSAGE}',
+                        'No stores found near that address. Try a different zip code or city name.'
+                    );
                 }
             } catch (e) {
                 console.error('Dominos store-search error:', e.message);
-                return strReplace(templates.errorBox, '{$MESSAGE}', 'Error searching for stores. Please try again.');
+                return strReplace(
+                    templates.errorBox,
+                    '{$MESSAGE}',
+                    'Error searching for stores. Please try again.'
+                );
             }
         })();
 
@@ -503,8 +532,9 @@ exports.handleGet = async function (bot, req, res, discordID) {
                     const actionHtml = (() => {
                         if (hasMultipleVariants) {
                             const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(code)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(req.url)}${sessionData.persistentSuffix}`;
-                            const btnLabel = inCart > 0 ? `Customize (${inCart} in cart)` : 'Customize / Add';
-                            
+                            const btnLabel =
+                                inCart > 0 ? `Customize (${inCart} in cart)` : 'Customize / Add';
+
                             let link = templates.buttonLink;
                             link = strReplace(link, '{$URL}', customizeUrl);
                             link = strReplace(link, '{$LABEL}', escape(btnLabel));
@@ -512,7 +542,10 @@ exports.handleGet = async function (bot, req, res, discordID) {
                         }
                         const singleVariant = p.Variants?.[0] || code;
                         const inCartSingle = cartQtyByVariant[singleVariant] || 0;
-                        const btnLabel = inCartSingle > 0 ? `Add to Cart (${inCartSingle} in cart)` : 'Add to Cart';
+                        const btnLabel =
+                            inCartSingle > 0
+                                ? `Add to Cart (${inCartSingle} in cart)`
+                                : 'Add to Cart';
 
                         let form = templates.menuItemActionForm;
                         form = strReplace(form, '{$SESSION_PARAM}', sessionData.persistentParam);
@@ -527,7 +560,11 @@ exports.handleGet = async function (bot, req, res, discordID) {
                     })();
 
                     let item = templates.menuItem;
-                    item = strReplace(item, '{$IMAGE_CODE}', encodeURIComponent((p.ImageCode || code).replace(/[^a-zA-Z0-9_-]/g, '')));
+                    item = strReplace(
+                        item,
+                        '{$IMAGE_CODE}',
+                        encodeURIComponent((p.ImageCode || code).replace(/[^a-zA-Z0-9_-]/g, ''))
+                    );
                     item = strReplace(item, '{$NAME}', name);
                     item = strReplace(item, '{$DESC}', desc);
                     item = strReplace(item, '{$PRICE}', escape(price));
@@ -535,11 +572,24 @@ exports.handleGet = async function (bot, req, res, discordID) {
                     return [item];
                 })
                 .join('');
-            
-            html = strReplace(html, '{$MENU_ITEMS}', rawItemsHtml || strReplace(templates.infoText, '{$MESSAGE}', 'No items found in this category.'));
+
+            html = strReplace(
+                html,
+                '{$MENU_ITEMS}',
+                rawItemsHtml ||
+                    strReplace(templates.infoText, '{$MESSAGE}', 'No items found in this category.')
+            );
         } else {
             html = strReplace(html, '{$CATEGORY_TABS}', '');
-            html = strReplace(html, '{$MENU_ITEMS}', strReplace(templates.errorBox, '{$MESSAGE}', 'Could not load menu. The store may be temporarily unavailable. Please try again or choose a different store.'));
+            html = strReplace(
+                html,
+                '{$MENU_ITEMS}',
+                strReplace(
+                    templates.errorBox,
+                    '{$MESSAGE}',
+                    'Could not load menu. The store may be temporarily unavailable. Please try again or choose a different store.'
+                )
+            );
         }
 
         return res.end(html);
@@ -549,19 +599,33 @@ exports.handleGet = async function (bot, req, res, discordID) {
     if (subpath === 'cart') {
         const cart = getCart(req);
         const items = cart.items || [];
-        const total = items.reduce((sum, item) => sum + parseFloat(item.price || 0) * (item.qty || 1), 0);
-        
-        const itemsHtml = items.length > 0
-            ? items.map((item, i) => {
-                let row = templates.cartItem;
-                row = strReplace(row, '{$NAME}', escape(item.name || item.code));
-                row = strReplace(row, '{$QTY}', escape(String(item.qty || 1)));
-                row = strReplace(row, '{$PRICE_TOTAL}', (parseFloat(item.price || 0) * (item.qty || 1)).toFixed(2));
-                row = strReplace(row, '{$SESSION_PARAM}', sessionData.persistentParam);
-                row = strReplace(row, '{$INDEX}', String(i));
-                return row;
-            }).join('')
-            : strReplace(templates.cartEmptyRow, '{$MESSAGE}', strReplace(templates.infoText, '{$MESSAGE}', 'Your cart is empty.'));
+        const total = items.reduce(
+            (sum, item) => sum + parseFloat(item.price || 0) * (item.qty || 1),
+            0
+        );
+
+        const itemsHtml =
+            items.length > 0
+                ? items
+                      .map((item, i) => {
+                          let row = templates.cartItem;
+                          row = strReplace(row, '{$NAME}', escape(item.name || item.code));
+                          row = strReplace(row, '{$QTY}', escape(String(item.qty || 1)));
+                          row = strReplace(
+                              row,
+                              '{$PRICE_TOTAL}',
+                              (parseFloat(item.price || 0) * (item.qty || 1)).toFixed(2)
+                          );
+                          row = strReplace(row, '{$SESSION_PARAM}', sessionData.persistentParam);
+                          row = strReplace(row, '{$INDEX}', String(i));
+                          return row;
+                      })
+                      .join('')
+                : strReplace(
+                      templates.cartEmptyRow,
+                      '{$MESSAGE}',
+                      strReplace(templates.infoText, '{$MESSAGE}', 'Your cart is empty.')
+                  );
 
         let html = common(templates.cart);
         html = strReplace(html, '{$CART_ITEMS}', itemsHtml);
@@ -592,7 +656,14 @@ exports.handleGet = async function (bot, req, res, discordID) {
                   .then((profileResult) => {
                       const p = profileResult.data;
                       if (profileResult.status >= 200 && profileResult.status < 300 && p) {
-                          const addr = [p.StreetName || p.AddressDescription, p.City, p.Region, p.PostalCode].filter(Boolean).join(', ');
+                          const addr = [
+                              p.StreetName || p.AddressDescription,
+                              p.City,
+                              p.Region,
+                              p.PostalCode,
+                          ]
+                              .filter(Boolean)
+                              .join(', ');
                           if (addr) {
                               let addrHtml = templates.checkoutAddress;
                               addrHtml = strReplace(addrHtml, '{$STORE_ID}', escape(cart.storeId));
@@ -608,19 +679,30 @@ exports.handleGet = async function (bot, req, res, discordID) {
                   })
             : '';
 
-        const total = cart.items.reduce((sum, item) => sum + parseFloat(item.price || 0) * (item.qty || 1), 0);
+        const total = cart.items.reduce(
+            (sum, item) => sum + parseFloat(item.price || 0) * (item.qty || 1),
+            0
+        );
         const itemsSummary = cart.items
             .map((item) => {
                 let summary = templates.checkoutSummaryItem;
                 summary = strReplace(summary, '{$NAME}', escape(item.name || item.code));
                 summary = strReplace(summary, '{$QTY}', String(item.qty || 1));
-                summary = strReplace(summary, '{$PRICE_TOTAL}', (parseFloat(item.price || 0) * (item.qty || 1)).toFixed(2));
+                summary = strReplace(
+                    summary,
+                    '{$PRICE_TOTAL}',
+                    (parseFloat(item.price || 0) * (item.qty || 1)).toFixed(2)
+                );
                 return summary;
             })
             .join('');
 
         let html = common(templates.checkout);
-        html = strReplace(html, '{$ERROR}', errorText ? strReplace(templates.errorBox, '{$MESSAGE}', escape(errorText)) : '');
+        html = strReplace(
+            html,
+            '{$ERROR}',
+            errorText ? strReplace(templates.errorBox, '{$MESSAGE}', escape(errorText)) : ''
+        );
         html = strReplace(html, '{$STORE_ADDRESS}', storeAddrHtml);
         html = strReplace(html, '{$ORDER_SUMMARY}', itemsSummary);
         html = strReplace(html, '{$ORDER_TOTAL}', total.toFixed(2));
@@ -632,19 +714,34 @@ exports.handleGet = async function (bot, req, res, discordID) {
     if (subpath === 'verify') {
         const errorText = parsedurl.searchParams.get('error') || '';
         let html = common(templates.verify);
-        html = strReplace(html, '{$ERROR}', errorText ? strReplace(templates.errorBox, '{$MESSAGE}', escape(errorText)) : '');
+        html = strReplace(
+            html,
+            '{$ERROR}',
+            errorText ? strReplace(templates.errorBox, '{$MESSAGE}', escape(errorText)) : ''
+        );
         return res.end(html);
     }
 
     // --- Tracker page ---
     if (subpath === 'track') {
         let html = common(templates.track);
-        const lastOrder = auth.dbQuerySingle('SELECT store_name, timestamp FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC LIMIT 1', [discordID]);
+        const lastOrder = auth.dbQuerySingle(
+            'SELECT store_name, timestamp FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC LIMIT 1',
+            [discordID]
+        );
         let orderInfo = '';
         if (lastOrder?.timestamp) {
             orderInfo = templates.trackOrderInfo;
-            orderInfo = strReplace(orderInfo, '{$STORE_NAME}', escape(lastOrder.store_name || 'Unknown store'));
-            orderInfo = strReplace(orderInfo, '{$DATE}', escape(formatTimestamp(lastOrder.timestamp, req)));
+            orderInfo = strReplace(
+                orderInfo,
+                '{$STORE_NAME}',
+                escape(lastOrder.store_name || 'Unknown store')
+            );
+            orderInfo = strReplace(
+                orderInfo,
+                '{$DATE}',
+                escape(formatTimestamp(lastOrder.timestamp, req))
+            );
         } else {
             orderInfo = strReplace(templates.infoText, '{$MESSAGE}', 'No recent orders found.');
         }
@@ -653,28 +750,51 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
     // --- Receipts / order history ---
     if (subpath === 'receipts') {
-        const orders = auth.dbQueryAll('SELECT * FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC', [discordID]);
+        const orders = auth.dbQueryAll(
+            'SELECT * FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC',
+            [discordID]
+        );
         const justPlaced = parsedurl.searchParams.get('placed') === '1';
         let html = common(templates.receipts);
         html = strReplace(html, '{$NOTICE}', justPlaced ? templates.receiptSuccessNotice : '');
 
-        const ordersHtml = orders?.length > 0
-            ? orders.map((order) => {
-                const date = formatTimestamp(order.timestamp, req);
-                let items = [];
-                try { items = JSON.parse(order.items_json); } catch (e) {}
-                const itemsList = items.map((i) => `${escape(i.name || i.code)} ×${i.qty || 1}`).join(', ');
+        const ordersHtml =
+            orders?.length > 0
+                ? orders
+                      .map((order) => {
+                          const date = formatTimestamp(order.timestamp, req);
+                          let items = [];
+                          try {
+                              items = JSON.parse(order.items_json);
+                          } catch (e) {}
+                          const itemsList = items
+                              .map((i) => `${escape(i.name || i.code)} ×${i.qty || 1}`)
+                              .join(', ');
 
-                let card = templates.receiptCard;
-                card = strReplace(card, '{$STORE_NAME}', escape(order.store_name || `Store #${order.store_id}`));
-                card = strReplace(card, '{$DATE}', escape(date));
-                card = strReplace(card, '{$ITEMS_LIST}', itemsList || strReplace(templates.infoText, '{$MESSAGE}', 'No item details'));
-                card = strReplace(card, '{$TOTAL}', parseFloat(order.total || 0).toFixed(2));
-                card = strReplace(card, '{$SESSION_PARAM}', sessionData.persistentParam);
-                return card;
-            }).join('')
-            : strReplace(templates.infoText, '{$MESSAGE}', 'No orders yet.');
-        
+                          let card = templates.receiptCard;
+                          card = strReplace(
+                              card,
+                              '{$STORE_NAME}',
+                              escape(order.store_name || `Store #${order.store_id}`)
+                          );
+                          card = strReplace(card, '{$DATE}', escape(date));
+                          card = strReplace(
+                              card,
+                              '{$ITEMS_LIST}',
+                              itemsList ||
+                                  strReplace(templates.infoText, '{$MESSAGE}', 'No item details')
+                          );
+                          card = strReplace(
+                              card,
+                              '{$TOTAL}',
+                              parseFloat(order.total || 0).toFixed(2)
+                          );
+                          card = strReplace(card, '{$SESSION_PARAM}', sessionData.persistentParam);
+                          return card;
+                      })
+                      .join('')
+                : strReplace(templates.infoText, '{$MESSAGE}', 'No orders yet.');
+
         return res.end(strReplace(html, '{$ORDERS}', ordersHtml));
     }
 
@@ -683,7 +803,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
         auth.dbQueryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID]);
         res.writeHead(302, {
             Location: '/food/cart' + sessionData.persistentParam,
-            'Set-Cookie': 'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT',
+            'Set-Cookie':
+                'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT',
         });
         return res.end();
     }
@@ -691,12 +812,18 @@ exports.handleGet = async function (bot, req, res, discordID) {
     // --- Customize item ---
     if (subpath === 'customize') {
         const storeId = (parsedurl.searchParams.get('store') || '').replace(/[^0-9]/g, '');
-        const productCode = (parsedurl.searchParams.get('code') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
-        const variantCode = (parsedurl.searchParams.get('variant') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
+        const productCode = (parsedurl.searchParams.get('code') || '')
+            .replace(/[^a-zA-Z0-9_-]/g, '')
+            .slice(0, 50);
+        const variantCode = (parsedurl.searchParams.get('variant') || '')
+            .replace(/[^a-zA-Z0-9_-]/g, '')
+            .slice(0, 50);
         const country = parsedurl.searchParams.get('country') === 'ca' ? 'ca' : 'us';
         const backUrl = (() => {
             const raw = parsedurl.searchParams.get('back') || '';
-            return /^\/food\//.test(raw) ? raw.slice(0, 300) : `/food/menu?store=${encodeURIComponent(storeId)}&country=${country}`;
+            return /^\/food\//.test(raw)
+                ? raw.slice(0, 300)
+                : `/food/menu?store=${encodeURIComponent(storeId)}&country=${country}`;
         })();
 
         if (!storeId || !productCode) {
@@ -731,7 +858,11 @@ exports.handleGet = async function (bot, req, res, discordID) {
             }
 
             html = strReplace(html, '{$PRODUCT_NAME}', escape(product.Name || productCode));
-            html = strReplace(html, '{$PRODUCT_DESC}', escape((product.Description || '').slice(0, 200)));
+            html = strReplace(
+                html,
+                '{$PRODUCT_DESC}',
+                escape((product.Description || '').slice(0, 200))
+            );
 
             const productVariants = product.Variants || [];
 
@@ -744,18 +875,32 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
                 let sizeOptionsHtml = '';
                 if (productVariants.length > 1) {
-                    sizeOptionsHtml = strReplace(templates.sectionHeader, '{$TITLE}', 'Choose a size:') +
-                        productVariants.filter((vCode) => variants[vCode]).map((vCode) => {
-                            const v = variants[vCode];
-                            const vPrice = parseFloat(v.Price || 0);
-                            const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(productCode)}&variant=${encodeURIComponent(vCode)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(backUrl)}${sessionData.persistentSuffix}`;
+                    sizeOptionsHtml =
+                        strReplace(templates.sectionHeader, '{$TITLE}', 'Choose a size:') +
+                        productVariants
+                            .filter((vCode) => variants[vCode])
+                            .map((vCode) => {
+                                const v = variants[vCode];
+                                const vPrice = parseFloat(v.Price || 0);
+                                const customizeUrl = `/food/customize?store=${encodeURIComponent(storeId)}&code=${encodeURIComponent(productCode)}&variant=${encodeURIComponent(vCode)}&country=${encodeURIComponent(country)}&back=${encodeURIComponent(backUrl)}${sessionData.persistentSuffix}`;
 
-                            let opt = templates.customizeSizeOption;
-                            opt = strReplace(opt, '{$CUSTOMIZE_URL}', customizeUrl);
-                            opt = strReplace(opt, '{$SIZE_NAME}', escape(v.Name || vCode));
-                            opt = strReplace(opt, '{$PRICE_HTML}', vPrice > 0 ? strReplace(templates.foodSizePrice, '{$PRICE}', vPrice.toFixed(2)) : '');
-                            return opt;
-                        }).join('');
+                                let opt = templates.customizeSizeOption;
+                                opt = strReplace(opt, '{$CUSTOMIZE_URL}', customizeUrl);
+                                opt = strReplace(opt, '{$SIZE_NAME}', escape(v.Name || vCode));
+                                opt = strReplace(
+                                    opt,
+                                    '{$PRICE_HTML}',
+                                    vPrice > 0
+                                        ? strReplace(
+                                              templates.foodSizePrice,
+                                              '{$PRICE}',
+                                              vPrice.toFixed(2)
+                                          )
+                                        : ''
+                                );
+                                return opt;
+                            })
+                            .join('');
                 } else {
                     let form = templates.customizeActionForm;
                     form = strReplace(form, '{$SESSION_PARAM}', sessionData.persistentParam);
@@ -785,24 +930,54 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
                 let sizeHtml = templates.customizeSizeHeader;
                 sizeHtml = strReplace(sizeHtml, '{$SIZE_NAME}', escape(v.Name || variantCode));
-                sizeHtml = strReplace(sizeHtml, '{$PRICE_DISPLAY}', vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : '');
+                sizeHtml = strReplace(
+                    sizeHtml,
+                    '{$PRICE_DISPLAY}',
+                    vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : ''
+                );
                 sizeHtml = strReplace(sizeHtml, '{$STORE_ID}', encodeURIComponent(storeId));
                 sizeHtml = strReplace(sizeHtml, '{$PRODUCT_CODE}', encodeURIComponent(productCode));
                 sizeHtml = strReplace(sizeHtml, '{$COUNTRY}', encodeURIComponent(country));
                 sizeHtml = strReplace(sizeHtml, '{$BACK_URL}', encodeURIComponent(backUrl));
-                sizeHtml = strReplace(sizeHtml, '{$SESSION_ID_SUFFIX_ESCAPED}', sessionData.persistentSuffix.replace(/&/g, '&amp;'));
+                sizeHtml = strReplace(
+                    sizeHtml,
+                    '{$SESSION_ID_SUFFIX_ESCAPED}',
+                    sessionData.persistentSuffix.replace(/&/g, '&amp;')
+                );
                 sizeHtml = strReplace(sizeHtml, '{$LINK_TEXT}', 'Change size');
                 html = strReplace(html, '{$SIZE_OPTIONS}', sizeHtml);
 
                 const toppingDict = buildToppingDict(menuData, product.ProductType || '');
                 const { codeSet, portions } = parseAvailableToppings(product.AvailableToppings);
-                const normalizedDefaults = Object.fromEntries(Object.entries(v.Options || {}).map(([code, pObj]) => [code, String(pObj?.['1/1'] || pObj?.['1/2'] || pObj?.['2/4'] || Object.values(pObj || {})[0] || '1')]));
+                const normalizedDefaults = Object.fromEntries(
+                    Object.entries(v.Options || {}).map(([code, pObj]) => [
+                        code,
+                        String(
+                            pObj?.['1/1'] ||
+                                pObj?.['1/2'] ||
+                                pObj?.['2/4'] ||
+                                Object.values(pObj || {})[0] ||
+                                '1'
+                        ),
+                    ])
+                );
 
-                const parseKvStr = (str) => Object.fromEntries(String(str || '').split(',').map((part) => {
-                    const eqIdx = part.indexOf('=');
-                    return eqIdx > 0 ? [part.slice(0, eqIdx), part.slice(eqIdx + 1)] : null;
-                }).filter(Boolean));
-                const tagDefaults = { ...parseKvStr(v.Tags?.DefaultToppings), ...parseKvStr(v.Tags?.DefaultSides) };
+                const parseKvStr = (str) =>
+                    Object.fromEntries(
+                        String(str || '')
+                            .split(',')
+                            .map((part) => {
+                                const eqIdx = part.indexOf('=');
+                                return eqIdx > 0
+                                    ? [part.slice(0, eqIdx), part.slice(eqIdx + 1)]
+                                    : null;
+                            })
+                            .filter(Boolean)
+                    );
+                const tagDefaults = {
+                    ...parseKvStr(v.Tags?.DefaultToppings),
+                    ...parseKvStr(v.Tags?.DefaultSides),
+                };
 
                 const toppingsSection = (() => {
                     const hasInteractive = codeSet.size > 0 && Object.keys(toppingDict).length > 0;
@@ -815,18 +990,65 @@ exports.handleGet = async function (bot, req, res, discordID) {
                     form = strReplace(form, '{$PRICE}', vPrice.toFixed(2));
                     form = strReplace(form, '{$REDIRECT}', escape(backUrl));
                     form = strReplace(form, '{$BACK_URL}', escape(backUrl));
-                    form = strReplace(form, '{$PRICE_DISPLAY}', vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : '');
+                    form = strReplace(
+                        form,
+                        '{$PRICE_DISPLAY}',
+                        vPrice > 0 ? ` - $${vPrice.toFixed(2)}` : ''
+                    );
 
                     if (hasInteractive) {
-                        const { sauces, toppings: toppingList } = classifyToppings(toppingDict, codeSet);
-                        const sSection = sauces.length ? strReplace(templates.sectionHeader, '{$TITLE}', 'Sauce') + sauces.map((s) => buildToppingRow(s, 'sauce', normalizedDefaults, portions, templates)).join('') + templates.lineBreak : '';
-                        const tSection = toppingList.length ? strReplace(templates.sectionHeader, '{$TITLE}', 'Toppings') + toppingList.map((t) => buildToppingRow(t, 'topping', normalizedDefaults, portions, templates)).join('') + templates.lineBreak : '';
-                        
-                        form = strReplace(form, '{$DEFAULT_OPTIONS}', escape(JSON.stringify(normalizedDefaults)));
-                        form = strReplace(form, '{$TOPPINGS_INFO_HTML}', templates.customizeToppingsInfo + sSection + tSection);
+                        const { sauces, toppings: toppingList } = classifyToppings(
+                            toppingDict,
+                            codeSet
+                        );
+                        const sSection = sauces.length
+                            ? strReplace(templates.sectionHeader, '{$TITLE}', 'Sauce') +
+                              sauces
+                                  .map((s) =>
+                                      buildToppingRow(
+                                          s,
+                                          'sauce',
+                                          normalizedDefaults,
+                                          portions,
+                                          templates
+                                      )
+                                  )
+                                  .join('') +
+                              templates.lineBreak
+                            : '';
+                        const tSection = toppingList.length
+                            ? strReplace(templates.sectionHeader, '{$TITLE}', 'Toppings') +
+                              toppingList
+                                  .map((t) =>
+                                      buildToppingRow(
+                                          t,
+                                          'topping',
+                                          normalizedDefaults,
+                                          portions,
+                                          templates
+                                      )
+                                  )
+                                  .join('') +
+                              templates.lineBreak
+                            : '';
+
+                        form = strReplace(
+                            form,
+                            '{$DEFAULT_OPTIONS}',
+                            escape(JSON.stringify(normalizedDefaults))
+                        );
+                        form = strReplace(
+                            form,
+                            '{$TOPPINGS_INFO_HTML}',
+                            templates.customizeToppingsInfo + sSection + tSection
+                        );
                         form = strReplace(form, '{$MARGIN_STYLE}', 'margin-top:16px');
                     } else {
-                        form = strReplace(form, '{$DEFAULT_OPTIONS}', escape(JSON.stringify(tagDefaults)));
+                        form = strReplace(
+                            form,
+                            '{$DEFAULT_OPTIONS}',
+                            escape(JSON.stringify(tagDefaults))
+                        );
                         form = strReplace(form, '{$TOPPINGS_INFO_HTML}', '');
                         form = strReplace(form, '{$MARGIN_STYLE}', 'margin-top:8px');
                     }
@@ -837,14 +1059,28 @@ exports.handleGet = async function (bot, req, res, discordID) {
         } else {
             html = strReplace(html, '{$PRODUCT_NAME}', escape(productCode));
             html = strReplace(html, '{$PRODUCT_DESC}', '');
-            html = strReplace(html, '{$SIZE_OPTIONS}', strReplace(templates.errorBox, '{$MESSAGE}', 'Could not load menu. Please go back and try again.'));
+            html = strReplace(
+                html,
+                '{$SIZE_OPTIONS}',
+                strReplace(
+                    templates.errorBox,
+                    '{$MESSAGE}',
+                    'Could not load menu. Please go back and try again.'
+                )
+            );
             html = strReplace(html, '{$TOPPINGS_SECTION}', '');
         }
 
         return res.end(html);
     }
 
-    return notFound.serve404(req, res, 'Page not found.', '/food/' + sessionData.persistentParam, 'Back to Pizza');
+    return notFound.serve404(
+        req,
+        res,
+        'Page not found.',
+        '/food/' + sessionData.persistentParam,
+        'Back to Pizza'
+    );
 };
 
 // =============================================================================
@@ -856,24 +1092,29 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     const secure = isSecure(req);
 
     const params = (() => {
-        try { return Object.fromEntries(new URLSearchParams(body)); }
-        catch (e) { return {}; }
+        try {
+            return Object.fromEntries(new URLSearchParams(body));
+        } catch (e) {
+            return {};
+        }
     })();
 
     const urlSessionID = params.sessionID || parsedurl.searchParams.get('sessionID') || '';
-    const urlCheckoutEncoded = params.pizzaCheckout || parsedurl.searchParams.get('pizzaCheckout') || '';
+    const urlCheckoutEncoded =
+        params.pizzaCheckout || parsedurl.searchParams.get('pizzaCheckout') || '';
 
     function buildRedirect(path, extras = []) {
         const parts = [];
         if (urlSessionID) parts.push('sessionID=' + encodeURIComponent(urlSessionID));
-        
+
         const cart = getCart(req);
         if (cart.items?.length || cart.storeId) {
             parts.push('pizzaCart=' + encodeURIComponent(encodeCart(cart)));
         }
-        if (urlCheckoutEncoded) parts.push('pizzaCheckout=' + encodeURIComponent(urlCheckoutEncoded));
+        if (urlCheckoutEncoded)
+            parts.push('pizzaCheckout=' + encodeURIComponent(urlCheckoutEncoded));
         if (extras.length) parts.push(...extras);
-        
+
         return parts.length ? path + (path.includes('?') ? '&' : '?') + parts.join('&') : path;
     }
 
@@ -882,7 +1123,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         const cart = getCart(req);
         const storeId = (params.storeId || '').replace(/[^0-9]/g, '');
         const code = (params.code || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
-        
+
         let redirectPath = '/food/cart';
         const rawRedirect = params.redirect || '';
         const rawRedirectDecoded = rawRedirect.replace(/&amp;/g, '&');
@@ -912,7 +1153,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
                 qty: 1,
                 price: parseFloat(params.price) || 0,
                 options,
-                _nf: 1
+                _nf: 1,
             });
         }
 
@@ -941,19 +1182,30 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     if (subpath === 'request-verify') {
         const cart = getCart(req);
         if (!cart.items?.length) {
-            res.writeHead(302, { Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent('Your cart is empty.')]) });
+            res.writeHead(302, {
+                Location: buildRedirect('/food/checkout', [
+                    'error=' + encodeURIComponent('Your cart is empty.'),
+                ]),
+            });
             return res.end();
         }
 
         const rawPhone = (params.phone || '').replace(/\D/g, '').slice(0, 10);
         if (!rawPhone || rawPhone.length < 7) {
-            res.writeHead(302, { Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent('Please enter a valid phone number.')]) });
+            res.writeHead(302, {
+                Location: buildRedirect('/food/checkout', [
+                    'error=' + encodeURIComponent('Please enter a valid phone number.'),
+                ]),
+            });
             return res.end();
         }
 
         const code = String(crypto.randomInt(VERIFICATION_CODE_MIN, VERIFICATION_CODE_MAX));
         const expires = unixTime() + 600;
-        auth.dbQueryRun('INSERT OR REPLACE INTO pizza_verifications (discordID, code, cart_json, expires) VALUES (?,?,?,?)', [discordID, code, '', expires]);
+        auth.dbQueryRun(
+            'INSERT OR REPLACE INTO pizza_verifications (discordID, code, cart_json, expires) VALUES (?,?,?,?)',
+            [discordID, code, '', expires]
+        );
 
         const checkoutData = {
             cart,
@@ -963,21 +1215,39 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
             phone: rawPhone,
             street: (params.street || '').slice(0, 100),
             apt: (params.apt || '').replace(/[^a-zA-Z0-9 #-]/g, '').slice(0, 20),
-            addressType: ['House', 'Apartment', 'Business', 'Hotel', 'Other'].includes(params.addressType) ? params.addressType : 'House',
+            addressType: ['House', 'Apartment', 'Business', 'Hotel', 'Other'].includes(
+                params.addressType
+            )
+                ? params.addressType
+                : 'House',
             city: (params.city || '').slice(0, 50),
             region: (params.region || '').slice(0, 2).toUpperCase(),
             postalCode: (params.postalCode || '').replace(/[^a-zA-Z0-9 -]/g, '').slice(0, 10),
-            tip: Math.min(parseFloat(params.tip_custom) > 0 ? parseFloat(params.tip_custom) : parseFloat(params.tip) || 0, 100),
+            tip: Math.min(
+                parseFloat(params.tip_custom) > 0
+                    ? parseFloat(params.tip_custom)
+                    : parseFloat(params.tip) || 0,
+                100
+            ),
         };
         const checkoutCookie = Buffer.from(JSON.stringify(checkoutData)).toString('base64');
 
         if (await bot.sendPizzaVerification(discordID, code)) {
             res.writeHead(302, {
-                Location: buildRedirect('/food/verify', ['pizzaCheckout=' + encodeURIComponent(checkoutCookie)]),
+                Location: buildRedirect('/food/verify', [
+                    'pizzaCheckout=' + encodeURIComponent(checkoutCookie),
+                ]),
                 'Set-Cookie': `pizzaCheckout=${encodeURIComponent(checkoutCookie)}; path=/food; HttpOnly${secure ? '; Secure' : ''}; Max-Age=600`,
             });
         } else {
-            res.writeHead(302, { Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent('Could not send Discord DM. Please check your privacy settings.')]) });
+            res.writeHead(302, {
+                Location: buildRedirect('/food/checkout', [
+                    'error=' +
+                        encodeURIComponent(
+                            'Could not send Discord DM. Please check your privacy settings.'
+                        ),
+                ]),
+            });
         }
         return res.end();
     }
@@ -985,43 +1255,100 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // --- Place order ---
     if (subpath === 'place-order') {
         const code = (params.code || '').replace(/[^0-9]/g, '').slice(0, 6);
-        const verification = auth.dbQuerySingle('SELECT * FROM pizza_verifications WHERE discordID=? AND code=? AND expires > ?', [discordID, code, unixTime()]);
-        
+        const verification = auth.dbQuerySingle(
+            'SELECT * FROM pizza_verifications WHERE discordID=? AND code=? AND expires > ?',
+            [discordID, code, unixTime()]
+        );
+
         if (!verification) {
-            res.writeHead(302, { Location: buildRedirect('/food/verify', ['error=' + encodeURIComponent('Invalid or expired verification code.')]) });
+            res.writeHead(302, {
+                Location: buildRedirect('/food/verify', [
+                    'error=' + encodeURIComponent('Invalid or expired verification code.'),
+                ]),
+            });
             return res.end();
         }
 
         const checkoutData = (() => {
             try {
                 const cookie = req.headers.cookie || '';
-                const rawVal = cookie.split('; ').find((c) => c.startsWith('pizzaCheckout='))?.split('=')[1] || urlCheckoutEncoded;
-                return rawVal ? JSON.parse(Buffer.from(decodeURIComponent(rawVal), 'base64').toString('utf-8')) : null;
-            } catch (e) { return null; }
+                const rawVal =
+                    cookie
+                        .split('; ')
+                        .find((c) => c.startsWith('pizzaCheckout='))
+                        ?.split('=')[1] || urlCheckoutEncoded;
+                return rawVal
+                    ? JSON.parse(
+                          Buffer.from(decodeURIComponent(rawVal), 'base64').toString('utf-8')
+                      )
+                    : null;
+            } catch (e) {
+                return null;
+            }
         })();
 
         if (!checkoutData?.cart?.items?.length) {
-            res.writeHead(302, { Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent('Checkout session expired.')]) });
+            res.writeHead(302, {
+                Location: buildRedirect('/food/checkout', [
+                    'error=' + encodeURIComponent('Checkout session expired.'),
+                ]),
+            });
             return res.end();
         }
 
-        const { cart, firstName, lastName, email, phone, street, apt, city, region, postalCode, addressType } = checkoutData;
-        if (!firstName || !lastName || !email || !phone || !street || !city || !region || !postalCode) {
-            res.writeHead(302, { Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent('Missing order details.')]) });
+        const {
+            cart,
+            firstName,
+            lastName,
+            email,
+            phone,
+            street,
+            apt,
+            city,
+            region,
+            postalCode,
+            addressType,
+        } = checkoutData;
+        if (
+            !firstName ||
+            !lastName ||
+            !email ||
+            !phone ||
+            !street ||
+            !city ||
+            !region ||
+            !postalCode
+        ) {
+            res.writeHead(302, {
+                Location: buildRedirect('/food/checkout', [
+                    'error=' + encodeURIComponent('Missing order details.'),
+                ]),
+            });
             return res.end();
         }
 
-        const cartTotal = cart.items.reduce((s, i) => s + parseFloat(i.price || 0) * (i.qty || 1), 0);
+        const cartTotal = cart.items.reduce(
+            (s, i) => s + parseFloat(i.price || 0) * (i.qty || 1),
+            0
+        );
         const PIZZA_SAUCE_CODES = new Set(['X', 'Xw', 'Xf', 'Xo', 'Xb', 'Xm', 'Cp', 'Rd']);
         const products = cart.items.map((item) => {
             const opts = item.options || {};
             const keys = Object.keys(opts);
-            const isStale = !item._nf && keys.length > 0 && keys.length <= 2 && keys.every((k) => PIZZA_SAUCE_CODES.has(k));
+            const isStale =
+                !item._nf &&
+                keys.length > 0 &&
+                keys.length <= 2 &&
+                keys.every((k) => PIZZA_SAUCE_CODES.has(k));
             return { Code: item.code, Qty: item.qty || 1, Options: isStale ? {} : opts };
         });
 
         const dominosHost = cart.country === 'ca' ? 'order.dominos.ca' : 'order.dominos.com';
-        let nStreet = street, nCity = city, nPostalCode = postalCode, streetName = '', streetNumber = '';
+        let nStreet = street,
+            nCity = city,
+            nPostalCode = postalCode,
+            streetName = '',
+            streetNumber = '';
 
         try {
             const addrResult = await dominosRequest({
@@ -1030,7 +1357,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
                 method: 'GET',
             });
             const addrObj = addrResult?.data?.Address;
-            if (addrResult?.data?.Stores?.length) cart.storeId = String(addrResult.data.Stores[0].StoreID);
+            if (addrResult?.data?.Stores?.length)
+                cart.storeId = String(addrResult.data.Stores[0].StoreID);
             if (addrObj) {
                 nStreet = addrObj.Street || nStreet;
                 streetName = addrObj.StreetName || '';
@@ -1039,20 +1367,71 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
                 nPostalCode = addrObj.PostalCode || nPostalCode;
             } else {
                 const m = street.trim().match(/^(\d+)\s+(.+)$/);
-                if (m) { streetNumber = m[1]; streetName = m[2]; }
+                if (m) {
+                    streetNumber = m[1];
+                    streetName = m[2];
+                }
             }
         } catch (e) {
             const m = street.trim().match(/^(\d+)\s+(.+)$/);
-            if (m) { streetNumber = m[1]; streetName = m[2]; }
+            if (m) {
+                streetNumber = m[1];
+                streetName = m[2];
+            }
         }
 
-        const validatePayload = { Order: { Address: { Street: nStreet, City: nCity, Region: region, PostalCode: nPostalCode, Type: addressType || 'House', StreetName: streetName, StreetNumber: streetNumber, UnitNumber: apt || '' }, Coupons: [], CustomerID: '', Email: '', Extension: '', FirstName: '', LastName: '', LanguageCode: 'en', OrderChannel: 'OLO', OrderID: '', OrderMethod: 'Web', OrderTaker: null, Payments: [], Phone: '', PhonePrefix: '', Products: products, ServiceMethod: 'Delivery', SourceOrganizationURI: 'order.dominos.com', StoreID: cart.storeId, Tags: {}, Version: '1.0', NoCombine: true, Partners: {}, HotspotsLite: false, OrderInfoCollection: [], metaData: null } };
+        const validatePayload = {
+            Order: {
+                Address: {
+                    Street: nStreet,
+                    City: nCity,
+                    Region: region,
+                    PostalCode: nPostalCode,
+                    Type: addressType || 'House',
+                    StreetName: streetName,
+                    StreetNumber: streetNumber,
+                    UnitNumber: apt || '',
+                },
+                Coupons: [],
+                CustomerID: '',
+                Email: '',
+                Extension: '',
+                FirstName: '',
+                LastName: '',
+                LanguageCode: 'en',
+                OrderChannel: 'OLO',
+                OrderID: '',
+                OrderMethod: 'Web',
+                OrderTaker: null,
+                Payments: [],
+                Phone: '',
+                PhonePrefix: '',
+                Products: products,
+                ServiceMethod: 'Delivery',
+                SourceOrganizationURI: 'order.dominos.com',
+                StoreID: cart.storeId,
+                Tags: {},
+                Version: '1.0',
+                NoCombine: true,
+                Partners: {},
+                HotspotsLite: false,
+                OrderInfoCollection: [],
+                metaData: null,
+            },
+        };
 
         let orderId = '';
         for (let vStep = 0; vStep < 2; vStep++) {
-            const vResult = await dominosRequest({ hostname: dominosHost, path: '/power/validate-order', method: 'POST' }, JSON.stringify(validatePayload)).catch(() => null);
+            const vResult = await dominosRequest(
+                { hostname: dominosHost, path: '/power/validate-order', method: 'POST' },
+                JSON.stringify(validatePayload)
+            ).catch(() => null);
             if (!vResult || vResult.status < 200 || vResult.status >= 300) {
-                res.writeHead(302, { Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent('Failed to connect to Dominos.')]) });
+                res.writeHead(302, {
+                    Location: buildRedirect('/food/checkout', [
+                        'error=' + encodeURIComponent('Failed to connect to Dominos.'),
+                    ]),
+                });
                 return res.end();
             }
             orderId = vResult.data?.Order?.OrderID || orderId;
@@ -1060,34 +1439,145 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         }
 
         validatePayload.Order.metaData = { orderFunnel: 'payments' };
-        const priceResult = await dominosRequest({ hostname: dominosHost, path: '/power/price-order', method: 'POST' }, JSON.stringify(validatePayload)).catch(() => null);
-        if (!priceResult || priceResult.status < 200 || priceResult.status >= 300 || (priceResult.data?.Status !== 0 && priceResult.data?.Status !== 1)) {
-            const msg = priceResult?.data?.StatusItems?.[0]?.Message || 'Failed to price order. Check your address and store.';
-            res.writeHead(302, { Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent(msg)]) });
+        const priceResult = await dominosRequest(
+            { hostname: dominosHost, path: '/power/price-order', method: 'POST' },
+            JSON.stringify(validatePayload)
+        ).catch(() => null);
+        if (
+            !priceResult ||
+            priceResult.status < 200 ||
+            priceResult.status >= 300 ||
+            (priceResult.data?.Status !== 0 && priceResult.data?.Status !== 1)
+        ) {
+            const msg =
+                priceResult?.data?.StatusItems?.[0]?.Message ||
+                'Failed to price order. Check your address and store.';
+            res.writeHead(302, {
+                Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent(msg)]),
+            });
             return res.end();
         }
 
         orderId = priceResult.data.Order?.OrderID || orderId;
         const pricedTotal = priceResult.data.Order?.Amounts?.Customer ?? null;
 
-        const placePayload = { Status: 0, Order: { Address: { Street: nStreet, City: nCity, Region: region, PostalCode: nPostalCode, Type: addressType || 'House', StreetName: streetName, StreetNumber: streetNumber, UnitNumber: apt || '', DeliveryInstructions: '' }, Channel: 'Mobile', Coupons: [], CustomerID: '', DataWarehouseUpdate: false, Email: email, EstimatedWaitMinutes: '21-31', Extension: '', FirstName: firstName, HotspotsLite: true, LanguageCode: 'en', LastName: lastName, NoCombine: true, OrderChannel: 'OLO', OrderID: orderId, OrderInfoCollection: [], OrderMethod: 'Web', OrderTaker: 'power', OrderTakeSeconds: 0, Partners: {}, Payments: [{ Type: 'Cash', Amount: pricedTotal !== null ? pricedTotal : cartTotal }], PendingOrder: false, Phone: phone, PhonePrefix: '', Platform: 'androidNativeApp', PlaceOrderMs: 0, PriceOrderMs: 0, Products: products, ServiceMethod: 'Delivery', SourceOrganizationURI: cart.country === 'ca' ? 'order.dominos.com' : 'android.dominos.com', Status: 0, StoreID: cart.storeId, Tags: {}, TestOrderFlagCCProcess: false, Version: '1.0', metaData: { PiePassPickup: false, calculateNutrition: true, contactless: false } } };
+        const placePayload = {
+            Status: 0,
+            Order: {
+                Address: {
+                    Street: nStreet,
+                    City: nCity,
+                    Region: region,
+                    PostalCode: nPostalCode,
+                    Type: addressType || 'House',
+                    StreetName: streetName,
+                    StreetNumber: streetNumber,
+                    UnitNumber: apt || '',
+                    DeliveryInstructions: '',
+                },
+                Channel: 'Mobile',
+                Coupons: [],
+                CustomerID: '',
+                DataWarehouseUpdate: false,
+                Email: email,
+                EstimatedWaitMinutes: '21-31',
+                Extension: '',
+                FirstName: firstName,
+                HotspotsLite: true,
+                LanguageCode: 'en',
+                LastName: lastName,
+                NoCombine: true,
+                OrderChannel: 'OLO',
+                OrderID: orderId,
+                OrderInfoCollection: [],
+                OrderMethod: 'Web',
+                OrderTaker: 'power',
+                OrderTakeSeconds: 0,
+                Partners: {},
+                Payments: [
+                    { Type: 'Cash', Amount: pricedTotal !== null ? pricedTotal : cartTotal },
+                ],
+                PendingOrder: false,
+                Phone: phone,
+                PhonePrefix: '',
+                Platform: 'androidNativeApp',
+                PlaceOrderMs: 0,
+                PriceOrderMs: 0,
+                Products: products,
+                ServiceMethod: 'Delivery',
+                SourceOrganizationURI:
+                    cart.country === 'ca' ? 'order.dominos.com' : 'android.dominos.com',
+                Status: 0,
+                StoreID: cart.storeId,
+                Tags: {},
+                TestOrderFlagCCProcess: false,
+                Version: '1.0',
+                metaData: { PiePassPickup: false, calculateNutrition: true, contactless: false },
+            },
+        };
 
-        const orderResult = await dominosRequest({ hostname: dominosHost, path: '/power/place-order', method: 'POST', headers: { 'DPZ-Source': 'DSSPlaceOrder' } }, JSON.stringify(placePayload)).catch(() => null);
-        if (!orderResult || orderResult.status < 200 || orderResult.status >= 300 || (orderResult.data?.Status !== 0 && orderResult.data?.Status !== 1 && !orderResult.data?.StatusItems?.some(s => s.Code === 'Failure'))) {
-            const msg = orderResult?.data?.Order?.StatusItems?.find(s => s.Message)?.Message || 'Order failed. Please try again.';
-            res.writeHead(302, { Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent(msg)]) });
+        const orderResult = await dominosRequest(
+            {
+                hostname: dominosHost,
+                path: '/power/place-order',
+                method: 'POST',
+                headers: { 'DPZ-Source': 'DSSPlaceOrder' },
+            },
+            JSON.stringify(placePayload)
+        ).catch(() => null);
+        if (
+            !orderResult ||
+            orderResult.status < 200 ||
+            orderResult.status >= 300 ||
+            (orderResult.data?.Status !== 0 &&
+                orderResult.data?.Status !== 1 &&
+                !orderResult.data?.StatusItems?.some((s) => s.Code === 'Failure'))
+        ) {
+            const msg =
+                orderResult?.data?.Order?.StatusItems?.find((s) => s.Message)?.Message ||
+                'Order failed. Please try again.';
+            res.writeHead(302, {
+                Location: buildRedirect('/food/checkout', ['error=' + encodeURIComponent(msg)]),
+            });
             return res.end();
         }
 
-        const storeName = orderResult.data.Order?.StoreAddress ? `${orderResult.data.Order.StoreAddress.City || nCity} Store #${cart.storeId}` : `Store #${cart.storeId}`;
-        const finalTotal = pricedTotal !== null ? pricedTotal : (cartTotal > 0 ? cartTotal : parseFloat(orderResult.data.Order?.Amounts?.Payment || 0));
+        const storeName = orderResult.data.Order?.StoreAddress
+            ? `${orderResult.data.Order.StoreAddress.City || nCity} Store #${cart.storeId}`
+            : `Store #${cart.storeId}`;
+        const finalTotal =
+            pricedTotal !== null
+                ? pricedTotal
+                : cartTotal > 0
+                  ? cartTotal
+                  : parseFloat(orderResult.data.Order?.Amounts?.Payment || 0);
 
-        auth.dbQueryRun('INSERT INTO pizza_orders (discordID, store_id, store_name, items_json, total, timestamp) VALUES (?,?,?,?,?,?)', [discordID, cart.storeId, storeName, JSON.stringify(cart.items.map(i => ({ code: i.code, name: i.name, qty: i.qty, price: i.price }))), finalTotal, unixTime()]);
+        auth.dbQueryRun(
+            'INSERT INTO pizza_orders (discordID, store_id, store_name, items_json, total, timestamp) VALUES (?,?,?,?,?,?)',
+            [
+                discordID,
+                cart.storeId,
+                storeName,
+                JSON.stringify(
+                    cart.items.map((i) => ({
+                        code: i.code,
+                        name: i.name,
+                        qty: i.qty,
+                        price: i.price,
+                    }))
+                ),
+                finalTotal,
+                unixTime(),
+            ]
+        );
         auth.dbQueryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID]);
 
         res.writeHead(302, {
             Location: buildRedirect('/food/receipts', ['placed=1']),
-            'Set-Cookie': [clearCartCookieHeader(), 'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT'],
+            'Set-Cookie': [
+                clearCartCookieHeader(),
+                'pizzaCheckout=; path=/food; HttpOnly; expires=Thu, 01 Jan 1970 00:00:00 GMT',
+            ],
         });
         return res.end();
     }
@@ -1101,7 +1591,9 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 // =============================================================================
 exports.foodProxy = async function (req, res) {
     const parsedurl = new URL(req.url, 'http://localhost');
-    const imagePath = parsedurl.pathname.replace(/^\/foodProxy\//, '').replace(/[^a-zA-Z0-9_.\-]/g, '');
+    const imagePath = parsedurl.pathname
+        .replace(/^\/foodProxy\//, '')
+        .replace(/[^a-zA-Z0-9_.\-]/g, '');
 
     if (!imagePath) {
         res.writeHead(404);
@@ -1112,20 +1604,22 @@ exports.foodProxy = async function (req, res) {
 
     try {
         await new Promise((resolve, reject) => {
-            https.get(imageUrl, { headers: { 'User-Agent': 'Dominos API Wrapper' } }, (proxyRes) => {
-                const chunks = [];
-                proxyRes.on('data', (chunk) => chunks.push(chunk));
-                proxyRes.on('end', () => {
-                    const ct = proxyRes.headers['content-type'] || 'image/jpeg';
-                    res.writeHead(proxyRes.statusCode === 200 ? 200 : 404, {
-                        'Content-Type': ct,
-                        'Cache-Control': 'public, max-age=86400',
+            https
+                .get(imageUrl, { headers: { 'User-Agent': 'Dominos API Wrapper' } }, (proxyRes) => {
+                    const chunks = [];
+                    proxyRes.on('data', (chunk) => chunks.push(chunk));
+                    proxyRes.on('end', () => {
+                        const ct = proxyRes.headers['content-type'] || 'image/jpeg';
+                        res.writeHead(proxyRes.statusCode === 200 ? 200 : 404, {
+                            'Content-Type': ct,
+                            'Cache-Control': 'public, max-age=86400',
+                        });
+                        res.end(Buffer.concat(chunks));
+                        resolve();
                     });
-                    res.end(Buffer.concat(chunks));
-                    resolve();
-                });
-                proxyRes.on('error', reject);
-            }).on('error', reject);
+                    proxyRes.on('error', reject);
+                })
+                .on('error', reject);
         });
     } catch (e) {
         console.error('foodProxy error:', e.message);

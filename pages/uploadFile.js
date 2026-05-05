@@ -97,7 +97,11 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             if (!isBotReady(bot)) {
                 if (isTraditionalSubmission) {
                     res.writeHead(503, { 'Content-Type': 'text/html' });
-                    res.end(renderTemplate(getTemplate('script_alert_back', 'misc'), { MESSAGE: 'Bot is not connected' }));
+                    res.end(
+                        renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                            MESSAGE: 'Bot is not connected',
+                        })
+                    );
                 } else {
                     res.writeHead(503, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ success: false, error: "Bot isn't connected" }));
@@ -118,7 +122,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         if (isTraditionalSubmission) {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
                             res.end(
-                                renderTemplate(getTemplate('script_alert_back', 'misc'), { MESSAGE: 'Failed to parse upload' })
+                                renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                    MESSAGE: 'Failed to parse upload',
+                                })
                             );
                         } else {
                             res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -138,7 +144,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(400, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), { MESSAGE: 'Invalid channel' })
+                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                        MESSAGE: 'Invalid channel',
+                                    })
                                 );
                             } else {
                                 res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -169,7 +177,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(400, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), { MESSAGE: 'No file provided' })
+                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                        MESSAGE: 'No file provided',
+                                    })
                                 );
                             } else {
                                 res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -195,7 +205,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(403, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), { MESSAGE: 'No permission to send messages' })
+                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                        MESSAGE: 'No permission to send messages',
+                                    })
                                 );
                             } else {
                                 res.writeHead(403, { 'Content-Type': 'application/json' });
@@ -221,7 +233,10 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(403, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), { MESSAGE: 'Failed to send message. Discross needs "Manage Webhooks" permission.' })
+                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                        MESSAGE:
+                                            'Failed to send message. Discross needs "Manage Webhooks" permission.',
+                                    })
                                 );
                             } else {
                                 res.writeHead(403, { 'Content-Type': 'application/json' });
@@ -252,7 +267,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                                     'Failed to upload file: ' + uploadError.message
                                 );
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), { MESSAGE: 'Failed to upload file: ' + uploadError.message })
+                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                        MESSAGE: 'Failed to upload file: ' + uploadError.message,
+                                    })
                                 );
                             } else {
                                 res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -305,7 +322,9 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), { MESSAGE: 'Error: ' + error.message })
+                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                        MESSAGE: 'Error: ' + error.message,
+                                    })
                                 );
                             } else {
                                 res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -325,7 +344,11 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             const isTraditionalSubmission = parsedUrl.searchParams.get('traditional') === 'true';
             if (isTraditionalSubmission) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
-                res.end(renderTemplate(getTemplate('script_alert_back', 'misc'), { MESSAGE: 'Internal Server Error' }));
+                res.end(
+                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                        MESSAGE: 'Internal Server Error',
+                    })
+                );
             } else {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: err.message }));

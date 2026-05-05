@@ -359,9 +359,12 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             await lock.acquire(discordID, async () => {
                 if (targetServer) {
                     response = renderTemplate(response, {
-                        DISCORD_NAME: renderTemplate(getTemplate('server-name-header', 'server/partials'), {
-                            NAME: escape(normalizeWeirdUnicode(targetServer.name)),
-                        }),
+                        DISCORD_NAME: renderTemplate(
+                            getTemplate('server-name-header', 'server/partials'),
+                            {
+                                NAME: escape(normalizeWeirdUnicode(targetServer.name)),
+                            }
+                        ),
                     });
                     const member = await fetchAndCacheMember(targetServer, discordID);
                     if (member) {
@@ -404,23 +407,25 @@ exports.processServer = async function (bot, req, res, args, discordID) {
         response = applyUserPreferences(response, req);
 
         if (response.match?.(emojiRegex) && imagesCookie === 1) {
-            const unicode_emoji_matches = [...response.match?.(emojiRegex)];
-            unicode_emoji_matches.forEach((match) => {
-                const output = unicodeToTwemojiCode(match);
-                response = response.replaceAll(
-                    match,
-                    renderTemplate(getTemplate('server-emoji-twemoji', 'server/partials'), {
-                        CODE: output,
-                    })
-                );
-            });
+            const matches = response.match(emojiRegex);
+            if (matches) {
+                [...matches].forEach((match) => {
+                    const output = unicodeToTwemojiCode(match);
+                    response = response.replaceAll(
+                        match,
+                        renderTemplate(getTemplate('server-emoji-twemoji', 'server/partials'), {
+                            CODE: output,
+                        })
+                    );
+                });
+            }
         }
 
-        const custom_emoji_matches = [
-            ...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})?(?:(?!\1).)*&gt;/g),
-        ];
-        if (custom_emoji_matches[0] && imagesCookie === 1)
-            custom_emoji_matches.forEach(async (match) => {
+        const custom_emoji_matches = response.matchAll
+            ? [...response.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})?(?:(?!\1).)*&gt;/g)]
+            : [];
+        if (custom_emoji_matches.length > 0 && imagesCookie === 1)
+            custom_emoji_matches.forEach((match) => {
                 response = response.replaceAll(
                     match[0],
                     renderTemplate(getTemplate('server-emoji-custom', 'server/partials'), {
@@ -531,7 +536,11 @@ async function refreshDiscordServers(bot, discordID) {
     const now = Math.floor(Date.now() / 1000);
     let accessToken = tokens.discord_access_token;
 
-    const { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URL } = require('../index.js');
+    const {
+        DISCORD_CLIENT_ID,
+        DISCORD_CLIENT_SECRET,
+        DISCORD_REDIRECT_URL,
+    } = require('../index.js');
 
     if (!tokens.discord_token_expires || tokens.discord_token_expires < now + 300) {
         if (!DISCORD_CLIENT_SECRET) {
@@ -581,20 +590,33 @@ async function refreshDiscordServers(bot, discordID) {
             return { serverID: e.id, discordID: discordID, icon: e.icon };
         });
         auth.insertServers(readyServers);
-        
+
         // Handle icons (minimal version of what's in index.js)
         for (const server of readyServers) {
             if (server.icon) {
                 const iconDir = path.resolve(`pages/static/ico/server`, sanitizer(server.serverID));
-                const iconPath = path.resolve(iconDir, sanitizer(`${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`));
-                
+                const iconPath = path.resolve(
+                    iconDir,
+                    sanitizer(
+                        `${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
+                    )
+                );
+
                 if (!fs.existsSync(iconPath)) {
                     await fs.promises.mkdir(iconDir, { recursive: true });
                     if (server.icon.startsWith('a_')) {
-                        const iconData = await (await fetch(`https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.gif?size=128`)).arrayBuffer();
+                        const iconData = await (
+                            await fetch(
+                                `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.gif?size=128`
+                            )
+                        ).arrayBuffer();
                         await fs.promises.writeFile(iconPath, Buffer.from(iconData));
                     } else {
-                        const iconData = await (await fetch(`https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.png?size=128`)).arrayBuffer();
+                        const iconData = await (
+                            await fetch(
+                                `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.png?size=128`
+                            )
+                        ).arrayBuffer();
                         await sharp(Buffer.from(iconData)).toFile(iconPath);
                     }
                 }

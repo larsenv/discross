@@ -33,7 +33,10 @@ const channel_template = renderTemplate(channel_template_base, {
 const message_template = getTemplate('message_reply', 'message');
 const message_forwarded_template = getTemplate('forwarded_message_reply', 'message');
 const message_mentioned_template = getTemplate('message_reply_mentioned', 'message');
-const message_forwarded_mentioned_template = getTemplate('forwarded_message_reply_mentioned', 'message');
+const message_forwarded_mentioned_template = getTemplate(
+    'forwarded_message_reply_mentioned',
+    'message'
+);
 
 // Shared templates (same as channel.js)
 const first_message_content_template = getTemplate('first_message_content', 'message');

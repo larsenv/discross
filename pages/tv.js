@@ -238,34 +238,144 @@ function smartTitleCase(str) {
 
     // Common TV network acronyms
     var acronyms = [
-        'tv', 'hd', 'dt', 'fm', 'am', 'hbo', 'cnn', 'mtv', 'vh1', 'amc', 'tbs', 'tnt', 'espn',
-        'hgtv', 'fox', 'nbc', 'abc', 'cbs', 'pbs', 'cw', 'tbn', 'ion', 'up', 'bet', 'ctv',
-        'msnbc', 'cnbc', 'syfy', 'fxx', 'fx', 'usa', 'ifc', 'hsn', 'qvc', 'tcm', 'e!', 
-        'disney', 'nick', 'bravo', 'tlc', 'own', 'oxgn', 'ngc', 'disc', 'apl', 'id', 'ads', 
-        'uni', 'tele'
+        'tv',
+        'hd',
+        'dt',
+        'fm',
+        'am',
+        'hbo',
+        'cnn',
+        'mtv',
+        'vh1',
+        'amc',
+        'tbs',
+        'tnt',
+        'espn',
+        'hgtv',
+        'fox',
+        'nbc',
+        'abc',
+        'cbs',
+        'pbs',
+        'cw',
+        'tbn',
+        'ion',
+        'up',
+        'bet',
+        'ctv',
+        'msnbc',
+        'cnbc',
+        'syfy',
+        'fxx',
+        'fx',
+        'usa',
+        'ifc',
+        'hsn',
+        'qvc',
+        'tcm',
+        'e!',
+        'disney',
+        'nick',
+        'bravo',
+        'tlc',
+        'own',
+        'oxgn',
+        'ngc',
+        'disc',
+        'apl',
+        'id',
+        'ads',
+        'uni',
+        'tele',
     ];
-    
+
     // US States and Canadian Provinces
     var states = [
-        'al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'dc', 'fl', 'ga', 'hi', 'id', 'il', 'in', 'ia', 'ks', 'ky', 'la', 'me', 'md', 'ma', 'mi', 'mn', 'ms', 'mo', 'mt', 'ne', 'nv', 'nh', 'nj', 'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri', 'sc', 'sd', 'tn', 'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 'wy',
-        'ab', 'bc', 'mb', 'nb', 'nl', 'ns', 'on', 'pe', 'qc', 'sk', 'nt', 'nu', 'yt'
+        'al',
+        'ak',
+        'az',
+        'ar',
+        'ca',
+        'co',
+        'ct',
+        'de',
+        'dc',
+        'fl',
+        'ga',
+        'hi',
+        'id',
+        'il',
+        'in',
+        'ia',
+        'ks',
+        'ky',
+        'la',
+        'me',
+        'md',
+        'ma',
+        'mi',
+        'mn',
+        'ms',
+        'mo',
+        'mt',
+        'ne',
+        'nv',
+        'nh',
+        'nj',
+        'nm',
+        'ny',
+        'nc',
+        'nd',
+        'oh',
+        'ok',
+        'or',
+        'pa',
+        'ri',
+        'sc',
+        'sd',
+        'tn',
+        'tx',
+        'ut',
+        'vt',
+        'va',
+        'wa',
+        'wv',
+        'wi',
+        'wy',
+        'ab',
+        'bc',
+        'mb',
+        'nb',
+        'nl',
+        'ns',
+        'on',
+        'pe',
+        'qc',
+        'sk',
+        'nt',
+        'nu',
+        'yt',
     ];
 
     var smallWords = ['of', 'the', 'and', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'a', 'an'];
 
     // 1. Process chunks separated by spaces, commas, or parentheses
-    var result = str.replace(/([a-z0-9\-]+)|([^a-z0-9\-]+)/gi, function(match, word, sep, index) {
+    var result = str.replace(/([a-z0-9\-]+)|([^a-z0-9\-]+)/gi, function (match, word, sep, index) {
         if (sep) return sep;
-        
+
         // If the "word" contains hyphens, split and process each part
         if (word.indexOf('-') !== -1) {
-            return word.split('-').map(function(part, i) {
-                var lowerPart = part.toLowerCase();
-                if (acronyms.indexOf(lowerPart) !== -1) return lowerPart.toUpperCase();
-                if (lowerPart.length === 2 && states.indexOf(lowerPart) !== -1) return lowerPart.toUpperCase();
-                if (/^[kwcx][a-z0-9]{2,3}$/i.test(part)) return part.toUpperCase();
-                return lowerPart.charAt(0).toUpperCase() + lowerPart.slice(1);
-            }).join('-');
+            return word
+                .split('-')
+                .map(function (part, i) {
+                    var lowerPart = part.toLowerCase();
+                    if (acronyms.indexOf(lowerPart) !== -1) return lowerPart.toUpperCase();
+                    if (lowerPart.length === 2 && states.indexOf(lowerPart) !== -1)
+                        return lowerPart.toUpperCase();
+                    if (/^[kwcx][a-z0-9]{2,3}$/i.test(part)) return part.toUpperCase();
+                    return lowerPart.charAt(0).toUpperCase() + lowerPart.slice(1);
+                })
+                .join('-');
         }
 
         var lower = word.toLowerCase();
@@ -289,14 +399,18 @@ function smartTitleCase(str) {
             if (i === j) continue;
             var other = parts[j].replace(/[()]/g, '');
             // If p is a substring of other and they are both likely IDs (acronyms or callsigns)
-            if (other.indexOf(p) !== -1 && other.length > p.length && (acronyms.indexOf(p.toLowerCase()) !== -1 || /^[kwcx][a-z0-9\-]+$/i.test(p))) {
+            if (
+                other.indexOf(p) !== -1 &&
+                other.length > p.length &&
+                (acronyms.indexOf(p.toLowerCase()) !== -1 || /^[kwcx][a-z0-9\-]+$/i.test(p))
+            ) {
                 isRedundant = true;
                 break;
             }
         }
         if (!isRedundant) finalParts.push(parts[i]);
     }
-    
+
     return finalParts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
@@ -309,7 +423,7 @@ function parseLineupChannels(html, date) {
     // 1. Find all station link matches first to determine boundaries
     var stationLinkRegex =
         /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/stations\/(([a-z0-9\-]+)\/(\d+))(?:\/\d{4}-\d{2}-\d{2})?"/gi;
-    
+
     var matches = [];
     var m;
     while ((m = stationLinkRegex.exec(html)) !== null) {
@@ -317,7 +431,7 @@ function parseLineupChannels(html, date) {
             index: m.index,
             fullMatch: m[0],
             stationId: m[1],
-            stationSlug: m[2]
+            stationSlug: m[2],
         });
     }
 
@@ -327,9 +441,9 @@ function parseLineupChannels(html, date) {
         if (seen.has(match.stationId)) continue;
 
         // Isolate the row: from start of previous match to end of next match (roughly)
-        var start = i === 0 ? 0 : matches[i-1].index + matches[i-1].fullMatch.length;
-        var end = i === matches.length - 1 ? html.length : matches[i+1].index;
-        
+        var start = i === 0 ? 0 : matches[i - 1].index + matches[i - 1].fullMatch.length;
+        var end = i === matches.length - 1 ? html.length : matches[i + 1].index;
+
         // Refine context: look primarily BEFORE the link, as logos usually precede text
         // But also look slightly after just in case.
         var context = html.substring(start, end);
@@ -337,7 +451,7 @@ function parseLineupChannels(html, date) {
         // Logo detection within isolated row
         var logoUrl = '';
         var callsign = '';
-        
+
         // a. Try to find the callsign from a CDN image URL
         var logoMatch = context.match(
             /(?:src|data-src|data-original)="(?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[^"\/]+\/([a-z0-9\-]+)\.(?:png|jpg|gif|svg)/i
@@ -354,13 +468,15 @@ function parseLineupChannels(html, date) {
             logoUrl = '//cdn.tvpassport.com/image/station/240x135/' + callsign + '.png';
         } else {
             // c. Last resort: any station image in this row
-            var genericMatch = context.match(/(?:src|data-src|data-original)="((?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[^"]+)"/i);
+            var genericMatch = context.match(
+                /(?:src|data-src|data-original)="((?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[^"]+)"/i
+            );
             if (genericMatch) logoUrl = genericMatch[1];
         }
 
         // Name detection within isolated row
         var name = '';
-        
+
         // Find the text of the link itself (the anchor text)
         var anchorMatch = context.match(new RegExp('>([\\s\\S]*?)</a>', 'i'));
         if (anchorMatch) {
@@ -369,7 +485,8 @@ function parseLineupChannels(html, date) {
 
         // Fallbacks for name
         if (!name || name.length < 2 || /^\d{4}-\d{2}-\d{2}$/.test(name)) {
-            var altMatch = context.match(/alt="([^"]{3,60})"/i) || context.match(/title="([^"]{3,60})"/i);
+            var altMatch =
+                context.match(/alt="([^"]{3,60})"/i) || context.match(/title="([^"]{3,60})"/i);
             if (altMatch) name = he.decode(altMatch[1]);
             else name = match.stationSlug.replace(/-/g, ' ');
         }
@@ -377,21 +494,21 @@ function parseLineupChannels(html, date) {
         name = smartTitleCase(name);
 
         seen.add(match.stationId);
-        channels.push({ stationId: match.stationId, name: name, callsign: callsign, logoUrl: logoUrl });
+        channels.push({
+            stationId: match.stationId,
+            name: name,
+            callsign: callsign,
+            logoUrl: logoUrl,
+        });
     }
 
     // Sort by name for a better list experience
-    channels.sort(function(a, b) {
+    channels.sort(function (a, b) {
         return a.name.localeCompare(b.name);
     });
 
     return channels;
 }
-
-
-
-
-
 
 // Parse schedule listings from a station page.
 function parseListings(html) {
@@ -404,7 +521,7 @@ function parseListings(html) {
     var m;
     while ((m = itemTagRegex.exec(sectionHtml)) !== null) {
         var tagHtml = m[0];
-        
+
         // Try 'duration' first, then 'dr' as a common shorthand
         var duration = parseDataAttr(tagHtml, 'duration');
         if (!duration) duration = parseDataAttr(tagHtml, 'dr');
@@ -479,7 +596,6 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
 
     return renderTemplate(getTemplate('channel_grid', 'tv'), { ROWS: rowsHtml });
 }
-
 
 // Build the HTML schedule table for a station page.
 function buildScheduleHtml(items) {

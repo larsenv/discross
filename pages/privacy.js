@@ -1,5 +1,10 @@
 'use strict';
-const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const {
+    renderTemplate,
+    getPageThemeAttr,
+    loadAndRenderPageTemplate,
+    getTemplate,
+} = require('./utils.js');
 const escape = require('escape-html');
 const auth = require('../authentication.js');
 

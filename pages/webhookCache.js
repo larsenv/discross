@@ -9,7 +9,7 @@ const _webhookCache = new Map();
 
 async function getOrCreateWebhook(channel, guildID) {
     // Threads don't own webhooks — use the parent text channel
-    const webhookChannel = channel.isThread() ? channel.parent : channel;
+    const webhookChannel = channel.isThread() && channel.parent ? channel.parent : channel;
     const channelId = webhookChannel.id;
 
     if (_webhookCache.has(channelId)) {
