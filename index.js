@@ -753,22 +753,25 @@ server.on('request', async (req, res) => {
                     }
                 }
             } else if (args[1] === 'imageProxy') {
+                const isFull = parsedurl.searchParams.get('full') === '1';
                 // Handle different types of image proxy requests
                 if (args[2] === 'external') {
                     // External URLs are base64-encoded in args[3]
-                    const encodedUrl = req.url.slice(EXTERNAL_PROXY_PREFIX_LENGTH);
+                    const encodedUrl = req.url.slice(EXTERNAL_PROXY_PREFIX_LENGTH).split('?')[0];
                     const fullImageUrl = Buffer.from(encodedUrl, 'base64').toString();
-                    await imageProxy(res, fullImageUrl);
+                    await imageProxy(res, fullImageUrl, isFull);
                 } else if (args[2] === 'sticker') {
                     // Sticker URLs: /imageProxy/sticker/{stickerId}.{format}
                     // Always fetch .png from media.discordapp.net regardless of requested extension
                     const stickerId = args[3].replace(/\.[^.]*$/, '');
                     const fullImageUrl = `https://media.discordapp.net/stickers/${stickerId}.png`;
-                    await imageProxy(res, fullImageUrl);
+                    await imageProxy(res, fullImageUrl, isFull);
                 } else {
                     // Emoji and attachment URLs
-                    const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${args[2] === 'emoji' ? req.url.slice(18) : req.url.slice(12)}`;
-                    await imageProxy(res, fullImageUrl);
+                    // Strip the query string from the path before using it for the proxy URL
+                    const proxyPath = req.url.split('?')[0];
+                    const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${args[2] === 'emoji' ? proxyPath.slice(18) : proxyPath.slice(12)}`;
+                    await imageProxy(res, fullImageUrl, isFull);
                 }
             } else if (args[1] === 'fileProxy') {
                 const filePath = req.url.slice(11);

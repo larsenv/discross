@@ -23,10 +23,11 @@ function cacheSet(key, value) {
     imageCache.set(key, value);
 }
 
-exports.imageProxy = async function imageProxy(res, URL) {
+exports.imageProxy = async function imageProxy(res, URL, fullSize = false) {
+    const cacheKey = fullSize ? URL + ':full' : URL;
     // Serve from in-memory cache if available
-    if (imageCache.has(URL)) {
-        const cached = imageCache.get(URL);
+    if (imageCache.has(cacheKey)) {
+        const cached = imageCache.get(cacheKey);
         res.writeHead(200, {
             'Content-Type': 'image/gif',
             'Content-Length': cached.length,
@@ -62,28 +63,47 @@ exports.imageProxy = async function imageProxy(res, URL) {
                 .on('end', async () => {
                     const buffer = Buffer.concat(chunks);
                     try {
-                        // Resize options: cap all images at 256x256 to keep transfers small for Wii Internet Channel
-                        const resizeOptions = {
-                            width: 256,
-                            height: 256,
-                            fit: 'inside',
-                            withoutEnlargement: true,
-                        };
-                        const gifbuffer = await sharp(buffer, { animated: true })
-                            .resize(resizeOptions)
-                            .toFormat('gif', { colors: 256 })
-                            .toBuffer()
-                            .catch(() => {
-                                console.warn('Could not convert image, sending original');
-                                return buffer;
-                            });
-                        cacheSet(URL, gifbuffer);
+                        let processedBuffer;
+                        if (fullSize) {
+                            // Still convert to GIF for compatibility, but don't resize down to 256
+                            // We might still want to cap it at a reasonable "full" size for legacy browsers, e.g. 1024
+                            processedBuffer = await sharp(buffer, { animated: true })
+                                .resize({
+                                    width: 1024,
+                                    height: 1024,
+                                    fit: 'inside',
+                                    withoutEnlargement: true,
+                                })
+                                .toFormat('gif', { colors: 256 })
+                                .toBuffer()
+                                .catch(() => {
+                                    console.warn('Could not convert full-size image, sending original');
+                                    return buffer;
+                                });
+                        } else {
+                            // Resize options: cap all images at 256x256 to keep transfers small for Wii Internet Channel
+                            const resizeOptions = {
+                                width: 256,
+                                height: 256,
+                                fit: 'inside',
+                                withoutEnlargement: true,
+                            };
+                            processedBuffer = await sharp(buffer, { animated: true })
+                                .resize(resizeOptions)
+                                .toFormat('gif', { colors: 256 })
+                                .toBuffer()
+                                .catch(() => {
+                                    console.warn('Could not convert image, sending original');
+                                    return buffer;
+                                });
+                        }
+                        cacheSet(cacheKey, processedBuffer);
                         res.writeHead(200, {
                             'Content-Type': 'image/gif',
-                            'Content-Length': gifbuffer.length,
+                            'Content-Length': processedBuffer.length,
                             'Cache-Control': CACHE_CONTROL,
                         });
-                        res.end(gifbuffer);
+                        res.end(processedBuffer);
                     } catch (error) {
                         console.error('Error processing image:', error);
                         // Send original buffer instead of error
