@@ -2238,9 +2238,9 @@ a.food-tab-active:hover,
 }
 .food-checkout-grid > *:first-child {
     display: table-cell;
-    width: 300px;
-    padding-right: 20px;
-    padding-bottom: 16px;
+    width: 320px; /* Slightly wider for better summary fit */
+    padding-right: 32px; /* Increased from 20px for better separation */
+    padding-bottom: 24px;
     vertical-align: top;
 }
 .food-checkout-grid > *:last-child {
@@ -2628,6 +2628,9 @@ a.food-tab-active:hover,
         display: block;
         width: 100%;
         padding-right: 0;
+    }
+    .food-checkout-grid > *:first-child {
+        margin-bottom: 24px; /* Space between Summary and Form on mobile */
     }
     .food-form-row,
     .food-form-row > * {
