@@ -123,7 +123,13 @@ function parseCookies(req) {
     if (!raw) return result;
     raw.split(';').forEach((cookie) => {
         const parts = cookie.split('=');
-        result[parts.shift().trim()] = decodeURIComponent(parts.join('='));
+        const key = parts.shift().trim();
+        const val = parts.join('=');
+        try {
+            result[key] = decodeURIComponent(val);
+        } catch (e) {
+            result[key] = val; // Fallback to raw value if decoding fails
+        }
     });
     return result;
 }

@@ -476,7 +476,13 @@ exports.checkAuth = async function (req, res, noRedirect) {
     cookies &&
         cookies.split(';').forEach(function (cookie) {
             const parts = cookie.split('=');
-            cookiedict[parts.shift().trim()] = decodeURI(parts.join('='));
+            const key = parts.shift().trim();
+            const val = parts.join('=');
+            try {
+                cookiedict[key] = decodeURI(val);
+            } catch (e) {
+                cookiedict[key] = val; // Fallback to raw value if decoding fails
+            }
         });
 
     // Fall back to URL query parameter for browsers without cookie support (e.g. IE1, IE2)

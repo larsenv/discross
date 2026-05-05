@@ -226,8 +226,14 @@ function renderDiscordMarkdown(text, options = {}) {
     let rendered = md.render(text).trim();
 
     // Remove redundant <br> tags before and after block-level placeholders that markdown-it adds due to breaks:true
-    rendered = rendered.replace(/<br>(\uE000(HEADER|BULLETLIST|BLOCKQUOTE|CODEBLOCK|SUBTEXT)\d+\uE001)/g, '$1');
-    rendered = rendered.replace(/(\uE000(HEADER|BULLETLIST|BLOCKQUOTE|CODEBLOCK|SUBTEXT)\d+\uE001)<br>/g, '$1');
+    rendered = rendered.replace(
+        /<br>(\uE000(HEADER|BULLETLIST|BLOCKQUOTE|CODEBLOCK|SUBTEXT)\d+\uE001)/g,
+        '$1'
+    );
+    rendered = rendered.replace(
+        /(\uE000(HEADER|BULLETLIST|BLOCKQUOTE|CODEBLOCK|SUBTEXT)\d+\uE001)<br>/g,
+        '$1'
+    );
 
     if (
         rendered.startsWith('<p>') &&

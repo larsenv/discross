@@ -24,7 +24,11 @@ exports.sendMeta = async function (bot, req, res, channelId) {
 
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
         if (!member || !member.permissionsIn(chnl).has(discord.PermissionFlagsBits.SendMessages)) {
-            res.end(renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: "You don't have permission to do that!" }));
+            res.end(
+                renderTemplate(getTemplate('error_text', 'misc'), {
+                    MESSAGE: "You don't have permission to do that!",
+                })
+            );
             return;
         }
 

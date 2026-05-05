@@ -4,7 +4,14 @@ const auth = require('../authentication.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { isValidSnowflake, isBotReady, getBaseUrl, resolveMentions, renderTemplate, getTemplate } = require('./utils.js');
+const {
+    isValidSnowflake,
+    isBotReady,
+    getBaseUrl,
+    resolveMentions,
+    renderTemplate,
+    getTemplate,
+} = require('./utils.js');
 const { checkAndMarkNonce } = require('./messageDedup.js');
 
 const { parseUserAgent } = require('./userAgentUtils');
@@ -67,7 +74,11 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                 !member ||
                 !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)
             ) {
-                req_res.end(renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: "You don't have permission to do that!" }));
+                req_res.end(
+                    renderTemplate(getTemplate('error_text', 'misc'), {
+                        MESSAGE: "You don't have permission to do that!",
+                    })
+                );
                 return;
             }
 

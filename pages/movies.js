@@ -74,6 +74,7 @@ const TABS = [
 ];
 
 function proxyImageUrl(url) {
+    if (!url) return '';
     return '/imageProxy/external/' + Buffer.from(url).toString('base64');
 }
 
@@ -663,7 +664,7 @@ function parseFallbackLinks(html, isTv) {
 function buildScoreBadge(score, label, templates) {
     if (score == null) return '';
     const color = score >= 60 ? '#006f2e' : '#fa320a';
-    
+
     let html = templates.scoreBadge;
     html = strReplace(html, '{$COLOR}', color);
     html = strReplace(html, '{$SCORE}', String(score));
@@ -696,9 +697,7 @@ function buildMovieCardHtml(item, showImages, templates) {
               })
             : '';
 
-    const rtLink = rtUrl
-        ? strReplace(templates.rtLink, '{$URL}', escape(rtUrl))
-        : '';
+    const rtLink = rtUrl ? strReplace(templates.rtLink, '{$URL}', escape(rtUrl)) : '';
 
     let card = templates.card;
     card = strReplace(card, '{$POSTER_HTML}', posterHtml);
@@ -722,7 +721,7 @@ exports.processMovies = async function processMovies(req, res, discordID) {
         const sep = sessionParam
             ? sessionParam + '&tab=' + encodeURIComponent(t.id)
             : '?tab=' + encodeURIComponent(t.id);
-        
+
         let tabHtml = templates.tab;
         tabHtml = strReplace(tabHtml, '{$QUERY}', sep);
         tabHtml = strReplace(tabHtml, '{$ACTIVE_CLASS}', active);
@@ -756,7 +755,11 @@ exports.processMovies = async function processMovies(req, res, discordID) {
             }
         }
         if (items.length === 0) {
-            moviesHtml = strReplace(templates.empty, '{$MESSAGE}', 'No results found. Rotten Tomatoes may have updated their page layout.');
+            moviesHtml = strReplace(
+                templates.empty,
+                '{$MESSAGE}',
+                'No results found. Rotten Tomatoes may have updated their page layout.'
+            );
         } else {
             moviesHtml = items
                 .map((item) => buildMovieCardHtml(item, imagesCookie !== 0, templates))
@@ -765,7 +768,11 @@ exports.processMovies = async function processMovies(req, res, discordID) {
         }
     } catch (err) {
         console.error('Rotten Tomatoes fetch error:', err);
-        moviesHtml = strReplace(templates.empty, '{$MESSAGE}', 'Could not load Rotten Tomatoes data. Please try again later.');
+        moviesHtml = strReplace(
+            templates.empty,
+            '{$MESSAGE}',
+            'Could not load Rotten Tomatoes data. Please try again later.'
+        );
     }
 
     const username = await auth.getUsername(discordID);

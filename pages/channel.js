@@ -318,6 +318,7 @@ function buildProxiedImageTag(
     alt,
     style = 'max-width:256px;max-height:200px;height:auto;'
 ) {
+    if (!rawUrl || typeof rawUrl !== 'string') return { proxied: '', tag: '' };
     const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
     const tag = renderTemplate(getTemplate('image_tag', 'channel'), {
         IMAGE_SRC: proxied,
@@ -397,15 +398,9 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
             embed.provider?.name === 'Vimeo' || urlMatchesDomain(embed.url, 'vimeo.com');
 
         const isOtherVideo =
-            [
-                'Streamable',
-                'Twitch',
-                'TikTok',
-                'Instagram',
-                'Twitter',
-                'Twitter (X)',
-                'X',
-            ].includes(embed.provider?.name) ||
+            ['Streamable', 'Twitch', 'TikTok', 'Instagram', 'Twitter', 'Twitter (X)', 'X'].includes(
+                embed.provider?.name
+            ) ||
             urlMatchesDomain(embed.url, 'streamable.com') ||
             urlMatchesDomain(embed.url, 'twitch.tv') ||
             urlMatchesDomain(embed.url, 'clips.twitch.tv') ||
@@ -508,7 +503,8 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
             });
         } else if (embed.data?.type === 'poll_result') {
             // Discord native poll results are sent as special embeds.
-            result = (result ? result + getTemplate('br', 'misc') : '') + renderPollResultEmbed(embed);
+            result =
+                (result ? result + getTemplate('br', 'misc') : '') + renderPollResultEmbed(embed);
         } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
             // Raw image/GIFV embeds are inlined directly.
             const rawUrl = embed.thumbnail?.url ?? embed.image?.url;
@@ -599,12 +595,13 @@ async function renderDiscordEvents(messagetext, item, bot, imagesCookie, clientT
                 COUNT: (event.userCount || 0).toLocaleString(),
             });
 
+            const coverUrl = event.coverImageURL({ size: 512 });
             const imageHtml =
-                event.coverImageURL() && imagesCookie === 1
+                coverUrl && imagesCookie === 1
                     ? renderTemplate(getTemplate('event_image', 'embed'), {
-                          IMAGE_URL: `/imageProxy/external/${Buffer.from(
-                              event.coverImageURL({ size: 512 })
-                          ).toString('base64')}`,
+                          IMAGE_URL: `/imageProxy/external/${Buffer.from(coverUrl).toString(
+                              'base64'
+                          )}`,
                       })
                     : '';
 

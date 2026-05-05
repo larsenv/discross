@@ -647,19 +647,22 @@ server.on('request', async (req, res) => {
                                 return;
                             }
                             // Trade code for token
-                            const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
-                                method: 'POST',
-                                body: new URLSearchParams({
-                                    client_id: DISCORD_CLIENT_ID,
-                                    client_secret: DISCORD_CLIENT_SECRET,
-                                    grant_type: 'authorization_code',
-                                    code: code,
-                                    redirect_uri: DISCORD_REDIRECT_URL,
-                                }),
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                },
-                            });
+                            const tokenResponse = await fetch(
+                                'https://discord.com/api/oauth2/token',
+                                {
+                                    method: 'POST',
+                                    body: new URLSearchParams({
+                                        client_id: DISCORD_CLIENT_ID,
+                                        client_secret: DISCORD_CLIENT_SECRET,
+                                        grant_type: 'authorization_code',
+                                        code: code,
+                                        redirect_uri: DISCORD_REDIRECT_URL,
+                                    }),
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded',
+                                    },
+                                }
+                            );
                             const tokenData = await tokenResponse.json();
                             if (tokenData.access_token) {
                                 accessToken = tokenData.access_token;
@@ -672,7 +675,9 @@ server.on('request', async (req, res) => {
                                     Math.floor(Date.now() / 1000) + (tokenData.expires_in || 0)
                                 );
                             } else {
-                                throw new Error('Failed to exchange code: ' + JSON.stringify(tokenData));
+                                throw new Error(
+                                    'Failed to exchange code: ' + JSON.stringify(tokenData)
+                                );
                             }
                         }
 
@@ -694,44 +699,51 @@ server.on('request', async (req, res) => {
                             });
                             auth.insertServers(readyServers);
                             for (const server of readyServers) {
-                                if (server.icon) {
-                                    await fs.promises.mkdir(
-                                        path.resolve(
-                                            `pages/static/ico/server`,
-                                            sanitizer(server.serverID)
-                                        ),
-                                        { recursive: true }
-                                    );
-                                    if (server.icon.startsWith('a_')) {
-                                        fs.promises.writeFile(
+                                try {
+                                    if (server.icon) {
+                                        await fs.promises.mkdir(
                                             path.resolve(
                                                 `pages/static/ico/server`,
-                                                sanitizer(
-                                                    `${server.serverID}/${server.icon.substring(2)}.gif`
-                                                )
+                                                sanitizer(server.serverID)
                                             ),
-                                            Buffer.from(
-                                                await (
-                                                    await fetch(
-                                                        `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.gif?size=128`
+                                            { recursive: true }
+                                        );
+                                        if (server.icon.startsWith('a_')) {
+                                            const iconUrl = `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.gif?size=128`;
+                                            const iconResponse = await fetch(iconUrl);
+                                            if (iconResponse.ok) {
+                                                await fs.promises.writeFile(
+                                                    path.resolve(
+                                                        `pages/static/ico/server`,
+                                                        sanitizer(
+                                                            `${server.serverID}/${server.icon.substring(2)}.gif`
+                                                        )
+                                                    ),
+                                                    Buffer.from(await iconResponse.arrayBuffer())
+                                                );
+                                            }
+                                        } else {
+                                            const iconUrl = `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.png?size=128`;
+                                            const iconResponse = await fetch(iconUrl);
+                                            if (iconResponse.ok) {
+                                                await sharp(
+                                                    await iconResponse.arrayBuffer()
+                                                ).toFile(
+                                                    path.resolve(
+                                                        `pages/static/ico/server/`,
+                                                        sanitizer(
+                                                            `${server.serverID}/${server.icon}.gif`
+                                                        )
                                                     )
-                                                ).arrayBuffer()
-                                            )
-                                        );
-                                    } else {
-                                        await sharp(
-                                            await (
-                                                await fetch(
-                                                    `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.png?size=128`
-                                                )
-                                            ).arrayBuffer()
-                                        ).toFile(
-                                            path.resolve(
-                                                `pages/static/ico/server/`,
-                                                sanitizer(`${server.serverID}/${server.icon}.gif`)
-                                            )
-                                        );
+                                                );
+                                            }
+                                        }
                                     }
+                                } catch (err) {
+                                    console.error(
+                                        `Failed to sync icon for server ${server.serverID}:`,
+                                        err
+                                    );
                                 }
                             }
 

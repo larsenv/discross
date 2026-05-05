@@ -22,13 +22,20 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         if (!member) {
             res.writeHead(500, { 'Content-Type': 'text/html' });
             res.end(
-                renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: 'Failed to verify user permissions. Please ensure you have access to this channel or try again later.' })
+                renderTemplate(getTemplate('error_text', 'misc'), {
+                    MESSAGE:
+                        'Failed to verify user permissions. Please ensure you have access to this channel or try again later.',
+                })
             );
             return;
         }
 
         if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
-            res.end(renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: "You don't have permission to do that!" }));
+            res.end(
+                renderTemplate(getTemplate('error_text', 'misc'), {
+                    MESSAGE: "You don't have permission to do that!",
+                })
+            );
             return;
         }
 
@@ -45,7 +52,11 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         if (!base64Data || base64Data.trim() === '') {
             console.error('[sendDrawing] Error processing image: Input Buffer is empty');
             res.writeHead(400, { 'Content-Type': 'text/html' });
-            res.end(renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: 'No drawing data provided. Please draw something before sending.' }));
+            res.end(
+                renderTemplate(getTemplate('error_text', 'misc'), {
+                    MESSAGE: 'No drawing data provided. Please draw something before sending.',
+                })
+            );
             return;
         }
 
@@ -61,7 +72,11 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         if (!base64Image || base64Image.trim() === '') {
             console.error('[sendDrawing] Error processing image: Base64 data is empty after split');
             res.writeHead(400, { 'Content-Type': 'text/html' });
-            res.end(renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: 'Invalid drawing data format. Please try again.' }));
+            res.end(
+                renderTemplate(getTemplate('error_text', 'misc'), {
+                    MESSAGE: 'Invalid drawing data format. Please try again.',
+                })
+            );
             return;
         }
 
@@ -71,7 +86,11 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         if (!imageBuffer || imageBuffer.length === 0) {
             console.error('[sendDrawing] Error processing image: Generated buffer is empty');
             res.writeHead(400, { 'Content-Type': 'text/html' });
-            res.end(renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: 'Failed to process drawing data. Please try again.' }));
+            res.end(
+                renderTemplate(getTemplate('error_text', 'misc'), {
+                    MESSAGE: 'Failed to process drawing data. Please try again.',
+                })
+            );
             return;
         }
 

@@ -156,11 +156,16 @@ exports.getHistoryCached = async function (chnl) {
         return [];
     }
     if (!msghistory[chnl.id]) {
-        // Fetch messages - Discord.js will try to populate member data automatically if available in cache
-        const messagearray = await chnl.messages.fetch({ limit: cachelength });
-        msghistory[chnl.id] = messagearray.sort(
-            (messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp
-        );
+        try {
+            // Fetch messages - Discord.js will try to populate member data automatically if available in cache
+            const messagearray = await chnl.messages.fetch({ limit: cachelength });
+            msghistory[chnl.id] = messagearray.sort(
+                (messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp
+            );
+        } catch (err) {
+            console.error(`Failed to fetch messages for channel ${chnl.id}:`, err);
+            return [];
+        }
     }
     return Array.from(msghistory[chnl.id].values());
 };

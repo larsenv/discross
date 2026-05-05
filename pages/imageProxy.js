@@ -77,7 +77,9 @@ exports.imageProxy = async function imageProxy(res, URL, fullSize = false) {
                                 .toFormat('gif', { colors: 256 })
                                 .toBuffer()
                                 .catch(() => {
-                                    console.warn('Could not convert full-size image, sending original');
+                                    console.warn(
+                                        'Could not convert full-size image, sending original'
+                                    );
                                     return buffer;
                                 });
                         } else {

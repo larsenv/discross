@@ -5,58 +5,62 @@
  */
 const WebSocket = require('ws');
 
-const sockets = [];
-const listenChannels = [];
+// Use a Map to associate WebSocket instances with their subscription state.
+// This avoids indexing bugs when clients disconnect and shift array positions.
+const clients = new Map();
 
 function sendToAll(message, channel) {
-    sockets.forEach((socket, i) => {
-        if (listenChannels[i] === channel) {
+    for (const [socket, state] of clients.entries()) {
+        if (state.listenChannel === channel) {
             socket.send(message);
         }
-    });
+    }
 }
 
 exports.sendToAll = sendToAll;
 
 // Supported client→server WebSocket actions: AUTH (authenticate), LISTEN (subscribe to a channel).
-function processMessage(isAuthed, listenChannel, message) {
-    const action = message[0];
-    const params = message.slice(action.length + 1, message.length);
+function processMessage(state, message) {
+    const msgStr = message.toString();
+    const parts = msgStr.split(' ');
+    const action = parts[0];
+    const params = parts.slice(1).join(' ');
+
     if (action === 'AUTH') {
-        isAuthed = true;
+        state.isAuthed = true;
     } else if (action === 'LISTEN') {
         // IMPORTANT TODO: Check channel permissions
-        listenChannel = params;
+        state.listenChannel = params.trim();
     }
-    return { isAuthed: isAuthed, listenChannel: listenChannel };
+    return state;
 }
 
 exports.startWsServer = function (server) {
     const wss = new WebSocket.Server({ server });
     wss.on('connection', function connection(ws) {
-        const index = sockets.length;
-        sockets.push(ws);
-        listenChannels.push('');
+        // Initialize state for the new client
+        const state = {
+            isAuthed: false,
+            listenChannel: '',
+        };
+        clients.set(ws, state);
+
         console.info('A client connected.');
-        console.info(`${sockets.length} clients are now connected.`);
-        let isAuthed = false;
-        let listenChannel = '';
+        console.info(`${clients.size} clients are now connected.`);
 
         ws.on('message', function incoming(message) {
-            const response = processMessage(isAuthed, listenChannel, message);
-            listenChannel = response.listenChannel;
-            listenChannels[index] = response.listenChannel;
-            isAuthed = response.isAuthed;
+            processMessage(state, message);
         });
 
         ws.on('close', function close() {
             console.info('A client disconnected.');
-            const index = sockets.indexOf(ws);
-            if (index > -1) {
-                sockets.splice(index, 1);
-                listenChannels.splice(index, 1);
-            }
-            console.info(`${sockets.length} clients are now connected.`);
+            clients.delete(ws);
+            console.info(`${clients.size} clients are now connected.`);
+        });
+
+        ws.on('error', (err) => {
+            console.error('WebSocket error:', err);
+            clients.delete(ws);
         });
     });
 };
