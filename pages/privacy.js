@@ -1,13 +1,12 @@
 'use strict';
-const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate } = require('./utils.js');
-const fs = require('fs');
+const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
 const escape = require('escape-html');
 const auth = require('../authentication.js');
 
 const privacy_template = loadAndRenderPageTemplate('privacy');
 
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
-const logged_out_template = fs.readFileSync('pages/templates/index/logged_out.html', 'utf-8');
+const logged_in_template = getTemplate('logged_in', 'index');
+const logged_out_template = getTemplate('logged_out', 'index');
 
 exports.processPrivacy = async function (bot, req, res, args) {
     const discordID = await auth.checkAuth(req, res, true);

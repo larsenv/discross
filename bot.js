@@ -172,6 +172,9 @@ let lastCheckTime = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 async function shouldSendDM() {
+    if (process.env.ALLOW_ALL_DMS === 'true') {
+        return true;
+    }
     const now = Date.now();
     if (cachedCheck !== null && now - lastCheckTime < CACHE_TTL) {
         return cachedCheck;

@@ -1,0 +1,11 @@
+<tr>
+  <td class="food-cart-name">{$NAME}</td>
+  <td class="food-cart-qty">{$QTY}</td>
+  <td class="food-cart-price">${$PRICE_TOTAL}</td>
+  <td>
+    <form method="POST" action="/food/cart/remove{$SESSION_PARAM}" style="display:inline">
+      <input type="hidden" name="index" value="{$INDEX}">
+      <button type="submit" class="food-btn food-btn-danger">Remove</button>
+    </form>
+  </td>
+</tr>

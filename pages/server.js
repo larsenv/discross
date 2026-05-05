@@ -18,63 +18,30 @@ const {
     buildSessionParam,
     parseCookies,
     loadAndRenderPageTemplate,
+    getTemplate,
 } = require('./utils.js');
 
 // Templates for viewing the channels in a server
 const server_template = loadAndRenderPageTemplate('server');
 
-const text_channel_template = fs.readFileSync(
-    'pages/templates/channellist/textchannel.html',
-    'utf-8'
-);
-const announcement_channel_template = fs.readFileSync(
-    'pages/templates/channellist/announcementchannel.html',
-    'utf-8'
-);
-const category_channel_template = fs.readFileSync(
-    'pages/templates/channellist/categorychannel.html',
-    'utf-8'
-);
-const voice_channel_template = fs.readFileSync(
-    'pages/templates/channellist/voicechannel.html',
-    'utf-8'
-);
-const thread_channel_template = fs.readFileSync(
-    'pages/templates/channellist/threadchannel.html',
-    'utf-8'
-);
-const thread_group_header_template = fs.readFileSync(
-    'pages/templates/channellist/threadgroupheader.html',
-    'utf-8'
-);
-const forum_channel_template = fs.readFileSync(
-    'pages/templates/channellist/forumchannel.html',
-    'utf-8'
-);
-const locked_channel_template = fs.readFileSync(
-    'pages/templates/channellist/lockedchannel.html',
-    'utf-8'
-);
-const rules_channel_template = fs.readFileSync(
-    'pages/templates/channellist/ruleschannel.html',
-    'utf-8'
-);
+const text_channel_template = getTemplate('textchannel', 'channellist');
+const announcement_channel_template = getTemplate('announcementchannel', 'channellist');
+const category_channel_template = getTemplate('categorychannel', 'channellist');
+const voice_channel_template = getTemplate('voicechannel', 'channellist');
+const thread_channel_template = getTemplate('threadchannel', 'channellist');
+const thread_group_header_template = getTemplate('threadgroupheader', 'channellist');
+const forum_channel_template = getTemplate('forumchannel', 'channellist');
+const locked_channel_template = getTemplate('lockedchannel', 'channellist');
+const rules_channel_template = getTemplate('ruleschannel', 'channellist');
 
-const server_icon_template = fs.readFileSync('pages/templates/server/server_icon.html', 'utf-8');
+const server_icon_template = getTemplate('server_icon', 'server');
 
-const server_list_only_template = fs.readFileSync(
-    'pages/templates/server/server_list_only.html',
-    'utf-8'
-);
-const sync_warning_template = fs.readFileSync('pages/templates/server/sync_warning.html', 'utf-8');
-const no_images_warning_template = fs.readFileSync(
-    'pages/templates/server/no_images_warning.html',
-    'utf-8'
-);
-const images_enabled_template = fs.readFileSync(
-    'pages/templates/server/images_enabled.html',
-    'utf-8'
-);
+const server_list_only_template = getTemplate('server_list_only', 'server');
+const sync_warning_template = getTemplate('sync_warning', 'server');
+const no_images_warning_template = getTemplate('no_images_warning', 'server');
+const images_enabled_template = getTemplate('images_enabled', 'server');
+
+const logged_in_template = getTemplate('logged_in', 'index');
 
 const cachedMembers = {}; // TODO: Find a better way
 const MAX_CACHED_MEMBERS = 250; // evict oldest user's data when the cap is hit
@@ -171,7 +138,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                 if (item.type === ChannelType.GuildCategory) {
                     // Close previous category if exists
                     if (currentCategoryId !== null) {
-                        channelList += '</div>'; // Close previous category-channels div
+                        channelList += getTemplate('div_close', 'misc'); // Close previous category-channels div
                     }
                     currentCategoryId = item.id;
                     channelList += renderTemplate(category_channel_template, {
@@ -261,7 +228,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                                 CHANNEL_LINK: `../channels/${thread.id}${sessionParam}`,
                             });
                         });
-                        channelList += '</div>';
+                        channelList += getTemplate('div_close', 'misc');
                     }
                 }
             }
@@ -269,7 +236,7 @@ async function processServerChannels(server, member, response, sessionParam) {
 
         // Close the last category if exists
         if (currentCategoryId !== null) {
-            channelList += '</div>';
+            channelList += getTemplate('div_close', 'misc');
         }
 
         // Replace the channel list in the response
@@ -289,8 +256,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
         const clientIsReady = isBotReady(bot);
 
         if (!clientIsReady) {
-            res.writeHead(503, { 'Content-Type': 'text/plain' });
-            res.end("The bot isn't connected, try again in a moment");
+            res.writeHead(503, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('bot_not_connected', 'misc'));
             return;
         }
 
@@ -387,16 +354,14 @@ exports.processServer = async function (bot, req, res, args, discordID) {
         // syncNeeded already parsed via parsedUrl above
         const syncNeeded = parsedUrl.searchParams.get('sync_needed');
 
-        // Process specific server if `args[2]` is given
         if (args[2]) {
             const targetServer = bot.client.guilds.cache.get(args[2]);
             await lock.acquire(discordID, async () => {
                 if (targetServer) {
                     response = renderTemplate(response, {
-                        DISCORD_NAME:
-                            '<b><font size="5" face="\'rodin\', Arial, Helvetica, sans-serif">' +
-                            escape(normalizeWeirdUnicode(targetServer.name)) +
-                            '</font></b><br>',
+                        DISCORD_NAME: renderTemplate(getTemplate('server-name-header', 'server/partials'), {
+                            NAME: escape(normalizeWeirdUnicode(targetServer.name)),
+                        }),
                     });
                     const member = await fetchAndCacheMember(targetServer, discordID);
                     if (member) {
@@ -412,8 +377,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                         });
                     }
                 } else {
-                    response = response.replace('{$DISCORD_NAME}', '');
-                    response = response.replace('{$CHANNEL_LIST}', 'Invalid channel!');
+                    response = renderTemplate(response, { DISCORD_NAME: '' });
+                    response = renderTemplate(response, { CHANNEL_LIST: 'Invalid channel!' });
                 }
             });
         } else {
@@ -444,21 +409,25 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                 const output = unicodeToTwemojiCode(match);
                 response = response.replaceAll(
                     match,
-                    `<img src="/resources/twemoji/${output}.gif" width="22" height="22" style="width: 6%;vertical-align:top;" alt="emoji">`
+                    renderTemplate(getTemplate('server-emoji-twemoji', 'server/partials'), {
+                        CODE: output,
+                    })
                 );
             });
         }
 
         const custom_emoji_matches = [
             ...response.matchAll?.(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})?(?:(?!\1).)*&gt;/g),
-        ]; // I'm not sure how to detect if an emoji is inline, since we don't have the whole message here to use it's length.
+        ];
         if (custom_emoji_matches[0] && imagesCookie === 1)
             custom_emoji_matches.forEach(async (match) => {
-                // Tried Regex to find the whole message by matching the HTML tags that would appear before and after a message
                 response = response.replaceAll(
                     match[0],
-                    `<img src="/imageProxy/emoji/${match[4]}.${match[2] ? 'gif' : 'png'}" width="22" height="22" style="width: 6%;"  alt="emoji">`
-                ); // Make it smaller if inline
+                    renderTemplate(getTemplate('server-emoji-custom', 'server/partials'), {
+                        EMOJI_ID: match[4],
+                        EXT: match[2] ? 'gif' : 'png',
+                    })
+                );
             });
 
         // Parse and add user agent display
@@ -545,7 +514,10 @@ function addUserAgentDisplay(response, req) {
 
     const platform = browserInfo && osInfo ? `${browserInfo} on ${osInfo}` : browserInfo || osInfo;
     const userAgentDisplay = platform
-        ? `<font color="#aaaaaa" size="2">Platform: ${platform}${deviceInfo}</font>`
+        ? renderTemplate(getTemplate('user-agent-display', 'server/partials'), {
+              PLATFORM: platform,
+              DEVICE_INFO: deviceInfo,
+          })
         : '';
 
     return renderTemplate(response, { USER_AGENT: userAgentDisplay });

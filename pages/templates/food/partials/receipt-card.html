@@ -1,0 +1,11 @@
+<div class="food-receipt-card">
+  <div class="food-receipt-header">
+    <span class="food-receipt-store">{$STORE_NAME}</span>
+    <span class="food-receipt-date">{$DATE}</span>
+  </div>
+  <div class="food-receipt-items">{$ITEMS_LIST}</div>
+  <div class="food-receipt-footer">
+    <span class="food-receipt-total">Total: ${$TOTAL}</span>
+    <a href="/food/track{$SESSION_PARAM}" class="food-btn food-btn-sm">Track</a>
+  </div>
+</div>

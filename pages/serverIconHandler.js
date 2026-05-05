@@ -4,6 +4,7 @@ const path = require('path');
 const sharp = require('sharp');
 const sanitizer = require('path-sanitizer').default;
 const { generatePlaceholderIconAsGif } = require('./iconGenerator.js');
+const { getTemplate } = require('./utils.js');
 
 // Note: Using built-in fetch API (Node.js 18+)
 
@@ -92,8 +93,8 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
         console.error('Error generating placeholder icon:', err);
 
         // Last resort: return 404
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Icon not found');
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('icon_not_found', 'misc'));
     }
 }
 

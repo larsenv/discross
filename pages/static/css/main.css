@@ -1881,6 +1881,7 @@ html.page-food input[type='email'] {
     font-size: 0.95rem;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
     width: 100%;
+    max-width: none; /* Allow filling the table cell */
     outline: none;
     box-sizing: border-box;
 }
@@ -1900,26 +1901,31 @@ select.food-input,
 .food-input-row {
     display: table;
     width: 100%;
-    table-layout: fixed;
+    /* Removed table-layout: fixed to allow button to shrink-to-fit its label */
+}
+
+.food-input-row .food-input-cell {
+    display: table-cell;
+    width: 100%;
+    vertical-align: middle;
+}
+
+.food-input-row .food-btn-cell {
+    display: table-cell;
+    width: 1%;
+    white-space: nowrap;
+    vertical-align: middle;
+    padding-left: 8px;
 }
 
 .food-input-row .food-input {
-    display: table-cell;
-    width: 100%;
-    vertical-align: bottom;
-}
-
-.food-input-row .food-btn {
-    display: table-cell;
-    vertical-align: bottom;
-    width: 1%;
-    white-space: nowrap;
-    padding-left: 10px;
+    margin: 0;
 }
 
 a.food-btn,
 .food-btn {
     display: inline-block;
+    width: auto; /* Ensure natural width */
     background: #5865f2;
     color: #ffffff !important;
     border: none;

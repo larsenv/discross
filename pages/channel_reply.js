@@ -1,5 +1,4 @@
 'use strict';
-const fs = require('fs');
 const escape = require('escape-html');
 const { PermissionFlagsBits } = require('discord.js');
 const { getDisplayName } = require('./memberUtils');
@@ -20,63 +19,33 @@ const {
 } = require('./utils.js');
 
 // Templates for viewing messages in a channel (Reply Context)
-const channel_reply_bar_template = fs.readFileSync(
-    'pages/templates/partials/channel_reply_bar.html',
-    'utf-8'
-);
+const channel_reply_bar_template = getTemplate('channel_reply_bar', 'partials');
 const channel_template_base = loadAndRenderPageTemplate('channel');
 const channel_template = renderTemplate(channel_template_base, {
     PAGE_CLASS: 'page-channel-reply',
     CONTENT_EXTRA_PADDING: '',
-    EMOJI_PICKER: fs.readFileSync('pages/templates/partials/emoji_picker.html', 'utf-8'),
-    EMOJI_BUTTON: fs.readFileSync('pages/templates/partials/emoji_picker_button.html', 'utf-8'),
+    EMOJI_PICKER: getTemplate('emoji_picker', 'partials'),
+    EMOJI_BUTTON: getTemplate('emoji_picker_button', 'partials'),
     REPLY_MESSAGE_ID_INPUT: getTemplate('reply_message_id_input', 'channel'),
 });
 
 // Reply-specific message wrapper templates
-const message_template = fs.readFileSync('pages/templates/message/message_reply.html', 'utf-8');
-const message_forwarded_template = fs.readFileSync(
-    'pages/templates/message/forwarded_message_reply.html',
-    'utf-8'
-);
-const message_mentioned_template = fs.readFileSync(
-    'pages/templates/message/message_reply_mentioned.html',
-    'utf-8'
-);
-const message_forwarded_mentioned_template = fs.readFileSync(
-    'pages/templates/message/forwarded_message_reply_mentioned.html',
-    'utf-8'
-);
+const message_template = getTemplate('message_reply', 'message');
+const message_forwarded_template = getTemplate('forwarded_message_reply', 'message');
+const message_mentioned_template = getTemplate('message_reply_mentioned', 'message');
+const message_forwarded_mentioned_template = getTemplate('forwarded_message_reply_mentioned', 'message');
 
 // Shared templates (same as channel.js)
-const first_message_content_template = fs.readFileSync(
-    'pages/templates/message/first_message_content.html',
-    'utf-8'
-);
-const merged_message_content_template = fs.readFileSync(
-    'pages/templates/message/merged_message_content.html',
-    'utf-8'
-);
-const mention_template = fs.readFileSync('pages/templates/message/mention.html', 'utf-8');
-const input_template = fs.readFileSync('pages/templates/channel/input.html', 'utf-8');
-const input_disabled_template = fs.readFileSync(
-    'pages/templates/channel/input_disabled.html',
-    'utf-8'
-);
-const no_message_history_template = fs.readFileSync(
-    'pages/templates/channel/no_message_history.html',
-    'utf-8'
-);
-const file_download_template = fs.readFileSync(
-    'pages/templates/channel/file_download.html',
-    'utf-8'
-);
-const reactions_template = fs.readFileSync('pages/templates/message/reactions.html', 'utf-8');
-const reaction_template = fs.readFileSync('pages/templates/message/reaction.html', 'utf-8');
-const date_separator_template = fs.readFileSync(
-    'pages/templates/message/date_separator.html',
-    'utf-8'
-);
+const first_message_content_template = getTemplate('first_message_content', 'message');
+const merged_message_content_template = getTemplate('merged_message_content', 'message');
+const mention_template = getTemplate('mention', 'message');
+const input_template = getTemplate('input', 'channel');
+const input_disabled_template = getTemplate('input_disabled', 'channel');
+const no_message_history_template = getTemplate('no_message_history', 'channel');
+const file_download_template = getTemplate('file_download', 'channel');
+const reactions_template = getTemplate('reactions', 'message');
+const reaction_template = getTemplate('reaction', 'message');
+const date_separator_template = getTemplate('date_separator', 'message');
 const REPLY_PREVIEW_MAX_LENGTH = 25;
 
 function buildReplyPreviewContent(message) {
@@ -148,8 +117,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
     try {
         if (!isBotReady(bot)) {
-            res.writeHead(503, { 'Content-Type': 'text/plain' });
-            res.end("The bot isn't connected, try again in a moment");
+            res.writeHead(503, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('bot_not_connected', 'misc'));
             return;
         }
 
@@ -158,24 +127,22 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         if (chnl) {
             const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
             if (!botMember) {
-                res.writeHead(503, { 'Content-Type': 'text/plain' });
-                res.end('The bot is not in this server!');
+                res.writeHead(503, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('not_in_server', 'misc'));
                 return;
             }
 
             const member = await chnl.guild.members.fetch(discordID).catch(() => null);
             if (!member) {
-                res.writeHead(403, { 'Content-Type': 'text/plain' });
-                res.end('You are not in this server! Please join the server to view this channel.');
+                res.writeHead(403, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('join_server_to_view', 'misc'));
                 return;
             }
 
             const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
             if (!canView) {
-                res.writeHead(403, { 'Content-Type': 'text/plain' });
-                res.end(
-                    "You (or the bot) don't have permission to do that, or this channel type is not supported."
-                );
+                res.writeHead(403, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('no_permission', 'misc'));
                 return;
             }
 

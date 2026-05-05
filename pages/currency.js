@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const escape = require('escape-html');
 
 const {
@@ -72,8 +71,6 @@ const CURRENCY_NAMES = {
     USD: 'US Dollar',
     ZAR: 'South African Rand',
 };
-
-const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
 const currency_template = loadAndRenderPageTemplate('currency');
 

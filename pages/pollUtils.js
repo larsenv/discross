@@ -1,16 +1,17 @@
 'use strict';
-const fs = require('fs');
-const escape = require('escape-html');
-const { renderTemplate } = require('./utils.js');
+const { renderTemplate, getTemplate } = require('./utils.js');
 
-const poll_template = fs.readFileSync('pages/templates/message/poll.html', 'utf-8');
-const poll_answer_template = fs.readFileSync('pages/templates/message/poll_answer.html', 'utf-8');
+const poll_template = getTemplate('poll', 'message');
+const poll_answer_template = getTemplate('poll_answer', 'message');
 
 function buildPollEmojiHtml(emoji, imagesCookie) {
     if (!emoji) return '';
     if (emoji.id && imagesCookie === 1) {
         const extension = emoji.animated ? 'gif' : 'png';
-        return `<img src="/imageProxy/emoji/${emoji.id}.${extension}" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
+        return renderTemplate(getTemplate('poll-emoji-custom', 'message/partials'), {
+            EMOJI_ID: emoji.id,
+            EXT: extension,
+        });
     }
     if (emoji.name && imagesCookie === 1) {
         const codePoints = [];
@@ -22,10 +23,14 @@ function buildPollEmojiHtml(emoji, imagesCookie) {
             }
         }
         const emojiCode = codePoints.join('-');
-        return `<img src="/resources/twemoji/${emojiCode}.gif" width="20" height="20" style="width: 20px; height: 20px; vertical-align: middle;" alt="emoji">`;
+        return renderTemplate(getTemplate('poll-emoji-twemoji', 'message/partials'), {
+            CODE: emojiCode,
+        });
     }
     if (emoji.name) {
-        return `<span style="font-size: 20px;">${emoji.name}</span>`;
+        return renderTemplate(getTemplate('poll-emoji-text', 'message/partials'), {
+            NAME: emoji.name,
+        });
     }
     return '';
 }
@@ -88,7 +93,9 @@ function processPoll(poll, imagesCookie) {
         return pollHtml;
     } catch (error) {
         console.error('Error processing poll:', error);
-        return '<div style="color: #ed4245; font-size: 14px;">Error displaying poll</div>';
+        return renderTemplate(getTemplate('poll-error', 'message/partials'), {
+            MESSAGE: 'Error displaying poll',
+        });
     }
 }
 

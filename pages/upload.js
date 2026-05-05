@@ -1,5 +1,4 @@
 'use strict';
-const fs = require('fs');
 const escape = require('escape-html');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {
@@ -19,8 +18,8 @@ exports.processUpload = async function processUpload(bot, req, res, args, discor
     const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
 
     if (!isValidSnowflake(channelId)) {
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end('Invalid channel ID');
+        res.writeHead(400, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('invalid_channel', 'misc'));
         return;
     }
 

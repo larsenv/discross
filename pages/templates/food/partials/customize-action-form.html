@@ -1,0 +1,17 @@
+<div class="food-card">
+  <form method="POST" action="/food/cart/add{$SESSION_PARAM}">
+    <input type="hidden" name="storeId" value="{$STORE_ID}">
+    <input type="hidden" name="country" value="{$COUNTRY}">
+    <input type="hidden" name="code" value="{$CODE}">
+    <input type="hidden" name="name" value="{$NAME}">
+    <input type="hidden" name="price" value="{$PRICE}">
+    <input type="hidden" name="redirect" value="{$REDIRECT}">
+    <input type="hidden" name="default_options" value="{$DEFAULT_OPTIONS}">
+    {$TOPPINGS_INFO_HTML}
+    <div style="{$MARGIN_STYLE}">
+      <button type="submit" class="food-btn food-btn-large">Add to Cart{$PRICE_DISPLAY}</button>
+      &#160;&#160;
+      <a href="{$BACK_URL}" class="food-btn food-btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>

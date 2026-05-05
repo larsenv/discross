@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const escape = require('escape-html');
 const he = require('he');
 const { PermissionFlagsBits, MessageReferenceType, UserFlags } = require('discord.js');
@@ -352,7 +351,7 @@ function replaceOrAppendMedia(messagetext, embedUrl, imgHtml) {
         if (re.test(result)) return result.replace(re, imgHtml);
     }
     // Fallback: append to the end
-    return (result ? result + '<br>' : '') + imgHtml;
+    return (result ? result + getTemplate('br', 'misc') : '') + imgHtml;
 }
 
 /**
@@ -1850,8 +1849,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     );
 
     if (!isBotReady(bot)) {
-        res.writeHead(503, { 'Content-Type': 'text/plain' });
-        res.end("The bot isn't connected, try again in a moment");
+        res.writeHead(503, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('bot_not_connected', 'misc'));
         return;
     }
 
@@ -1864,26 +1863,24 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
 
         if (!botMember) {
-            res.writeHead(503, { 'Content-Type': 'text/plain' });
-            res.end('The bot is not in this server!');
+            res.writeHead(503, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('not_in_server', 'misc'));
             return;
         }
 
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
 
         if (!member) {
-            res.writeHead(403, { 'Content-Type': 'text/plain' });
-            res.end('You are not in this server! Please join the server to view this channel.');
+            res.writeHead(403, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('join_server_to_view', 'misc'));
             return;
         }
 
         const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
 
         if (!canView) {
-            res.writeHead(403, { 'Content-Type': 'text/plain' });
-            res.end(
-                "You (or the bot) don't have permission to do that, or this channel type is not supported."
-            );
+            res.writeHead(403, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('no_permission', 'misc'));
             return;
         }
 
