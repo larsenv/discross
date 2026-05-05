@@ -2,12 +2,11 @@
 const escape = require('escape-html');
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { formatDateWithTimezone } = require('../timezoneUtils');
-const fs = require('fs');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText, cacheCustomEmoji } = require('./emojiUtils');
 const { renderTemplate, parseCookies, getTemplate } = require('./utils.js');
 
-const embed_template = fs.readFileSync('pages/templates/message/embed.html', 'utf-8');
+const embed_template = getTemplate('embed', 'message');
 
 /**
  * Encode an external image URL for use with the /imageProxy/external/ route.

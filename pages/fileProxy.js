@@ -1,5 +1,6 @@
 'use strict';
 const https = require('https');
+const { getTemplate } = require('./utils.js');
 
 exports.fileProxy = async function fileProxy(res, URL) {
     // Basically image proxy but without image-specific stuff
@@ -20,9 +21,7 @@ exports.fileProxy = async function fileProxy(res, URL) {
         })
         .on('error', (err) => {
             console.error('Error fetching file:', err);
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end(
-                'An error occurred. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error'
-            );
+            res.writeHead(500, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('generic_error', 'misc'));
         });
 };

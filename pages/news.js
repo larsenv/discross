@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const escape = require('escape-html');
 const he = require('he');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
@@ -454,7 +453,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     // args[2] is the article slug (letters, digits, hyphens only)
     const articleSlug = args[2] || '';
     if (!articleSlug || /[^a-zA-Z0-9-]/.test(articleSlug)) {
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.writeHead(400, { 'Content-Type': 'text/html' });
         res.end(getTemplate('news_invalid_article_id_error', 'misc'));
         return;
     }

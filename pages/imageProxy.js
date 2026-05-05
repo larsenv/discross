@@ -96,15 +96,13 @@ exports.imageProxy = async function imageProxy(res, URL) {
                 })
                 .on('error', (err) => {
                     console.log('Error fetching image:', err.message || err);
-                    res.writeHead(500, { 'Content-Type': 'text/plain' });
-                    res.end(
-                        'An error occurred. Please email admin@discross.net or contact us on our Discord server. Make sure to let us know where you had found the error'
-                    );
+                    res.writeHead(500, { 'Content-Type': 'text/html' });
+                    res.end(getTemplate('generic_error', 'misc'));
                 });
         })
         .on('error', (err) => {
             console.log('Image proxy request error:', err.message || err);
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.writeHead(500, { 'Content-Type': 'text/html' });
             res.end(getTemplate('generic_error', 'misc'));
         });
 };

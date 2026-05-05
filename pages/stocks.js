@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
@@ -13,8 +12,6 @@ const {
     loadAndRenderPageTemplate,
     getTemplate,
 } = require('./utils.js');
-
-const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
 // Maximum ticker symbol length to prevent abuse
 const TICKER_MAX_LENGTH = 10;

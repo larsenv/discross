@@ -1,5 +1,4 @@
 'use strict';
-const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
@@ -45,10 +44,8 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
 
             const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
             if (!canView) {
-                res.writeHead(403, { 'Content-Type': 'text/plain' });
-                res.end(
-                    "You (or the bot) don't have permission to do that, or this channel type is not supported."
-                );
+                res.writeHead(403, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('draw_permission_error', 'misc'));
                 return;
             }
 

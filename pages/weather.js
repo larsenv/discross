@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const https = require('https');
 const zlib = require('zlib');
 const escape = require('escape-html');
@@ -64,8 +63,6 @@ const WEATHER_ICONS = {
     43: '1f328', // Mostly Cloudy w/ Flurries (night)
     44: '2744', // Mostly Cloudy w/ Snow (night)
 };
-
-const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
 const VIEWS = [
     { id: 'current', label: 'Current' },
@@ -370,18 +367,26 @@ exports.processWeather = async function processWeather(req, res) {
                     'AccuWeather location API returned 401 (unauthorized). Check API key. Response:',
                     JSON.stringify(locResult.data)
                 );
-                weatherHtml = `<font color="#ff4444" ${FONT}>Weather service unavailable. Please try again later.</font><br>`;
+                weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+                    MESSAGE: 'Weather service unavailable. Please try again later.',
+                });
             } else if (locResult.status === 429) {
                 console.error('AccuWeather location API returned 429 (rate limited).');
-                weatherHtml = `<font color="#ff4444" ${FONT}>Too many requests. Please wait a moment and try again.</font><br>`;
+                weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+                    MESSAGE: 'Too many requests. Please wait a moment and try again.',
+                });
             } else if (locResult.status !== 200) {
                 console.error(
                     `AccuWeather location API returned HTTP ${locResult.status}. Response:`,
                     JSON.stringify(locResult.data)
                 );
-                weatherHtml = `<font color="#ff4444" ${FONT}>Weather service unavailable. Please try again later.</font><br>`;
+                weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+                    MESSAGE: 'Weather service unavailable. Please try again later.',
+                });
             } else if (!Array.isArray(locResult.data) || locResult.data.length === 0) {
-                weatherHtml = `<font color="#ff4444" ${FONT}>City not found. Please try a different city name.</font><br>`;
+                weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+                    MESSAGE: 'City not found. Please try a different city name.',
+                });
             } else {
                 const location = locResult.data[0];
                 const locationKey = location.Key;
@@ -435,7 +440,9 @@ exports.processWeather = async function processWeather(req, res) {
             }
         } catch (err) {
             console.error('Weather API error:', err);
-            weatherHtml = `<font color="#ff4444" ${FONT}>Unable to fetch weather data. Please try again later.</font><br>`;
+            weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+                MESSAGE: 'Unable to fetch weather data. Please try again later.',
+            });
         }
     }
 

@@ -1,14 +1,18 @@
 'use strict';
 
-const fs = require('fs');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
-const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate } = require('./utils.js');
+const {
+    renderTemplate,
+    getPageThemeAttr,
+    loadAndRenderPageTemplate,
+    getTemplate,
+} = require('./utils.js');
 
 const search_template = loadAndRenderPageTemplate('search');
 
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
+const logged_in_template = getTemplate('logged_in', 'index');
 
 const SEARCH_ENGINES = {
     frogfind: 'http://frogfind.com/?q=',

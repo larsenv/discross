@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { buildMessagesHtml } = require('./channel');
 const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
@@ -46,8 +45,8 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
     const clientTimezone = getTimezoneFromIP(req);
 
     if (!isBotReady(bot)) {
-        res.writeHead(503, { 'Content-Type': 'text/plain' });
-        res.end("The bot isn't connected, try again in a moment");
+        res.writeHead(503, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('bot_not_connected', 'misc'));
         return;
     }
 
@@ -60,22 +59,20 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
     try {
         const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
         if (!botMember) {
-            res.end('The bot is not in this server!');
+            res.end(getTemplate('not_in_server', 'misc'));
             return;
         }
 
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
         if (!member) {
-            res.end('You are not in this server! Please join the server to view this channel.');
+            res.end(getTemplate('join_server_to_view', 'misc'));
             return;
         }
 
         const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
         if (!canView) {
-            res.writeHead(403, { 'Content-Type': 'text/plain' });
-            res.end(
-                "You (or the bot) don't have permission to do that, or this channel type is not supported."
-            );
+            res.writeHead(403, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('no_permission', 'misc'));
             return;
         }
 

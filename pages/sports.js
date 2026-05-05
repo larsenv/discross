@@ -1,13 +1,10 @@
 'use strict';
 
-const fs = require('fs');
 const https = require('https');
 const escape = require('escape-html');
 
 const auth = require('../authentication.js');
 const { renderTemplate, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
-
-const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
 // Fallback timezone when user cookie is absent or invalid
 const DEFAULT_TZ = 'America/New_York';
@@ -198,10 +195,10 @@ function renderScoreboard(events, userTZ) {
 
         const homeColor = homeWinner ? '#dddddd' : '#b5bac1';
         const awayColor = awayWinner ? '#dddddd' : '#b5bac1';
-        const homeWeight = homeWinner ? '<b>' : '';
-        const homeWeightEnd = homeWinner ? '</b>' : '';
-        const awayWeight = awayWinner ? '<b>' : '';
-        const awayWeightEnd = awayWinner ? '</b>' : '';
+        const homeWeight = homeWinner ? getTemplate('bold_open', 'misc') : '';
+        const homeWeightEnd = homeWinner ? getTemplate('bold_close', 'misc') : '';
+        const awayWeight = awayWinner ? getTemplate('bold_open', 'misc') : '';
+        const awayWeightEnd = awayWinner ? getTemplate('bold_close', 'misc') : '';
 
         let gameTimeDisplay;
         if (stateType === 'in') {
@@ -256,7 +253,8 @@ function buildNavButtons(activeSport, urlSessionID) {
             LABEL: s.label,
         });
     }
-    return html + '<br><br>';
+    const lb = getTemplate('line_break', 'misc');
+    return html + lb + lb;
 }
 
 exports.processSports = async function processSports(req, res) {

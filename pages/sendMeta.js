@@ -12,8 +12,8 @@ exports.sendMeta = async function (bot, req, res, channelId) {
 
     const chnl = await bot.client.channels.fetch(channelId).catch(() => undefined);
     if (!chnl) {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Channel not found');
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('channel_not_found', 'misc'));
         return;
     }
 
@@ -24,7 +24,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
 
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
         if (!member || !member.permissionsIn(chnl).has(discord.PermissionFlagsBits.SendMessages)) {
-            res.end("You don't have permission to do that!");
+            res.end(renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: "You don't have permission to do that!" }));
             return;
         }
 
@@ -84,7 +84,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
         res.end();
     } catch (err) {
         console.error('Error sending meta webhook:', err);
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end('Failed to send message');
+        res.writeHead(500, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('send_failed', 'misc'));
     }
 };

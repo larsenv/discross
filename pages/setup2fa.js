@@ -5,7 +5,6 @@ const {
     loadAndRenderPageTemplate,
     getTemplate,
 } = require('./utils.js');
-const fs = require('fs');
 const escape = require('escape-html');
 const auth = require('../authentication.js');
 
@@ -20,7 +19,7 @@ function injectMenuAndError(response, username, parsedUrl, sessionParam) {
     const errorText = parsedUrl.searchParams.get('errortext');
     const errorHtml = errorText
         ? renderTemplate(error_template, {
-              ERROR_MESSAGE: escape(errorText).replaceAll('\n', '<br>'),
+              ERROR_MESSAGE: escape(errorText).replaceAll('\n', getTemplate('br', 'misc')),
           })
         : '';
 
@@ -85,13 +84,13 @@ exports.processSetup2FA = async function (bot, req, res, args) {
     const errorHtml = (() => {
         if (dmErrorText) {
             return renderTemplate(error_template, {
-                ERROR_MESSAGE: escape(dmErrorText).replaceAll('\n', '<br>'),
+                ERROR_MESSAGE: escape(dmErrorText).replaceAll('\n', getTemplate('br', 'misc')),
             });
         }
         const urlError = parsedUrl.searchParams.get('errortext');
         if (urlError) {
             return renderTemplate(error_template, {
-                ERROR_MESSAGE: escape(urlError).replaceAll('\n', '<br>'),
+                ERROR_MESSAGE: escape(urlError).replaceAll('\n', getTemplate('br', 'misc')),
             });
         }
         if (parsedUrl.searchParams.get('codesent')) {
@@ -151,15 +150,16 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
 
     // Render backup codes page inline (codes are shown exactly once)
     const username = await auth.getUsername(discordID);
-    const codesHtml =
-        '<table style="font-family: monospace; font-size: 16px;">' +
-        result.backupCodes
-            .map(
-                (code) =>
-                    `<tr><td style="padding: 4px 0;"><code style="background: #393c40; padding: 6px 12px; color: #dddddd;">${escape(code)}</code></td></tr>`
-            )
-            .join('') +
-        '</table>';
+    const rows = result.backupCodes
+        .map((code) =>
+            renderTemplate(getTemplate('backup-codes-row', 'auth/partials'), {
+                CODE: escape(code),
+            })
+        )
+        .join('');
+    const codesHtml = renderTemplate(getTemplate('backup-codes-table', 'auth/partials'), {
+        ROWS: rows,
+    });
 
     const menuOptions = renderTemplate(logged_in_template, { USER: escape(username || '') });
     const response = renderTemplate(backup_codes_template, {

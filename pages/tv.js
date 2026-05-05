@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const https = require('https');
 const escape = require('escape-html');
 const { renderTemplate, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
@@ -9,7 +8,6 @@ const he = require('he');
 const auth = require('../authentication.js');
 
 const TVPASSPORT_HOST = 'www.tvpassport.com';
-const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 const ZIP_MAX_LENGTH = 10;
 const LINEUP_MAX_LENGTH = 120;
 const STATION_ID_MAX_LENGTH = 120;
@@ -17,7 +15,7 @@ const STATION_ID_MAX_LENGTH = 120;
 const tv_template = loadAndRenderPageTemplate('index', 'tv');
 const tv_station_template = loadAndRenderPageTemplate('station', 'tv');
 
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
+const logged_in_template = getTemplate('logged_in', 'index');
 
 // Make an HTTPS request (GET or POST), following up to maxRedirects redirects.
 // After a POST redirect, follow the redirect with a GET (standard browser POST-back behaviour).
@@ -475,7 +473,6 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
         rowsHtml += renderTemplate(getTemplate('channel_grid_item', 'tv'), {
             STATION_URL: stationUrl,
             LOGO_HTML: logoHtml,
-            FONT: FONT,
             NAME_HTML: nameHtml,
         });
     }
@@ -519,7 +516,6 @@ function buildScheduleHtml(items) {
 
         rowsHtml += renderTemplate(getTemplate('schedule_row', 'tv'), {
             ROW_STYLE: rowStyle,
-            FONT: FONT,
             TIME_STR: timeStr,
             DURATION_HTML: durationStr,
             SHOW_NAME: showName,

@@ -51,15 +51,19 @@
           <form method="GET" action="/food/store-search">
             <div class="food-input-row">
               <input type="hidden" name="sessionID" value="{$SESSION_ID}" />
-              <input
-                type="text"
-                name="address"
-                class="food-input"
-                value="{$SEARCH_ADDRESS}"
-                placeholder="Delivery address or zip code"
-                required
-              />
-              <button type="submit" class="food-btn">Find Stores</button>
+              <div class="food-input-cell">
+                <input
+                  type="text"
+                  name="address"
+                  class="food-input"
+                  value="{$SEARCH_ADDRESS}"
+                  placeholder="Delivery address or zip code"
+                  required
+                />
+              </div>
+              <div class="food-btn-cell">
+                <button type="submit" class="food-btn">Find Stores</button>
+              </div>
             </div>
           </form>
         </div>

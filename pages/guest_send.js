@@ -10,6 +10,7 @@ const {
     parseCookies,
     getBaseUrl,
     sanitizeGuestName,
+    getTemplate,
 } = require('./utils.js');
 const { checkAndMarkNonce } = require('./messageDedup.js');
 
@@ -46,8 +47,8 @@ exports.guestSend = async function guestSend(bot, req, res) {
 
     // Check bot is ready
     if (!isBotReady(bot)) {
-        res.writeHead(503, { 'Content-Type': 'text/plain' });
-        res.end("The bot isn't connected, try again in a moment");
+        res.writeHead(503, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('bot_not_connected', 'misc'));
         return;
     }
 

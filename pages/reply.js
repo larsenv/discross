@@ -14,15 +14,15 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         ) {
             // Check if bot is connected
             if (!isBotReady(bot)) {
-                res.writeHead(503, { 'Content-Type': 'text/plain' });
-                res.end("The bot isn't connected, try again in a moment");
+                res.writeHead(503, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('bot_not_connected', 'misc'));
                 return;
             }
 
             const channel = await bot.client.channels.fetch(parsedurl.searchParams.get('channel'));
             if (!channel) {
-                res.writeHead(404, { 'Content-Type': 'text/plain' });
-                res.end('Channel not found');
+                res.writeHead(404, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('channel_not_found', 'misc'));
                 return;
             }
 
@@ -31,16 +31,16 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
                 return null;
             });
             if (!member) {
-                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                res.writeHead(500, { 'Content-Type': 'text/html' });
                 res.end(
-                    'Failed to verify user permissions. Please ensure you have access to this channel or try again later.'
+                    renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: 'Failed to verify user permissions. Please ensure you have access to this channel or try again later.' })
                 );
                 return;
             }
 
             if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
-                res.writeHead(403, { 'Content-Type': 'text/plain' });
-                res.end("You don't have permission to do that!");
+                res.writeHead(403, { 'Content-Type': 'text/html' });
+                res.end(renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: "You don't have permission to do that!" }));
                 return;
             }
 
@@ -56,8 +56,8 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             );
             // Verify the reply message belongs to the channel to prevent reply spoofing
             if (reply_message.channelId !== channel.id) {
-                res.writeHead(400, { 'Content-Type': 'text/plain' });
-                res.end('Reply message does not belong to this channel');
+                res.writeHead(400, { 'Content-Type': 'text/html' });
+                res.end(renderTemplate(getTemplate('error_text', 'misc'), { MESSAGE: 'Reply message does not belong to this channel' }));
                 return;
             }
             const rawReplyContent = reply_message.content

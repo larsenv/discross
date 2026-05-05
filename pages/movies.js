@@ -1,27 +1,49 @@
 'use strict';
 
-const fs = require('fs');
 const escape = require('escape-html');
 const he = require('he');
 const auth = require('../authentication.js');
-const { renderTemplate } = require('./utils.js');
+const { renderTemplate, getTemplate } = require('./utils.js');
 
-const head_partial = fs.readFileSync('pages/templates/partials/head.html', 'utf-8');
+function loadTemplate(name) {
+    const head_partial = getTemplate('head', 'partials');
+    // movies.html is in the root of templates/
+    const mainTemplate = getTemplate(name.replace('.html', ''), '');
+    return renderTemplate(mainTemplate, { COMMON_HEAD: head_partial });
+}
 
-const movies_template = fs
-    .readFileSync('pages/templates/movies.html', 'utf-8')
-    .split('{$COMMON_HEAD}')
-    .join(head_partial);
+function loadPartial(name) {
+    return getTemplate(name.replace('.html', ''), 'movies/partials');
+}
 
-const logged_in_template = fs.readFileSync('pages/templates/index/logged_in.html', 'utf-8');
+let _templates = null;
+function getTemplates() {
+    if (!_templates) {
+        _templates = {
+            movies: loadTemplate('movies.html'),
+            loggedIn: getTemplate('logged_in', 'index'),
+            // Partials
+            scoreBadge: loadPartial('movie-score-badge.html'),
+            card: loadPartial('movie-card.html'),
+            tab: loadPartial('movie-tab.html'),
+            empty: loadPartial('movie-empty.html'),
+            poster: loadPartial('movie-poster.html'),
+            rtLink: loadPartial('movie-rt-link.html'),
+            cardScores: loadPartial('movie-card-scores.html'),
+        };
+    }
+    return _templates;
+}
+
+function strReplace(string, needle, replacement) {
+    return string.split(needle).join(replacement ?? '');
+}
 
 const THEME_CONFIG = {
     0: { themeClass: '' },
     1: { themeClass: 'class="light-theme"' },
     2: { themeClass: 'class="amoled-theme"' },
 };
-
-const FONT = `face="'rodin', Arial, Helvetica, sans-serif"`;
 
 const RT_BASE = 'https://www.rottentomatoes.com';
 
@@ -638,14 +660,19 @@ function parseFallbackLinks(html, isTv) {
 }
 
 // Build the score badge HTML
-function buildScoreBadge(score, label) {
+function buildScoreBadge(score, label, templates) {
     if (score == null) return '';
     const color = score >= 60 ? '#006f2e' : '#fa320a';
-    return `<span class="movie-score-badge" style="background:${color};">${score}%</span> <span class="movie-score-label">${label}</span>`;
+    
+    let html = templates.scoreBadge;
+    html = strReplace(html, '{$COLOR}', color);
+    html = strReplace(html, '{$SCORE}', String(score));
+    html = strReplace(html, '{$LABEL}', escape(label));
+    return html;
 }
 
 // Build a single movie card
-function buildMovieCardHtml(item, showImages) {
+function buildMovieCardHtml(item, showImages, templates) {
     if (!item || !item.title) return '';
     const title = escape(item.title);
     const year = item.year ? ` (${escape(String(item.year))})` : '';
@@ -654,31 +681,37 @@ function buildMovieCardHtml(item, showImages) {
     let posterHtml = '';
     if (showImages && item.poster) {
         const proxied = proxyImageUrl(item.poster);
-        posterHtml = `<div class="movie-card-poster"><img src="${proxied}" alt="" class="movie-card-img" width="100" height="148"></div>`;
+        posterHtml = templates.poster;
+        posterHtml = strReplace(posterHtml, '{$URL}', proxied);
     }
 
-    const tomatometer = buildScoreBadge(item.criticsScore, 'Tomatometer');
-    const audience = buildScoreBadge(item.audienceScore, 'Audience');
+    const tomatometer = buildScoreBadge(item.criticsScore, 'Tomatometer', templates);
+    const audience = buildScoreBadge(item.audienceScore, 'Audience', templates);
     const scores =
         tomatometer || audience
-            ? `<div class="movie-card-scores">${tomatometer}${tomatometer && audience ? '&nbsp;&nbsp;' : ''}${audience}</div>`
+            ? renderTemplate(templates.cardScores, {
+                  TOMATOMETER: tomatometer,
+                  SEP: tomatometer && audience ? '&nbsp;&nbsp;' : '',
+                  AUDIENCE: audience,
+              })
             : '';
 
     const rtLink = rtUrl
-        ? `<a href="${escape(rtUrl)}" class="discross-button movie-rt-btn" target="_blank" rel="noopener noreferrer">View on RT</a>`
+        ? strReplace(templates.rtLink, '{$URL}', escape(rtUrl))
         : '';
 
-    return `<div class="movie-card">
-  ${posterHtml}<div class="movie-card-body">
-    <div class="movie-card-title"><font ${FONT}>${title}${year}</font></div>
-    ${scores}
-    ${rtLink}
-  </div>
-</div>`;
+    let card = templates.card;
+    card = strReplace(card, '{$POSTER_HTML}', posterHtml);
+    card = strReplace(card, '{$TITLE}', title);
+    card = strReplace(card, '{$YEAR}', year);
+    card = strReplace(card, '{$SCORES_HTML}', scores);
+    card = strReplace(card, '{$RT_LINK}', rtLink);
+    return card;
 }
 
 exports.processMovies = async function processMovies(req, res, discordID) {
     const { sessionParam, theme, imagesCookie, tabId } = resolvePrefs(req);
+    const templates = getTemplates();
 
     const tab = TABS.find((t) => t.id === tabId) || TABS[0];
     const isTv = tab.id === 'tv';
@@ -689,7 +722,12 @@ exports.processMovies = async function processMovies(req, res, discordID) {
         const sep = sessionParam
             ? sessionParam + '&tab=' + encodeURIComponent(t.id)
             : '?tab=' + encodeURIComponent(t.id);
-        return `<a href="/movies${sep}" class="movie-tab${active}"><font ${FONT}>${escape(t.label)}</font></a>`;
+        
+        let tabHtml = templates.tab;
+        tabHtml = strReplace(tabHtml, '{$QUERY}', sep);
+        tabHtml = strReplace(tabHtml, '{$ACTIVE_CLASS}', active);
+        tabHtml = strReplace(tabHtml, '{$LABEL}', escape(t.label));
+        return tabHtml;
     }).join('\n');
 
     let moviesHtml;
@@ -699,7 +737,6 @@ exports.processMovies = async function processMovies(req, res, discordID) {
         // Strategy 0: try RT's private JSON API first (most reliable, no HTML parsing)
         const apiData = await tryFetchRTApi(tab.apiType);
         if (apiData) {
-            // The API may return {results:[...]} or a bare array
             const raw = Array.isArray(apiData)
                 ? apiData
                 : (apiData.results ?? apiData.data ?? apiData.items ?? []);
@@ -719,23 +756,21 @@ exports.processMovies = async function processMovies(req, res, discordID) {
             }
         }
         if (items.length === 0) {
-            moviesHtml =
-                '<p class="movie-empty">No results found. Rotten Tomatoes may have updated their page layout.</p>';
+            moviesHtml = strReplace(templates.empty, '{$MESSAGE}', 'No results found. Rotten Tomatoes may have updated their page layout.');
         } else {
             moviesHtml = items
-                .map((item) => buildMovieCardHtml(item, imagesCookie !== 0))
+                .map((item) => buildMovieCardHtml(item, imagesCookie !== 0, templates))
                 .filter(Boolean)
                 .join('\n');
         }
     } catch (err) {
         console.error('Rotten Tomatoes fetch error:', err);
-        moviesHtml =
-            '<p class="movie-empty">Could not load Rotten Tomatoes data. Please try again later.</p>';
+        moviesHtml = strReplace(templates.empty, '{$MESSAGE}', 'Could not load Rotten Tomatoes data. Please try again later.');
     }
 
     const username = await auth.getUsername(discordID);
-    const menuOptions = renderTemplate(logged_in_template, { '{$USER}': escape(username) });
-    const final = renderTemplate(movies_template, {
+    const menuOptions = renderTemplate(templates.loggedIn, { '{$USER}': escape(username) });
+    const final = renderTemplate(templates.movies, {
         '{$WHITE_THEME_ENABLED}': theme.themeClass,
         '{$MENU_OPTIONS}': menuOptions,
         '{$TABS}': tabsHtml,

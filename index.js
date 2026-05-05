@@ -85,7 +85,7 @@ exports.DISCORD_CLIENT_ID = DISCORD_CLIENT_ID;
 exports.DISCORD_CLIENT_SECRET = DISCORD_CLIENT_SECRET;
 exports.DISCORD_REDIRECT_URL = DISCORD_REDIRECT_URL;
 
-const { isValidSnowflake, parseCookies } = require('./pages/utils.js');
+const { isValidSnowflake, parseCookies, getTemplate } = require('./pages/utils.js');
 
 // create a server object:
 const server = http.createServer(options);
@@ -232,8 +232,8 @@ async function senddrawingAsync(req, res, body) {
     // Validate body is not empty
     if (!body || body.trim() === '') {
         console.log('Error: senddrawingAsync received empty body');
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end('No data received');
+        res.writeHead(400, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('no_data_received', 'misc'));
         return;
     }
 
@@ -242,8 +242,8 @@ async function senddrawingAsync(req, res, body) {
 
     if (!urlQuery || !urlQuery.drawinginput) {
         console.log('Error: senddrawingAsync - drawinginput not found in parsed URL query');
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end('Invalid drawing data');
+        res.writeHead(400, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('invalid_drawing_data', 'misc'));
         return;
     }
 
@@ -254,8 +254,8 @@ async function senddrawingAsync(req, res, body) {
 
 server.on('request', async (req, res) => {
     if (req.url.startsWith('//')) {
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end('Invalid request URL');
+        res.writeHead(400, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('invalid_request_url', 'misc'));
         return;
     }
 
@@ -300,8 +300,8 @@ server.on('request', async (req, res) => {
         req.on('error', (err) => {
             console.error('Error reading request body:', err);
             if (!res.headersSent) {
-                res.writeHead(500, { 'Content-Type': 'text/plain' });
-                res.end('Error reading request data');
+                res.writeHead(500, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('error_reading_data', 'misc'));
             }
         });
         req.on('end', () => {
@@ -339,8 +339,8 @@ server.on('request', async (req, res) => {
             } else if (parsedurl === '/senddrawing') {
                 senddrawingAsync(req, res, body).catch((err) => {
                     console.error(err);
-                    res.writeHead(500, { 'Content-Type': 'text/plain' });
-                    res.end('Internal Server Error');
+                    res.writeHead(500, { 'Content-Type': 'text/html' });
+                    res.end(getTemplate('internal_server_error', 'misc'));
                 });
             } else if (parsedurl === '/changepassword') {
                 (async () => {
@@ -359,8 +359,8 @@ server.on('request', async (req, res) => {
                     }
                 })().catch((err) => {
                     console.error(err);
-                    res.writeHead(500, { 'Content-Type': 'text/plain' });
-                    res.end('Internal Server Error');
+                    res.writeHead(500, { 'Content-Type': 'text/html' });
+                    res.end(getTemplate('internal_server_error', 'misc'));
                 });
             } else if (parsedurl === '/setup2fa') {
                 (async () => {
@@ -373,8 +373,8 @@ server.on('request', async (req, res) => {
                     }
                 })().catch((err) => {
                     console.error(err);
-                    res.writeHead(500, { 'Content-Type': 'text/plain' });
-                    res.end('Internal Server Error');
+                    res.writeHead(500, { 'Content-Type': 'text/html' });
+                    res.end(getTemplate('internal_server_error', 'misc'));
                 });
             } else if (parsedurl === '/disable2fa') {
                 (async () => {
@@ -387,8 +387,8 @@ server.on('request', async (req, res) => {
                     }
                 })().catch((err) => {
                     console.error(err);
-                    res.writeHead(500, { 'Content-Type': 'text/plain' });
-                    res.end('Internal Server Error');
+                    res.writeHead(500, { 'Content-Type': 'text/html' });
+                    res.end(getTemplate('internal_server_error', 'misc'));
                 });
             } else if (parsedurl.startsWith('/food/')) {
                 (async () => {
@@ -399,8 +399,8 @@ server.on('request', async (req, res) => {
                 })().catch((err) => {
                     console.error(err);
                     if (!res.headersSent) {
-                        res.writeHead(500, { 'Content-Type': 'text/plain' });
-                        res.end('Internal Server Error');
+                        res.writeHead(500, { 'Content-Type': 'text/html' });
+                        res.end(getTemplate('internal_server_error', 'misc'));
                     }
                 });
             } else {
@@ -409,8 +409,8 @@ server.on('request', async (req, res) => {
         });
     } else {
         if (req.url.startsWith('//')) {
-            res.writeHead(400, { 'Content-Type': 'text/plain' });
-            res.end('Invalid request URL');
+            res.writeHead(400, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('invalid_request_url', 'misc'));
             return;
         }
 
@@ -642,8 +642,8 @@ server.on('request', async (req, res) => {
                         const code = query.get('code');
                         if (code) {
                             if (!DISCORD_CLIENT_SECRET) {
-                                res.writeHead(500);
-                                res.end('DISCORD_CLIENT_SECRET not configured');
+                                res.writeHead(500, { 'Content-Type': 'text/html' });
+                                res.end(getTemplate('discord_secret_not_configured', 'misc'));
                                 return;
                             }
                             // Trade code for token
@@ -737,9 +737,7 @@ server.on('request', async (req, res) => {
 
                             if (query.get('state') === 'sync') {
                                 res.writeHead(200, { 'Content-Type': 'text/html' });
-                                res.end(
-                                    '<script>if(window.parent)window.parent.postMessage("discross_sync_complete","*");</script>'
-                                );
+                                res.end(getTemplate('sync_complete_script', 'misc'));
                             } else {
                                 res.writeHead(302, { Location: '/server/' });
                                 res.end();
@@ -798,8 +796,8 @@ server.on('request', async (req, res) => {
             console.error(err);
             if (typeof sentryEnabled !== 'undefined' && sentryEnabled) Sentry.captureException(err);
             if (!res.headersSent) {
-                res.writeHead(500, { 'Content-Type': 'text/plain' });
-                res.end('Internal Server Error');
+                res.writeHead(500, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('internal_server_error', 'misc'));
             }
         }
     }
