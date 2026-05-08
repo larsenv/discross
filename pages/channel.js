@@ -254,12 +254,25 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
 
     // Append images after the message text and file cards.
     // Images are rendered in a separate loop so they always appear at the bottom.
-    for (const data of imageData) {
-        const imgHtml = data.isSpoiler
+    if (imageData.length === 1) {
+        const data = imageData[0];
+        result += data.isSpoiler
             ? renderTemplate(tmpl_spoiler, { IMAGE_URL: data.url })
             : renderTemplate(tmpl_normal_image, { IMAGE_URL: data.url });
-
-        result += imgHtml;
+    } else if (imageData.length > 1) {
+        let galleryContent = '';
+        const tmpl_gallery_item = getTemplate('gallery_item', 'channel');
+        for (const data of imageData) {
+            if (data.isSpoiler) {
+                galleryContent += renderTemplate(tmpl_spoiler, { IMAGE_URL: data.url });
+            } else {
+                galleryContent += renderTemplate(tmpl_gallery_item, { IMAGE_URL: data.url });
+            }
+        }
+        result += renderTemplate(getTemplate('image_gallery', 'channel'), {
+            COUNT: imageData.length,
+            GALLERY_CONTENT: galleryContent,
+        });
     }
 
     return result;
