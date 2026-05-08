@@ -986,10 +986,18 @@ async function resolveForwardData(
             clientTimezone
         );
 
+        const resolvedContent = await resolveRawMentionsForPreview(
+            fwdMsg.content || '',
+            fwdMsg,
+            memberCache,
+            chnl,
+            bot
+        );
+
         return {
             author: getDisplayName(fwdMember, fwdMsg.author),
             content: renderDiscordMarkdown(
-                truncateText(fwdMsg.content, FORWARDED_CONTENT_MAX_LENGTH),
+                truncateText(resolvedContent, FORWARDED_CONTENT_MAX_LENGTH),
                 { barColor }
             ),
             date: formatDateWithTimezone(fwdMsg.createdAt, clientTimezone),
@@ -1001,10 +1009,18 @@ async function resolveForwardData(
 
         if (!snapshotMsg) return null;
 
+        const resolvedContent = await resolveRawMentionsForPreview(
+            snapshotMsg.content || '',
+            snapshotMsg,
+            memberCache,
+            chnl,
+            bot
+        );
+
         return {
             author: getDisplayName(null, snapshotMsg.author) || '',
             content: renderDiscordMarkdown(
-                truncateText(snapshotMsg.content ?? '', FORWARDED_CONTENT_MAX_LENGTH),
+                truncateText(resolvedContent, FORWARDED_CONTENT_MAX_LENGTH),
                 { barColor }
             ),
             date: snapshotMsg.createdAt
