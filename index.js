@@ -780,9 +780,13 @@ server.on('request', async (req, res) => {
                     await imageProxy(res, fullImageUrl, isFull);
                 } else {
                     // Emoji and attachment URLs
-                    // Strip the query string from the path before using it for the proxy URL
-                    const proxyPath = req.url.split('?')[0];
-                    const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${args[2] === 'emoji' ? proxyPath.slice(18) : proxyPath.slice(12)}`;
+                    // We need to preserve query parameters (like ex, is, hm for Discord attachments)
+                    // but we should remove our internal 'full' parameter.
+                    const urlObj = new URL(req.url, 'http://localhost');
+                    urlObj.searchParams.delete('full');
+                    const queryString = urlObj.search;
+                    const proxyPath = urlObj.pathname;
+                    const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${args[2] === 'emoji' ? proxyPath.slice(18) : proxyPath.slice(12)}${queryString}`;
                     await imageProxy(res, fullImageUrl, isFull);
                 }
             } else if (args[1] === 'fileProxy') {

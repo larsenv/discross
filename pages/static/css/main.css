@@ -2717,3 +2717,132 @@ html.page-draw #wrapper {
     width: 100%;
     margin: 0;
 }
+
+/* ================================================================
+   19. IMAGE GALLERIES
+   ================================================================ */
+
+.image-gallery {
+    display: block;
+    width: 100%;
+    max-width: 520px;
+    margin-top: 8px;
+    font-size: 0; /* Remove whitespace between inline-block elements */
+}
+
+/* Modern grid support */
+@supports (display: grid) {
+    .image-gallery {
+        display: grid;
+        gap: 4px;
+    }
+    .gallery-item {
+        width: auto !important;
+        margin: 0 !important;
+    }
+    /* Grid configurations */
+    .gallery-2 { grid-template-columns: repeat(2, 1fr); }
+    .gallery-3 { grid-template-columns: repeat(3, 1fr); }
+    .gallery-4 { grid-template-columns: repeat(2, 1fr); }
+    .gallery-5, .gallery-6 { grid-template-columns: repeat(3, 1fr); }
+    .gallery-7, .gallery-8, .gallery-9, .gallery-10 { grid-template-columns: repeat(3, 1fr); }
+}
+
+.gallery-item {
+    display: inline-block;
+    vertical-align: top;
+    position: relative;
+    overflow: hidden;
+    width: 32%; /* Fallback for 3 columns */
+    margin: 0.5%;
+    background: #2f3136;
+    border-radius: 4px;
+}
+
+/* Force square aspect ratio */
+.gallery-item:before {
+    content: "";
+    display: block;
+    padding-top: 100%;
+}
+
+.gallery-item a {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+
+.gallery-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Adjustments for different counts in fallback mode */
+.gallery-2 .gallery-item { width: 49%; }
+.gallery-4 .gallery-item { width: 49%; }
+
+/* Handle spoilers inside gallery */
+.image-gallery .spoiler-box {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+.image-gallery .spoiler-box br {
+    display: none;
+}
+.image-gallery .spoiler-box td {
+    width: 100%;
+    height: 100%;
+}
+.image-gallery .spoiler-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+/* Fallback for aspect ratio when :before trick fails or images are broken */
+.gallery-image {
+    min-width: 200px;
+    min-height: 150px;
+}
+
+/* Fallback for aspect ratio when :before trick fails or images are broken */
+.gallery-image {
+    min-width: 200px;
+    min-height: 150px;
+}
+
+.gallery-item {
+    background: #2f3136 !important;
+    min-width: 150px !important;
+    min-height: 150px !important;
+}
+
+.gallery-image {
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 150px !important;
+    min-height: 150px !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+/* Absolute fallback for gallery items to ensure visibility */
+.gallery-item, .gallery-item a, .gallery-image {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Final attempt to fix image visibility */
+.gallery-image {
+    min-width: 200px !important;
+    min-height: 150px !important;
+}
