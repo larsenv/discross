@@ -128,6 +128,6 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     } catch (err) {
         console.error(`[sendDrawing] Error:`, err);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('generic_error', 'misc'));
+        if ((err.message || err).toString().includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
     }
 };

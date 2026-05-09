@@ -959,7 +959,7 @@ async function resolveForwardData(
             });
 
             if (fwdMsg.guildId === chnl.guild.id)
-                return renderTemplate(getTemplate('forwarded_content_block_label', 'channel'), {
+                return renderTemplate(getTemplate('forwarded_same_server', 'channel'), {
                     CONTENT: chanLink,
                 });
 
@@ -1987,6 +1987,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     } catch (err) {
         console.error(err);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('generic_error', 'misc'));
+        if ((err.message || err).toString().includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
     }
 };

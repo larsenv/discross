@@ -264,6 +264,6 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     } catch (error) {
         console.error(error);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('generic_error', 'misc'));
+        if ((err.message || err).toString().includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
     }
 };

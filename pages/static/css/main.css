@@ -1780,6 +1780,7 @@ a.movie-tab-active {
    ================================================================ */
 
 @font-face {
+    font-display: swap;
     font-family: 'rodin';
     src:
         url('/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
@@ -1788,6 +1789,7 @@ a.movie-tab-active {
 }
 
 @font-face {
+    font-display: swap;
     font-family: 'rodin';
     src:
         url('/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
