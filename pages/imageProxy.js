@@ -119,12 +119,12 @@ exports.imageProxy = async function imageProxy(res, URL, fullSize = false) {
                 .on('error', (err) => {
                     console.log('Error fetching image:', err.message || err);
                     res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.end(getTemplate('generic_error', 'misc'));
+                    if ((err.message || err).includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
                 });
         })
         .on('error', (err) => {
             console.log('Image proxy request error:', err.message || err);
             res.writeHead(500, { 'Content-Type': 'text/html' });
-            res.end(getTemplate('generic_error', 'misc'));
+            if ((err.message || err).includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
         });
 };
