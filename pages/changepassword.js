@@ -8,9 +8,9 @@ const {
 const escape = require('escape-html');
 const auth = require('../authentication.js');
 
-const changepassword_template = loadAndRenderPageTemplate('changepassword', 'auth');
+const changepassword_template = loadAndRenderPageTemplate('change-password', 'auth');
 const error_template = getTemplate('error', 'login');
-const logged_in_template = getTemplate('logged_in', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
 
 exports.processChangePassword = async function (bot, req, res, args) {
     const discordID = await auth.checkAuth(req, res, false);
@@ -48,16 +48,16 @@ exports.processChangePassword = async function (bot, req, res, args) {
     const errortext = parsedUrl.searchParams.get('errortext');
     const buildErrorMsg = (text) =>
         renderTemplate(error_template, {
-            ERROR_MESSAGE: escape(text).replaceAll('\n', getTemplate('line_break', 'misc')),
+            ERROR_MESSAGE: escape(text).replaceAll('\n', getTemplate('line-break', 'misc')),
         });
     const errorHtml = dmErrorText
         ? buildErrorMsg(dmErrorText)
         : errortext
           ? buildErrorMsg(errortext)
           : parsedUrl.searchParams.get('codesent')
-            ? getTemplate('verification_sent', 'partials')
+            ? getTemplate('verification-sent', 'partials')
             : parsedUrl.searchParams.get('success')
-              ? getTemplate('password_changed', 'misc')
+              ? getTemplate('password-changed', 'misc')
               : '';
 
     const response = renderTemplate(changepassword_template, {
@@ -81,7 +81,7 @@ exports.handleChangePassword = async function (bot, req, res, body, discordID) {
     if (!params.current_password || !params.new_password || !params.confirm_password) {
         res.writeHead(302, {
             Location:
-                '/changepassword.html' +
+                '/change-password.html' +
                 sessionParam +
                 (sessionParam ? '&' : '?') +
                 'errortext=' +
@@ -94,7 +94,7 @@ exports.handleChangePassword = async function (bot, req, res, body, discordID) {
     if (params.new_password !== params.confirm_password) {
         res.writeHead(302, {
             Location:
-                '/changepassword.html' +
+                '/change-password.html' +
                 sessionParam +
                 (sessionParam ? '&' : '?') +
                 'errortext=' +
@@ -107,7 +107,7 @@ exports.handleChangePassword = async function (bot, req, res, body, discordID) {
     if (!auth.verifyAndConsumeActionCode(discordID, 'changepassword', params.discord_code)) {
         res.writeHead(302, {
             Location:
-                '/changepassword.html' +
+                '/change-password.html' +
                 sessionParam +
                 (sessionParam ? '&' : '?') +
                 'errortext=' +
@@ -134,7 +134,7 @@ exports.handleChangePassword = async function (bot, req, res, body, discordID) {
     } else {
         res.writeHead(302, {
             Location:
-                '/changepassword.html' +
+                '/change-password.html' +
                 sessionParam +
                 (sessionParam ? '&' : '?') +
                 'errortext=' +

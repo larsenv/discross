@@ -24,24 +24,24 @@ const {
 // Templates for viewing the channels in a server
 const server_template = loadAndRenderPageTemplate('server');
 
-const text_channel_template = getTemplate('textchannel', 'channellist');
-const announcement_channel_template = getTemplate('announcementchannel', 'channellist');
-const category_channel_template = getTemplate('categorychannel', 'channellist');
-const voice_channel_template = getTemplate('voicechannel', 'channellist');
-const thread_channel_template = getTemplate('threadchannel', 'channellist');
-const thread_group_header_template = getTemplate('threadgroupheader', 'channellist');
-const forum_channel_template = getTemplate('forumchannel', 'channellist');
-const locked_channel_template = getTemplate('lockedchannel', 'channellist');
-const rules_channel_template = getTemplate('ruleschannel', 'channellist');
+const text_channel_template = getTemplate('text-channel', 'channellist');
+const announcement_channel_template = getTemplate('announcement-channel', 'channellist');
+const category_channel_template = getTemplate('category-channel', 'channellist');
+const voice_channel_template = getTemplate('voice-channel', 'channellist');
+const thread_channel_template = getTemplate('thread-channel', 'channellist');
+const thread_group_header_template = getTemplate('thread-group-header', 'channellist');
+const forum_channel_template = getTemplate('forum-channel', 'channellist');
+const locked_channel_template = getTemplate('locked-channel', 'channellist');
+const rules_channel_template = getTemplate('rules-channel', 'channellist');
 
-const server_icon_template = getTemplate('server_icon', 'server');
+const server_icon_template = getTemplate('server-icon', 'server');
 
-const server_list_only_template = getTemplate('server_list_only', 'server');
-const sync_warning_template = getTemplate('sync_warning', 'server');
-const no_images_warning_template = getTemplate('no_images_warning', 'server');
-const images_enabled_template = getTemplate('images_enabled', 'server');
+const server_list_only_template = getTemplate('server-list-only', 'server');
+const sync_warning_template = getTemplate('sync-warning', 'server');
+const no_images_warning_template = getTemplate('no-images-warning', 'server');
+const images_enabled_template = getTemplate('images-enabled', 'server');
 
-const logged_in_template = getTemplate('logged_in', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
 
 const cachedMembers = {}; // TODO: Find a better way
 const MAX_CACHED_MEMBERS = 250; // evict oldest user's data when the cap is hit
@@ -138,7 +138,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                 if (item.type === ChannelType.GuildCategory) {
                     // Close previous category if exists
                     if (currentCategoryId !== null) {
-                        channelList += getTemplate('div_close', 'misc'); // Close previous category-channels div
+                        channelList += getTemplate('div-close', 'misc'); // Close previous category-channels div
                     }
                     currentCategoryId = item.id;
                     channelList += renderTemplate(category_channel_template, {
@@ -228,7 +228,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                                 CHANNEL_LINK: `../channels/${thread.id}${sessionParam}`,
                             });
                         });
-                        channelList += getTemplate('div_close', 'misc');
+                        channelList += getTemplate('div-close', 'misc');
                     }
                 }
             }
@@ -236,7 +236,7 @@ async function processServerChannels(server, member, response, sessionParam) {
 
         // Close the last category if exists
         if (currentCategoryId !== null) {
-            channelList += getTemplate('div_close', 'misc');
+            channelList += getTemplate('div-close', 'misc');
         }
 
         // Replace the channel list in the response
@@ -257,7 +257,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
         if (!clientIsReady) {
             res.writeHead(503, { 'Content-Type': 'text/html' });
-            res.end(getTemplate('bot_not_connected', 'misc'));
+            res.end(getTemplate('bot-not-connected', 'misc'));
             return;
         }
 
@@ -349,7 +349,14 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             }
         });
 
-        let response = renderTemplate(server_template, { SERVER_LIST: serverList });
+        const username = await auth.getUsername(discordID);
+
+        let response = server_template;
+        const templateData = {
+            SERVER_LIST: serverList,
+            USER_ID: discordID,
+            USER_NAME: escape(username),
+        };
 
         // syncNeeded already parsed via parsedUrl above
         const syncNeeded = parsedUrl.searchParams.get('sync_needed');
@@ -395,6 +402,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             }
             response = renderTemplate(response, { DISCORD_NAME: '' });
         }
+
+        // Render remaining placeholders including USER_ID and USER_NAME
+        response = renderTemplate(response, templateData);
 
         const imagesCookie =
             urlImages !== null

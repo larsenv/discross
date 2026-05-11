@@ -10,8 +10,8 @@ const auth = require('../authentication.js');
 
 const privacy_template = loadAndRenderPageTemplate('privacy');
 
-const logged_in_template = getTemplate('logged_in', 'index');
-const logged_out_template = getTemplate('logged_out', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 exports.processPrivacy = async function (bot, req, res, args) {
     const discordID = await auth.checkAuth(req, res, true);

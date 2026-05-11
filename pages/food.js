@@ -98,7 +98,7 @@ function getTemplates() {
             storeWait: getTemplate('store-wait', 'food/partials'),
             buttonLink: getTemplate('button-link', 'food/partials'),
             cartEmptyRow: getTemplate('cart-empty-row', 'food/partials'),
-            loggedIn: getTemplate('logged_in', 'index'),
+            loggedIn: getTemplate('logged-in', 'index'),
         };
     }
     return _templates;
@@ -1583,7 +1583,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     }
 
     res.writeHead(404, { 'Content-Type': 'text/html' });
-    res.end(getTemplate('not_found', 'misc'));
+    res.end(getTemplate('not-found', 'misc'));
 };
 
 // =============================================================================

@@ -46,7 +46,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
 
     if (!isBotReady(bot)) {
         res.writeHead(503, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('bot_not_connected', 'misc'));
+        res.end(getTemplate('bot-not-connected', 'misc'));
         return;
     }
 
@@ -59,20 +59,20 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
     try {
         const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
         if (!botMember) {
-            res.end(getTemplate('not_in_server', 'misc'));
+            res.end(getTemplate('not-in-server', 'misc'));
             return;
         }
 
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
         if (!member) {
-            res.end(getTemplate('join_server_to_view', 'misc'));
+            res.end(getTemplate('join-server-to-view', 'misc'));
             return;
         }
 
         const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
         if (!canView) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
-            res.end(getTemplate('no_permission', 'misc'));
+            res.end(getTemplate('no-permission', 'misc'));
             return;
         }
 
@@ -82,7 +82,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
 
         const messagesHtml =
             pinnedMessages.length === 0
-                ? getTemplate('no_pinned_messages', 'message')
+                ? getTemplate('no-pinned-messages', 'message')
                 : await buildMessagesHtml({
                       bot,
                       chnl,
@@ -111,6 +111,10 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
     } catch (err) {
         console.error(err);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        if ((err.message || err).toString().includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
+        if ((err.message || err).toString().includes('error reading from remote stream')) {
+            res.end(getTemplate('proxy-timeout-error', 'misc'));
+        } else {
+            res.end(getTemplate('generic-error', 'misc'));
+        }
     }
 };

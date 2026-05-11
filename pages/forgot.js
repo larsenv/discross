@@ -10,14 +10,14 @@ const {
 
 const forgot_template = loadAndRenderPageTemplate('forgot', 'auth');
 const error_template = getTemplate('error', 'login');
-const logged_out_template = getTemplate('logged_out', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 exports.processForgot = function (bot, req, res, args) {
     const parsedurl = new URL(req.url, 'http://localhost');
     const rawError = parsedurl.searchParams.get('errortext');
     const errorHtml = rawError
         ? renderTemplate(error_template, {
-              ERROR_MESSAGE: escape(rawError).replaceAll('\n', getTemplate('line_break', 'misc')),
+              ERROR_MESSAGE: escape(rawError).replaceAll('\n', getTemplate('line-break', 'misc')),
           })
         : '';
     const response = renderTemplate(forgot_template, {

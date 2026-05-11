@@ -106,7 +106,7 @@ function cacheCustomEmoji(emojiId, emojiName, animated) {
  * @returns {string} Text with unicode emojis replaced by img tags
  */
 const tmpl = {
-    image: getTemplate('twemoji_image', 'emojiUtils'),
+    image: getTemplate('twemoji-image', 'emojiUtils'),
 };
 
 function processUnicodeEmojiInText(text, sizePx, sizeEm) {

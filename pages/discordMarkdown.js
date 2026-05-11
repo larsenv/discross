@@ -300,7 +300,7 @@ function renderDiscordMarkdown(text, options = {}) {
                 html = stack.pop() + inner;
                 currentLevel--;
             }
-            html += renderTemplate(getTemplate('list_item', 'discordMarkdown'), {
+            html += renderTemplate(getTemplate('list-item', 'discordMarkdown'), {
                 CONTENT: resolveNested(md.renderInline(item.content)),
             });
         });
@@ -316,13 +316,13 @@ function renderDiscordMarkdown(text, options = {}) {
         return renderTemplate(getTemplate('list', 'discordMarkdown'), { CONTENT: html });
     });
     final = final.replace(/\uE000CODEINLINE(\d+)\uE001/g, (m, i) => {
-        return renderTemplate(getTemplate('inline_code', 'discordMarkdown'), {
+        return renderTemplate(getTemplate('inline-code', 'discordMarkdown'), {
             CONTENT: escapeHtml(codePlaceholders[parseInt(i, 10)].content),
         });
     });
     final = final.replace(/\uE000CODEBLOCK(\d+)\uE001/g, (m, i) => {
         const item = codePlaceholders[parseInt(i, 10)];
-        return renderTemplate(getTemplate('block_code', 'discordMarkdown'), {
+        return renderTemplate(getTemplate('block-code', 'discordMarkdown'), {
             LANG_CLASS: item.lang ? ` class="language-${item.lang}"` : '',
             CONTENT: highlightCode(item.content, item.lang),
         });

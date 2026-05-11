@@ -74,7 +74,7 @@ const CURRENCY_NAMES = {
 
 const currency_template = loadAndRenderPageTemplate('currency');
 
-const logged_in_template = getTemplate('logged_in', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
 
 /**
  * Return a date string N calendar days before today in YYYY-MM-DD format.
@@ -158,7 +158,7 @@ function renderRatesTable(base, latestData, prevData, targets) {
     const prevRates = prevData ? prevData.rates || {} : {};
 
     const dateLabel = latestData?.date
-        ? renderTemplate(getTemplate('date_label', 'currency'), { DATE: escape(latestData.date) })
+        ? renderTemplate(getTemplate('date-label', 'currency'), { DATE: escape(latestData.date) })
         : '';
 
     const rows = targets.flatMap((code) => {
@@ -172,7 +172,7 @@ function renderRatesTable(base, latestData, prevData, targets) {
         const color = changeColor(change);
         const name = CURRENCY_NAMES[code] || code;
         return [
-            renderTemplate(getTemplate('rate_row', 'currency'), {
+            renderTemplate(getTemplate('rate-row', 'currency'), {
                 CODE: escape(code),
                 NAME: escape(name),
                 RATE: formatRate(rate, decimals),
@@ -183,7 +183,7 @@ function renderRatesTable(base, latestData, prevData, targets) {
         ];
     });
 
-    return renderTemplate(getTemplate('rates_table', 'currency'), {
+    return renderTemplate(getTemplate('rates-table', 'currency'), {
         BASE: escape(base),
         DATE_LABEL: dateLabel,
         ROWS: rows.join(''),
@@ -204,7 +204,7 @@ exports.processCurrency = async function processCurrency(req, res) {
     const themeClass = getPageThemeAttr(req);
 
     const prefix = inputWasNormalized
-        ? renderTemplate(getTemplate('invalid_code_prefix', 'currency'), { BASE: escape(base) })
+        ? renderTemplate(getTemplate('invalid-code-prefix', 'currency'), { BASE: escape(base) })
         : '';
 
     const currencyHtml = await (async () => {
@@ -219,7 +219,7 @@ exports.processCurrency = async function processCurrency(req, res) {
             if (!latestData) {
                 return (
                     prefix +
-                    renderTemplate(getTemplate('no_data_error', 'currency'), { BASE: escape(base) })
+                    renderTemplate(getTemplate('no-data-error', 'currency'), { BASE: escape(base) })
                 );
             }
             // Use all available target currencies or our default list
@@ -231,7 +231,7 @@ exports.processCurrency = async function processCurrency(req, res) {
             return prefix + renderRatesTable(base, latestData, prevData, targets);
         } catch (err) {
             console.error('Currency API error:', err);
-            return prefix + getTemplate('fetch_error', 'currency');
+            return prefix + getTemplate('fetch-error', 'currency');
         }
     })();
 

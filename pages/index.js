@@ -10,8 +10,8 @@ const auth = require('../authentication.js');
 
 const index_template = loadAndRenderPageTemplate('index');
 
-const logged_in_template = getTemplate('logged_in', 'index');
-const logged_out_template = getTemplate('logged_out', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 exports.processIndex = async function (bot, req, res, args) {
     const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page

@@ -41,14 +41,14 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
             // Check if bot is connected
             if (!isBotReady(bot)) {
                 req_res.writeHead(503, { 'Content-Type': 'text/html' });
-                req_res.end(getTemplate('bot_not_connected', 'misc'));
+                req_res.end(getTemplate('bot-not-connected', 'misc'));
                 return;
             }
 
             // Validate channel id format early
             if (!channelId || !isValidSnowflake(channelId)) {
                 req_res.writeHead(404, { 'Content-Type': 'text/html' });
-                req_res.end(getTemplate('invalid_channel', 'misc'));
+                req_res.end(getTemplate('invalid-channel', 'misc'));
                 return;
             }
 
@@ -60,7 +60,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
 
             if (!channel) {
                 req_res.writeHead(404, { 'Content-Type': 'text/html' });
-                req_res.end(getTemplate('invalid_channel', 'misc'));
+                req_res.end(getTemplate('invalid-channel', 'misc'));
                 return;
             }
 
@@ -75,7 +75,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                 !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)
             ) {
                 req_res.end(
-                    renderTemplate(getTemplate('error_text', 'misc'), {
+                    renderTemplate(getTemplate('error-text', 'misc'), {
                         MESSAGE: "You don't have permission to do that!",
                     })
                 );

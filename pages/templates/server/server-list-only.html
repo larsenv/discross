@@ -1,0 +1,103 @@
+<font face="'rodin', Arial, Helvetica, sans-serif" class="server-select-text">
+  <font size="5"><b>Select a Server</b></font>
+  <br /><br />
+  <font size="4">Choose a server from the list on the left to view channels.</font>
+  <br /><br />
+</font>
+<a class="discross-button" href="/">Home</a>
+<br />
+<a class="discross-button" href="https://discord.com/oauth2/authorize?client_id={$DISCORD_CLIENT_ID}&response_type=code&redirect_uri={$DISCORD_REDIRECT_URL_ENCODED}&scope=identify+guilds&prompt=none">Update Server List</a>
+<br />
+<a class="discross-button" href="https://discordapp.com/oauth2/authorize?client_id={$DISCORD_CLIENT_ID}&scope=bot&permissions=536870912">Add Discross to your server</a>
+<br />
+<a class="discross-button" href="/changepassword.html{$SESSION_PARAM}">Change Password</a>
+<br />
+<a class="discross-button" href="/setup2fa.html{$SESSION_PARAM}">Manage 2FA</a>
+<br />
+<button id="add-passkey" class="discross-button" style="padding-top: 8px; padding-bottom: 8px;">Add Passkey</button>
+<span id="passkey-status" style="font-size: 0.8em; color: #aaaaaa; margin-left: 8px;"></span>
+
+<script>
+  (function() {
+      var btn = document.getElementById('add-passkey');
+      var status = document.getElementById('passkey-status');
+      if (!btn) return;
+
+      btn.onclick = function() {
+          // Check for secure context first (required for WebAuthn/Passkeys)
+          if (window.isSecureContext === false) {
+                  alert("Passkey authentication requires a secure context (HTTPS). Please ensure you are accessing Discross via HTTPS.");
+                  return;
+          }
+
+          // Check for WebAuthn support
+          // Use a more robust check that looks for the create function
+          if (!window.PublicKeyCredential || typeof navigator.credentials === 'undefined' || typeof navigator.credentials.create !== 'function') {
+                  btn.disabled = true;
+                  btn.style.cursor = 'not-allowed';
+                  btn.style.opacity = '0.6';
+                  // Updated message to be slightly more general, as browser support is complex
+                  status.innerText = "Passkey authentication is not available on this device or browser.";
+                  alert("Passkey authentication is not available on this device or browser.");
+                  return;
+          }
+          status.innerText = "Checking availability...";
+
+          PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+              .then(function(available) {
+                  if (!available) {
+                      alert("Passkey authentication is not available on this device.");
+                      status.innerText = "";
+                      return;
+                  }
+
+                  status.innerText = "Registering passkey... Follow your browser's prompts.";
+
+                  var challenge = new Uint8Array(32);
+                  window.crypto.getRandomValues(challenge);
+
+                  var userID = "{$USER_ID}";
+                  var publicKeyCredentialCreationOptions = {
+                      challenge: challenge,
+                      rp: {
+                          name: "Discross",
+                          id: window.location.hostname
+                      },
+                      user: {
+                          id: new TextEncoder().encode(userID),
+                          name: "{$USER_NAME}",
+                          displayName: "{$USER_NAME}"
+                      },
+                      pubKeyCredParams: [{alg: -7, type: "public-key"}, {alg: -257, type: "public-key"}],
+                      authenticatorSelection: {
+                          authenticatorAttachment: "platform",
+                          userVerification: "preferred"
+                      },
+                      timeout: 60000,
+                      attestation: "direct"
+                  };
+
+                  return navigator.credentials.create({
+                      publicKey: publicKeyCredentialCreationOptions
+                  });
+              })
+              .then(function(credential) {
+                  if (credential) {
+                      alert("Passkey registered successfully! (Note: Full server-side verification not yet implemented in this preview)");
+                      status.innerText = "Passkey added.";
+                  }
+              })
+              .catch(function(err) {
+                  console.error(err);
+                  if (err.name !== 'NotAllowedError') {
+                      alert("Error creating passkey: " + err.message);
+                  }
+                  status.innerText = "";
+              });
+      };
+  })();
+</script>
+<br />
+{$IMAGES_WARNING}
+<br />
+<a class="discross-button" href="/switchtheme{$SESSION_PARAM}">Switch Theme</a>

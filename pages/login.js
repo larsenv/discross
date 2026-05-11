@@ -11,14 +11,14 @@ const {
 
 const login_template = loadAndRenderPageTemplate('login', 'auth');
 const error_template = getTemplate('error', 'login');
-const logged_out_template = getTemplate('logged_out', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 exports.processLogin = async function (bot, req, res, args) {
     const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
     if (discordID) {
         res.writeHead(301, { Location: '/server/', 'Content-Type': 'text/html' });
         res.end(
-            renderTemplate(getTemplate('redirect_page', 'misc'), {
+            renderTemplate(getTemplate('redirect-page', 'misc'), {
                 REDIRECT_URL: '/server/',
             })
         );
@@ -31,7 +31,7 @@ exports.processLogin = async function (bot, req, res, args) {
             ? renderTemplate(error_template, {
                   ERROR_MESSAGE: escape(rawErrorText).replaceAll(
                       '\n',
-                      getTemplate('line_break', 'misc')
+                      getTemplate('line-break', 'misc')
                   ),
               })
             : '';

@@ -49,7 +49,7 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
         const emojiExt = animated && animationsCookie === 1 ? 'gif' : 'png';
         return acc.replace(
             match[0],
-            renderTemplate(getTemplate('emoji_custom', 'channel'), {
+            renderTemplate(getTemplate('emoji-custom', 'channel'), {
                 EMOJI_ID: emojiId,
                 EXT: emojiExt,
                 PX: '20',
@@ -104,7 +104,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             const authorHtml =
                 embed.author && authorContent
                     ? embed.author.url
-                        ? renderTemplate(getTemplate('author_link', 'embed'), {
+                        ? renderTemplate(getTemplate('author-link', 'embed'), {
                               URL: escape(embed.author.url),
                               CONTENT: authorContent,
                           })
@@ -114,7 +114,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             // Process embed title
             const titleContent = embed.title
                 ? embed.url
-                    ? renderTemplate(getTemplate('title_link', 'embed'), {
+                    ? renderTemplate(getTemplate('title-link', 'embed'), {
                           URL: escape(embed.url),
                           CONTENT: escape(normalizeWeirdUnicode(embed.title)),
                       })
@@ -159,11 +159,11 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
 
                         if (!field.inline) {
                             if (rowOpen) {
-                                body += getTemplate('row_close', 'embed');
+                                body += getTemplate('row-close', 'embed');
                                 rowOpen = false;
                                 inlineCount = 0;
                             }
-                            body += renderTemplate(getTemplate('field_block', 'embed'), {
+                            body += renderTemplate(getTemplate('field-block', 'embed'), {
                                 HEAD_COLOR: embedHead,
                                 NAME: renderedName,
                                 TEXT_COLOR: embedText,
@@ -171,11 +171,11 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                             });
                         } else {
                             if (!rowOpen) {
-                                body += getTemplate('row_open', 'embed');
+                                body += getTemplate('row-open', 'embed');
                                 rowOpen = true;
                                 inlineCount = 0;
                             }
-                            body += renderTemplate(getTemplate('field_inline', 'embed'), {
+                            body += renderTemplate(getTemplate('field-inline', 'embed'), {
                                 HEAD_COLOR: embedHead,
                                 NAME: renderedName,
                                 TEXT_COLOR: embedText,
@@ -184,7 +184,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                             inlineCount++;
                             const nextField = embed.fields[i + 1];
                             if (inlineCount >= 3 || !nextField || !nextField.inline) {
-                                body += getTemplate('row_close', 'embed');
+                                body += getTemplate('row-close', 'embed');
                                 rowOpen = false;
                                 inlineCount = 0;
                             }
@@ -193,8 +193,8 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                     },
                     { body: '', rowOpen: false, inlineCount: 0 }
                 );
-                const closingTag = lastRowOpen ? getTemplate('row_close', 'embed') : '';
-                return renderTemplate(getTemplate('fields_table', 'embed'), {
+                const closingTag = lastRowOpen ? getTemplate('row-close', 'embed') : '';
+                return renderTemplate(getTemplate('fields-table', 'embed'), {
                     BODY: tableBody + closingTag,
                 });
             })();
@@ -225,26 +225,26 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                 if (!embed.footer && !embed.timestamp) return '';
                 const footerIconHtml =
                     embed.footer && embed.footer.icon_url && imagesCookie === 1
-                        ? renderTemplate(getTemplate('footer_icon', 'embed'), {
+                        ? renderTemplate(getTemplate('footer-icon', 'embed'), {
                               URL: proxyExternalImageUrl(embed.footer.icon_url),
                           })
                         : '';
                 const footerText = embed.footer
-                    ? renderTemplate(getTemplate('footer_text', 'embed'), {
+                    ? renderTemplate(getTemplate('footer-text', 'embed'), {
                           CONTENT: escape(normalizeWeirdUnicode(embed.footer.text)),
                       })
                     : '';
                 const separator =
-                    embed.footer && embed.timestamp ? getTemplate('footer_separator', 'embed') : '';
+                    embed.footer && embed.timestamp ? getTemplate('footer-separator', 'embed') : '';
                 const timestamp = embed.timestamp
-                    ? renderTemplate(getTemplate('footer_text', 'embed'), {
+                    ? renderTemplate(getTemplate('footer-text', 'embed'), {
                           CONTENT: formatDateWithTimezone(
                               new Date(embed.timestamp),
                               clientTimezone
                           ),
                       })
                     : '';
-                return renderTemplate(getTemplate('message_footer', 'misc'), {
+                return renderTemplate(getTemplate('message-footer', 'misc'), {
                     FOOTER_ICON: footerIconHtml,
                     FOOTER_TEXT: footerText,
                     SEPARATOR: separator,

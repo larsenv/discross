@@ -22,6 +22,10 @@ exports.fileProxy = async function fileProxy(res, URL) {
         .on('error', (err) => {
             console.error('Error fetching file:', err);
             res.writeHead(500, { 'Content-Type': 'text/html' });
-            if ((err.message || err).includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
+            if ((err.message || err).includes('error reading from remote stream')) {
+                res.end(getTemplate('proxy-timeout-error', 'misc'));
+            } else {
+                res.end(getTemplate('generic-error', 'misc'));
+            }
         });
 };

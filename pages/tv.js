@@ -15,7 +15,7 @@ const STATION_ID_MAX_LENGTH = 120;
 const tv_template = loadAndRenderPageTemplate('index', 'tv');
 const tv_station_template = loadAndRenderPageTemplate('station', 'tv');
 
-const logged_in_template = getTemplate('logged_in', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
 
 // Make an HTTPS request (GET or POST), following up to maxRedirects redirects.
 // After a POST redirect, follow the redirect with a GET (standard browser POST-back behaviour).
@@ -563,7 +563,7 @@ function parseStationLogo(html) {
 // zip and lineup are passed so station links can include them for a working back button.
 function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
     if (channels.length === 0) {
-        return getTemplate('tv_no_channels_provider_error', 'tv');
+        return getTemplate('tv-no-channels-provider-error', 'tv');
     }
 
     var rowsHtml = '';
@@ -573,11 +573,11 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
         var logoHtml = '';
         if (ch.logoUrl) {
             var proxied = proxyImageUrl(ch.logoUrl);
-            logoHtml = renderTemplate(getTemplate('channel_logo_with_image', 'tv'), {
+            logoHtml = renderTemplate(getTemplate('channel-logo-with-image', 'tv'), {
                 PROXIED_URL: proxied,
             });
         } else {
-            logoHtml = getTemplate('channel_logo_placeholder', 'tv');
+            logoHtml = getTemplate('channel-logo-placeholder', 'tv');
         }
 
         var stationUrl = buildUrl(
@@ -587,20 +587,20 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
         );
         var nameHtml = escape(ch.name);
 
-        rowsHtml += renderTemplate(getTemplate('channel_grid_item', 'tv'), {
+        rowsHtml += renderTemplate(getTemplate('channel-grid-item', 'tv'), {
             STATION_URL: stationUrl,
             LOGO_HTML: logoHtml,
             NAME_HTML: nameHtml,
         });
     }
 
-    return renderTemplate(getTemplate('channel_grid', 'tv'), { ROWS: rowsHtml });
+    return renderTemplate(getTemplate('channel-grid', 'tv'), { ROWS: rowsHtml });
 }
 
 // Build the HTML schedule table for a station page.
 function buildScheduleHtml(items) {
     if (items.length === 0) {
-        return getTemplate('no_listings_found', 'tv');
+        return getTemplate('no-listings-found', 'tv');
     }
 
     var rowsHtml = '';
@@ -609,28 +609,28 @@ function buildScheduleHtml(items) {
         var isLast = i === items.length - 1;
         var timeStr = escape(formatTime(item.startTime));
         var durationStr = item.duration
-            ? renderTemplate(getTemplate('duration_html', 'tv'), {
+            ? renderTemplate(getTemplate('duration-html', 'tv'), {
                   DURATION_STR: escape(item.duration),
               })
             : '';
         var showName = escape(item.showName || '(Unknown)');
         var episodeTitle = item.episodeTitle ? ' &ndash; ' + escape(item.episodeTitle) : '';
         var rating = item.rating
-            ? renderTemplate(getTemplate('rating_html', 'tv'), { RATING: escape(item.rating) })
+            ? renderTemplate(getTemplate('rating-html', 'tv'), { RATING: escape(item.rating) })
             : '';
         var showType = item.showType
-            ? renderTemplate(getTemplate('show_type_html', 'tv'), {
+            ? renderTemplate(getTemplate('show-type-html', 'tv'), {
                   SHOW_TYPE: escape(item.showType),
               })
             : '';
         var description = item.description
-            ? renderTemplate(getTemplate('description_html', 'tv'), {
+            ? renderTemplate(getTemplate('description-html', 'tv'), {
                   DESCRIPTION: escape(item.description),
               })
             : '';
         var rowStyle = isLast ? '' : ' style="border-bottom:1px solid #40444b;"';
 
-        rowsHtml += renderTemplate(getTemplate('schedule_row', 'tv'), {
+        rowsHtml += renderTemplate(getTemplate('schedule-row', 'tv'), {
             ROW_STYLE: rowStyle,
             TIME_STR: timeStr,
             DURATION_HTML: durationStr,
@@ -641,7 +641,7 @@ function buildScheduleHtml(items) {
             DESCRIPTION: description,
         });
     }
-    return renderTemplate(getTemplate('schedule_table', 'tv'), { ROWS: rowsHtml });
+    return renderTemplate(getTemplate('schedule-table', 'tv'), { ROWS: rowsHtml });
 }
 
 // Helper: get theme class from request.
@@ -750,16 +750,16 @@ async function serveMainPage(
                                 sessionSuffix
                             );
                         } else {
-                            contentHtml = getTemplate('tv_no_channels_provider_error', 'tv');
+                            contentHtml = getTemplate('tv-no-channels-provider-error', 'tv');
                         }
                     } else if (lineupResult.statusCode === 404) {
-                        contentHtml = getTemplate('tv_provider_not_found_error', 'tv');
+                        contentHtml = getTemplate('tv-provider-not-found-error', 'tv');
                     } else {
-                        contentHtml = getTemplate('tv_load_channel_list_error', 'tv');
+                        contentHtml = getTemplate('tv-load-channel-list-error', 'tv');
                     }
                 } catch (err) {
                     console.error('TV lineup channels fetch error:', err);
-                    contentHtml = getTemplate('tv_load_channel_list_error', 'tv');
+                    contentHtml = getTemplate('tv-load-channel-list-error', 'tv');
                 }
             }
         } else {
@@ -776,13 +776,13 @@ async function serveMainPage(
                     var lineupList = parseLineups(lineupsResult.body);
                     if (lineupList.length === 0) {
                         contentHtml = renderTemplate(
-                            getTemplate('tv_no_providers_zip_error', 'tv'),
+                            getTemplate('tv-no-providers-zip-error', 'tv'),
                             {
                                 ZIP_CODE: escape(cleanZip),
                             }
                         );
                     } else {
-                        contentHtml = getTemplate('tv_select_provider_header', 'tv');
+                        contentHtml = getTemplate('tv-select-provider-header', 'tv');
                         for (var i = 0; i < lineupList.length; i++) {
                             var li = lineupList[i];
                             var lineupUrl = buildUrl(
@@ -791,18 +791,18 @@ async function serveMainPage(
                                 sessionSuffix
                             );
                             contentHtml +=
-                                renderTemplate(getTemplate('provider_button', 'tv'), {
+                                renderTemplate(getTemplate('provider-button', 'tv'), {
                                     LINEUP_URL: lineupUrl,
                                     LINEUP_NAME: escape(li.name),
                                 }) + '\n';
                         }
                     }
                 } else {
-                    contentHtml = getTemplate('tv_load_provider_list_error', 'tv');
+                    contentHtml = getTemplate('tv-load-provider-list-error', 'tv');
                 }
             } catch (err) {
                 console.error('TV lineups fetch error:', err);
-                contentHtml = getTemplate('tv_load_provider_list_error', 'tv');
+                contentHtml = getTemplate('tv-load-provider-list-error', 'tv');
             }
         }
     }
@@ -853,15 +853,15 @@ async function serveStationPage(
             var result = await fetchPage('/tv-listings/stations/' + cleanId + '/' + date, cookie);
 
             if (result.statusCode === 404) {
-                contentHtml = getTemplate('tv_station_not_found_error', 'tv');
+                contentHtml = getTemplate('tv-station-not-found-error', 'tv');
             } else if (result.statusCode !== 200) {
-                contentHtml = getTemplate('tv_load_tv_guide_error', 'tv');
+                contentHtml = getTemplate('tv-load-tv-guide-error', 'tv');
             } else {
                 stationName = parseStationName(result.body);
                 var logoUrl = parseStationLogo(result.body);
                 if (logoUrl) {
                     var proxied = proxyImageUrl(logoUrl);
-                    stationLogoHtml = renderTemplate(getTemplate('station_logo', 'tv'), {
+                    stationLogoHtml = renderTemplate(getTemplate('station-logo', 'tv'), {
                         PROXIED_URL: proxied,
                     });
                 }
@@ -870,10 +870,10 @@ async function serveStationPage(
             }
         } catch (err) {
             console.error('TV station fetch error:', err);
-            contentHtml = getTemplate('tv_load_tv_guide_error', 'tv');
+            contentHtml = getTemplate('tv-load-tv-guide-error', 'tv');
         }
     } else {
-        contentHtml = getTemplate('tv_invalid_station_id_error', 'tv');
+        contentHtml = getTemplate('tv-invalid-station-id-error', 'tv');
     }
 
     // Build back URL preserving zip/lineup/date parameters

@@ -13,7 +13,7 @@ const crypto = require('crypto');
 const { getTemplate, renderTemplate } = require('./pages/utils.js');
 
 const saltRounds = 10;
-const expiryTime = 24 * 60 * 60; // For sessions - expires in 24 hours
+const expiryTime = 7 * 24 * 60 * 60; // For sessions - expires in 1 week
 const codeExpiryTime = 30 * 60; // For verification codes - expires in 30 minutes
 const pendingTotpExpiryTime = 10 * 60; // Pending TOTP setup expires in 10 minutes
 const actionCodeExpiryTime = 10 * 60; // In-session action codes expire in 10 minutes
@@ -517,6 +517,7 @@ exports.handleLoginRegister = async function (req, res, body) {
         if (params.username && params.password) {
             const result = await exports.login(params.username, params.password, params.totp_code);
             if (result.status === 'success') {
+                const cookieExpiry = new Date(Date.now() + expiryTime * 1000).toUTCString();
                 if (params.redirect) {
                     // Strip any stale sessionID from the redirect URL — if the user was redirected here
                     // with an expired sessionID in the URL, appending the new one without removing the old
@@ -538,13 +539,13 @@ exports.handleLoginRegister = async function (req, res, body) {
                     const redirectPath = `${redirectBase}${sep}sessionID=${encodeURIComponent(result.sessionID)}#end`;
                     res.writeHead(200, {
                         'Set-Cookie': [
-                            `sessionID=${result.sessionID}; path=/; HttpOnly${https ? '; Secure' : ''}`,
+                            `sessionID=${result.sessionID}; path=/; expires=${cookieExpiry}; HttpOnly${https ? '; Secure' : ''}`,
                         ],
                         Location: redirectPath,
                         'Content-Type': 'text/html',
                     });
                     res.end(
-                        renderTemplate(getTemplate('redirect_page', 'misc'), {
+                        renderTemplate(getTemplate('redirect-page', 'misc'), {
                             REDIRECT_URL: he.encode(redirectPath),
                         })
                     );
@@ -552,13 +553,13 @@ exports.handleLoginRegister = async function (req, res, body) {
                     const redirectPath = `/server/?sessionID=${encodeURIComponent(result.sessionID)}#end`;
                     res.writeHead(200, {
                         'Set-Cookie': [
-                            `sessionID=${result.sessionID}; path=/; HttpOnly${https ? '; Secure' : ''}`,
+                            `sessionID=${result.sessionID}; path=/; expires=${cookieExpiry}; HttpOnly${https ? '; Secure' : ''}`,
                         ],
                         Location: redirectPath,
                         'Content-Type': 'text/html',
                     });
                     res.end(
-                        renderTemplate(getTemplate('redirect_page', 'misc'), {
+                        renderTemplate(getTemplate('redirect-page', 'misc'), {
                             REDIRECT_URL: he.encode(redirectPath),
                         })
                     );

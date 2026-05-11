@@ -15,14 +15,14 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             // Check if bot is connected
             if (!isBotReady(bot)) {
                 res.writeHead(503, { 'Content-Type': 'text/html' });
-                res.end(getTemplate('bot_not_connected', 'misc'));
+                res.end(getTemplate('bot-not-connected', 'misc'));
                 return;
             }
 
             const channel = await bot.client.channels.fetch(parsedurl.searchParams.get('channel'));
             if (!channel) {
                 res.writeHead(404, { 'Content-Type': 'text/html' });
-                res.end(getTemplate('channel_not_found', 'misc'));
+                res.end(getTemplate('channel-not-found', 'misc'));
                 return;
             }
 
@@ -33,7 +33,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             if (!member) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
                 res.end(
-                    renderTemplate(getTemplate('error_text', 'misc'), {
+                    renderTemplate(getTemplate('error-text', 'misc'), {
                         MESSAGE:
                             'Failed to verify user permissions. Please ensure you have access to this channel or try again later.',
                     })
@@ -44,7 +44,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
                 res.end(
-                    renderTemplate(getTemplate('error_text', 'misc'), {
+                    renderTemplate(getTemplate('error-text', 'misc'), {
                         MESSAGE: "You don't have permission to do that!",
                     })
                 );
@@ -65,7 +65,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             if (reply_message.channelId !== channel.id) {
                 res.writeHead(400, { 'Content-Type': 'text/html' });
                 res.end(
-                    renderTemplate(getTemplate('error_text', 'misc'), {
+                    renderTemplate(getTemplate('error-text', 'misc'), {
                         MESSAGE: 'Reply message does not belong to this channel',
                     })
                 );

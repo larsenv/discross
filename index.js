@@ -46,19 +46,19 @@ const { fileProxy } = require('./pages/fileProxy.js');
 const { toggleImages } = require('./pages/toggleImages.js');
 const { uploadFile } = require('./pages/uploadFile.js');
 const uploadpage = require('./pages/upload.js');
-const chanelreplypage = require('./pages/channel_reply.js');
+const chanelreplypage = require('./pages/channelReply.js');
 const replypage = require('./pages/reply.js');
 const drawpage = require('./pages/draw.js');
-const senddrawing = require('./pages/senddrawing.js');
+const senddrawing = require('./pages/sendDrawing.js');
 const { handleServerIcon } = require('./pages/serverIconHandler.js');
 const pinspage = require('./pages/pins.js');
-const changepasswordpage = require('./pages/changepassword.js');
-const setup2fapage = require('./pages/setup2fa.js');
+const changepasswordpage = require('./pages/changePassword.js');
+const setup2fapage = require('./pages/setup2FA.js');
 const privacypage = require('./pages/privacy.js');
 const termspage = require('./pages/terms.js');
 const creditspage = require('./pages/credits.js');
 const guestpage = require('./pages/guest.js');
-const guestsendpage = require('./pages/guest_send.js');
+const guestsendpage = require('./pages/guestSend.js');
 const newspage = require('./pages/news.js');
 const weatherpage = require('./pages/weather.js');
 const currencypage = require('./pages/currency.js');
@@ -233,7 +233,7 @@ async function senddrawingAsync(req, res, body) {
     if (!body || body.trim() === '') {
         console.log('Error: senddrawingAsync received empty body');
         res.writeHead(400, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('no_data_received', 'misc'));
+        res.end(getTemplate('no-data-received', 'misc'));
         return;
     }
 
@@ -243,7 +243,7 @@ async function senddrawingAsync(req, res, body) {
     if (!urlQuery || !urlQuery.drawinginput) {
         console.log('Error: senddrawingAsync - drawinginput not found in parsed URL query');
         res.writeHead(400, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('invalid_drawing_data', 'misc'));
+        res.end(getTemplate('invalid-drawing-data', 'misc'));
         return;
     }
 
@@ -255,7 +255,7 @@ async function senddrawingAsync(req, res, body) {
 server.on('request', async (req, res) => {
     if (req.url.startsWith('//')) {
         res.writeHead(400, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('invalid_request_url', 'misc'));
+        res.end(getTemplate('invalid-request-url', 'misc'));
         return;
     }
 
@@ -301,7 +301,7 @@ server.on('request', async (req, res) => {
             console.error('Error reading request body:', err);
             if (!res.headersSent) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
-                res.end(getTemplate('error_reading_data', 'misc'));
+                res.end(getTemplate('error-reading-data', 'misc'));
             }
         });
         req.on('end', () => {
@@ -340,7 +340,7 @@ server.on('request', async (req, res) => {
                 senddrawingAsync(req, res, body).catch((err) => {
                     console.error(err);
                     res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.end(getTemplate('internal_server_error', 'misc'));
+                    res.end(getTemplate('internal-server-error', 'misc'));
                 });
             } else if (parsedurl === '/changepassword') {
                 (async () => {
@@ -360,7 +360,7 @@ server.on('request', async (req, res) => {
                 })().catch((err) => {
                     console.error(err);
                     res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.end(getTemplate('internal_server_error', 'misc'));
+                    res.end(getTemplate('internal-server-error', 'misc'));
                 });
             } else if (parsedurl === '/setup2fa') {
                 (async () => {
@@ -374,7 +374,7 @@ server.on('request', async (req, res) => {
                 })().catch((err) => {
                     console.error(err);
                     res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.end(getTemplate('internal_server_error', 'misc'));
+                    res.end(getTemplate('internal-server-error', 'misc'));
                 });
             } else if (parsedurl === '/disable2fa') {
                 (async () => {
@@ -388,7 +388,7 @@ server.on('request', async (req, res) => {
                 })().catch((err) => {
                     console.error(err);
                     res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.end(getTemplate('internal_server_error', 'misc'));
+                    res.end(getTemplate('internal-server-error', 'misc'));
                 });
             } else if (parsedurl.startsWith('/food/')) {
                 (async () => {
@@ -400,7 +400,7 @@ server.on('request', async (req, res) => {
                     console.error(err);
                     if (!res.headersSent) {
                         res.writeHead(500, { 'Content-Type': 'text/html' });
-                        res.end(getTemplate('internal_server_error', 'misc'));
+                        res.end(getTemplate('internal-server-error', 'misc'));
                     }
                 });
             } else {
@@ -410,7 +410,7 @@ server.on('request', async (req, res) => {
     } else {
         if (req.url.startsWith('//')) {
             res.writeHead(400, { 'Content-Type': 'text/html' });
-            res.end(getTemplate('invalid_request_url', 'misc'));
+            res.end(getTemplate('invalid-request-url', 'misc'));
             return;
         }
 
@@ -536,9 +536,9 @@ server.on('request', async (req, res) => {
                     res.end();
                 } else {
                     const returnPages = {
-                        changepassword: '/changepassword.html',
-                        setup2fa: '/setup2fa.html',
-                        disable2fa: '/setup2fa.html',
+                        changepassword: '/change-password.html',
+                        setup2fa: '/setup-2fa.html',
+                        disable2fa: '/setup-2fa.html',
                     };
                     const actionParam = parsedurl.searchParams.get('action');
                     if (!returnPages[actionParam]) {
@@ -595,9 +595,9 @@ server.on('request', async (req, res) => {
                 await registerpage.processRegister(bot, req, res, args);
             } else if (args[1] === 'forgot.html') {
                 await forgotpage.processForgot(bot, req, res, args);
-            } else if (args[1] === 'changepassword.html') {
+            } else if (args[1] === 'change-password.html') {
                 await changepasswordpage.processChangePassword(bot, req, res, args);
-            } else if (args[1] === 'setup2fa.html') {
+            } else if (args[1] === 'setup-2fa.html') {
                 await setup2fapage.processSetup2FA(bot, req, res, args);
             } else if (args[1] === 'index.html' || parsedurl.pathname === '/') {
                 await indexpage.processIndex(bot, req, res, args);
@@ -643,7 +643,7 @@ server.on('request', async (req, res) => {
                         if (code) {
                             if (!DISCORD_CLIENT_SECRET) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
-                                res.end(getTemplate('discord_secret_not_configured', 'misc'));
+                                res.end(getTemplate('discord-secret-not-configured', 'misc'));
                                 return;
                             }
                             // Trade code for token
@@ -749,7 +749,7 @@ server.on('request', async (req, res) => {
 
                             if (query.get('state') === 'sync') {
                                 res.writeHead(200, { 'Content-Type': 'text/html' });
-                                res.end(getTemplate('sync_complete_script', 'misc'));
+                                res.end(getTemplate('sync-complete-script', 'misc'));
                             } else {
                                 res.writeHead(302, { Location: '/server/' });
                                 res.end();
@@ -816,7 +816,7 @@ server.on('request', async (req, res) => {
             if (typeof sentryEnabled !== 'undefined' && sentryEnabled) Sentry.captureException(err);
             if (!res.headersSent) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
-                res.end(getTemplate('internal_server_error', 'misc'));
+                res.end(getTemplate('internal-server-error', 'misc'));
             }
         }
     }

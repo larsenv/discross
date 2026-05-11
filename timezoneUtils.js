@@ -452,7 +452,7 @@ function replaceDiscordTimestamps(text, timezone) {
         const ts = parseInt(timestamp, 10);
         const fmt = format || 'f';
         const formatted = formatDiscordTimestamp(ts, fmt, timezone);
-        return renderTemplate(getTemplate('timestamp_span', 'misc'), {
+        return renderTemplate(getTemplate('timestamp-span', 'misc'), {
             FORMATTED_TIME: formatted,
         });
     });

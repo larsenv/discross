@@ -12,7 +12,7 @@ const {
 
 const search_template = loadAndRenderPageTemplate('search');
 
-const logged_in_template = getTemplate('logged_in', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
 
 const SEARCH_ENGINES = {
     frogfind: 'http://frogfind.com/?q=',

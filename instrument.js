@@ -1,3 +1,4 @@
+'use strict';
 require('dotenv').config({ quiet: true });
 const Sentry = require('@sentry/node');
 

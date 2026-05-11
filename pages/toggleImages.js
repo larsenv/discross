@@ -27,8 +27,11 @@ exports.toggleImages = function toggleImages(req, res) {
         refererUrl.searchParams.set('images', newValue);
         const location = refererUrl.pathname + refererUrl.search;
 
+        const oneYear = 365 * 24 * 60 * 60 * 1000;
+        const expires = new Date(Date.now() + oneYear).toUTCString();
+
         res.writeHead(302, {
-            'Set-Cookie': [`images=${newValue}; path=/`],
+            'Set-Cookie': [`images=${newValue}; path=/; expires=${expires}`],
             'Content-Type': 'text/html',
             Location: location,
         });

@@ -94,7 +94,7 @@ async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
 
         // Last resort: return 404
         res.writeHead(404, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('icon_not_found', 'misc'));
+        res.end(getTemplate('icon-not-found', 'misc'));
     }
 }
 
