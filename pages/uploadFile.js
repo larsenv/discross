@@ -8,7 +8,7 @@ const { formidable } = require('formidable');
 const { isBotReady } = require('./utils.js');
 const { getOrCreateWebhook } = require('./webhookCache');
 
-// Upload file to transfer.notkiska.pw and return the URL
+// Upload file to transfer.archivete.am and return the URL
 async function uploadToTransfer(filePath, filename) {
     return new Promise((resolve, reject) => {
         // Sanitize filename - remove path traversal and keep only safe characters
@@ -29,7 +29,7 @@ async function uploadToTransfer(filePath, filename) {
             }
 
             const options = {
-                hostname: 'transfer.notkiska.pw',
+                hostname: 'transfer.archivete.am',
                 port: 443,
                 path: `/${encodeURIComponent(sanitizedFilename)}`,
                 method: 'PUT',
@@ -98,7 +98,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                 if (isTraditionalSubmission) {
                     res.writeHead(503, { 'Content-Type': 'text/html' });
                     res.end(
-                        renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                        renderTemplate(getTemplate('script-alert-back', 'misc'), {
                             MESSAGE: 'Bot is not connected',
                         })
                     );
@@ -122,7 +122,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         if (isTraditionalSubmission) {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
                             res.end(
-                                renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                renderTemplate(getTemplate('script-alert-back', 'misc'), {
                                     MESSAGE: 'Failed to parse upload',
                                 })
                             );
@@ -144,7 +144,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(400, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
                                         MESSAGE: 'Invalid channel',
                                     })
                                 );
@@ -177,7 +177,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(400, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
                                         MESSAGE: 'No file provided',
                                     })
                                 );
@@ -205,7 +205,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(403, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
                                         MESSAGE: 'No permission to send messages',
                                     })
                                 );
@@ -233,7 +233,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(403, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
                                         MESSAGE:
                                             'Failed to send message. Discross needs "Manage Webhooks" permission.',
                                     })
@@ -255,19 +255,19 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             ? messageText.replace(/\[Uploading:.*?\]/g, '').trim()
                             : '';
 
-                        // Upload file to transfer.notkiska.pw
+                        // Upload file to transfer.archivete.am
                         const transferUrl = await uploadToTransfer(
                             filePath,
                             file.originalFilename || file.name || 'uploaded_file'
                         ).catch((uploadError) => {
-                            console.error('Error uploading to transfer.notkiska.pw:', uploadError);
+                            console.error('Error uploading to transfer.archivete.am:', uploadError);
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 const safeMessage = JSON.stringify(
                                     'Failed to upload file: ' + uploadError.message
                                 );
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
                                         MESSAGE: 'Failed to upload file: ' + uploadError.message,
                                     })
                                 );
@@ -285,7 +285,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         });
                         if (transferUrl === undefined) return;
 
-                        // Send message with just the transfer.notkiska.pw URL as a link
+                        // Send message with just the transfer.archivete.am URL as a link
                         const message = await webhook.send({
                             content: transferUrl,
                             username: member.displayName || member.user.tag,
@@ -322,7 +322,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
                                         MESSAGE: 'Error: ' + error.message,
                                     })
                                 );
@@ -345,7 +345,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             if (isTraditionalSubmission) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
                 res.end(
-                    renderTemplate(getTemplate('script_alert_back', 'misc'), {
+                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
                         MESSAGE: 'Internal Server Error',
                     })
                 );

@@ -42,7 +42,7 @@ function processReactions(
                             const extension =
                                 emoji.animated && animationsCookie === 1 ? 'gif' : 'png';
                             cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
-                            return renderTemplate(getTemplate('emoji_custom', 'channel'), {
+                            return renderTemplate(getTemplate('emoji-custom', 'channel'), {
                                 EMOJI_ID: emoji.id,
                                 EXT: extension,
                                 PX: '21',
@@ -54,7 +54,7 @@ function processReactions(
                     if (emoji.name) {
                         if (imagesCookie === 1) {
                             const output = unicodeToTwemojiCode(emoji.name);
-                            return renderTemplate(getTemplate('emoji_twemoji', 'channel'), {
+                            return renderTemplate(getTemplate('emoji-twemoji', 'channel'), {
                                 CODE: output,
                                 PX: '21',
                                 STYLE: 'width: 21px; height: 21px; vertical-align: middle;',

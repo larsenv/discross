@@ -19,7 +19,7 @@ exports.processUpload = async function processUpload(bot, req, res, args, discor
 
     if (!isValidSnowflake(channelId)) {
         res.writeHead(400, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('invalid_channel', 'misc'));
+        res.end(getTemplate('invalid-channel', 'misc'));
         return;
     }
 

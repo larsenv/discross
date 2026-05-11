@@ -19,7 +19,7 @@ const BG_UPCOMING = '#2f3136'; // default dark — upcoming row
 
 const sports_template = loadAndRenderPageTemplate('sports');
 
-const logged_in_template = getTemplate('logged_in', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
 
 // NBA first — in full regular season; NFL last since it's off-season in early spring
 const SPORTS = [
@@ -161,7 +161,7 @@ function sortEvents(events) {
 
 function renderScoreboard(events, userTZ) {
     if (!events || events.length === 0) {
-        return getTemplate('no_games', 'sports');
+        return getTemplate('no-games', 'sports');
     }
 
     // 640px to accommodate full date/timezone strings (wider than stock/weather 580px)
@@ -195,10 +195,10 @@ function renderScoreboard(events, userTZ) {
 
         const homeColor = homeWinner ? '#dddddd' : '#b5bac1';
         const awayColor = awayWinner ? '#dddddd' : '#b5bac1';
-        const homeWeight = homeWinner ? getTemplate('bold_open', 'misc') : '';
-        const homeWeightEnd = homeWinner ? getTemplate('bold_close', 'misc') : '';
-        const awayWeight = awayWinner ? getTemplate('bold_open', 'misc') : '';
-        const awayWeightEnd = awayWinner ? getTemplate('bold_close', 'misc') : '';
+        const homeWeight = homeWinner ? getTemplate('bold-open', 'misc') : '';
+        const homeWeightEnd = homeWinner ? getTemplate('bold-close', 'misc') : '';
+        const awayWeight = awayWinner ? getTemplate('bold-open', 'misc') : '';
+        const awayWeightEnd = awayWinner ? getTemplate('bold-close', 'misc') : '';
 
         let gameTimeDisplay;
         if (stateType === 'in') {
@@ -213,7 +213,7 @@ function renderScoreboard(events, userTZ) {
         const statusLabel =
             stateType === 'in' ? escape(statusDetail) : stateType === 'post' ? 'Final' : '';
 
-        rowsHtml += renderTemplate(getTemplate('scoreboard_row', 'sports'), {
+        rowsHtml += renderTemplate(getTemplate('scoreboard-row', 'sports'), {
             ROW_STYLE: rowStyle,
             AWAY_COLOR: awayColor,
             AWAY_WEIGHT: awayWeight,
@@ -232,7 +232,7 @@ function renderScoreboard(events, userTZ) {
         });
     }
 
-    return renderTemplate(getTemplate('scoreboard_table', 'sports'), { ROWS: rowsHtml });
+    return renderTemplate(getTemplate('scoreboard-table', 'sports'), { ROWS: rowsHtml });
 }
 
 function buildNavButtons(activeSport, urlSessionID) {
@@ -245,7 +245,7 @@ function buildNavButtons(activeSport, urlSessionID) {
         const bg = isActive ? '#5865f2' : '#2f3136';
         const borderR = s === SPORTS[SPORTS.length - 1] ? 'border-radius:0 4px 4px 0;' : '';
         const borderL = s === SPORTS[0] ? 'border-radius:4px 0 0 4px;' : '';
-        html += renderTemplate(getTemplate('nav_button', 'sports'), {
+        html += renderTemplate(getTemplate('nav-button', 'sports'), {
             URL: `/sports${sessionParam}${encodeURIComponent(s.id)}`,
             BG: bg,
             BORDER_L: borderL,
@@ -253,7 +253,7 @@ function buildNavButtons(activeSport, urlSessionID) {
             LABEL: s.label,
         });
     }
-    const lb = getTemplate('line_break', 'misc');
+    const lb = getTemplate('line-break', 'misc');
     return html + lb + lb;
 }
 
@@ -306,7 +306,7 @@ exports.processSports = async function processSports(req, res) {
         sportsHtml = renderScoreboard(allEvents, userTZ);
     } catch (err) {
         console.error('Sports API error:', err);
-        sportsHtml = getTemplate('fetch_error', 'sports');
+        sportsHtml = getTemplate('fetch-error', 'sports');
     }
 
     const menuOptions = renderTemplate(logged_in_template, {

@@ -22,7 +22,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         if (!member) {
             res.writeHead(500, { 'Content-Type': 'text/html' });
             res.end(
-                renderTemplate(getTemplate('error_text', 'misc'), {
+                renderTemplate(getTemplate('error-text', 'misc'), {
                     MESSAGE:
                         'Failed to verify user permissions. Please ensure you have access to this channel or try again later.',
                 })
@@ -32,7 +32,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
         if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
             res.end(
-                renderTemplate(getTemplate('error_text', 'misc'), {
+                renderTemplate(getTemplate('error-text', 'misc'), {
                     MESSAGE: "You don't have permission to do that!",
                 })
             );
@@ -53,7 +53,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             console.error('[sendDrawing] Error processing image: Input Buffer is empty');
             res.writeHead(400, { 'Content-Type': 'text/html' });
             res.end(
-                renderTemplate(getTemplate('error_text', 'misc'), {
+                renderTemplate(getTemplate('error-text', 'misc'), {
                     MESSAGE: 'No drawing data provided. Please draw something before sending.',
                 })
             );
@@ -73,7 +73,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             console.error('[sendDrawing] Error processing image: Base64 data is empty after split');
             res.writeHead(400, { 'Content-Type': 'text/html' });
             res.end(
-                renderTemplate(getTemplate('error_text', 'misc'), {
+                renderTemplate(getTemplate('error-text', 'misc'), {
                     MESSAGE: 'Invalid drawing data format. Please try again.',
                 })
             );
@@ -87,7 +87,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             console.error('[sendDrawing] Error processing image: Generated buffer is empty');
             res.writeHead(400, { 'Content-Type': 'text/html' });
             res.end(
-                renderTemplate(getTemplate('error_text', 'misc'), {
+                renderTemplate(getTemplate('error-text', 'misc'), {
                     MESSAGE: 'Failed to process drawing data. Please try again.',
                 })
             );
@@ -128,6 +128,10 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
     } catch (err) {
         console.error(`[sendDrawing] Error:`, err);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        if ((err.message || err).toString().includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
+        if ((err.message || err).toString().includes('error reading from remote stream')) {
+            res.end(getTemplate('proxy-timeout-error', 'misc'));
+        } else {
+            res.end(getTemplate('generic-error', 'misc'));
+        }
     }
 };

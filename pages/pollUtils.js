@@ -2,7 +2,7 @@
 const { renderTemplate, getTemplate } = require('./utils.js');
 
 const poll_template = getTemplate('poll', 'message');
-const poll_answer_template = getTemplate('poll_answer', 'message');
+const poll_answer_template = getTemplate('poll-answer', 'message');
 
 function buildPollEmojiHtml(emoji, imagesCookie) {
     if (!emoji) return '';
@@ -67,7 +67,7 @@ function processPoll(poll, imagesCookie) {
                           });
                       })
                       .join('')
-                : getTemplate('poll_no_answers', 'misc');
+                : getTemplate('poll-no-answers', 'misc');
 
         // Create footer with poll metadata
         const footerParts = [`${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}`];

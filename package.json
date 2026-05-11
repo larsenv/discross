@@ -35,14 +35,14 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/Heath123/discross.git"
+        "url": "git+https://github.com/larsenv/discross.git"
     },
-    "author": "Heath Mitchell, github.com/Heath123, heath.mitchell27@gmail.com",
+    "author": "Larsenv, github.com/larsenv",
     "license": "AGPL-3.0",
     "bugs": {
-        "url": "https://github.com/Heath123/discross/issues"
+        "url": "https://github.com/larsenv/discross/issues"
     },
-    "homepage": "https://github.com/Heath123/discross#readme",
+    "homepage": "http://discross.net/",
     "devDependencies": {
         "prettier": "^3.8.1"
     }

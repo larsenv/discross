@@ -8,11 +8,11 @@ const {
 const escape = require('escape-html');
 const auth = require('../authentication.js');
 
-const setup2fa_template = loadAndRenderPageTemplate('setup2fa', 'auth');
-const disable2fa_template = loadAndRenderPageTemplate('disable2fa', 'auth');
-const backup_codes_template = loadAndRenderPageTemplate('backup_codes', 'auth');
+const setup2fa_template = loadAndRenderPageTemplate('setup-2fa', 'auth');
+const disable2fa_template = loadAndRenderPageTemplate('disable-2fa', 'auth');
+const backup_codes_template = loadAndRenderPageTemplate('backup-codes', 'auth');
 const error_template = getTemplate('error', 'login');
-const logged_in_template = getTemplate('logged_in', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
 
 function injectMenuAndError(response, username, parsedUrl, sessionParam) {
     const menuOptions = renderTemplate(logged_in_template, { USER: escape(username || '') });
@@ -94,7 +94,7 @@ exports.processSetup2FA = async function (bot, req, res, args) {
             });
         }
         if (parsedUrl.searchParams.get('codesent')) {
-            return getTemplate('verification_sent', 'partials');
+            return getTemplate('verification-sent', 'partials');
         }
         return '';
     })();
@@ -119,7 +119,7 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
     if (!auth.verifyAndConsumeActionCode(discordID, 'setup2fa', params.discord_code)) {
         res.writeHead(302, {
             Location:
-                '/setup2fa.html' +
+                '/setup-2fa.html' +
                 sessionParam +
                 (sessionParam ? '&' : '?') +
                 'errortext=' +
@@ -138,7 +138,7 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
     if (!result.success) {
         res.writeHead(302, {
             Location:
-                '/setup2fa.html' +
+                '/setup-2fa.html' +
                 sessionParam +
                 (sessionParam ? '&' : '?') +
                 'errortext=' +
@@ -180,7 +180,7 @@ exports.handleDisable2FA = async function (bot, req, res, body, discordID) {
     if (!auth.verifyAndConsumeActionCode(discordID, 'disable2fa', params.discord_code)) {
         res.writeHead(302, {
             Location:
-                '/setup2fa.html' +
+                '/setup-2fa.html' +
                 sessionParam +
                 (sessionParam ? '&' : '?') +
                 'errortext=' +
@@ -195,7 +195,7 @@ exports.handleDisable2FA = async function (bot, req, res, body, discordID) {
     if (!result.success) {
         res.writeHead(302, {
             Location:
-                '/setup2fa.html' +
+                '/setup-2fa.html' +
                 sessionParam +
                 (sessionParam ? '&' : '?') +
                 'errortext=' +

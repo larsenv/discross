@@ -27,7 +27,7 @@ const DISPLAY_NAMES = {
 
 const stocks_template = loadAndRenderPageTemplate('stocks');
 
-const logged_in_template = getTemplate('logged_in', 'index');
+const logged_in_template = getTemplate('logged-in', 'index');
 
 /**
  * Fetch latest quote data from stooq.com for a single symbol.
@@ -138,7 +138,7 @@ function renderQuoteRow(quote) {
             ? quote.regularMarketVolume.toLocaleString('en-US')
             : '--';
 
-    return renderTemplate(getTemplate('summary_card', 'stocks'), {
+    return renderTemplate(getTemplate('summary-card', 'stocks'), {
         NAME: name,
         SYMBOL: symbol,
         PRICE: price,
@@ -161,7 +161,7 @@ function renderTopIndices(quotes) {
             const change = formatChange(quote.regularMarketChange);
             const changePct = formatChangePct(quote.regularMarketChangePercent);
             const color = changeColor(quote.regularMarketChange);
-            return renderTemplate(getTemplate('index_row', 'stocks'), {
+            return renderTemplate(getTemplate('index-row', 'stocks'), {
                 NAME: name,
                 PRICE: price,
                 COLOR: color,
@@ -169,7 +169,7 @@ function renderTopIndices(quotes) {
                 CHANGE_PCT: changePct,
             });
         });
-    return renderTemplate(getTemplate('indices_table', 'stocks'), {
+    return renderTemplate(getTemplate('indices-table', 'stocks'), {
         ROWS: rows.join(''),
     });
 }
@@ -188,7 +188,7 @@ exports.processStocks = async function processStocks(req, res) {
             const safeTicker = ticker.slice(0, TICKER_MAX_LENGTH);
             const quote = await fetchStooqQuote(safeTicker);
             return !quote
-                ? renderTemplate(getTemplate('ticker_not_found', 'stocks'), {
+                ? renderTemplate(getTemplate('ticker-not-found', 'stocks'), {
                       TICKER: escape(safeTicker),
                   })
                 : renderQuoteRow(quote);
@@ -199,14 +199,14 @@ exports.processStocks = async function processStocks(req, res) {
             .filter((r) => r.status === 'fulfilled' && r.value !== null)
             .map((r) => r.value);
         return quotes.length === 0
-            ? getTemplate('market_data_error', 'stocks')
+            ? getTemplate('market-data-error', 'stocks')
             : renderTopIndices(quotes);
     })().catch((err) => {
         console.error('Stocks API error:', err);
-        return getTemplate('fetch_error', 'stocks');
+        return getTemplate('fetch-error', 'stocks');
     });
 
-    const credit = getTemplate('stooq_credit', 'stocks');
+    const credit = getTemplate('stooq-credit', 'stocks');
     const menuOptions = renderTemplate(logged_in_template, {
         USER: escape(await auth.getUsername(discordID)),
     });

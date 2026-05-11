@@ -23,7 +23,7 @@ const {
 const TEMPLATE_CHANNEL = loadAndRenderPageTemplate('channel', 'guest');
 const TEMPLATE_NAME = loadAndRenderPageTemplate('name', 'guest');
 const TEMPLATE_INPUT = getTemplate('input', 'channel');
-const TEMPLATE_INPUT_DISABLED = getTemplate('input_disabled', 'channel');
+const TEMPLATE_INPUT_DISABLED = getTemplate('input-disabled', 'channel');
 
 exports.processGuestName = async function processGuestName(req, res) {
     const parsedUrl = new URL(req.url, 'http://localhost');
@@ -33,7 +33,7 @@ exports.processGuestName = async function processGuestName(req, res) {
 
     if (!isValidSnowflake(channelId) || !auth.isGuestChannel(channelId)) {
         res.writeHead(403, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('guest_access_disabled', 'misc'));
+        res.end(getTemplate('guest-access-disabled', 'misc'));
         return;
     }
 
@@ -43,9 +43,12 @@ exports.processGuestName = async function processGuestName(req, res) {
         return;
     }
 
+    const oneYear = 365 * 24 * 60 * 60 * 1000;
+    const expires = new Date(Date.now() + oneYear).toUTCString();
+
     res.writeHead(302, {
         Location: `/channels/${channelId}`,
-        'Set-Cookie': `guest_name=${encodeURIComponent(name)}; path=/; HttpOnly`,
+        'Set-Cookie': `guest_name=${encodeURIComponent(name)}; path=/; expires=${expires}; HttpOnly`,
     });
     res.end();
 };
@@ -55,7 +58,7 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
 
     if (!isBotReady(bot)) {
         res.writeHead(503, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('bot_not_connected', 'misc'));
+        res.end(getTemplate('bot-not-connected', 'misc'));
         return;
     }
 
@@ -68,14 +71,14 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
     if (!botMember) {
         res.writeHead(503, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('not_in_server', 'misc'));
+        res.end(getTemplate('not-in-server', 'misc'));
         return;
     }
 
     const canView = await require('./utils.js').canViewChannel(null, botMember, chnl);
     if (!canView) {
         res.writeHead(403, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('bot_no_permission', 'misc'));
+        res.end(getTemplate('bot-no-permission', 'misc'));
         return;
     }
 
@@ -89,7 +92,7 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
         const page = renderTemplate(TEMPLATE_NAME, {
             WHITE_THEME_ENABLED: theme.themeClass,
             CHANNEL_ID: escape(channelId),
-            ERROR: hasError ? getTemplate('invalid_name_error', 'misc') : '',
+            ERROR: hasError ? getTemplate('invalid-name-error', 'misc') : '',
         });
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(page);
@@ -152,6 +155,10 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     } catch (err) {
         console.error(err);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        if ((err.message || err).toString().includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
+        if ((err.message || err).toString().includes('error reading from remote stream')) {
+            res.end(getTemplate('proxy-timeout-error', 'misc'));
+        } else {
+            res.end(getTemplate('generic-error', 'misc'));
+        }
     }
 };

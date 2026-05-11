@@ -21,7 +21,7 @@ function getTemplates() {
     if (!_templates) {
         _templates = {
             movies: loadTemplate('movies.html'),
-            loggedIn: getTemplate('logged_in', 'index'),
+            loggedIn: getTemplate('logged-in', 'index'),
             // Partials
             scoreBadge: loadPartial('movie-score-badge.html'),
             card: loadPartial('movie-card.html'),

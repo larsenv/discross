@@ -45,7 +45,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
             if (!canView) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
-                res.end(getTemplate('draw_permission_error', 'misc'));
+                res.end(getTemplate('draw-permission-error', 'misc'));
                 return;
             }
 
@@ -64,6 +64,10 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
     } catch (error) {
         console.error(error);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        if ((err.message || err).toString().includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
+        if ((err.message || err).toString().includes('error reading from remote stream')) {
+            res.end(getTemplate('proxy-timeout-error', 'misc'));
+        } else {
+            res.end(getTemplate('generic-error', 'misc'));
+        }
     }
 };

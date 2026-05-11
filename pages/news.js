@@ -240,7 +240,7 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
                   const proxied = proxyImageUrl(imageUrl);
                   const alt = escapeContent(imageAlt || title, showImages);
                   const caption = escapeContent(imageCaption || '', showImages);
-                  return renderTemplate(getTemplate('news_card_image', 'news'), {
+                  return renderTemplate(getTemplate('news-card-image', 'news'), {
                       PROXIED_URL: proxied,
                       ALT_TEXT: alt,
                       CAPTION_HTML: caption
@@ -253,13 +253,13 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
               })()
             : '';
 
-    return renderTemplate(getTemplate('news_card', 'news'), {
+    return renderTemplate(getTemplate('news-card', 'news'), {
         IMAGE_HTML: imageHtml,
-        TITLE_HTML: renderTemplate(getTemplate('news_card_title', 'news'), { HEADLINE: headline }),
+        TITLE_HTML: renderTemplate(getTemplate('news-card-title', 'news'), { HEADLINE: headline }),
         DATE_META_HTML: dateStr
-            ? renderTemplate(getTemplate('news_card_meta', 'news'), { DATE_STR: dateStr })
+            ? renderTemplate(getTemplate('news-card-meta', 'news'), { DATE_STR: dateStr })
             : '',
-        READ_BUTTON_HTML: renderTemplate(getTemplate('news_read_button', 'news'), {
+        READ_BUTTON_HTML: renderTemplate(getTemplate('news-read-button', 'news'), {
             ARTICLE_URL: articleUrl,
         }),
     });
@@ -347,7 +347,7 @@ function parseArticlePage(html, showImages) {
                           ? escapeContent(stripHtml(captionMatch[1]), showImages)
                           : '';
                       return (
-                          renderTemplate(getTemplate('news_article_image', 'news'), {
+                          renderTemplate(getTemplate('news-article-image', 'news'), {
                               PROXIED_URL: proxied,
                               ALT_TEXT: '', // alt is empty here, as in the original
                               CAPTION_HTML: caption
@@ -364,7 +364,7 @@ function parseArticlePage(html, showImages) {
             : '';
 
     const contentHtml = (() => {
-        if (!body) return getTemplate('news_article_text_error', 'news');
+        if (!body) return getTemplate('news-article-text-error', 'news');
         const pRe = /<p(\s|>)/gi;
         let match;
         let count = 0;
@@ -377,14 +377,14 @@ function parseArticlePage(html, showImages) {
             const text = stripHtml(el).trim();
             if (text.length > 10 && !isCTAParagraph(text)) {
                 paragraphs.push(
-                    renderTemplate(getTemplate('news_article_paragraph', 'news'), {
+                    renderTemplate(getTemplate('news-article-paragraph', 'news'), {
                         CONTENT: escapeContent(text, showImages),
                     }) + '\n'
                 );
                 count++;
             }
         }
-        return paragraphs.join('') || getTemplate('news_article_text_error', 'news');
+        return paragraphs.join('') || getTemplate('news-article-text-error', 'news');
     })();
 
     return { headline, bylines, date, leadImageHtml, contentHtml };
@@ -410,16 +410,16 @@ exports.processNews = async function processNews(req, res, args, discordID) {
             .filter(Boolean);
 
         const newsItemsHtml =
-            cards.length > 0 ? cards.join('\n') : getTemplate('news_no_articles_error', 'news');
+            cards.length > 0 ? cards.join('\n') : getTemplate('news-no-articles-error', 'news');
         const sessionHidden = [
             urlSessionID
-                ? renderTemplate(getTemplate('hidden_input', 'news'), {
+                ? renderTemplate(getTemplate('hidden-input', 'news'), {
                       NAME: 'sessionID',
                       VALUE: escape(urlSessionID),
                   })
                 : '',
             theme.themeValue !== 0
-                ? renderTemplate(getTemplate('hidden_input', 'news'), {
+                ? renderTemplate(getTemplate('hidden-input', 'news'), {
                       NAME: 'theme',
                       VALUE: theme.themeValue.toString(),
                   })
@@ -440,8 +440,8 @@ exports.processNews = async function processNews(req, res, args, discordID) {
         console.error('AP News feed error:', err);
         const msg =
             err.statusCode === 404
-                ? getTemplate('news_category_not_found_error', 'misc')
-                : getTemplate('news_load_feed_error', 'misc');
+                ? getTemplate('news-category-not-found-error', 'misc')
+                : getTemplate('news-load-feed-error', 'misc');
         res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
         res.end(msg);
     }
@@ -455,7 +455,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     const articleSlug = args[2] || '';
     if (!articleSlug || /[^a-zA-Z0-9-]/.test(articleSlug)) {
         res.writeHead(400, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('news_invalid_article_id_error', 'misc'));
+        res.end(getTemplate('news-invalid-article-id-error', 'misc'));
         return;
     }
 
@@ -487,8 +487,8 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
         console.error('AP News article error:', err);
         const msg =
             err.statusCode === 404
-                ? getTemplate('news_article_not_found_error', 'misc')
-                : getTemplate('news_load_article_error', 'misc');
+                ? getTemplate('news-article-not-found-error', 'misc')
+                : getTemplate('news-load-article-error', 'misc');
         res.writeHead(err.statusCode === 404 ? 404 : 502, { 'Content-Type': 'text/html' });
         res.end(msg);
     }

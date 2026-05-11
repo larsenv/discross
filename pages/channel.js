@@ -156,8 +156,8 @@ function renderEmojis(messagetext, item, imagesCookie, animationsCookie) {
     // vertical-align: -0.2em; is a common trick to align emojis with text baselines
     const imgStyle = `width: ${size}; height: ${size}; vertical-align: -0.2em;`;
 
-    const tmpl_twemoji = getTemplate('emoji_twemoji', 'channel');
-    const tmpl_custom = getTemplate('emoji_custom', 'channel');
+    const tmpl_twemoji = getTemplate('emoji-twemoji', 'channel');
+    const tmpl_custom = getTemplate('emoji-custom', 'channel');
 
     let result = messagetext;
 
@@ -218,8 +218,8 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
 
     if (list.length === 0) return result;
 
-    const tmpl_spoiler = getTemplate('spoiler_image', 'channel');
-    const tmpl_normal_image = getTemplate('normal_image', 'channel');
+    const tmpl_spoiler = getTemplate('spoiler-image', 'channel');
+    const tmpl_normal_image = getTemplate('normal-image', 'channel');
 
     const IMAGE_EXT = /\.(jpg|gif|png|jpeg|avif|svg|webp|tif|tiff)$/i;
     const VIDEO_EXT = /\.(mp4|webm|mov|avi|mkv)$/i;
@@ -261,7 +261,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
             : renderTemplate(tmpl_normal_image, { IMAGE_URL: data.url });
     } else if (imageData.length > 1) {
         let galleryContent = '';
-        const tmpl_gallery_item = getTemplate('gallery_item', 'channel');
+        const tmpl_gallery_item = getTemplate('gallery-item', 'channel');
         for (const data of imageData) {
             if (data.isSpoiler) {
                 galleryContent += renderTemplate(tmpl_spoiler, { IMAGE_URL: data.url });
@@ -269,7 +269,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
                 galleryContent += renderTemplate(tmpl_gallery_item, { IMAGE_URL: data.url });
             }
         }
-        result += renderTemplate(getTemplate('image_gallery', 'channel'), {
+        result += renderTemplate(getTemplate('image-gallery', 'channel'), {
             COUNT: imageData.length,
             GALLERY_CONTENT: galleryContent,
         });
@@ -299,7 +299,7 @@ function renderStickers(messagetext, item, imagesCookie) {
     if (list.length === 0) return result;
 
     const tmpl_sticker = getTemplate('sticker', 'channel');
-    const tmpl_sticker_text = getTemplate('sticker_text', 'channel');
+    const tmpl_sticker_text = getTemplate('sticker-text', 'channel');
 
     for (const sticker of list) {
         if (!sticker) continue;
@@ -333,7 +333,7 @@ function buildProxiedImageTag(
 ) {
     if (!rawUrl || typeof rawUrl !== 'string') return { proxied: '', tag: '' };
     const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
-    const tag = renderTemplate(getTemplate('image_tag', 'channel'), {
+    const tag = renderTemplate(getTemplate('image-tag', 'channel'), {
         IMAGE_SRC: proxied,
         CLASS: style,
         IMAGE_ALT: alt,
@@ -581,37 +581,37 @@ async function renderDiscordEvents(messagetext, item, bot, imagesCookie, clientT
             const iconUrl = guild.iconURL({ size: 128 });
             const guildIconHtml =
                 iconUrl && imagesCookie === 1
-                    ? renderTemplate(getTemplate('event_guild_icon', 'embed'), {
+                    ? renderTemplate(getTemplate('event-guild-icon', 'embed'), {
                           ICON_URL: `/imageProxy/external/${Buffer.from(iconUrl).toString('base64')}`,
                       })
-                    : renderTemplate(getTemplate('event_guild_icon_none', 'embed'), {});
+                    : renderTemplate(getTemplate('event-guild-icon-none', 'embed'), {});
 
             let locationHtml = '';
             if (event.entityMetadata?.location) {
-                locationHtml = renderTemplate(getTemplate('event_location_external', 'embed'), {
+                locationHtml = renderTemplate(getTemplate('event-location-external', 'embed'), {
                     LOCATION: escape(event.entityMetadata.location),
                 });
             } else if (event.channelId) {
                 const chan = bot.client.channels.cache.get(event.channelId);
-                locationHtml = renderTemplate(getTemplate('event_location_voice', 'embed'), {
+                locationHtml = renderTemplate(getTemplate('event-location-voice', 'embed'), {
                     CHANNEL_NAME: escape(chan?.name || 'Voice Channel'),
                 });
             }
 
             const descriptionHtml = event.description
-                ? renderTemplate(getTemplate('event_description', 'embed'), {
+                ? renderTemplate(getTemplate('event-description', 'embed'), {
                       DESCRIPTION: renderDiscordMarkdown(event.description),
                   })
                 : '';
 
-            const interestedHtml = renderTemplate(getTemplate('event_interested_count', 'embed'), {
+            const interestedHtml = renderTemplate(getTemplate('event-interested-count', 'embed'), {
                 COUNT: (event.userCount || 0).toLocaleString(),
             });
 
             const coverUrl = event.coverImageURL({ size: 512 });
             const imageHtml =
                 coverUrl && imagesCookie === 1
-                    ? renderTemplate(getTemplate('event_image', 'embed'), {
+                    ? renderTemplate(getTemplate('event-image', 'embed'), {
                           IMAGE_URL: `/imageProxy/external/${Buffer.from(coverUrl).toString(
                               'base64'
                           )}`,
@@ -661,10 +661,10 @@ async function renderDiscordInvites(messagetext, item, bot, imagesCookie) {
             const iconUrl = invite.guild.iconURL({ size: 128 });
             const iconHtml =
                 iconUrl && imagesCookie === 1
-                    ? renderTemplate(getTemplate('invite_icon', 'embed'), {
+                    ? renderTemplate(getTemplate('invite-icon', 'embed'), {
                           ICON_URL: `/imageProxy/external/${Buffer.from(iconUrl).toString('base64')}`,
                       })
-                    : renderTemplate(getTemplate('invite_icon_none', 'embed'), {});
+                    : renderTemplate(getTemplate('invite-icon-none', 'embed'), {});
 
             const inviteEmbed = renderTemplate(getTemplate('invite', 'embed'), {
                 GUILD_NAME: escape(invite.guild.name),
@@ -701,7 +701,7 @@ function renderPollResultEmbed(embed) {
     const totalVotes = fieldMap['total_votes'] ?? '0';
     const emojiPart = winnerEmoji ? escape(winnerEmoji) + ' ' : '';
 
-    return renderTemplate(getTemplate('poll_result', 'channel'), {
+    return renderTemplate(getTemplate('poll-result', 'channel'), {
         QUESTION: escape(question),
         WINNER_EMOJI: emojiPart,
         WINNER_TEXT: escape(winnerText),
@@ -729,7 +729,7 @@ function roleMentionPill(role, tmpl_mention) {
         const r = parseInt(hex.slice(1, 3), 16),
             g = parseInt(hex.slice(3, 5), 16),
             b = parseInt(hex.slice(5, 7), 16);
-        return renderTemplate(getTemplate('role_mention_colored', 'channel'), {
+        return renderTemplate(getTemplate('role-mention-colored', 'channel'), {
             HEX: hex,
             R: r.toString(),
             G: g.toString(),
@@ -737,7 +737,7 @@ function roleMentionPill(role, tmpl_mention) {
             NAME: name,
         });
     }
-    return renderTemplate(getTemplate('role_mention_plain', 'channel'), { NAME: name });
+    return renderTemplate(getTemplate('role-mention-plain', 'channel'), { NAME: name });
 }
 
 /**
@@ -850,7 +850,7 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
         if (!ch) return match;
         if (ch.type === ChannelType.GuildForum || ch.type === ChannelType.GuildMedia)
             return '#' + escape(normalizeWeirdUnicode(ch.name));
-        return renderTemplate(getTemplate('channel_mention', 'channel'), {
+        return renderTemplate(getTemplate('channel-mention', 'channel'), {
             CHANNEL_URL: `/channels/${ch.id}`,
             CHANNEL_NAME: escape(normalizeWeirdUnicode(ch.name)),
         });
@@ -952,14 +952,14 @@ async function resolveForwardData(
 
             if (!fwdChannel) return '';
 
-            const chanLink = renderTemplate(getTemplate('forwarded_origin_channel', 'misc'), {
+            const chanLink = renderTemplate(getTemplate('forwarded-origin-channel', 'misc'), {
                 JUMP_LINK: `/channels/${fwdMsg.channelId}/${fwdMsg.id}`,
                 CHANNEL_NAME: escape(normalizeWeirdUnicode(fwdChannel.name)),
                 TIME: formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone),
             });
 
             if (fwdMsg.guildId === chnl.guild.id)
-                return renderTemplate(getTemplate('forwarded_same_server', 'channel'), {
+                return renderTemplate(getTemplate('forwarded-same-server', 'channel'), {
                     CONTENT: chanLink,
                 });
 
@@ -969,7 +969,7 @@ async function resolveForwardData(
 
             await otherGuild.members.fetch(discordID);
 
-            return renderTemplate(getTemplate('forwarded_other_server', 'channel'), {
+            return renderTemplate(getTemplate('forwarded-other-server', 'channel'), {
                 GUILD_NAME: escape(normalizeWeirdUnicode(otherGuild.name)),
                 CONTENT: chanLink,
             });
@@ -1191,14 +1191,14 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
         .replace(/\s+/g, ' ')
         .trim();
     const contentTd = normalizedReplyContent
-        ? renderTemplate(getTemplate('reply_content_cell', 'channel'), {
+        ? renderTemplate(getTemplate('reply-content-cell', 'channel'), {
               REPLY_TEXT_TOP_OFFSET: '-1',
               REPLY_TEXT: replyText,
               REPLY_PREVIEW: he.encode(normalizedReplyContent, { useNamedReferences: true }),
           })
         : '';
 
-    const replyContent = renderTemplate(getTemplate('reply_with_content', 'channel'), {
+    const replyContent = renderTemplate(getTemplate('reply-with-content', 'channel'), {
         BAR_COLOR: barColor,
         REPLY_TEXT_TOP_OFFSET: '-1',
         AUTHOR_COLOR: replyData.authorColor,
@@ -1207,7 +1207,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
         CONTENT_TD: contentTd,
     });
 
-    return renderTemplate(getTemplate('reply_container', 'channel'), {
+    return renderTemplate(getTemplate('reply-container', 'channel'), {
         CONTENT: replyContent,
     });
 }
@@ -1249,7 +1249,7 @@ async function resolveInteractionData(item, chnl, memberCache, authorText) {
 }
 
 function buildInteractionIndicator(interactionData, textColor, barColor = '#808080') {
-    const content = renderTemplate(getTemplate('interaction_indicator', 'channel'), {
+    const content = renderTemplate(getTemplate('interaction-indicator', 'channel'), {
         BAR_COLOR: barColor,
         AUTHOR_COLOR: interactionData.authorColor,
         AUTHOR_NAME: escape(interactionData.author),
@@ -1257,7 +1257,7 @@ function buildInteractionIndicator(interactionData, textColor, barColor = '#8080
         COMMAND_NAME: escape(interactionData.commandName),
     });
 
-    return renderTemplate(getTemplate('interaction_container', 'channel'), {
+    return renderTemplate(getTemplate('interaction-container', 'channel'), {
         CONTENT: content,
     });
 }
@@ -1285,15 +1285,15 @@ function buildAuthorPills(state) {
         const icon = client ? `/resources/images/clients/${client.id}.png` : '/resources/logo.gif';
         const alt = client ? `Sent using ${client.name}` : 'Sent with an unknown client';
 
-        pills += renderTemplate(getTemplate('discross_pill', 'channel'), {
+        pills += renderTemplate(getTemplate('discross-pill', 'channel'), {
             CLIENT_ICON: icon,
             CLIENT_ALT: alt,
         });
     } else {
         if (isVerifiedBot || isSlashCommand) {
-            pills += getTemplate('verified_app_pill', 'channel');
+            pills += getTemplate('verified-app-pill', 'channel');
         } else if (isWebhook) {
-            pills += getTemplate('app_pill', 'channel');
+            pills += getTemplate('app-pill', 'channel');
         }
     }
     return pills;
@@ -1359,7 +1359,7 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
     // 2. Handle Forwarded Content Blocks.
     const contentBlock =
         state.isForwarded && state.forwardData.content
-            ? renderTemplate(getTemplate('forwarded_content_block', 'channel'), {
+            ? renderTemplate(getTemplate('forwarded-content-block', 'channel'), {
                   CONTENT: state.forwardData.content,
               })
             : '';
@@ -1549,18 +1549,18 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     // 1. Initialize templates. We use subfolders for organized template retrieval.
     const templates = overrideTemplates ?? {
         message: getTemplate('message', 'message'),
-        messageForwarded: getTemplate('forwarded_message', 'message'),
-        messageMentioned: getTemplate('message_mentioned', 'message'),
-        messageForwardedMentioned: getTemplate('forwarded_message_mentioned', 'message'),
-        firstMessageContent: getTemplate('first_message_content', 'message'),
-        mergedMessageContent: getTemplate('merged_message_content', 'message'),
+        messageForwarded: getTemplate('forwarded-message', 'message'),
+        messageMentioned: getTemplate('message-mentioned', 'message'),
+        messageForwardedMentioned: getTemplate('forwarded-message-mentioned', 'message'),
+        firstMessageContent: getTemplate('first-message-content', 'message'),
+        mergedMessageContent: getTemplate('merged-message-content', 'message'),
         mention: getTemplate('mention', 'message'),
         mentionHighlighted: getTemplate('mention', 'message'),
-        fileDownload: getTemplate('file_download', 'channel'),
+        fileDownload: getTemplate('file-download', 'channel'),
         reactions: getTemplate('reactions', 'message'),
         reaction: getTemplate('reaction', 'message'),
-        dateSeparator: getTemplate('date_separator', 'message'),
-        messageContinuation: getTemplate('message_continuation', 'message'),
+        dateSeparator: getTemplate('date-separator', 'message'),
+        messageContinuation: getTemplate('message-continuation', 'message'),
     };
 
     // 2. Fetch messages (or use override).
@@ -1799,7 +1799,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
         const messageHtml =
             isSystem && visibleText.length === 0
-                ? renderTemplate(getTemplate('system_message', 'channel'), {
+                ? renderTemplate(getTemplate('system-message', 'channel'), {
                       AUTHOR_NAME: escape(getDisplayName(currentMember, item.author)),
                       TEXT: SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action',
                   })
@@ -1832,7 +1832,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
     // Cleanup anchors and add the final scrolling target.
     response = removeExistingEndAnchors(response);
-    response += getTemplate('end_anchor', 'channel');
+    response += getTemplate('end-anchor', 'channel');
     return response;
 };
 
@@ -1876,7 +1876,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
     if (!isBotReady(bot)) {
         res.writeHead(503, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('bot_not_connected', 'misc'));
+        res.end(getTemplate('bot-not-connected', 'misc'));
         return;
     }
 
@@ -1890,7 +1890,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         if (!botMember) {
             res.writeHead(503, { 'Content-Type': 'text/html' });
-            res.end(getTemplate('not_in_server', 'misc'));
+            res.end(getTemplate('not-in-server', 'misc'));
             return;
         }
 
@@ -1898,7 +1898,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         if (!member) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
-            res.end(getTemplate('join_server_to_view', 'misc'));
+            res.end(getTemplate('join-server-to-view', 'misc'));
             return;
         }
 
@@ -1906,15 +1906,15 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         if (!canView) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
-            res.end(getTemplate('no_permission', 'misc'));
+            res.end(getTemplate('no-permission', 'misc'));
             return;
         }
 
         const baseTemplate = renderTemplate(getTemplate('channel', ''), {
             COMMON_HEAD: getTemplate('head', 'partials'),
             PAGE_CLASS: 'page-channel',
-            EMOJI_PICKER: getTemplate('emoji_picker', 'partials'),
-            EMOJI_BUTTON: getTemplate('emoji_picker_button', 'partials'),
+            EMOJI_PICKER: getTemplate('emoji-picker', 'partials'),
+            EMOJI_BUTTON: getTemplate('emoji-picker-button', 'partials'),
             CHANNEL_REPLY: '',
             REPLY_MESSAGE_ID_INPUT: '',
             WHITE_THEME_ENABLED: theme.themeClass,
@@ -1925,19 +1925,19 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         const inputHtml = !botMember
             .permissionsIn(chnl)
             .has(PermissionFlagsBits.ManageWebhooks, true)
-            ? renderTemplate(getTemplate('input_disabled', 'channel'), {
+            ? renderTemplate(getTemplate('input-disabled', 'channel'), {
                   COLOR: boxColor,
                   "You don't have permission to send messages in this channel.":
                       "Discross bot doesn't have the Manage Webhooks permission",
               })
             : member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)
               ? renderTemplate(getTemplate('input', 'channel'), { COLOR: boxColor })
-              : renderTemplate(getTemplate('input_disabled', 'channel'), { COLOR: boxColor });
+              : renderTemplate(getTemplate('input-disabled', 'channel'), { COLOR: boxColor });
 
         if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
             const final = renderTemplate(baseTemplate, {
                 INPUT: inputHtml,
-                MESSAGES: getTemplate('no_message_history', 'channel'),
+                MESSAGES: getTemplate('no-message-history', 'channel'),
                 CHANNEL_NAME: (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name),
                 SESSION_ID: urlSessionID,
                 SESSION_PARAM: sessionParam,
@@ -1987,6 +1987,10 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     } catch (err) {
         console.error(err);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        if ((err.message || err).toString().includes('error reading from remote stream')) { res.end(getTemplate('proxy_timeout_error', 'misc')); } else { res.end(getTemplate('generic_error', 'misc')); }
+        if ((err.message || err).toString().includes('error reading from remote stream')) {
+            res.end(getTemplate('proxy-timeout-error', 'misc'));
+        } else {
+            res.end(getTemplate('generic-error', 'misc'));
+        }
     }
 };
