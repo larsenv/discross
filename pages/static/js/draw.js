@@ -19,6 +19,23 @@ var currColor = '#000000';
 var currSize = 5;
 var currTool = 'draw';
 
+// History for undo
+var historyStack = [];
+var maxHistory = 20;
+
+function saveHistory() {
+    if (historyStack.length >= maxHistory) {
+        historyStack.shift();
+    }
+    historyStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+}
+
+function undo() {
+    if (historyStack.length > 0) {
+        ctx.putImageData(historyStack.pop(), 0, 0);
+    }
+}
+
 // Point queue for batched rendering.
 // Instead of calling ctx.stroke() on every mousemove (one repaint per event,
 // which is very slow on DSi Opera 9.5), we accumulate points here and flush
@@ -157,9 +174,12 @@ canvas.onmousedown = function (e) {
     if (e.preventDefault) e.preventDefault(); // Stop Wii Drag
     var pos = getPos(e);
     if (currTool === 'fill') {
+        saveHistory();
         floodFill(pos.x, pos.y);
         return false;
     }
+
+    saveHistory();
     isDrawing = true;
     lastX = pos.x;
     lastY = pos.y;
@@ -169,7 +189,8 @@ canvas.onmousedown = function (e) {
 
     ctx.beginPath();
     ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
-    ctx.fillStyle = currColor;
+    ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+    ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
     ctx.fill();
     ctx.beginPath();
 
@@ -217,9 +238,12 @@ canvas.addEventListener(
         var pos = getTouchPos(e);
         if (!pos) return;
         if (currTool === 'fill') {
+            saveHistory();
             floodFill(pos.x, pos.y);
             return;
         }
+
+        saveHistory();
         isDrawing = true;
         lastX = pos.x;
         lastY = pos.y;
@@ -229,7 +253,8 @@ canvas.addEventListener(
 
         ctx.beginPath();
         ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
-        ctx.fillStyle = currColor;
+        ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+        ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
         ctx.fill();
         ctx.beginPath();
     },
@@ -274,21 +299,42 @@ canvas.addEventListener(
 // --- UI FUNCTIONS ---
 function setColor(col, id) {
     currColor = col;
+    if (currTool === 'eraser') {
+        setTool('draw'); // Switch back to draw mode when a color is picked
+    }
     ctx.strokeStyle = currColor;
+    ctx.fillStyle = currColor;
 
     // Reset borders
     for (var i = 1; i <= 16; i++) {
         var el = document.getElementById('c' + i);
         if (el) el.style.border = '2px solid #555';
     }
-    document.getElementById(id).style.border = '2px solid white';
+    var target = document.getElementById(id);
+    if (target) target.style.border = '2px solid white';
 }
 
 function setTool(tool) {
-    currTool = currTool === tool ? 'draw' : tool;
+    currTool = tool;
+    var drawBtn = document.getElementById('btn-draw');
+    if (drawBtn) {
+        drawBtn.style.outline = currTool === 'draw' ? '2px solid white' : '';
+    }
     var fillBtn = document.getElementById('btn-fill');
     if (fillBtn) {
         fillBtn.style.outline = currTool === 'fill' ? '2px solid white' : '';
+    }
+    var eraserBtn = document.getElementById('btn-eraser');
+    if (eraserBtn) {
+        eraserBtn.style.outline = currTool === 'eraser' ? '2px solid white' : '';
+    }
+
+    if (currTool === 'eraser') {
+        ctx.strokeStyle = '#ffffff';
+        ctx.fillStyle = '#ffffff';
+    } else {
+        ctx.strokeStyle = currColor;
+        ctx.fillStyle = currColor;
     }
 }
 
@@ -314,9 +360,11 @@ function floodFill(startX, startY) {
 
     if (targetR === fillR && targetG === fillG && targetB === fillB && targetA === 255) return;
 
-    // Tolerance of 32 (squared: 1024) catches anti-aliased edge pixels that are
-    // blended near-target colors, preventing the stray-pixel halo left by exact fill.
-    var tolSq = 32 * 32;
+    // Extremely aggressive tolerance to swallow anti-aliasing halos.
+    // 130000 / 195075 (max) is ~66% of the color space.
+    // This ensures that even dark-gray pixels on a white-to-black gradient
+    // are filled, leaving only the very core of the black line.
+    var tolSq = 130000;
     var visited = [];
     var stack = [startX + startY * w];
     while (stack.length > 0) {
@@ -351,13 +399,15 @@ function setSize(s, id) {
         var el = document.getElementById('s' + i);
         if (el) el.style.border = '2px solid #000';
     }
-    document.getElementById(id).style.border = '2px solid blue';
+    var target = document.getElementById(id);
+    if (target) target.style.border = '2px solid blue';
 }
 
 function wipe() {
+    saveHistory();
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = currColor;
+    ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
 }
 
 // --- SEND LOGIC ---
@@ -372,4 +422,5 @@ function prepareAndSend() {
 // Initialize UI
 setColor('#000000', 'c1');
 setSize(5, 's2');
+setTool('draw');
 
