@@ -195,7 +195,7 @@ function getPageThemeAttr(req) {
  * Returns the full THEME_CONFIG entry (boxColor, authorText, replyText, themeClass)
  * for the active theme: URL `?theme=` takes priority over `whiteThemeCookie` cookie.
  *
- * Used by channel, channel_reply, draw, guest, pins, and news page handlers.
+ * Used by channel, channelReply, draw, guest, pins, and news page handlers.
  *
  * @param {object} req - Node.js IncomingMessage.
  * @returns {{ boxColor: string, authorText: string, replyText: string, themeClass: string }}
@@ -217,8 +217,8 @@ function resolveTheme(req) {
 }
 
 /**
- * Builds the combined URL query string for session/theme/images link params.
- * Preference params (theme/images) are only included when the browser has not
+ * Builds the combined URL query string for session/theme/images/skinTone link params.
+ * Preference params (theme/images/skinTone) are only included when the browser has not
  * set the corresponding cookie (i.e. the browser does not support cookies).
  *
  * @param {string} urlSessionID - Session ID from URL params.
@@ -226,21 +226,33 @@ function resolveTheme(req) {
  * @param {string|undefined} cookieTheme - whiteThemeCookie value (undefined if absent).
  * @param {string|null} urlImages - Images preference from URL params (null if absent).
  * @param {string|undefined} cookieImages - images cookie value (undefined if absent).
+ * @param {string|null} urlSkinTone - Skin tone preference from URL params (null if absent).
+ * @param {string|undefined} cookieSkinTone - emojiSkinTone cookie value (undefined if absent).
  * @returns {string} Query string (e.g. "?sessionID=abc&theme=1") or empty string.
  */
-function buildSessionParam(urlSessionID, urlTheme, cookieTheme, urlImages, cookieImages) {
+function buildSessionParam(
+    urlSessionID,
+    urlTheme,
+    cookieTheme,
+    urlImages,
+    cookieImages,
+    urlSkinTone = null,
+    cookieSkinTone = undefined
+) {
     const parts = [];
     if (urlSessionID) parts.push('sessionID=' + encodeURIComponent(urlSessionID));
     if (urlTheme !== null && cookieTheme === undefined)
         parts.push('theme=' + encodeURIComponent(urlTheme));
     if (urlImages !== null && cookieImages === undefined)
         parts.push('images=' + encodeURIComponent(urlImages));
+    // Always include skinTone in URL if provided, to ensure refreshes work correctly
+    if (urlSkinTone) parts.push('skinTone=' + encodeURIComponent(urlSkinTone));
     return parts.length ? '?' + parts.join('&') : '';
 }
 
 /**
  * Builds a URL that toggles the emoji picker open/closed while preserving other
- * query parameters (session, theme, images).
+ * query parameters (session, theme, images, skinTone).
  *
  * @param {string} baseUrl - Relative URL of the current page (e.g. channel ID).
  * @param {boolean} emojiOpen - Whether the emoji picker is currently open.
@@ -251,7 +263,34 @@ function buildEmojiToggleUrl(baseUrl, emojiOpen, sessionParam) {
     if (emojiOpen) {
         return baseUrl + sessionParam;
     }
-    return baseUrl + '?emoji=1' + (sessionParam ? sessionParam.replace('?', '&') : '');
+    return baseUrl + (sessionParam ? sessionParam + '&emoji=1' : '?emoji=1');
+}
+
+/**
+ * Builds a URL that expands the emoji picker while preserving other
+ * query parameters (session, theme, images, skinTone, emoji).
+ *
+ * @param {string} baseUrl - Relative URL of the current page (e.g. channel ID).
+ * @param {boolean} expanded - Whether the emoji picker is currently expanded.
+ * @param {string} sessionParam - Existing session/preference query string (from buildSessionParam).
+ * @returns {string} URL with `expanded=1` added (to expand) or removed (to collapse).
+ */
+function buildEmojiExpandUrl(baseUrl, expanded, sessionParam) {
+    const separator = sessionParam ? '&' : '?';
+    const base = baseUrl + (sessionParam || '');
+    
+    // Ensure emoji=1 is present
+    let url = base;
+    if (!url.includes('emoji=1')) {
+        url += (url.includes('?') ? '&' : '?') + 'emoji=1';
+    }
+
+    if (expanded) {
+        // Already expanded, so the button should collapse it (remove expanded=1)
+        return url.replace(/[&?]expanded=1/, '').replace('?&', '?');
+    }
+    // Not expanded, so the button should expand it
+    return url + (url.includes('?') ? '&' : '?') + 'expanded=1';
 }
 
 /**
@@ -417,6 +456,7 @@ module.exports = {
     RANDOM_EMOJIS,
     buildSessionParam,
     buildEmojiToggleUrl,
+    buildEmojiExpandUrl,
     sanitizeGuestName,
     resolveMentions,
     httpsGet,

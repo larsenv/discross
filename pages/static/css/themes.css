@@ -1,13 +1,4 @@
-/* Default Dark Theme */
-body {
-    background: #303338;
-    color: #dddddd;
-}
-
-#wrapper {
-    background: #303338;
-    color: #dddddd;
-}
+/* Themes for Discross */
 
 body.light-theme,
 .light-theme html,

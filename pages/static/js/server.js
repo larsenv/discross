@@ -40,9 +40,32 @@ function toggleClass(el, cls) {
     return true;
 }
 
+// Helper to find all elements by class for IE6/7 compatibility
+function getElementsByClass(cls) {
+    if (document.querySelectorAll) return document.querySelectorAll('.' + cls);
+    if (document.getElementsByClassName) return document.getElementsByClassName(cls);
+    
+    var res = [];
+    var all = document.getElementsByTagName('*');
+    for (var i = 0; i < all.length; i++) {
+        if (hasClass(all[i], cls)) res.push(all[i]);
+    }
+    return res;
+}
+
 // Category collapse/expand functionality (#17)
 function toggleCategory(element) {
-    const arrow = element.querySelector('.category-arrow');
+    var arrow = element.querySelector ? element.querySelector('.category-arrow') : null;
+    if (!arrow) {
+        var imgs = element.getElementsByTagName('img');
+        for (var i = 0; i < imgs.length; i++) {
+            if (hasClass(imgs[i], 'category-arrow')) {
+                arrow = imgs[i];
+                break;
+            }
+        }
+    }
+
     // Find the category-channels div - it should be a sibling after potentially a BR
     var categoryDiv = null;
     var sibling = nextElemSibling(element);
@@ -67,8 +90,8 @@ function toggleCategory(element) {
 
         // Store state in localStorage
         try {
-            const categoryId = categoryDiv.id;
-            if (categoryId) {
+            var categoryId = categoryDiv.id;
+            if (categoryId && typeof localStorage !== 'undefined') {
                 localStorage.setItem(categoryId, isCollapsed ? 'collapsed' : 'expanded');
             }
         } catch (e) {
@@ -79,7 +102,17 @@ function toggleCategory(element) {
 
 // Thread group collapse/expand functionality
 function toggleThreads(element) {
-    var arrow = element.querySelector('.thread-arrow');
+    var arrow = element.querySelector ? element.querySelector('.thread-arrow') : null;
+    if (!arrow) {
+        var imgs = element.getElementsByTagName('img');
+        for (var i = 0; i < imgs.length; i++) {
+            if (hasClass(imgs[i], 'thread-arrow')) {
+                arrow = imgs[i];
+                break;
+            }
+        }
+    }
+
     var threadDiv = null;
     var sibling = nextElemSibling(element);
 
@@ -101,8 +134,8 @@ function toggleThreads(element) {
         }
 
         try {
-            const id = threadDiv.id;
-            if (id) {
+            var id = threadDiv.id;
+            if (id && typeof localStorage !== 'undefined') {
                 localStorage.setItem(id, isCollapsed ? 'collapsed' : 'expanded');
             }
         } catch (e) {
@@ -114,10 +147,10 @@ function toggleThreads(element) {
 // Restore category and thread group states on page load
 window.onload = function () {
     try {
-        const categories = document.querySelectorAll('.category-channels');
-        for (let i = 0; i < categories.length; i++) {
-            const cat = categories[i];
-            const state = localStorage.getItem(cat.id);
+        var categories = getElementsByClass('category-channels');
+        for (var i = 0; i < categories.length; i++) {
+            var cat = categories[i];
+            var state = typeof localStorage !== 'undefined' ? localStorage.getItem(cat.id) : null;
             if (state === 'collapsed') {
                 addClass(cat, 'collapsed');
 
@@ -125,7 +158,19 @@ window.onload = function () {
                 var prevSibling = prevElemSibling(cat);
                 while (prevSibling) {
                     if (prevSibling.tagName === 'A' && prevSibling.onclick) {
-                        const arrow = prevSibling.querySelector('.category-arrow');
+                        var arrow = null;
+                        if (prevSibling.querySelector) {
+                            arrow = prevSibling.querySelector('.category-arrow');
+                        } else {
+                            var imgs = prevSibling.getElementsByTagName('img');
+                            for (var j = 0; j < imgs.length; j++) {
+                                if (hasClass(imgs[j], 'category-arrow')) {
+                                    arrow = imgs[j];
+                                    break;
+                                }
+                            }
+                        }
+                        
                         if (arrow) {
                             arrow.src = '/resources/twemoji/25b6.gif';
                             arrow.alt = '>';
@@ -137,17 +182,29 @@ window.onload = function () {
             }
         }
 
-        const threadGroups = document.querySelectorAll('.thread-channels');
-        for (let tgIndex = 0; tgIndex < threadGroups.length; tgIndex++) {
-            const tg = threadGroups[tgIndex];
-            const tgState = localStorage.getItem(tg.id);
+        var threadGroups = getElementsByClass('thread-channels');
+        for (var tgIndex = 0; tgIndex < threadGroups.length; tgIndex++) {
+            var tg = threadGroups[tgIndex];
+            var tgState = typeof localStorage !== 'undefined' ? localStorage.getItem(tg.id) : null;
             if (tgState === 'collapsed') {
                 addClass(tg, 'collapsed');
 
                 var prevElement = prevElemSibling(tg);
                 while (prevElement) {
                     if (prevElement.tagName === 'A' && prevElement.onclick) {
-                        const tArrow = prevElement.querySelector('.thread-arrow');
+                        var tArrow = null;
+                        if (prevElement.querySelector) {
+                            tArrow = prevElement.querySelector('.thread-arrow');
+                        } else {
+                            var tImgs = prevElement.getElementsByTagName('img');
+                            for (var k = 0; k < tImgs.length; k++) {
+                                if (hasClass(tImgs[k], 'thread-arrow')) {
+                                    tArrow = tImgs[k];
+                                    break;
+                                }
+                            }
+                        }
+
                         if (tArrow) {
                             tArrow.src = '/resources/twemoji/25b6.gif';
                             tArrow.alt = '>';
@@ -205,3 +262,4 @@ window.onload = function () {
         }
     }
 };
+

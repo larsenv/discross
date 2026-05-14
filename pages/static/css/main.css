@@ -27,6 +27,9 @@ body,
         sans-serif;
     font-size: 16px;
     line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -563,10 +566,11 @@ pre code {
    ================================================================ */
 
 #emoji {
+    position: relative;
     background: #2f3136;
     border: 1px solid #40444b;
     border-radius: 8px;
-    padding: 16px;
+    padding: 12px;
     margin: 8px 12px;
 }
 #emoji table {
@@ -581,8 +585,36 @@ pre code {
     display: inline-block;
     text-decoration: none;
 }
+#emoji a#emoji-more-button {
+    background: #5865f2 !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    width: auto !important;
+    margin: 0 auto !important;
+    display: inline-block !important;
+    text-decoration: none !important;
+}
+#emoji a#emoji-more-button:hover {
+    background: #4752c4 !important;
+    text-decoration: none !important;
+}
 #emoji a:hover {
     background: rgba(255, 255, 255, 0.06);
+}
+
+#emoji-quick-picker {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 0;
+    margin: 0;
+}
+.emoji-quick-item {
+    display: inline-block;
+    width: 25%;
+    text-align: center;
+    padding: 2px;
 }
 
 /* ================================================================
@@ -2881,41 +2913,6 @@ html.page-draw #wrapper {
         width: 24px !important;
         height: 24px !important;
     }
-    /* Adjust gallery to 2 columns on mobile */
-    .image-gallery {
-        display: block !important;
-        text-align: center;
-    }
-    .gallery-item {
-        width: 48% !important;
-        margin: 1% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-    }
-    .gallery-image {
-        min-width: 0 !important;
-        min-height: 0 !important;
-    }
-}
-
-@media screen and (max-width: 380px) {
-    #wrapper > table:first-child font[size='7'] {
-        font-size: 18px !important;
-    }
-}
-
-/* Mobile optimizations for small viewports (e.g. iPhone 17 402px) */
-@media screen and (max-width: 480px) {
-    #wrapper > table:first-child font[size='7'] {
-        font-size: 24px !important;
-    }
-    #wrapper > table:first-child font[size='4'] {
-        font-size: 14px !important;
-    }
-    #wrapper > table:first-child img[src*='1f313.gif'] {
-        width: 24px !important;
-        height: 24px !important;
-    }
     .nav-spacer {
         display: none !important;
     }
@@ -2941,3 +2938,4 @@ html.page-draw #wrapper {
         font-size: 18px !important;
     }
 }
+

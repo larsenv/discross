@@ -1,4 +1,5 @@
 'use strict';
+const fs = require('fs');
 const { renderTemplate, getTemplate } = require('./utils.js');
 const sqlite3 = require('better-sqlite3');
 const emojiRegex = require('./twemojiRegex').regex;
@@ -107,7 +108,136 @@ function cacheCustomEmoji(emojiId, emojiName, animated) {
  */
 const tmpl = {
     image: getTemplate('twemoji-image', 'emojiUtils'),
+    skintone: getTemplate('skintone-button', 'emojiUtils'),
 };
+
+// Load emoji categories for server-side rendering
+let emojiCategories = {};
+try {
+    const emojiListPath = require('path').join(__dirname, 'static/js/emojiList.js');
+    const content = fs.readFileSync(emojiListPath, 'utf-8');
+    // Extract JSON from window.EMOJI_CATEGORIES = {...};
+    const jsonMatch = content.match(/window\.EMOJI_CATEGORIES\s*=\s*(\{.*\});/);
+    if (jsonMatch) {
+        emojiCategories = JSON.parse(jsonMatch[1]);
+    }
+} catch (err) {
+    console.error('Failed to load emoji categories for server-side rendering:', err);
+}
+
+function getSkinToneSelectorHTML(baseUrl, emojiOpen, expanded, sessionParam) {
+    const skinTones = [
+        { tone: '', icon: '1f44f' },
+        { tone: '1f3fb', icon: '1f44f-1f3fb' },
+        { tone: '1f3fc', icon: '1f44f-1f3fc' },
+        { tone: '1f3fd', icon: '1f44f-1f3fd' },
+        { tone: '1f3fe', icon: '1f44f-1f3fe' },
+        { tone: '1f3ff', icon: '1f44f-1f3ff' }
+    ];
+
+    // Preserve emoji=1 and expanded=1 in the links
+    let extra = '';
+    if (emojiOpen) extra += '&emoji=1';
+    if (expanded) extra += '&expanded=1';
+
+    return skinTones.map(st => {
+        // We need to inject skinTone into sessionParam or handle it separately
+        let href = baseUrl;
+        let finalSessionParam = sessionParam;
+
+        // Remove existing skinTone from sessionParam if we are setting a new one
+        if (st.tone) {
+            if (finalSessionParam.includes('?')) {
+                finalSessionParam = finalSessionParam.replace(/([?&])skinTone=[^&]*/, '$1skinTone=' + st.tone);
+                if (!finalSessionParam.includes('skinTone=')) {
+                    finalSessionParam += '&skinTone=' + st.tone;
+                }
+            } else {
+                finalSessionParam = '?skinTone=' + st.tone;
+            }
+        } else {
+            // Remove skinTone param if tone is empty
+            finalSessionParam = finalSessionParam.replace(/[?&]skinTone=[^&]*/, '').replace('?&', '?');
+            if (finalSessionParam === '?') finalSessionParam = '';
+        }
+
+        href += finalSessionParam;
+        if (extra) {
+            href += (href.includes('?') ? '' : '?') + extra.replace(/^&/, href.includes('?') ? '&' : '');
+        }
+
+        return renderTemplate(tmpl.skintone, {
+            TONE: st.tone,
+            ICON: st.icon,
+            HREF: href
+        });
+    }).join('');
+}
+
+const quickNames = ['sob', 'skull', 'pleading_face', 'heart', 'joy', 'fire', 'white_check_mark', 'eyes'];
+
+function renderEmojiLink(emoji, isCustom, skinTone, animated = false) {
+    const code = isCustom ? emoji.id : emoji.code;
+    const name = emoji.name;
+    const supportsSkinTone = emoji.sk;
+
+    let finalCode = code;
+    if (!isCustom && supportsSkinTone && skinTone) {
+        if (code.includes('-200d')) {
+            finalCode = code.replace(/(1f468|1f469|1f9d1|1f466|1f467)(?=[-.]|$)/g, '$1-' + skinTone);
+        } else {
+            finalCode = code.replace('.gif', '-' + skinTone + '.gif');
+        }
+    }
+
+    const src = isCustom 
+        ? `https://cdn.discordapp.com/emojis/${code}${animated ? '.gif' : '.png'}?size=48`
+        : `/resources/twemoji/${finalCode}`;
+
+    // For JS-free, we can't easily insert into the textarea without a form or JS.
+    // But we can at least show them.
+    return `<a title=":${name}:" style="display: inline-block; background: none; cursor: pointer; padding: 8px; border-radius: 4px; text-decoration: none;" onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.1)'" onmouseout="this.style.backgroundColor='transparent'">
+        <img src="${src}" alt="${name}" width="24" height="24" style="width: 24px; height: 24px" loading="lazy" />
+    </a>`;
+}
+
+function getQuickEmojiHTML(skinTone) {
+    const html = [];
+    for (const name of quickNames) {
+        // Find emoji in categories
+        let found = null;
+        for (const cat in emojiCategories) {
+            found = emojiCategories[cat].find(e => e.name === name);
+            if (found) break;
+        }
+        if (found) {
+            html.push(renderEmojiLink(found, false, skinTone));
+        }
+    }
+    return html.join('');
+}
+
+function getExpandedEmojiHTML(skinTone, serverEmojis) {
+    const html = [];
+
+    // Server Emojis
+    if (serverEmojis && serverEmojis.length > 0) {
+        html.push(`<h3 style="margin: 8px 4px 4px 4px; color: #8e9297; font-size: 12px; text-transform: uppercase;">Server Emojis</h3>`);
+        for (const e of serverEmojis) {
+            html.push(renderEmojiLink(e, true, skinTone, e.animated));
+        }
+    }
+
+    // Twemoji categories
+    for (const cat in emojiCategories) {
+        html.push(`<h3 style="margin: 16px 4px 4px 4px; color: #8e9297; font-size: 12px; text-transform: uppercase;">${cat}</h3>`);
+        for (const e of emojiCategories[cat]) {
+            html.push(renderEmojiLink(e, false, skinTone));
+        }
+    }
+
+    return html.join('');
+}
 
 function processUnicodeEmojiInText(text, sizePx, sizeEm) {
     return text.replace(emojiRegex, (match) => {
@@ -120,4 +250,11 @@ function processUnicodeEmojiInText(text, sizePx, sizeEm) {
     });
 }
 
-module.exports = { unicodeToTwemojiCode, cacheCustomEmoji, processUnicodeEmojiInText };
+module.exports = { 
+    unicodeToTwemojiCode, 
+    cacheCustomEmoji, 
+    processUnicodeEmojiInText, 
+    getSkinToneSelectorHTML,
+    getQuickEmojiHTML,
+    getExpandedEmojiHTML
+};

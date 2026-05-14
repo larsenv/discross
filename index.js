@@ -46,7 +46,7 @@ const { fileProxy } = require('./pages/fileProxy.js');
 const { toggleImages } = require('./pages/toggleImages.js');
 const { uploadFile } = require('./pages/uploadFile.js');
 const uploadpage = require('./pages/upload.js');
-const chanelreplypage = require('./pages/channelReply.js');
+const channelreplypage = require('./pages/channelReply.js');
 const replypage = require('./pages/reply.js');
 const drawpage = require('./pages/draw.js');
 const senddrawing = require('./pages/sendDrawing.js');
@@ -464,7 +464,7 @@ server.on('request', async (req, res) => {
                             res.end();
                             return;
                         } else {
-                            await chanelreplypage.processChannelReply(
+                            await channelreplypage.processChannelReply(
                                 bot,
                                 req,
                                 res,

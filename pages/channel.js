@@ -18,7 +18,7 @@ const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
-const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
+const { unicodeToTwemojiCode, cacheCustomEmoji, getSkinToneSelectorHTML } = require('./emojiUtils');
 const emojiRegex = require('./twemojiRegex').regex;
 const notFound = require('./notFound.js');
 const auth = require('../authentication.js');
@@ -45,29 +45,38 @@ const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
 const SYSTEM_MESSAGE_TEXT = {
     1: 'added a new member',
     2: 'left',
-    3: 'boosted the server',
+    3: 'started a call',
     4: 'changed the channel name',
     5: 'changed the channel icon',
     6: 'pinned a message to this channel',
     7: 'welcomed a new member',
-    8: 'boosted the server to level 1',
-    9: 'boosted the server to level 2',
-    10: 'boosted the server to level 3',
-    11: 'followed this channel',
-    12: 'went live',
+    8: 'boosted the server',
+    9: 'boosted the server to level 1',
+    10: 'boosted the server to level 2',
+    11: 'boosted the server to level 3',
+    12: 'followed this channel',
     14: 'is no longer eligible for Server Discovery',
     15: 'is eligible for Server Discovery again',
-    17: 'started a thread',
-    23: 'flagged a message with AutoMod',
-    24: 'purchased a role subscription',
-    26: 'started a stage',
-    27: 'ended the stage',
-    30: 'changed the stage topic',
+    16: 'is in the Server Discovery grace period',
+    17: 'received a final warning for Server Discovery',
+    18: 'started a thread',
+    21: 'started a thread',
+    22: 'sent an invite reminder',
+    24: 'flagged a message with AutoMod',
+    25: 'purchased a role subscription',
+    26: 'upsold a premium interaction',
+    27: 'started a stage',
+    28: 'ended the stage',
+    29: 'became a stage speaker',
+    30: 'raised their hand',
+    31: 'changed the stage topic',
+    32: 'subscribed to a server application premium',
     36: 'enabled raid alert mode',
     37: 'disabled raid alert mode',
     38: 'reported a raid',
     39: 'reported a false alarm',
-    46: 'Poll ended',
+    44: 'made a purchase',
+    46: 'completed a poll',
 };
 
 // ---------------------------------------------------------------------------
@@ -114,7 +123,7 @@ function isSameAuthor(member1, author1, member2, author2) {
 }
 
 function isNormalMessage(type) {
-    return type === 0 || type === 19;
+    return type === 0 || type === 19 || type === 20 || type === 23 || type === 25;
 }
 
 // ---------------------------------------------------------------------------
@@ -682,6 +691,63 @@ async function renderDiscordInvites(messagetext, item, bot, imagesCookie) {
 
     return result;
 }
+
+/**
+ * Renders an activity banner for messages that are activity shares or replies (type 25).
+ *
+ * @param {object} item - The Discord message object.
+ * @param {object} context - Rendering context.
+ * @returns {string} The rendered activity banner HTML or an empty string.
+ */
+function renderActivityBanner(item, context) {
+    const { templates, req } = context;
+    // Activity Reply is type 25. Shared activities may also have .activity
+    if (item.type !== 25 && !item.activity) return '';
+
+    const embed = item.embeds?.[0] || item.messageSnapshots?.first()?.embeds?.[0];
+
+    // If we don't have enough info to show a banner, skip it
+    if (!embed && !item.activity && !item.applicationId) return '';
+
+    const authorName = getDisplayName(item.member, item.author);
+    const gameName = embed?.title || item.activity?.name || 'a game';
+
+    // Duration: Check embed description or footer for time info
+    let duration = 'Played recently';
+    if (
+        embed?.footer?.text &&
+        (embed.footer.text.includes('ago') || embed.footer.text.includes(':'))
+    ) {
+        duration = embed.footer.text;
+    } else if (embed?.description && embed.description.includes('ago')) {
+        const agoMatch = embed.description.match(/\d+\s+\w+\s+ago/);
+        if (agoMatch) duration = agoMatch[0];
+    }
+
+    // Icon: Use embed thumbnail, or try application icon
+    let iconUrl = embed?.thumbnail?.url || '/resources/twemoji/1f3ae.gif';
+    if (!embed?.thumbnail?.url && item.applicationId) {
+        iconUrl = `https://cdn.discordapp.com/app-icons/${item.applicationId}/icon.png`;
+    }
+
+    // Theme-aware colors
+    const cookies = parseCookies(req);
+    const themeValue = parseInt(cookies.whiteThemeCookie, 10) || 0;
+    const isLight = themeValue === 1;
+
+    return renderTemplate(templates.activityBanner, {
+        AUTHOR_NAME: escape(authorName),
+        ACTIVITY_TEXT: escape(`Played ${gameName}`),
+        ACTIVITY_ICON: escape(iconUrl),
+        DURATION_AGO: escape(duration),
+        AUTHOR_COLOR: isLight ? '#060607' : '#ffffff',
+        TEXT_COLOR: isLight ? '#060607' : '#dcddde',
+        MUTE_COLOR: isLight ? '#5c5e66' : '#b5bac1',
+        BORDER_COLOR: isLight ? '#e3e5e8' : '#40444b',
+        BG_COLOR: isLight ? 'rgba(79, 84, 92, 0.08)' : 'rgba(79, 84, 92, 0.16)',
+    });
+}
+
 
 /**
  * Renders a poll result summary from a Discord poll embed.
@@ -1459,7 +1525,10 @@ async function renderMessageContent(item, context) {
 
     const withPoll = item?.poll ? withInvites + processPoll(item.poll, imagesCookie) : withInvites;
 
-    const withKnownMentions = renderKnownMentions(withPoll, item, discordID, member, templates);
+    const activityBanner = renderActivityBanner(item, context);
+    const withActivity = withPoll + activityBanner;
+
+    const withKnownMentions = renderKnownMentions(withActivity, item, discordID, member, templates);
 
     const withRemainingMentions = await resolveRemainingMentions(
         withKnownMentions,
@@ -1561,6 +1630,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         reaction: getTemplate('reaction', 'message'),
         dateSeparator: getTemplate('date-separator', 'message'),
         messageContinuation: getTemplate('message-continuation', 'message'),
+        activityBanner: getTemplate('activity-banner', 'channel'),
     };
 
     // 2. Fetch messages (or use override).
@@ -1852,7 +1922,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     const urlSessionID = parsedUrl.searchParams.get('sessionID') ?? '',
         urlTheme = parsedUrl.searchParams.get('theme'),
         urlImages = parsedUrl.searchParams.get('images'),
-        urlEmoji = parsedUrl.searchParams.get('emoji');
+        urlEmoji = parsedUrl.searchParams.get('emoji'),
+        urlExpanded = parsedUrl.searchParams.get('expanded');
 
     const { images: cookieImages, whiteThemeCookie: cookieTheme } = parseCookies(req);
 
@@ -1866,14 +1937,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     const theme = resolveTheme(req),
         { authorText, replyText, boxColor, barColor } = theme;
 
-    const sessionParam = buildSessionParam(
-        urlSessionID,
-        urlTheme,
-        cookieTheme,
-        urlImages,
-        cookieImages
-    );
-
     if (!isBotReady(bot)) {
         res.writeHead(503, { 'Content-Type': 'text/html' });
         res.end(getTemplate('bot-not-connected', 'misc'));
@@ -1884,6 +1947,25 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
     if (!chnl) return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
+
+    // Handle Skin Tone
+    const { emojiSkinTone: cookieSkinTone } = parseCookies(req);
+    const querySkinTone = parsedUrl.searchParams.get('skinTone');
+    const skinTone = querySkinTone !== null ? querySkinTone : (cookieSkinTone || '');
+
+    if (querySkinTone !== null) {
+        res.setHeader('Set-Cookie', `emojiSkinTone=${querySkinTone}; Path=/; Max-Age=31536000`);
+    }
+
+    const sessionParam = buildSessionParam(
+        urlSessionID,
+        urlTheme,
+        cookieTheme,
+        urlImages,
+        cookieImages,
+        querySkinTone,
+        cookieSkinTone
+    );
 
     try {
         const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
@@ -1910,10 +1992,36 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             return;
         }
 
+        // Fetch server emojis
+        let serverEmojis = [];
+        let serverEmojisJSON = '[]';
+        if (chnl.guild && chnl.guild.emojis && chnl.guild.emojis.cache) {
+            serverEmojis = chnl.guild.emojis.cache.map(e => ({
+                id: e.id,
+                name: e.name,
+                animated: e.animated,
+                url: e.imageURL()
+            }));
+            serverEmojisJSON = JSON.stringify(serverEmojis);
+        }
+
+        const {
+            getQuickEmojiHTML,
+            getExpandedEmojiHTML
+        } = require('./emojiUtils');
+
         const baseTemplate = renderTemplate(getTemplate('channel', ''), {
             COMMON_HEAD: getTemplate('head', 'partials'),
             PAGE_CLASS: 'page-channel',
-            EMOJI_PICKER: getTemplate('emoji-picker', 'partials'),
+            EMOJI_PICKER: renderTemplate(getTemplate('emoji-picker', 'partials'), {
+                SERVER_EMOJIS_JSON: serverEmojisJSON,
+                SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(chnl.id, urlEmoji === '1', urlExpanded === '1', sessionParam),
+                SKIN_TONE: skinTone,
+                EMOJI_OPEN: urlExpanded === '1' ? 'open' : '',
+                EMOJI_EXPAND_URL: require('./utils.js').buildEmojiExpandUrl(chnl.id, urlExpanded === '1', sessionParam),
+                EMOJI_QUICK_HTML: getQuickEmojiHTML(skinTone),
+                EMOJI_EXPANDED_HTML: urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : ''
+            }),
             EMOJI_BUTTON: getTemplate('emoji-picker-button', 'partials'),
             CHANNEL_REPLY: '',
             REPLY_MESSAGE_ID_INPUT: '',

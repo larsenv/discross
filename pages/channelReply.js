@@ -5,6 +5,7 @@ const { getDisplayName } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
 const { buildMessagesHtml } = require('./channel');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const { getSkinToneSelectorHTML, getQuickEmojiHTML, getExpandedEmojiHTML } = require('./emojiUtils');
 const notFound = require('./notFound.js');
 const {
     renderTemplate,
@@ -14,6 +15,7 @@ const {
     RANDOM_EMOJIS,
     buildSessionParam,
     buildEmojiToggleUrl,
+    buildEmojiExpandUrl,
     getTemplate,
     loadAndRenderPageTemplate,
 } = require('./utils.js');
@@ -24,7 +26,6 @@ const channel_template_base = loadAndRenderPageTemplate('channel');
 const channel_template = renderTemplate(channel_template_base, {
     PAGE_CLASS: 'page-channel-reply',
     CONTENT_EXTRA_PADDING: '',
-    EMOJI_PICKER: getTemplate('emoji-picker', 'partials'),
     EMOJI_BUTTON: getTemplate('emoji-picker-button', 'partials'),
     REPLY_MESSAGE_ID_INPUT: getTemplate('reply-message-id-input', 'channel'),
 });
@@ -87,24 +88,32 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     const urlTheme = parsedUrl.searchParams.get('theme');
     const urlImages = parsedUrl.searchParams.get('images');
     const urlEmoji = parsedUrl.searchParams.get('emoji');
+    const urlExpanded = parsedUrl.searchParams.get('expanded');
 
-    const { whiteThemeCookie, images: imagesCookieValue } = parseCookies(req);
+    const { whiteThemeCookie, images: imagesCookieValue, emojiSkinTone: cookieSkinTone } = parseCookies(req);
 
-    // Build combined URL params for links — only include preference params when the
-    // corresponding cookie is absent (i.e. the browser doesn't support cookies)
+    // Handle Skin Tone
+    const querySkinTone = parsedUrl.searchParams.get('skinTone');
+    const skinTone = querySkinTone !== null ? querySkinTone : (cookieSkinTone || '');
+
+    if (querySkinTone !== null) {
+        res.setHeader('Set-Cookie', `emojiSkinTone=${querySkinTone}; Path=/; Max-Age=31536000`);
+    }
+
+    // Build combined URL params for links
     const sessionParam = buildSessionParam(
         urlSessionID,
         urlTheme,
         whiteThemeCookie,
         urlImages,
-        imagesCookieValue
+        imagesCookieValue,
+        querySkinTone,
+        cookieSkinTone
     );
 
     const themeObj = resolveTheme(req);
     const { authorText, replyText, themeClass, boxColor } = themeObj;
-    const baseTemplate = renderTemplate(channel_template, {
-        WHITE_THEME_ENABLED: themeClass,
-    });
+
     const imagesCookie =
         urlImages !== null
             ? parseInt(urlImages, 10)
@@ -115,7 +124,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     const clientTimezone = getTimezoneFromIP(req);
 
     const emojiDisplay = urlEmoji === '1' ? '' : 'display: none;';
-    // args[3] is the reply message ID — the current page's relative URL segment
+    // args[3] is the reply message ID
     const emojiToggleUrl = buildEmojiToggleUrl(args[3], urlEmoji === '1', sessionParam);
 
     try {
@@ -148,6 +157,35 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
                 res.end(getTemplate('no-permission', 'misc'));
                 return;
             }
+
+            // Fetch server emojis
+            let serverEmojis = [];
+            let serverEmojisJSON = '[]';
+            if (chnl.guild && chnl.guild.emojis && chnl.guild.emojis.cache) {
+                serverEmojis = chnl.guild.emojis.cache.map(e => ({
+                    id: e.id,
+                    name: e.name,
+                    animated: e.animated,
+                    url: e.imageURL()
+                }));
+                serverEmojisJSON = JSON.stringify(serverEmojis);
+            }
+
+            const baseTemplate = renderTemplate(channel_template, {
+                WHITE_THEME_ENABLED: themeClass,
+                COMMON_HEAD: getTemplate('head', 'partials'),
+                SERVER_ID: chnl.guild.id,
+                CHANNEL_ID: chnl.id,
+                EMOJI_PICKER: renderTemplate(getTemplate('emoji-picker', 'partials'), {
+                    SERVER_EMOJIS_JSON: serverEmojisJSON,
+                    SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(args[3], urlEmoji === '1', urlExpanded === '1', sessionParam),
+                    SKIN_TONE: skinTone,
+                    EMOJI_OPEN: urlExpanded === '1' ? 'open' : '',
+                    EMOJI_EXPAND_URL: buildEmojiExpandUrl(args[3], urlExpanded === '1', sessionParam),
+                    EMOJI_QUICK_HTML: getQuickEmojiHTML(skinTone),
+                    EMOJI_EXPANDED_HTML: urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : ''
+                }),
+            });
 
             if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
                 const final = renderTemplate(baseTemplate, {
@@ -264,7 +302,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     } catch (error) {
         console.error(error);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        if ((err.message || err).toString().includes('error reading from remote stream')) {
+        if (error.message && error.message.toString().includes('error reading from remote stream')) {
             res.end(getTemplate('proxy-timeout-error', 'misc'));
         } else {
             res.end(getTemplate('generic-error', 'misc'));
