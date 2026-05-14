@@ -1,20 +1,21 @@
-let connectiontype = 'none';
-let latest_message_id = 0;
-let messages = [];
-const authkey = 'authpls';
-let ws;
+var connectiontype = 'none';
+var latest_message_id = 0;
+var messages = [];
+var authkey = 'authpls';
+var ws;
 // nocache
 
 function addMessage(text) {
     messages = messages.concat(text);
 
     // Safely render messages to prevent XSS attacks
-    const myList = document.getElementById('myList');
+    var myList = document.getElementById('myList');
+    if (!myList) return;
     myList.innerHTML = '';
 
-    for (let i = 0; i < messages.length; i++) {
-        const node = document.createElement('div');
-        const textnode = document.createTextNode(messages[i]);
+    for (var i = 0; i < messages.length; i++) {
+        var node = document.createElement('div');
+        var textnode = document.createTextNode(messages[i]);
         node.appendChild(textnode);
         myList.appendChild(node);
 
@@ -44,25 +45,29 @@ if (window.WebSocket || window.MozWebSocket) {
 
     connectiontype = 'websocket';
     // Use ws:// for http and wss:// for https
-    const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
     ws = new WebSocket(wsProtocol + location.host + '/');
 
     ws.onopen = function () {
         auth();
     };
     ws.onmessage = function (evt) {
-        const received_msg = evt.data;
+        var received_msg = evt.data;
         addMessage(received_msg);
     };
 }
 
-let emojiShowing = false;
+var emojiShowing = false;
 function showEmoji() {
+    var emojiDiv = document.getElementById('emoji');
+    if (!emojiDiv) return;
+    
     if (emojiShowing) {
-        document.getElementById('emoji').style.display = 'none';
+        emojiDiv.style.display = 'none';
         emojiShowing = false;
     } else {
-        document.getElementById('emoji').style.display = 'block';
+        emojiDiv.style.display = 'block';
         emojiShowing = true;
     }
 }
+
