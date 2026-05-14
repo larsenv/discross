@@ -774,6 +774,12 @@ textarea:focus {
     transform: translateX(-50%);
     z-index: 1000;
 }
+#toolbar-container input[type="button"] {
+    padding: 4px 8px;
+    margin: 2px;
+    cursor: pointer;
+    vertical-align: middle;
+}
 .c-box {
     width: 24px;
     height: 24px;
@@ -1519,12 +1525,7 @@ html.page-server font[color='#dcddde'] {
         margin: 0 1px;
         padding: 1px;
     }
-    #btn-clear {
-        font-size: 11px !important;
-        height: 26px !important;
-        padding: 0 6px !important;
-    }
-    #btn-fill {
+    #toolbar-container input[type="button"] {
         font-size: 11px !important;
         height: 26px !important;
         padding: 0 6px !important;
