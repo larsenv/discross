@@ -7,6 +7,38 @@ const files = fs.readdirSync(twemojiDir).filter(f => f.endsWith('.gif'));
 
 const categorized = {};
 
+const MANUAL_DATA = {
+    '1f426-200d-1f525': { name: 'phoenix', cat: 'Animals & Nature' },
+    '1f34b-200d-1f7e9': { name: 'lime', cat: 'Food & Drink' },
+    '1f344-200d-1f7e8': { name: 'brown_mushroom', cat: 'Food & Drink' },
+    '1f642-200d-2195-fe0f': { name: 'head_shaking_vertically', cat: 'Smileys & Emotion' },
+    '1f642-200d-2194-fe0f': { name: 'head_shaking_horizontally', cat: 'Smileys & Emotion' },
+    '1f517-200d-1f4a5': { name: 'broken_chain', cat: 'Objects' },
+    '1f9d1-200d-1f9d1-200d-1f9d2': { name: 'family_adult_adult_child', cat: 'People & Body' },
+    '1f9d1-200d-1f9d2-200d-1f9d2': { name: 'family_adult_child_child', cat: 'People & Body' },
+    '1f9d1-200d-1f9d1-200d-1f9d2-200d-1f9d2': { name: 'family_adult_adult_child_child', cat: 'People & Body' },
+    '1f9d1-200d-1f9d2': { name: 'family_adult_child', cat: 'People & Body' },
+    // Directional variants
+    '1f6b6-200d-27a1-fe0f': { name: 'person_walking_facing_right', cat: 'People & Body' },
+    '1f6b6-200d-2640-fe0f-200d-27a1-fe0f': { name: 'woman_walking_facing_right', cat: 'People & Body' },
+    '1f6b6-200d-2642-fe0f-200d-27a1-fe0f': { name: 'man_walking_facing_right', cat: 'People & Body' },
+    '1f3c3-200d-27a1-fe0f': { name: 'person_running_facing_right', cat: 'People & Body' },
+    '1f3c3-200d-2640-fe0f-200d-27a1-fe0f': { name: 'woman_running_facing_right', cat: 'People & Body' },
+    '1f3c3-200d-2642-fe0f-200d-27a1-fe0f': { name: 'man_running_facing_right', cat: 'People & Body' },
+    '1f9ce-200d-27a1-fe0f': { name: 'person_kneeling_facing_right', cat: 'People & Body' },
+    '1f9ce-200d-2640-fe0f-200d-27a1-fe0f': { name: 'woman_kneeling_facing_right', cat: 'People & Body' },
+    '1f9ce-200d-2642-fe0f-200d-27a1-fe0f': { name: 'man_kneeling_facing_right', cat: 'People & Body' },
+    '1f9d1-200d-1f9af-200d-27a1-fe0f': { name: 'person_with_probing_cane_facing_right', cat: 'People & Body' },
+    '1f9d1-200d-2640-fe0f-200d-1f9af-200d-27a1-fe0f': { name: 'woman_with_probing_cane_facing_right', cat: 'People & Body' },
+    '1f9d1-200d-2642-fe0f-200d-1f9af-200d-27a1-fe0f': { name: 'man_with_probing_cane_facing_right', cat: 'People & Body' },
+    '1f9d1-200d-1f9bc-200d-27a1-fe0f': { name: 'person_in_manual_wheelchair_facing_right', cat: 'People & Body' },
+    '1f9d1-200d-2640-fe0f-200d-1f9bc-200d-27a1-fe0f': { name: 'woman_in_manual_wheelchair_facing_right', cat: 'People & Body' },
+    '1f9d1-200d-2642-fe0f-200d-1f9bc-200d-27a1-fe0f': { name: 'man_in_manual_wheelchair_facing_right', cat: 'People & Body' },
+    '1f9d1-200d-1f9bd-200d-27a1-fe0f': { name: 'person_in_motorized_wheelchair_facing_right', cat: 'People & Body' },
+    '1f9d1-200d-2640-fe0f-200d-1f9bd-200d-27a1-fe0f': { name: 'woman_in_motorized_wheelchair_facing_right', cat: 'People & Body' },
+    '1f9d1-200d-2642-fe0f-200d-1f9bd-200d-27a1-fe0f': { name: 'man_in_motorized_wheelchair_facing_right', cat: 'People & Body' },
+};
+
 // Helper to check if a file exists
 const fileExists = (f) => fs.existsSync(path.join(twemojiDir, f));
 
@@ -45,7 +77,10 @@ for (const file of files) {
     let name = hex;
     let cat = "Objects"; // Default
 
-    if (g) {
+    if (MANUAL_DATA[hex]) {
+        name = MANUAL_DATA[hex].name;
+        cat = MANUAL_DATA[hex].cat;
+    } else if (g) {
         name = (g.aliases && g.aliases.length > 0) ? g.aliases[0] : g.description.replace(/ /g, '_').toLowerCase();
         cat = g.category;
     }

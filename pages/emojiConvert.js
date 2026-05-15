@@ -97,6 +97,25 @@ function _escapeRegex(str) {
 
 const _shortcutsRegex = new RegExp(_sortedShortcuts.map(_escapeRegex).join('|'), 'g');
 
+const UNICODE_15_1_OVERRIDES = {
+    ':phoenix:': '\u{1F426}\u{200D}\u{1F525}',
+    ':lime:': '\u{1F34B}\u{200D}\u{1F7E9}',
+    ':brown_mushroom:': '\u{1F344}\u{200D}\u{1F7E8}',
+    ':head_shaking_vertically:': '\u{1F642}\u{200D}\u{2195}\u{FE0F}',
+    ':head_shaking_horizontally:': '\u{1F642}\u{200D}\u{2194}\u{FE0F}',
+    ':broken_chain:': '\u{1F517}\u{200D}\u{1F4A5}',
+    ':family_adult_adult_child:': '\u{1F9D1}\u{200D}\u{1F9D1}\u{200D}\u{1F9D2}',
+    ':family_adult_child_child:': '\u{1F9D1}\u{200D}\u{1F9D2}\u{200D}\u{1F9D2}',
+    ':family_adult_adult_child_child:': '\u{1F9D1}\u{200D}\u{1F9D1}\u{200D}\u{1F9D2}\u{200D}\u{1F9D2}',
+    ':family_adult_child:': '\u{1F9D1}\u{200D}\u{1F9D2}',
+};
+
+function _applyManualOverrides(message) {
+    return message.replace(/:[a-zA-Z0-9_+\-]+:/g, (match) => {
+        return UNICODE_15_1_OVERRIDES[match] || match;
+    });
+}
+
 /**
  * Convert ASCII emoji shortcuts (e.g. :) :D <3) in message text to Unicode emoji.
  * Applied after standard shortcode conversion so that :emoji_name: patterns are
@@ -147,7 +166,7 @@ function convertEmoji(message) {
         return `\u0000ESC${idx}\u0000`;
     });
 
-    const afterShortcodes = emojify(withProtected).replace(
+    const afterShortcodes = emojify(_applyManualOverrides(withProtected)).replace(
         /:skin-tone-([1-5]):/g,
         (_, n) => SKIN_TONE_CHARS[n]
     );
