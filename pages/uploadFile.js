@@ -7,12 +7,14 @@ const auth = require('../authentication.js');
 const { formidable } = require('formidable');
 const { isBotReady } = require('./utils.js');
 const { getOrCreateWebhook } = require('./webhookCache');
+const mime = require('mime-types');
 
 // Upload file to transfer.archivete.am and return the URL
 async function uploadToTransfer(filePath, filename) {
     return new Promise((resolve, reject) => {
         // Sanitize filename - remove path traversal and keep only safe characters
         const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const contentType = mime.lookup(filename) || 'application/octet-stream';
 
         const fileStream = fs.createReadStream(filePath);
 
@@ -35,6 +37,7 @@ async function uploadToTransfer(filePath, filename) {
                 method: 'PUT',
                 headers: {
                     'Content-Length': stats.size,
+                    'Content-Type': contentType,
                 },
                 // Set a high timeout for large files (15 minutes = 15 * 60 * 1000 ms)
                 timeout: 15 * 60 * 1000,
