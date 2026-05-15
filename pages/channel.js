@@ -255,7 +255,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
                 '{$FILE_NAME}': truncateFileName(attachment.name || 'file'),
                 '{$FILE_SIZE}': formatFileSize(attachment.size || 0),
                 // Videos are not supported for inline playback yet, so they are just downloads.
-                '{$FILE_LINK}': !isVideo || imagesCookie !== 1 ? url : '{$FILE_LINK}',
+                '{$FILE_LINK}': url,
             });
             result = (result ? result + getTemplate('br', 'misc') : '') + card;
         }

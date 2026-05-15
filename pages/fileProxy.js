@@ -6,18 +6,15 @@ exports.fileProxy = async function fileProxy(res, URL) {
     // Basically image proxy but without image-specific stuff
     https
         .get(URL, (proxyRes) => {
-            const chunks = [];
-            proxyRes.on('data', (chunk) => {
-                chunks.push(chunk);
+            // Forward headers and status code
+            res.writeHead(proxyRes.statusCode, {
+                'Content-Type': proxyRes.headers['content-type'] || 'application/octet-stream',
+                'Content-Length': proxyRes.headers['content-length'],
+                'Content-Disposition': proxyRes.headers['content-disposition'],
             });
-            proxyRes.on('end', () => {
-                const buffer = Buffer.concat(chunks);
-                res.writeHead(proxyRes.statusCode, {
-                    'Content-Type': 'application/octet-stream',
-                    'Content-Length': buffer.length,
-                });
-                res.end(buffer);
-            });
+
+            // Pipe data directly to response
+            proxyRes.pipe(res);
         })
         .on('error', (err) => {
             console.error('Error fetching file:', err);
