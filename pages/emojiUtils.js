@@ -184,7 +184,8 @@ function renderEmojiLink(emoji, isCustom, skinTone, animated = false) {
     let finalCode = code;
     if (!isCustom && supportsSkinTone && skinTone) {
         if (code.includes('-200d')) {
-            finalCode = code.replace(/(1f468|1f469|1f9d1|1f466|1f467)(?=[-.]|$)/g, '$1-' + skinTone);
+            // Common person base codepoints: 1f468 (man), 1f469 (woman), 1f9d1 (person), 1f466 (boy), 1f467 (girl), 1f6b6 (walking), 1f3c3 (running), 1f9ce (kneeling)
+            finalCode = code.replace(/(1f468|1f469|1f9d1|1f466|1f467|1f6b6|1f3c3|1f9ce)(?=[-.]|$)/g, '$1-' + skinTone);
         } else {
             finalCode = code.replace('.gif', '-' + skinTone + '.gif');
         }
