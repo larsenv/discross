@@ -1,6 +1,6 @@
 'use strict';
 const discord = require('discord.js');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
@@ -10,6 +10,7 @@ const {
     getBaseUrl,
     resolveMentions,
     renderTemplate,
+    render,
     getTemplate,
 } = require('./utils.js');
 const { checkAndMarkNonce } = require('./messageDedup.js');
@@ -75,7 +76,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                 !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)
             ) {
                 req_res.end(
-                    renderTemplate(getTemplate('error-text', 'misc'), {
+                    render('misc/error-text', {
                         MESSAGE: "You don't have permission to do that!",
                     })
                 );

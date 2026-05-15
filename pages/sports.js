@@ -3,8 +3,8 @@
 const https = require('https');
 const escape = require('escape-html');
 
-const auth = require('../authentication.js');
-const { renderTemplate, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const auth = require('../src/authentication.js');
+const { renderTemplate, loadAndRenderPageTemplate, getTemplate, render } = require('./utils.js');
 
 // Fallback timezone when user cookie is absent or invalid
 const DEFAULT_TZ = 'America/New_York';
@@ -213,7 +213,7 @@ function renderScoreboard(events, userTZ) {
         const statusLabel =
             stateType === 'in' ? escape(statusDetail) : stateType === 'post' ? 'Final' : '';
 
-        rowsHtml += renderTemplate(getTemplate('scoreboard-row', 'sports'), {
+        rowsHtml += render('sports/scoreboard-row', {
             ROW_STYLE: rowStyle,
             AWAY_COLOR: awayColor,
             AWAY_WEIGHT: awayWeight,
@@ -232,7 +232,7 @@ function renderScoreboard(events, userTZ) {
         });
     }
 
-    return renderTemplate(getTemplate('scoreboard-table', 'sports'), { ROWS: rowsHtml });
+    return render('sports/scoreboard-table', { ROWS: rowsHtml });
 }
 
 function buildNavButtons(activeSport, urlSessionID) {
@@ -245,7 +245,7 @@ function buildNavButtons(activeSport, urlSessionID) {
         const bg = isActive ? '#5865f2' : '#2f3136';
         const borderR = s === SPORTS[SPORTS.length - 1] ? 'border-radius:0 4px 4px 0;' : '';
         const borderL = s === SPORTS[0] ? 'border-radius:4px 0 0 4px;' : '';
-        html += renderTemplate(getTemplate('nav-button', 'sports'), {
+        html += render('sports/nav-button', {
             URL: `/sports${sessionParam}${encodeURIComponent(s.id)}`,
             BG: bg,
             BORDER_L: borderL,
@@ -309,7 +309,7 @@ exports.processSports = async function processSports(req, res) {
         sportsHtml = getTemplate('fetch-error', 'sports');
     }
 
-    const menuOptions = renderTemplate(logged_in_template, {
+    const menuOptions = render('index/logged-in', {
         USER: escape(await auth.getUsername(discordID)),
     });
 

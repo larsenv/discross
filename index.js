@@ -1,12 +1,12 @@
 'use strict';
-require('./instrument.js');
+require('./src/instrument.js');
 require('dotenv').config({ quiet: true });
 const path = require('path');
 const fs = require('fs');
 const mime = require('mime-types').lookup;
 const { SnowTransfer } = require('snowtransfer');
-const bot = require('./bot.js');
-const connectionHandler = require('./connectionHandler.js');
+const bot = require('./src/bot.js');
+const connectionHandler = require('./src/connectionHandler.js');
 const sharp = require('sharp');
 const sanitizer = require('path-sanitizer').default;
 const Sentry = require('@sentry/node');
@@ -30,9 +30,10 @@ process.on('uncaughtException', (err) => {
 
 const http = require('http');
 
-const auth = require('./authentication.js');
+const auth = require('./src/authentication.js');
 auth.setHTTPS(false); // Cookies will not have the Secure; option as it's handled by reverse proxy
 
+// Page handlers
 const indexpage = require('./pages/index.js');
 const loginpage = require('./pages/login.js');
 const registerpage = require('./pages/register.js');
@@ -40,17 +41,10 @@ const forgotpage = require('./pages/forgot.js');
 const channelpage = require('./pages/channel.js');
 const serverpage = require('./pages/server.js');
 const sendpage = require('./pages/send.js');
-const { toggleTheme } = require('./pages/themeToggle.js');
-const { imageProxy } = require('./pages/imageProxy.js');
-const { fileProxy } = require('./pages/fileProxy.js');
-const { toggleImages } = require('./pages/toggleImages.js');
-const { uploadFile } = require('./pages/uploadFile.js');
 const uploadpage = require('./pages/upload.js');
 const channelreplypage = require('./pages/channelReply.js');
 const replypage = require('./pages/reply.js');
 const drawpage = require('./pages/draw.js');
-const senddrawing = require('./pages/sendDrawing.js');
-const { handleServerIcon } = require('./pages/serverIconHandler.js');
 const pinspage = require('./pages/pins.js');
 const changepasswordpage = require('./pages/changePassword.js');
 const setup2fapage = require('./pages/setup2FA.js');
@@ -69,6 +63,15 @@ const foodpage = require('./pages/food.js');
 const tvpage = require('./pages/tv.js');
 const moviespage = require('./pages/movies.js');
 const notFound = require('./pages/notFound.js');
+
+// Specialized handlers
+const { toggleTheme } = require('./pages/themeToggle.js');
+const { imageProxy } = require('./pages/imageProxy.js');
+const { fileProxy } = require('./pages/fileProxy.js');
+const { toggleImages } = require('./pages/toggleImages.js');
+const { uploadFile } = require('./pages/uploadFile.js');
+const senddrawing = require('./pages/sendDrawing.js');
+const { handleServerIcon } = require('./pages/serverIconHandler.js');
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
@@ -252,6 +255,477 @@ async function senddrawingAsync(req, res, body) {
     }
 }
 
+async function handlePost(req, res) {
+    const parsedurl = new URL(req.url, 'http://localhost').pathname;
+
+    // Handle file upload BEFORE reading body (formidable needs raw stream)
+    if (parsedurl === '/uploadFile') {
+        req.setTimeout(30 * 60 * 1000);
+        res.setTimeout(30 * 60 * 1000);
+
+        try {
+            const discordID = await auth.checkAuth(req, res, true);
+            if (discordID) {
+                await uploadFile(bot, req, res, [], discordID);
+            } else if (!res.headersSent) {
+                const isTraditional =
+                    new URL(req.url, 'http://localhost').searchParams.get('traditional') === 'true';
+                if (isTraditional) {
+                    res.writeHead(302, { Location: '/login.html' });
+                    res.end();
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
+        }
+        return;
+    }
+
+    // For all other POST requests, read the body
+    let body = '';
+    req.on('data', (chunk) => {
+        body += chunk.toString();
+    });
+    req.on('error', (err) => {
+        console.error('Error reading request body:', err);
+        if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('error-reading-data', 'misc'));
+        }
+    });
+    req.on('end', async () => {
+        try {
+            if (parsedurl === '/toggleCategory') {
+                const discordID = await auth.checkAuth(req, res, true);
+                if (discordID) {
+                    const data = JSON.parse(body);
+                    const { serverID, categoryID, collapsed } = data;
+                    const result = auth.setChannelPreference(
+                        discordID,
+                        serverID,
+                        categoryID,
+                        collapsed ? 1 : 0
+                    );
+                    res.writeHead(result.success ? 200 : 500, {
+                        'Content-Type': 'application/json',
+                    });
+                    res.end(JSON.stringify(result));
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
+                }
+            } else if (parsedurl === '/senddrawing') {
+                await senddrawingAsync(req, res, body);
+            } else if (parsedurl === '/changepassword') {
+                const discordID = await auth.checkAuth(req, res, true);
+                if (discordID) {
+                    await changepasswordpage.handleChangePassword(bot, req, res, body, discordID);
+                } else {
+                    res.writeHead(302, { Location: '/login.html' });
+                    res.end();
+                }
+            } else if (parsedurl === '/setup2fa') {
+                const discordID = await auth.checkAuth(req, res, true);
+                if (discordID) {
+                    await setup2fapage.handleSetup2FA(bot, req, res, body, discordID);
+                } else {
+                    res.writeHead(302, { Location: '/login.html' });
+                    res.end();
+                }
+            } else if (parsedurl === '/disable2fa') {
+                const discordID = await auth.checkAuth(req, res, true);
+                if (discordID) {
+                    await setup2fapage.handleDisable2FA(bot, req, res, body, discordID);
+                } else {
+                    res.writeHead(302, { Location: '/login.html' });
+                    res.end();
+                }
+            } else if (parsedurl.startsWith('/food/')) {
+                const discordID = await auth.checkAuth(req, res);
+                if (discordID) {
+                    await foodpage.handlePost(bot, req, res, discordID, body);
+                }
+            } else {
+                await auth.handleLoginRegister(req, res, body);
+            }
+        } catch (err) {
+            console.error('POST handler error:', err);
+            if (!res.headersSent) {
+                res.writeHead(500, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('internal-server-error', 'misc'));
+            }
+        }
+    });
+}
+
+async function handleGet(req, res) {
+    const parsedurl = new URL(req.url, 'http://localhost');
+    const args = parsedurl.pathname.replaceAll('?', '/').split('/');
+
+    switch (args[1]) {
+        case 'send': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) await sendpage.sendMessage(bot, req, res, args, discordID);
+            break;
+        }
+        case 'reply': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) await replypage.replyMessage(bot, req, res, args, discordID);
+            break;
+        }
+        case 'switchtheme':
+            toggleTheme(req, res);
+            break;
+        case 'toggleImages':
+            toggleImages(req, res);
+            break;
+        case 'logout': {
+            const discordID = await auth.checkAuth(req, res, true);
+            if (discordID) auth.logout(discordID);
+            res.writeHead(302, { Location: '/' });
+            res.end();
+            break;
+        }
+        case 'server': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) await serverpage.processServer(bot, req, res, args, discordID);
+            break;
+        }
+        case 'channels': {
+            const discordID = await auth.checkAuth(req, res, true);
+            if (args.length === 3) {
+                if (discordID) {
+                    await channelpage.processChannel(bot, req, res, args, discordID);
+                } else if (isValidSnowflake(args[2]) && auth.isGuestChannel(args[2])) {
+                    await guestpage.processGuestChannel(bot, req, res, args[2]);
+                } else {
+                    res.writeHead(303, {
+                        Location: '/login.html?redirect=' + encodeURIComponent(req.url),
+                    });
+                    res.end();
+                }
+            } else if (args.length === 4) {
+                if (discordID) {
+                    if (args[3].length === 0) {
+                        res.writeHead(302, { Location: `/channels/${args[2]}#end` });
+                        res.end();
+                    } else {
+                        await channelreplypage.processChannelReply(bot, req, res, args, discordID);
+                    }
+                } else {
+                    res.writeHead(303, {
+                        Location: '/login.html?redirect=' + encodeURIComponent(req.url),
+                    });
+                    res.end();
+                }
+            } else {
+                const redirectPath = discordID
+                    ? `/channels/${args[2]}#end`
+                    : '/login.html?redirect=' + encodeURIComponent(req.url);
+                res.writeHead(discordID ? 302 : 303, { Location: redirectPath });
+                res.end();
+            }
+            break;
+        }
+        case 'guest_name':
+            await guestpage.processGuestName(req, res);
+            break;
+        case 'guest_send':
+            await guestsendpage.guestSend(bot, req, res);
+            break;
+        case 'jobs':
+            res.writeHead(302, { Location: 'http://careers.mcdonalds.com/' });
+            res.end();
+            break;
+        case 'upload': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) await uploadpage.processUpload(bot, req, res, args, discordID);
+            break;
+        }
+        case 'pins': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) await pinspage.processPins(bot, req, res, args, discordID);
+            break;
+        }
+        case 'signmessage': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) {
+                const sendMetaPage = require('./pages/sendMeta.js');
+                await sendMetaPage.sendMeta(bot, req, res, args[2]);
+            }
+            break;
+        }
+        case 'news': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) {
+                if (args.length >= 3 && args[2]) {
+                    await newspage.processNewsArticle(req, res, args, discordID);
+                } else {
+                    await newspage.processNews(req, res, args, discordID);
+                }
+            }
+            break;
+        }
+        case 'draw': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) await drawpage.processDraw(bot, req, res, args, discordID);
+            break;
+        }
+        case 'sendactioncode': {
+            const discordID = await auth.checkAuth(req, res, true);
+            if (!discordID) {
+                res.writeHead(302, { Location: '/login.html' });
+                res.end();
+            } else {
+                const returnPages = {
+                    changepassword: '/change-password.html',
+                    setup2fa: '/setup-2fa.html',
+                    disable2fa: '/setup-2fa.html',
+                };
+                const actionParam = parsedurl.searchParams.get('action');
+                if (!returnPages[actionParam]) {
+                    res.writeHead(302, { Location: '/server/' });
+                    res.end();
+                } else {
+                    const sessionParam = parsedurl.searchParams.get('sessionID')
+                        ? '?sessionID=' +
+                          encodeURIComponent(parsedurl.searchParams.get('sessionID'))
+                        : '';
+                    const code = auth.createActionCode(discordID, actionParam);
+                    const dmMessages = {
+                        changepassword: `Your Discross verification code to change your password: **${code}**\nThis code expires in 10 minutes.`,
+                        setup2fa: `Your Discross verification code to set up two-factor authentication: **${code}**\nThis code expires in 10 minutes.`,
+                        disable2fa: `Your Discross verification code to disable two-factor authentication: **${code}**\nThis code expires in 10 minutes.`,
+                    };
+                    const dmResult = await bot.sendDM(discordID, dmMessages[actionParam]);
+                    const returnPath = returnPages[actionParam];
+                    res.writeHead(302, {
+                        Location: dmResult.success
+                            ? `${returnPath}${sessionParam}${sessionParam ? '&' : '?'}codesent=1`
+                            : `${returnPath}${sessionParam}${sessionParam ? '&' : '?'}errortext=${encodeURIComponent('Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.')}`,
+                    });
+                    res.end();
+                }
+            }
+            break;
+        }
+        case 'login.html':
+            await loginpage.processLogin(bot, req, res, args);
+            break;
+        case 'register.html':
+            await registerpage.processRegister(bot, req, res, args);
+            break;
+        case 'forgot.html':
+            await forgotpage.processForgot(bot, req, res, args);
+            break;
+        case 'change-password.html':
+            await changepasswordpage.processChangePassword(bot, req, res, args);
+            break;
+        case 'setup-2fa.html':
+            await setup2fapage.processSetup2FA(bot, req, res, args);
+            break;
+        case 'index.html':
+            await indexpage.processIndex(bot, req, res, args);
+            break;
+        case 'privacy.html':
+            await privacypage.processPrivacy(bot, req, res, args);
+            break;
+        case 'terms.html':
+            await termspage.processTerms(bot, req, res, args);
+            break;
+        case 'credits.html':
+        case 'credits':
+            await creditspage.processCredits(bot, req, res, args);
+            break;
+        case 'weather':
+            await weatherpage.processWeather(req, res);
+            break;
+        case 'currency':
+            await currencypage.processCurrency(req, res);
+            break;
+        case 'sports':
+            await sportspage.processSports(req, res);
+            break;
+        case 'stocks':
+            await stockspage.processStocks(req, res);
+            break;
+        case 'search':
+            await searchpage.processSearch(req, res);
+            break;
+        case 'tv':
+            await tvpage.processTV(req, res);
+            break;
+        case 'movies': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) await moviespage.processMovies(req, res, discordID);
+            break;
+        }
+        case 'food': {
+            const discordID = await auth.checkAuth(req, res);
+            if (discordID) await foodpage.handleGet(bot, req, res, discordID);
+            break;
+        }
+        case 'foodProxy':
+            await foodpage.foodProxy(req, res);
+            break;
+        case 'discord':
+            // OAuth logic (remains inline for now due to complexity, but grouped in switch)
+            await handleDiscordOAuth(req, res, parsedurl);
+            break;
+        case 'imageProxy':
+            await handleImageProxy(req, res, parsedurl, args);
+            break;
+        case 'fileProxy': {
+            const filePath = req.url.slice(11);
+            await fileProxy(res, `https://cdn.discordapp.com/attachments/${filePath}`);
+            break;
+        }
+        case 'ico':
+            if (args[2] === 'server' && args[3] && args[4]) {
+                const discordID = await auth.checkAuth(req, res, true);
+                const iconHash = args[4].replace('.gif', '');
+                const urlTheme = discordID ? parsedurl.searchParams.get('theme') : null;
+                const { whiteThemeCookie } = discordID ? parseCookies(req) : {};
+                const themeValue = urlTheme ?? whiteThemeCookie ?? null;
+                const theme = themeValue === '1' ? 'light' : themeValue === '2' ? 'amoled' : 'dark';
+                await handleServerIcon(bot, res, args[3], iconHash, theme);
+            }
+            break;
+        default:
+            if (parsedurl.pathname === '/') {
+                await indexpage.processIndex(bot, req, res, args);
+            } else {
+                const filename = path.resolve('pages/static', sanitizer(parsedurl.pathname));
+                await servePage(filename, res, undefined, undefined, undefined, req);
+            }
+    }
+}
+
+async function handleDiscordOAuth(req, res, parsedurl) {
+    const discordID = await auth.checkAuth(req, res);
+    if (!discordID) return;
+
+    try {
+        const query = parsedurl.searchParams;
+        let accessToken = query.get('access_token');
+        let tokenType = query.get('token_type') || 'Bearer';
+        const code = query.get('code');
+
+        if (code) {
+            if (!DISCORD_CLIENT_SECRET) {
+                res.writeHead(500, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('discord-secret-not-configured', 'misc'));
+                return;
+            }
+            const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    client_id: DISCORD_CLIENT_ID,
+                    client_secret: DISCORD_CLIENT_SECRET,
+                    grant_type: 'authorization_code',
+                    code,
+                    redirect_uri: DISCORD_REDIRECT_URL,
+                }),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            });
+            const tokenData = await tokenResponse.json();
+            if (tokenData.access_token) {
+                accessToken = tokenData.access_token;
+                tokenType = tokenData.token_type || 'Bearer';
+                auth.saveDiscordTokens(
+                    discordID,
+                    tokenData.access_token,
+                    tokenData.refresh_token,
+                    Math.floor(Date.now() / 1000) + (tokenData.expires_in || 0)
+                );
+            } else {
+                throw new Error('Failed to exchange code: ' + JSON.stringify(tokenData));
+            }
+        }
+
+        if (!accessToken) {
+            res.writeHead(302, { Location: '/' });
+            res.end();
+            return;
+        }
+
+        const oauthClient = new SnowTransfer(`${tokenType} ${accessToken}`);
+        const user = await oauthClient.user.getSelf();
+        if (user && user.id === discordID) {
+            const guilds = await oauthClient.user.getGuilds();
+            const readyServers = guilds
+                .filter((e) => bot.client.guilds.cache.has(e.id))
+                .map((e) => ({ serverID: e.id, discordID, icon: e.icon }));
+
+            auth.insertServers(readyServers);
+
+            // Icon sync logic
+            for (const srv of readyServers) {
+                if (srv.icon) {
+                    const serverDir = path.resolve(
+                        'pages/static/ico/server',
+                        sanitizer(srv.serverID)
+                    );
+                    await fs.promises.mkdir(serverDir, { recursive: true });
+                    const isAnimated = srv.icon.startsWith('a_');
+                    const ext = isAnimated ? 'gif' : 'png';
+                    const iconUrl = `https://cdn.discordapp.com/icons/${srv.serverID}/${srv.icon}.${ext}?size=128`;
+                    const iconResponse = await fetch(iconUrl);
+                    if (iconResponse.ok) {
+                        const buffer = Buffer.from(await iconResponse.arrayBuffer());
+                        const finalPath = path.resolve(
+                            serverDir,
+                            sanitizer(`${srv.icon.replace('a_', '')}.gif`)
+                        );
+                        if (isAnimated) {
+                            await fs.promises.writeFile(finalPath, buffer);
+                        } else {
+                            await sharp(buffer).toFile(finalPath);
+                        }
+                    }
+                }
+            }
+
+            if (query.get('state') === 'sync') {
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('sync-complete-script', 'misc'));
+            } else {
+                res.writeHead(302, { Location: '/server/' });
+                res.end();
+            }
+        } else {
+            res.writeHead(302, { Location: '/' });
+            res.end();
+        }
+    } catch (e) {
+        console.error('OAuth error:', e);
+        res.writeHead(302, { Location: '/' });
+        res.end();
+    }
+}
+
+async function handleImageProxy(req, res, parsedurl, args) {
+    const isFull = parsedurl.searchParams.get('full') === '1';
+    if (args[2] === 'external') {
+        const encodedUrl = req.url.slice(EXTERNAL_PROXY_PREFIX_LENGTH).split('?')[0];
+        const fullImageUrl = Buffer.from(encodedUrl, 'base64').toString();
+        await imageProxy(res, fullImageUrl, isFull);
+    } else if (args[2] === 'sticker') {
+        const stickerId = args[3].replace(/\.[^.]*$/, '');
+        await imageProxy(res, `https://media.discordapp.net/stickers/${stickerId}.png`, isFull);
+    } else {
+        const urlObj = new URL(req.url, 'http://localhost');
+        urlObj.searchParams.delete('full');
+        const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${args[2] === 'emoji' ? urlObj.pathname.slice(18) : urlObj.pathname.slice(12)}${urlObj.search}`;
+        await imageProxy(res, fullImageUrl, isFull);
+    }
+}
+
 server.on('request', async (req, res) => {
     if (req.url.startsWith('//')) {
         res.writeHead(400, { 'Content-Type': 'text/html' });
@@ -259,565 +733,18 @@ server.on('request', async (req, res) => {
         return;
     }
 
-    if (req.method === 'POST') {
-        const parsedurl = new URL(req.url, 'http://localhost').pathname;
-
-        // Handle file upload BEFORE reading body (formidable needs raw stream)
-        if (parsedurl === '/uploadFile') {
-            // Set high timeout for file uploads (15 minutes = 15 * 60 * 1000 ms)
-            req.setTimeout(15 * 60 * 1000);
-            res.setTimeout(15 * 60 * 1000);
-
-            (async () => {
-                const discordID = await auth.checkAuth(req, res, true);
-                if (discordID) {
-                    await uploadFile(bot, req, res, [], discordID);
-                } else if (!res.headersSent) {
-                    const isTraditional =
-                        new URL(req.url, 'http://localhost').searchParams.get('traditional') ===
-                        'true';
-                    if (isTraditional) {
-                        res.writeHead(302, { Location: '/login.html' });
-                        res.end();
-                    } else {
-                        res.writeHead(401, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
-                    }
-                }
-            })().catch((err) => {
-                console.error(err);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
-            });
-            return; // Don't read body for file uploads
+    try {
+        if (req.method === 'POST') {
+            await handlePost(req, res);
+        } else {
+            await handleGet(req, res);
         }
-
-        // For all other POST requests, read the body
-        let body = '';
-        req.on('data', (chunk) => {
-            body += chunk.toString();
-        });
-        req.on('error', (err) => {
-            console.error('Error reading request body:', err);
-            if (!res.headersSent) {
-                res.writeHead(500, { 'Content-Type': 'text/html' });
-                res.end(getTemplate('error-reading-data', 'misc'));
-            }
-        });
-        req.on('end', () => {
-            if (parsedurl === '/toggleCategory') {
-                // Handle category toggle
-                (async () => {
-                    const discordID = await auth.checkAuth(req, res, true);
-                    if (discordID) {
-                        try {
-                            const data = JSON.parse(body);
-                            const { serverID, categoryID, collapsed } = data;
-                            const result = auth.setChannelPreference(
-                                discordID,
-                                serverID,
-                                categoryID,
-                                collapsed ? 1 : 0
-                            );
-                            if (result.success) {
-                                res.writeHead(200, { 'Content-Type': 'application/json' });
-                                res.end(JSON.stringify({ success: true }));
-                            } else {
-                                res.writeHead(500, { 'Content-Type': 'application/json' });
-                                res.end(JSON.stringify({ success: false, error: result.error }));
-                            }
-                        } catch (err) {
-                            console.error('Error toggling category:', err);
-                            res.writeHead(500, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ success: false, error: err.message }));
-                        }
-                    } else {
-                        res.writeHead(401, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
-                    }
-                })();
-            } else if (parsedurl === '/senddrawing') {
-                senddrawingAsync(req, res, body).catch((err) => {
-                    console.error(err);
-                    res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.end(getTemplate('internal-server-error', 'misc'));
-                });
-            } else if (parsedurl === '/changepassword') {
-                (async () => {
-                    const discordID = await auth.checkAuth(req, res, true);
-                    if (discordID) {
-                        await changepasswordpage.handleChangePassword(
-                            bot,
-                            req,
-                            res,
-                            body,
-                            discordID
-                        );
-                    } else {
-                        res.writeHead(302, { Location: '/login.html' });
-                        res.end();
-                    }
-                })().catch((err) => {
-                    console.error(err);
-                    res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.end(getTemplate('internal-server-error', 'misc'));
-                });
-            } else if (parsedurl === '/setup2fa') {
-                (async () => {
-                    const discordID = await auth.checkAuth(req, res, true);
-                    if (discordID) {
-                        await setup2fapage.handleSetup2FA(bot, req, res, body, discordID);
-                    } else {
-                        res.writeHead(302, { Location: '/login.html' });
-                        res.end();
-                    }
-                })().catch((err) => {
-                    console.error(err);
-                    res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.end(getTemplate('internal-server-error', 'misc'));
-                });
-            } else if (parsedurl === '/disable2fa') {
-                (async () => {
-                    const discordID = await auth.checkAuth(req, res, true);
-                    if (discordID) {
-                        await setup2fapage.handleDisable2FA(bot, req, res, body, discordID);
-                    } else {
-                        res.writeHead(302, { Location: '/login.html' });
-                        res.end();
-                    }
-                })().catch((err) => {
-                    console.error(err);
-                    res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.end(getTemplate('internal-server-error', 'misc'));
-                });
-            } else if (parsedurl.startsWith('/food/')) {
-                (async () => {
-                    const discordID = await auth.checkAuth(req, res);
-                    if (discordID) {
-                        await foodpage.handlePost(bot, req, res, discordID, body);
-                    }
-                })().catch((err) => {
-                    console.error(err);
-                    if (!res.headersSent) {
-                        res.writeHead(500, { 'Content-Type': 'text/html' });
-                        res.end(getTemplate('internal-server-error', 'misc'));
-                    }
-                });
-            } else {
-                auth.handleLoginRegister(req, res, body);
-            }
-        });
-    } else {
-        if (req.url.startsWith('//')) {
-            res.writeHead(400, { 'Content-Type': 'text/html' });
-            res.end(getTemplate('invalid-request-url', 'misc'));
-            return;
-        }
-
-        try {
-            const parsedurl = new URL(req.url, 'http://localhost');
-
-            const args = parsedurl.pathname.replaceAll('?', '/').split('/'); // Split by / or ?
-            if (args[1] === 'send') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    await sendpage.sendMessage(bot, req, res, args, discordID);
-                }
-            } else if (args[1] === 'reply') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    await replypage.replyMessage(bot, req, res, args, discordID);
-                }
-            } else if (args[1] === 'switchtheme') {
-                toggleTheme(req, res);
-            } else if (args[1] === 'toggleImages') {
-                toggleImages(req, res);
-            } else if (args[1] === 'logout') {
-                const discordID = await auth.checkAuth(req, res, true); // True = no redirect to login page
-                if (discordID) {
-                    auth.logout(discordID);
-                }
-                res.writeHead(302, { Location: '/' });
-                res.end();
-            } else if (args[1] === 'server') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    await serverpage.processServer(bot, req, res, args, discordID);
-                }
-            } else if (args[1] === 'channels') {
-                const discordID = await auth.checkAuth(req, res, true); // true = no redirect
-                if (args.length === 3) {
-                    if (discordID) {
-                        await channelpage.processChannel(bot, req, res, args, discordID);
-                    } else if (isValidSnowflake(args[2]) && auth.isGuestChannel(args[2])) {
-                        await guestpage.processGuestChannel(bot, req, res, args[2]);
-                    } else {
-                        res.writeHead(303, {
-                            Location: '/login.html?redirect=' + encodeURIComponent(req.url),
-                        });
-                        res.end();
-                    }
-                } else if (args.length === 4) {
-                    if (discordID) {
-                        if (args[3].length === 0) {
-                            res.writeHead(302, { Location: `/channels/${args[2]}#end` });
-                            res.end();
-                            return;
-                        } else {
-                            await channelreplypage.processChannelReply(
-                                bot,
-                                req,
-                                res,
-                                args,
-                                discordID
-                            );
-                        }
-                    } else {
-                        res.writeHead(303, {
-                            Location: '/login.html?redirect=' + encodeURIComponent(req.url),
-                        });
-                        res.end();
-                    }
-                } else {
-                    if (discordID) {
-                        res.writeHead(302, { Location: `/channels/${args[2]}#end` });
-                        res.end();
-                        return;
-                    } else {
-                        res.writeHead(303, {
-                            Location: '/login.html?redirect=' + encodeURIComponent(req.url),
-                        });
-                        res.end();
-                    }
-                }
-            } else if (args[1] === 'guest_name') {
-                await guestpage.processGuestName(req, res);
-            } else if (args[1] === 'guest_send') {
-                await guestsendpage.guestSend(bot, req, res);
-            } else if (args[1] === 'jobs') {
-                res.writeHead(302, { Location: 'http://careers.mcdonalds.com/' });
-                res.end();
-                return;
-            } else if (args[1] === 'upload') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    await uploadpage.processUpload(bot, req, res, args, discordID);
-                }
-            } else if (args[1] === 'pins') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    await pinspage.processPins(bot, req, res, args, discordID);
-                }
-            } else if (args[1] === 'signmessage') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    const channelId = args[2];
-                    const sendMetaPage = require('./pages/sendMeta.js');
-                    await sendMetaPage.sendMeta(bot, req, res, channelId);
-                }
-            } else if (args[1] === 'news') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    if (args.length >= 3 && args[2]) {
-                        await newspage.processNewsArticle(req, res, args, discordID);
-                    } else {
-                        await newspage.processNews(req, res, args, discordID);
-                    }
-                }
-            } else if (args[1] === 'draw') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    await drawpage.processDraw(bot, req, res, args, discordID);
-                }
-            } else if (args[1] === 'sendactioncode') {
-                const discordID = await auth.checkAuth(req, res, true);
-                if (!discordID) {
-                    res.writeHead(302, { Location: '/login.html' });
-                    res.end();
-                } else {
-                    const returnPages = {
-                        changepassword: '/change-password.html',
-                        setup2fa: '/setup-2fa.html',
-                        disable2fa: '/setup-2fa.html',
-                    };
-                    const actionParam = parsedurl.searchParams.get('action');
-                    if (!returnPages[actionParam]) {
-                        res.writeHead(302, { Location: '/server/' });
-                        res.end();
-                    } else {
-                        const urlSessionID = parsedurl.searchParams.get('sessionID') || '';
-                        const sessionParam = urlSessionID
-                            ? '?sessionID=' + encodeURIComponent(urlSessionID)
-                            : '';
-                        const code = auth.createActionCode(discordID, actionParam);
-                        const dmMessages = {
-                            changepassword:
-                                'Your Discross verification code to change your password: **' +
-                                code +
-                                '**\nThis code expires in 10 minutes.',
-                            setup2fa:
-                                'Your Discross verification code to set up two-factor authentication: **' +
-                                code +
-                                '**\nThis code expires in 10 minutes.',
-                            disable2fa:
-                                'Your Discross verification code to disable two-factor authentication: **' +
-                                code +
-                                '**\nThis code expires in 10 minutes.',
-                        };
-                        const dmResult = await bot.sendDM(discordID, dmMessages[actionParam]);
-                        const returnPath = returnPages[actionParam];
-                        if (dmResult.success) {
-                            res.writeHead(302, {
-                                Location:
-                                    returnPath +
-                                    sessionParam +
-                                    (sessionParam ? '&' : '?') +
-                                    'codesent=1',
-                            });
-                        } else {
-                            res.writeHead(302, {
-                                Location:
-                                    returnPath +
-                                    sessionParam +
-                                    (sessionParam ? '&' : '?') +
-                                    'errortext=' +
-                                    encodeURIComponent(
-                                        'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.'
-                                    ),
-                            });
-                        }
-                        res.end();
-                    }
-                }
-            } else if (args[1] === 'login.html') {
-                await loginpage.processLogin(bot, req, res, args);
-            } else if (args[1] === 'register.html') {
-                await registerpage.processRegister(bot, req, res, args);
-            } else if (args[1] === 'forgot.html') {
-                await forgotpage.processForgot(bot, req, res, args);
-            } else if (args[1] === 'change-password.html') {
-                await changepasswordpage.processChangePassword(bot, req, res, args);
-            } else if (args[1] === 'setup-2fa.html') {
-                await setup2fapage.processSetup2FA(bot, req, res, args);
-            } else if (args[1] === 'index.html' || parsedurl.pathname === '/') {
-                await indexpage.processIndex(bot, req, res, args);
-            } else if (args[1] === 'privacy.html') {
-                await privacypage.processPrivacy(bot, req, res, args);
-            } else if (args[1] === 'terms.html') {
-                await termspage.processTerms(bot, req, res, args);
-            } else if (args[1] === 'credits.html' || args[1] === 'credits') {
-                await creditspage.processCredits(bot, req, res, args);
-            } else if (args[1] === 'weather') {
-                await weatherpage.processWeather(req, res);
-            } else if (args[1] === 'currency') {
-                await currencypage.processCurrency(req, res);
-            } else if (args[1] === 'sports') {
-                await sportspage.processSports(req, res);
-            } else if (args[1] === 'stocks') {
-                await stockspage.processStocks(req, res);
-            } else if (args[1] === 'search') {
-                await searchpage.processSearch(req, res);
-            } else if (args[1] === 'tv') {
-                await tvpage.processTV(req, res);
-            } else if (args[1] === 'movies') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    await moviespage.processMovies(req, res, discordID);
-                }
-            } else if (args[1] === 'food') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    await foodpage.handleGet(bot, req, res, discordID);
-                }
-            } else if (args[1] === 'foodProxy') {
-                await foodpage.foodProxy(req, res);
-            } else if (args[1] === 'discord') {
-                const discordID = await auth.checkAuth(req, res);
-                if (discordID) {
-                    try {
-                        const query = new URLSearchParams(req.url.split('?')[1]);
-                        let accessToken = query.get('access_token');
-                        let tokenType = query.get('token_type') || 'Bearer';
-
-                        const code = query.get('code');
-                        if (code) {
-                            if (!DISCORD_CLIENT_SECRET) {
-                                res.writeHead(500, { 'Content-Type': 'text/html' });
-                                res.end(getTemplate('discord-secret-not-configured', 'misc'));
-                                return;
-                            }
-                            // Trade code for token
-                            const tokenResponse = await fetch(
-                                'https://discord.com/api/oauth2/token',
-                                {
-                                    method: 'POST',
-                                    body: new URLSearchParams({
-                                        client_id: DISCORD_CLIENT_ID,
-                                        client_secret: DISCORD_CLIENT_SECRET,
-                                        grant_type: 'authorization_code',
-                                        code: code,
-                                        redirect_uri: DISCORD_REDIRECT_URL,
-                                    }),
-                                    headers: {
-                                        'Content-Type': 'application/x-www-form-urlencoded',
-                                    },
-                                }
-                            );
-                            const tokenData = await tokenResponse.json();
-                            if (tokenData.access_token) {
-                                accessToken = tokenData.access_token;
-                                tokenType = tokenData.token_type || 'Bearer';
-                                // Save tokens
-                                auth.saveDiscordTokens(
-                                    discordID,
-                                    tokenData.access_token,
-                                    tokenData.refresh_token,
-                                    Math.floor(Date.now() / 1000) + (tokenData.expires_in || 0)
-                                );
-                            } else {
-                                throw new Error(
-                                    'Failed to exchange code: ' + JSON.stringify(tokenData)
-                                );
-                            }
-                        }
-
-                        if (!accessToken) {
-                            res.writeHead(302, { Location: '/' });
-                            res.end();
-                            return;
-                        }
-
-                        const oauthClient = new SnowTransfer(`${tokenType} ${accessToken}`);
-                        const user = await oauthClient.user.getSelf();
-                        if (user && user.id === discordID) {
-                            const guilds = await oauthClient.user.getGuilds();
-                            const filteredServers = guilds.filter((e) =>
-                                bot.client.guilds.cache.has(e.id)
-                            );
-                            const readyServers = filteredServers.map(function (e) {
-                                return { serverID: e.id, discordID: discordID, icon: e.icon };
-                            });
-                            auth.insertServers(readyServers);
-                            for (const server of readyServers) {
-                                try {
-                                    if (server.icon) {
-                                        await fs.promises.mkdir(
-                                            path.resolve(
-                                                `pages/static/ico/server`,
-                                                sanitizer(server.serverID)
-                                            ),
-                                            { recursive: true }
-                                        );
-                                        if (server.icon.startsWith('a_')) {
-                                            const iconUrl = `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.gif?size=128`;
-                                            const iconResponse = await fetch(iconUrl);
-                                            if (iconResponse.ok) {
-                                                await fs.promises.writeFile(
-                                                    path.resolve(
-                                                        `pages/static/ico/server`,
-                                                        sanitizer(
-                                                            `${server.serverID}/${server.icon.substring(2)}.gif`
-                                                        )
-                                                    ),
-                                                    Buffer.from(await iconResponse.arrayBuffer())
-                                                );
-                                            }
-                                        } else {
-                                            const iconUrl = `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.png?size=128`;
-                                            const iconResponse = await fetch(iconUrl);
-                                            if (iconResponse.ok) {
-                                                await sharp(
-                                                    await iconResponse.arrayBuffer()
-                                                ).toFile(
-                                                    path.resolve(
-                                                        `pages/static/ico/server/`,
-                                                        sanitizer(
-                                                            `${server.serverID}/${server.icon}.gif`
-                                                        )
-                                                    )
-                                                );
-                                            }
-                                        }
-                                    }
-                                } catch (err) {
-                                    console.error(
-                                        `Failed to sync icon for server ${server.serverID}:`,
-                                        err
-                                    );
-                                }
-                            }
-
-                            if (query.get('state') === 'sync') {
-                                res.writeHead(200, { 'Content-Type': 'text/html' });
-                                res.end(getTemplate('sync-complete-script', 'misc'));
-                            } else {
-                                res.writeHead(302, { Location: '/server/' });
-                                res.end();
-                            }
-                        } else {
-                            res.writeHead(302, { Location: '/' });
-                            res.end();
-                        }
-                    } catch (e) {
-                        console.error('OAuth error:', e);
-                        res.writeHead(302, { Location: '/' });
-                        res.end();
-                    }
-                }
-            } else if (args[1] === 'imageProxy') {
-                const isFull = parsedurl.searchParams.get('full') === '1';
-                // Handle different types of image proxy requests
-                if (args[2] === 'external') {
-                    // External URLs are base64-encoded in args[3]
-                    const encodedUrl = req.url.slice(EXTERNAL_PROXY_PREFIX_LENGTH).split('?')[0];
-                    const fullImageUrl = Buffer.from(encodedUrl, 'base64').toString();
-                    await imageProxy(res, fullImageUrl, isFull);
-                } else if (args[2] === 'sticker') {
-                    // Sticker URLs: /imageProxy/sticker/{stickerId}.{format}
-                    // Always fetch .png from media.discordapp.net regardless of requested extension
-                    const stickerId = args[3].replace(/\.[^.]*$/, '');
-                    const fullImageUrl = `https://media.discordapp.net/stickers/${stickerId}.png`;
-                    await imageProxy(res, fullImageUrl, isFull);
-                } else {
-                    // Emoji and attachment URLs
-                    // We need to preserve query parameters (like ex, is, hm for Discord attachments)
-                    // but we should remove our internal 'full' parameter.
-                    const urlObj = new URL(req.url, 'http://localhost');
-                    urlObj.searchParams.delete('full');
-                    const queryString = urlObj.search;
-                    const proxyPath = urlObj.pathname;
-                    const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${args[2] === 'emoji' ? proxyPath.slice(18) : proxyPath.slice(12)}${queryString}`;
-                    await imageProxy(res, fullImageUrl, isFull);
-                }
-            } else if (args[1] === 'fileProxy') {
-                const filePath = req.url.slice(11);
-                const fullFileUrl = `https://cdn.discordapp.com/attachments/${filePath}`;
-                await fileProxy(res, fullFileUrl);
-            } else if (args[1] === 'ico' && args[2] === 'server' && args[3] && args[4]) {
-                // Handle server icon requests: /ico/server/{serverID}/{iconHash}.gif
-                const discordID = await auth.checkAuth(req, res, true); // Don't redirect if not authenticated
-                const serverID = args[3];
-                const iconFilename = args[4];
-                const iconHash = iconFilename.replace('.gif', '');
-
-                // Determine theme from URL param (takes priority) or cookie
-                const urlTheme = discordID ? parsedurl.searchParams.get('theme') : null;
-                const { whiteThemeCookie } = discordID ? parseCookies(req) : {};
-                const themeValue = urlTheme ?? whiteThemeCookie ?? null;
-                const theme = themeValue === '1' ? 'light' : themeValue === '2' ? 'amoled' : 'dark';
-
-                await handleServerIcon(bot, res, serverID, iconHash, theme);
-            } else {
-                const filename = path.resolve('pages/static', sanitizer(parsedurl.pathname));
-                await servePage(filename, res, undefined, undefined, undefined, req);
-            }
-        } catch (err) {
-            console.error(err);
-            if (typeof sentryEnabled !== 'undefined' && sentryEnabled) Sentry.captureException(err);
-            if (!res.headersSent) {
-                res.writeHead(500, { 'Content-Type': 'text/html' });
-                res.end(getTemplate('internal-server-error', 'misc'));
-            }
+    } catch (err) {
+        console.error('Request error:', err);
+        if (sentryEnabled) Sentry.captureException(err);
+        if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('internal-server-error', 'misc'));
         }
     }
 });

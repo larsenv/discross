@@ -3,9 +3,9 @@
 const escape = require('escape-html');
 const { PermissionFlagsBits } = require('discord.js');
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const notFound = require('./notFound.js');
-const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
+const { getClientIP, getTimezoneFromIP } = require('../src/timezoneUtils');
 const { buildMessagesHtml } = require('./channel.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {

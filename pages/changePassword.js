@@ -6,7 +6,7 @@ const {
     getTemplate,
 } = require('./utils.js');
 const escape = require('escape-html');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 
 const changepassword_template = loadAndRenderPageTemplate('change-password', 'auth');
 const error_template = getTemplate('error', 'login');

@@ -6,13 +6,14 @@ const sharp = require('sharp');
 const sanitizer = require('path-sanitizer').default;
 const escape = require('escape-html');
 const UAParser = require('ua-parser-js');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const emojiRegex = require('./twemojiRegex').regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode } = require('./emojiUtils');
 const {
     renderTemplate,
+    render,
     isBotReady,
     getPageThemeAttr,
     buildSessionParam,
@@ -141,7 +142,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                         channelList += getTemplate('div-close', 'misc'); // Close previous category-channels div
                     }
                     currentCategoryId = item.id;
-                    channelList += renderTemplate(category_channel_template, {
+                    channelList += render('channellist/category-channel', {
                         CHANNEL_NAME: escapedName,
                         CATEGORY_ID: item.id,
                     });
@@ -153,7 +154,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                         item.type === ChannelType.GuildForum
                             ? '/resources/twemoji/1f4ac.gif'
                             : '/resources/twemoji/1f39e.gif';
-                    channelList += renderTemplate(forum_channel_template, {
+                    channelList += render('channellist/forum-channel', {
                         CHANNEL_NAME: escapedName,
                         ICON_URL: iconUrl,
                     });
@@ -161,7 +162,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                     item.type === ChannelType.GuildAnnouncement ||
                     item.type === ChannelType.GuildNews
                 ) {
-                    channelList += renderTemplate(announcement_channel_template, {
+                    channelList += render('channellist/announcement-channel', {
                         CHANNEL_NAME: escapedName,
                         CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
                     });
@@ -170,18 +171,18 @@ async function processServerChannels(server, member, response, sessionParam) {
                         .permissionsIn(item)
                         .has(PermissionFlagsBits.SendMessages, true);
                     if (!canSendMessages) {
-                        channelList += renderTemplate(locked_channel_template, {
+                        channelList += render('channellist/locked-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
                         });
                     } else {
-                        channelList += renderTemplate(voice_channel_template, {
+                        channelList += render('channellist/voice-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
                         });
                     }
                 } else if (item.type === ChannelType.GuildStageVoice) {
-                    channelList += renderTemplate(voice_channel_template, {
+                    channelList += render('channellist/voice-channel', {
                         CHANNEL_NAME: escapedName,
                         CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
                     });
@@ -193,17 +194,17 @@ async function processServerChannels(server, member, response, sessionParam) {
                     const isRulesChannel = item.name.toLowerCase().includes('rule');
 
                     if (isRulesChannel) {
-                        channelList += renderTemplate(rules_channel_template, {
+                        channelList += render('channellist/rules-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
                         });
                     } else if (!canSendMessages) {
-                        channelList += renderTemplate(locked_channel_template, {
+                        channelList += render('channellist/locked-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
                         });
                     } else {
-                        channelList += renderTemplate(text_channel_template, {
+                        channelList += render('channellist/text-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
                         });
@@ -218,12 +219,12 @@ async function processServerChannels(server, member, response, sessionParam) {
                             (a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0)
                         );
                     if (channelThreads.length > 0) {
-                        channelList += renderTemplate(thread_group_header_template, {
+                        channelList += render('channellist/thread-group-header', {
                             CHANNEL_ID: item.id,
                         });
                         channelThreads.forEach((thread) => {
                             const threadEscapedName = escape(normalizeWeirdUnicode(thread.name));
-                            channelList += renderTemplate(thread_channel_template, {
+                            channelList += render('channellist/thread-channel', {
                                 CHANNEL_NAME: threadEscapedName,
                                 CHANNEL_LINK: `../channels/${thread.id}${sessionParam}`,
                             });
@@ -366,12 +367,9 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             await lock.acquire(discordID, async () => {
                 if (targetServer) {
                     response = renderTemplate(response, {
-                        DISCORD_NAME: renderTemplate(
-                            getTemplate('server-name-header', 'server/partials'),
-                            {
-                                NAME: escape(normalizeWeirdUnicode(targetServer.name)),
-                            }
-                        ),
+                        DISCORD_NAME: render('server/partials/server-name-header', {
+                            NAME: escape(normalizeWeirdUnicode(targetServer.name)),
+                        }),
                     });
                     const member = await fetchAndCacheMember(targetServer, discordID);
                     if (member) {
@@ -423,7 +421,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                     const output = unicodeToTwemojiCode(match);
                     response = response.replaceAll(
                         match,
-                        renderTemplate(getTemplate('server-emoji-twemoji', 'server/partials'), {
+                        render('server/partials/server-emoji-twemoji', {
                             CODE: output,
                         })
                     );
@@ -438,7 +436,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             custom_emoji_matches.forEach((match) => {
                 response = response.replaceAll(
                     match[0],
-                    renderTemplate(getTemplate('server-emoji-custom', 'server/partials'), {
+                    render('server/partials/server-emoji-custom', {
                         EMOJI_ID: match[4],
                         EXT: match[2] ? 'gif' : 'png',
                     })
@@ -499,7 +497,7 @@ function createServerHTML(server, member, imagesCookie, sessionParam) {
         ? `/ico/server/${server.id}/${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
         : '/discord-mascot.gif';
 
-    return renderTemplate(server_icon_template, {
+    return render('server/server-icon', {
         SERVER_ICON_URL: iconUrl,
         SERVER_URL: './' + server.id + (sessionParam || ''),
         SERVER_NAME: escape(normalizeWeirdUnicode(serverName)),
@@ -529,7 +527,7 @@ function addUserAgentDisplay(response, req) {
 
     const platform = browserInfo && osInfo ? `${browserInfo} on ${osInfo}` : browserInfo || osInfo;
     const userAgentDisplay = platform
-        ? renderTemplate(getTemplate('user-agent-display', 'server/partials'), {
+        ? render('server/partials/user-agent-display', {
               PLATFORM: platform,
               DEVICE_INFO: deviceInfo,
           })

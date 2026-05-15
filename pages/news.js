@@ -2,11 +2,12 @@
 
 const escape = require('escape-html');
 const he = require('he');
-const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
+const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../src/timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText } = require('./emojiUtils');
 const {
     renderTemplate,
+    render,
     parseCookies,
     resolveTheme,
     buildSessionParam,
@@ -240,11 +241,11 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
                   const proxied = proxyImageUrl(imageUrl);
                   const alt = escapeContent(imageAlt || title, showImages);
                   const caption = escapeContent(imageCaption || '', showImages);
-                  return renderTemplate(getTemplate('news-card-image', 'news'), {
+                  return render('news/news-card-image', {
                       PROXIED_URL: proxied,
                       ALT_TEXT: alt,
                       CAPTION_HTML: caption
-                          ? renderTemplate(getTemplate('caption', 'news'), {
+                          ? render('news/caption', {
                                 CLASS: 'news-card-caption',
                                 CAPTION: caption,
                             })
@@ -253,13 +254,11 @@ function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
               })()
             : '';
 
-    return renderTemplate(getTemplate('news-card', 'news'), {
+    return render('news/news-card', {
         IMAGE_HTML: imageHtml,
-        TITLE_HTML: renderTemplate(getTemplate('news-card-title', 'news'), { HEADLINE: headline }),
-        DATE_META_HTML: dateStr
-            ? renderTemplate(getTemplate('news-card-meta', 'news'), { DATE_STR: dateStr })
-            : '',
-        READ_BUTTON_HTML: renderTemplate(getTemplate('news-read-button', 'news'), {
+        TITLE_HTML: render('news/news-card-title', { HEADLINE: headline }),
+        DATE_META_HTML: dateStr ? render('news/news-card-meta', { DATE_STR: dateStr }) : '',
+        READ_BUTTON_HTML: render('news/news-read-button', {
             ARTICLE_URL: articleUrl,
         }),
     });
@@ -347,11 +346,11 @@ function parseArticlePage(html, showImages) {
                           ? escapeContent(stripHtml(captionMatch[1]), showImages)
                           : '';
                       return (
-                          renderTemplate(getTemplate('news-article-image', 'news'), {
+                          render('news/news-article-image', {
                               PROXIED_URL: proxied,
                               ALT_TEXT: '', // alt is empty here, as in the original
                               CAPTION_HTML: caption
-                                  ? renderTemplate(getTemplate('caption', 'news'), {
+                                  ? render('news/caption', {
                                         CLASS: 'news-article-caption',
                                         CAPTION: caption,
                                     })
@@ -377,7 +376,7 @@ function parseArticlePage(html, showImages) {
             const text = stripHtml(el).trim();
             if (text.length > 10 && !isCTAParagraph(text)) {
                 paragraphs.push(
-                    renderTemplate(getTemplate('news-article-paragraph', 'news'), {
+                    render('news/news-article-paragraph', {
                         CONTENT: escapeContent(text, showImages),
                     }) + '\n'
                 );
@@ -413,13 +412,13 @@ exports.processNews = async function processNews(req, res, args, discordID) {
             cards.length > 0 ? cards.join('\n') : getTemplate('news-no-articles-error', 'news');
         const sessionHidden = [
             urlSessionID
-                ? renderTemplate(getTemplate('hidden-input', 'news'), {
+                ? render('news/hidden-input', {
                       NAME: 'sessionID',
                       VALUE: escape(urlSessionID),
                   })
                 : '',
             theme.themeValue !== 0
-                ? renderTemplate(getTemplate('hidden-input', 'news'), {
+                ? render('news/hidden-input', {
                       NAME: 'theme',
                       VALUE: theme.themeValue.toString(),
                   })

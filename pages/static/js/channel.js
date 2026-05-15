@@ -92,7 +92,7 @@ function showEmoji() {
 
 // File Selection Wrapper
 // =====================
-function handleFileSelection(input) {
+function handleFileSelect(input) {
     if (input && input.files && input.files[0]) {
         var file = input.files[0];
         var maxSize = 249 * 1024 * 1024; // 249MB limit
@@ -105,6 +105,50 @@ function handleFileSelection(input) {
 
         uploadFile(file);
     }
+}
+
+function uploadFile(file) {
+    var formData = new FormData();
+    formData.append('file', file);
+    formData.append('channel', document.getElementById('channel').value);
+    formData.append('sessionID', document.getElementById('sessionID').value);
+
+    var messageInput = document.getElementById('message');
+    var originalPlaceholder = messageInput.placeholder;
+    messageInput.disabled = true;
+    messageInput.placeholder = 'Uploading: ' + file.name + '...';
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/uploadFile', true);
+
+    xhr.onload = function () {
+        messageInput.disabled = false;
+        messageInput.placeholder = originalPlaceholder;
+        if (xhr.status === 200) {
+            var response = JSON.parse(xhr.responseText);
+            if (response.success) {
+                // Clear input and refocus
+                messageInput.value = '';
+                if (typeof autoResize === 'function') autoResize(messageInput);
+                messageInput.focus();
+                
+                // Optional: Refresh message container to show the new message
+                // For now, we rely on the user refreshing or the periodic refresh
+            } else {
+                alert('Upload failed: ' + response.error);
+            }
+        } else {
+            alert('Upload failed with status ' + xhr.status);
+        }
+    };
+
+    xhr.onerror = function () {
+        messageInput.disabled = false;
+        messageInput.placeholder = originalPlaceholder;
+        alert('An error occurred during the upload.');
+    };
+
+    xhr.send(formData);
 }
 
 // Message Sending
@@ -159,15 +203,25 @@ function handleMessageKeydown(event) {
 
 function autoResize(el) {
     if (!el) return;
-    var oldHeight = el.style.height;
-    el.style.height = 'auto';
-    var newHeight = el.scrollHeight;
-    if (newHeight > 200) newHeight = 200;
-    if (newHeight < 41) newHeight = 41;
+    
+    var currentLen = el.value.length;
+    var lastLen = parseInt(el.getAttribute('data-last-len') || '0');
+    el.setAttribute('data-last-len', currentLen);
 
-    var newHeightPx = newHeight + 'px';
-    if (oldHeight !== newHeightPx) {
-        el.style.height = newHeightPx;
+    // If growing, we can just use scrollHeight without resetting to auto
+    if (currentLen > lastLen) {
+        if (el.scrollHeight > el.offsetHeight && el.offsetHeight < 200) {
+            var newHeight = Math.min(el.scrollHeight, 200);
+            el.style.height = newHeight + 'px';
+        }
+    } else {
+        // Shrinking or same length (potential wrap change)
+        // Reset to auto to get natural height
+        el.style.height = 'auto';
+        var newHeight = el.scrollHeight;
+        if (newHeight < 40) newHeight = 40;
+        if (newHeight > 200) newHeight = 200;
+        el.style.height = newHeight + 'px';
     }
 
     var overflow = el.scrollHeight > 200 ? 'auto' : 'hidden';

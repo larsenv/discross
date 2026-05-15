@@ -4,6 +4,7 @@ const escape = require('escape-html');
 
 const {
     renderTemplate,
+    render,
     getPageThemeAttr,
     httpsGet,
     formatChangePct,
@@ -12,7 +13,7 @@ const {
     getTemplate,
 } = require('./utils.js');
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 
 // Frankfurter API — free, no API key required
 const FRANKFURTER_HOST = 'api.frankfurter.app';
@@ -158,7 +159,7 @@ function renderRatesTable(base, latestData, prevData, targets) {
     const prevRates = prevData ? prevData.rates || {} : {};
 
     const dateLabel = latestData?.date
-        ? renderTemplate(getTemplate('date-label', 'currency'), { DATE: escape(latestData.date) })
+        ? render('currency/date-label', { DATE: escape(latestData.date) })
         : '';
 
     const rows = targets.flatMap((code) => {
@@ -172,7 +173,7 @@ function renderRatesTable(base, latestData, prevData, targets) {
         const color = changeColor(change);
         const name = CURRENCY_NAMES[code] || code;
         return [
-            renderTemplate(getTemplate('rate-row', 'currency'), {
+            render('currency/rate-row', {
                 CODE: escape(code),
                 NAME: escape(name),
                 RATE: formatRate(rate, decimals),
@@ -183,7 +184,7 @@ function renderRatesTable(base, latestData, prevData, targets) {
         ];
     });
 
-    return renderTemplate(getTemplate('rates-table', 'currency'), {
+    return render('currency/rates-table', {
         BASE: escape(base),
         DATE_LABEL: dateLabel,
         ROWS: rows.join(''),
@@ -204,7 +205,7 @@ exports.processCurrency = async function processCurrency(req, res) {
     const themeClass = getPageThemeAttr(req);
 
     const prefix = inputWasNormalized
-        ? renderTemplate(getTemplate('invalid-code-prefix', 'currency'), { BASE: escape(base) })
+        ? render('currency/invalid-code-prefix', { BASE: escape(base) })
         : '';
 
     const currencyHtml = await (async () => {
@@ -217,10 +218,7 @@ exports.processCurrency = async function processCurrency(req, res) {
             }));
 
             if (!latestData) {
-                return (
-                    prefix +
-                    renderTemplate(getTemplate('no-data-error', 'currency'), { BASE: escape(base) })
-                );
+                return prefix + render('currency/no-data-error', { BASE: escape(base) });
             }
             // Use all available target currencies or our default list
             const availableCodes = Object.keys(latestData.rates || {}).sort();
@@ -235,7 +233,7 @@ exports.processCurrency = async function processCurrency(req, res) {
         }
     })();
 
-    const menuOptions = renderTemplate(logged_in_template, {
+    const menuOptions = render('index/logged-in', {
         USER: escape(await auth.getUsername(discordID)),
     });
 

@@ -53,11 +53,18 @@ body.light-theme,
     border-top-color: #e3e5e8 !important;
 }
 
-.light-theme .message-input-wrapper,
+.light-theme #replying_to {
+    border-bottom-color: #e3e5e8 !important;
+}
+.light-theme #replying_to .reply-label {
+    color: #4f5660 !important;
+}
+.light-theme .message-input-bar-wrapper,
 .light-theme .message-input-disabled {
     background: #ebedef !important;
 }
 
+.light-theme .message-input-field,
 .light-theme .message-input,
 .light-theme .message-input-disabled input {
     color: #060607 !important;
@@ -164,11 +171,20 @@ body.amoled-theme,
     border-top: 1px solid #333333 !important;
 }
 
-.amoled-theme .message-input-wrapper,
-.amoled-theme .message-input-disabled {
-    background: #000000 !important;
+.amoled-theme #replying_to {
+    border-bottom-color: #333333 !important;
+}
+.amoled-theme #replying_to .reply-label {
+    color: #a0a0a0 !important;
 }
 
+.amoled-theme .message-input-bar-wrapper,
+.amoled-theme .message-input-disabled {
+    background: #000000 !important;
+    border: 1px solid #333333 !important;
+}
+
+.amoled-theme .message-input-field,
 .amoled-theme .message-input {
     color: #ffffff !important;
 }

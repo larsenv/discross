@@ -1,12 +1,13 @@
 'use strict';
 const {
     renderTemplate,
+    render,
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
 } = require('./utils.js');
 const escape = require('escape-html');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 
 const setup2fa_template = loadAndRenderPageTemplate('setup-2fa', 'auth');
 const disable2fa_template = loadAndRenderPageTemplate('disable-2fa', 'auth');
@@ -15,10 +16,10 @@ const error_template = getTemplate('error', 'login');
 const logged_in_template = getTemplate('logged-in', 'index');
 
 function injectMenuAndError(response, username, parsedUrl, sessionParam) {
-    const menuOptions = renderTemplate(logged_in_template, { USER: escape(username || '') });
+    const menuOptions = render('index/logged-in', { USER: escape(username || '') });
     const errorText = parsedUrl.searchParams.get('errortext');
     const errorHtml = errorText
-        ? renderTemplate(error_template, {
+        ? render('login/error', {
               ERROR_MESSAGE: escape(errorText).replaceAll('\n', getTemplate('br', 'misc')),
           })
         : '';
@@ -80,16 +81,16 @@ exports.processSetup2FA = async function (bot, req, res, args) {
         });
     })();
 
-    const menuOptions = renderTemplate(logged_in_template, { USER: escape(username || '') });
+    const menuOptions = render('index/logged-in', { USER: escape(username || '') });
     const errorHtml = (() => {
         if (dmErrorText) {
-            return renderTemplate(error_template, {
+            return render('login/error', {
                 ERROR_MESSAGE: escape(dmErrorText).replaceAll('\n', getTemplate('br', 'misc')),
             });
         }
         const urlError = parsedUrl.searchParams.get('errortext');
         if (urlError) {
-            return renderTemplate(error_template, {
+            return render('login/error', {
                 ERROR_MESSAGE: escape(urlError).replaceAll('\n', getTemplate('br', 'misc')),
             });
         }
@@ -152,16 +153,16 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
     const username = await auth.getUsername(discordID);
     const rows = result.backupCodes
         .map((code) =>
-            renderTemplate(getTemplate('backup-codes-row', 'auth/partials'), {
+            render('auth/partials/backup-codes-row', {
                 CODE: escape(code),
             })
         )
         .join('');
-    const codesHtml = renderTemplate(getTemplate('backup-codes-table', 'auth/partials'), {
+    const codesHtml = render('auth/partials/backup-codes-table', {
         ROWS: rows,
     });
 
-    const menuOptions = renderTemplate(logged_in_template, { USER: escape(username || '') });
+    const menuOptions = render('index/logged-in', { USER: escape(username || '') });
     const response = renderTemplate(backup_codes_template, {
         MENU_OPTIONS: menuOptions,
         BACKUP_CODES_LIST: codesHtml,

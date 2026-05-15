@@ -1,6 +1,6 @@
 'use strict';
 const geoip = require('geoip-lite');
-const { getTemplate, renderTemplate } = require('./pages/utils.js');
+const { getTemplate, renderTemplate } = require('../pages/utils.js');
 
 // Constants for date/time calculations
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -72,7 +72,7 @@ function isPrivateIP(ip) {
  * @returns {string|null} - Timezone (e.g., 'America/New_York') or null if not found
  */
 function getTimezoneFromIP(req) {
-    const { parseCookies } = require('./pages/utils.js');
+    const { parseCookies } = require('../pages/utils.js');
     const cookies = parseCookies(req);
     const parsedUrl = new URL(req.url, 'http://localhost');
     const queryTimezone = parsedUrl.searchParams.get('timezone');

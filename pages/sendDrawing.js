@@ -1,9 +1,9 @@
 'use strict';
 const discord = require('discord.js');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { resolveMentions, getTemplate } = require('./utils.js');
+const { resolveMentions, getTemplate, renderTemplate, render } = require('./utils.js');
 
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
     try {
@@ -22,7 +22,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         if (!member) {
             res.writeHead(500, { 'Content-Type': 'text/html' });
             res.end(
-                renderTemplate(getTemplate('error-text', 'misc'), {
+                render('misc/error-text', {
                     MESSAGE:
                         'Failed to verify user permissions. Please ensure you have access to this channel or try again later.',
                 })
@@ -32,7 +32,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
         if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
             res.end(
-                renderTemplate(getTemplate('error-text', 'misc'), {
+                render('misc/error-text', {
                     MESSAGE: "You don't have permission to do that!",
                 })
             );
@@ -53,7 +53,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             console.error('[sendDrawing] Error processing image: Input Buffer is empty');
             res.writeHead(400, { 'Content-Type': 'text/html' });
             res.end(
-                renderTemplate(getTemplate('error-text', 'misc'), {
+                render('misc/error-text', {
                     MESSAGE: 'No drawing data provided. Please draw something before sending.',
                 })
             );
@@ -73,7 +73,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             console.error('[sendDrawing] Error processing image: Base64 data is empty after split');
             res.writeHead(400, { 'Content-Type': 'text/html' });
             res.end(
-                renderTemplate(getTemplate('error-text', 'misc'), {
+                render('misc/error-text', {
                     MESSAGE: 'Invalid drawing data format. Please try again.',
                 })
             );
@@ -87,7 +87,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             console.error('[sendDrawing] Error processing image: Generated buffer is empty');
             res.writeHead(400, { 'Content-Type': 'text/html' });
             res.end(
-                renderTemplate(getTemplate('error-text', 'misc'), {
+                render('misc/error-text', {
                     MESSAGE: 'Failed to process drawing data. Please try again.',
                 })
             );

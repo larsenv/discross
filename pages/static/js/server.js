@@ -44,7 +44,7 @@ function toggleClass(el, cls) {
 function getElementsByClass(cls) {
     if (document.querySelectorAll) return document.querySelectorAll('.' + cls);
     if (document.getElementsByClassName) return document.getElementsByClassName(cls);
-    
+
     var res = [];
     var all = document.getElementsByTagName('*');
     for (var i = 0; i < all.length; i++) {
@@ -170,7 +170,7 @@ window.onload = function () {
                                 }
                             }
                         }
-                        
+
                         if (arrow) {
                             arrow.src = '/resources/twemoji/25b6.gif';
                             arrow.alt = '>';
@@ -262,4 +262,3 @@ window.onload = function () {
         }
     }
 };
-

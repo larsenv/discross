@@ -2,7 +2,7 @@
 
 const { PermissionFlagsBits } = require('discord.js');
 const { buildMessagesHtml } = require('./channel');
-const { getClientIP, getTimezoneFromIP } = require('../timezoneUtils');
+const { getClientIP, getTimezoneFromIP } = require('../src/timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
 const {

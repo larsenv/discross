@@ -6,7 +6,7 @@ const {
     getTemplate,
 } = require('./utils.js');
 const escape = require('escape-html');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 
 const index_template = loadAndRenderPageTemplate('index');
 

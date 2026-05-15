@@ -1,10 +1,12 @@
 'use strict';
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const { getOrCreateWebhook } = require('./webhookCache');
 const { parseUserAgent } = require('./userAgentUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const discord = require('discord.js');
+
+const { getTemplate, renderTemplate, render } = require('./utils.js');
 
 exports.sendMeta = async function (bot, req, res, channelId) {
     const discordID = await auth.checkAuth(req, res);
@@ -25,7 +27,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
         if (!member || !member.permissionsIn(chnl).has(discord.PermissionFlagsBits.SendMessages)) {
             res.end(
-                renderTemplate(getTemplate('error-text', 'misc'), {
+                render('misc/error-text', {
                     MESSAGE: "You don't have permission to do that!",
                 })
             );

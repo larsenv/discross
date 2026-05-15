@@ -61,7 +61,7 @@ var emojiShowing = false;
 function showEmoji() {
     var emojiDiv = document.getElementById('emoji');
     if (!emojiDiv) return;
-    
+
     if (emojiShowing) {
         emojiDiv.style.display = 'none';
         emojiShowing = false;
@@ -70,4 +70,3 @@ function showEmoji() {
         emojiShowing = true;
     }
 }
-

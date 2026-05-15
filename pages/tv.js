@@ -2,10 +2,10 @@
 
 const https = require('https');
 const escape = require('escape-html');
-const { renderTemplate, loadAndRenderPageTemplate, getTemplate } = require('./utils.js');
+const { renderTemplate, loadAndRenderPageTemplate, getTemplate, render } = require('./utils.js');
 const he = require('he');
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 
 const TVPASSPORT_HOST = 'www.tvpassport.com';
 const ZIP_MAX_LENGTH = 10;
@@ -573,7 +573,7 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
         var logoHtml = '';
         if (ch.logoUrl) {
             var proxied = proxyImageUrl(ch.logoUrl);
-            logoHtml = renderTemplate(getTemplate('channel-logo-with-image', 'tv'), {
+            logoHtml = render('tv/channel-logo-with-image', {
                 PROXIED_URL: proxied,
             });
         } else {
@@ -587,14 +587,14 @@ function buildChannelGrid(channels, date, zip, lineup, sessionSuffix) {
         );
         var nameHtml = escape(ch.name);
 
-        rowsHtml += renderTemplate(getTemplate('channel-grid-item', 'tv'), {
+        rowsHtml += render('tv/channel-grid-item', {
             STATION_URL: stationUrl,
             LOGO_HTML: logoHtml,
             NAME_HTML: nameHtml,
         });
     }
 
-    return renderTemplate(getTemplate('channel-grid', 'tv'), { ROWS: rowsHtml });
+    return render('tv/channel-grid', { ROWS: rowsHtml });
 }
 
 // Build the HTML schedule table for a station page.
@@ -609,28 +609,26 @@ function buildScheduleHtml(items) {
         var isLast = i === items.length - 1;
         var timeStr = escape(formatTime(item.startTime));
         var durationStr = item.duration
-            ? renderTemplate(getTemplate('duration-html', 'tv'), {
+            ? render('tv/duration-html', {
                   DURATION_STR: escape(item.duration),
               })
             : '';
         var showName = escape(item.showName || '(Unknown)');
         var episodeTitle = item.episodeTitle ? ' &ndash; ' + escape(item.episodeTitle) : '';
-        var rating = item.rating
-            ? renderTemplate(getTemplate('rating-html', 'tv'), { RATING: escape(item.rating) })
-            : '';
+        var rating = item.rating ? render('tv/rating-html', { RATING: escape(item.rating) }) : '';
         var showType = item.showType
-            ? renderTemplate(getTemplate('show-type-html', 'tv'), {
+            ? render('tv/show-type-html', {
                   SHOW_TYPE: escape(item.showType),
               })
             : '';
         var description = item.description
-            ? renderTemplate(getTemplate('description-html', 'tv'), {
+            ? render('tv/description-html', {
                   DESCRIPTION: escape(item.description),
               })
             : '';
         var rowStyle = isLast ? '' : ' style="border-bottom:1px solid #40444b;"';
 
-        rowsHtml += renderTemplate(getTemplate('schedule-row', 'tv'), {
+        rowsHtml += render('tv/schedule-row', {
             ROW_STYLE: rowStyle,
             TIME_STR: timeStr,
             DURATION_HTML: durationStr,
@@ -641,7 +639,7 @@ function buildScheduleHtml(items) {
             DESCRIPTION: description,
         });
     }
-    return renderTemplate(getTemplate('schedule-table', 'tv'), { ROWS: rowsHtml });
+    return render('tv/schedule-table', { ROWS: rowsHtml });
 }
 
 // Helper: get theme class from request.
@@ -775,12 +773,9 @@ async function serveMainPage(
                 if (lineupsResult.statusCode === 200) {
                     var lineupList = parseLineups(lineupsResult.body);
                     if (lineupList.length === 0) {
-                        contentHtml = renderTemplate(
-                            getTemplate('tv-no-providers-zip-error', 'tv'),
-                            {
-                                ZIP_CODE: escape(cleanZip),
-                            }
-                        );
+                        contentHtml = render('tv/tv-no-providers-zip-error', {
+                            ZIP_CODE: escape(cleanZip),
+                        });
                     } else {
                         contentHtml = getTemplate('tv-select-provider-header', 'tv');
                         for (var i = 0; i < lineupList.length; i++) {
@@ -791,7 +786,7 @@ async function serveMainPage(
                                 sessionSuffix
                             );
                             contentHtml +=
-                                renderTemplate(getTemplate('provider-button', 'tv'), {
+                                render('tv/provider-button', {
                                     LINEUP_URL: lineupUrl,
                                     LINEUP_NAME: escape(li.name),
                                 }) + '\n';
@@ -861,7 +856,7 @@ async function serveStationPage(
                 var logoUrl = parseStationLogo(result.body);
                 if (logoUrl) {
                     var proxied = proxyImageUrl(logoUrl);
-                    stationLogoHtml = renderTemplate(getTemplate('station-logo', 'tv'), {
+                    stationLogoHtml = render('tv/station-logo', {
                         PROXIED_URL: proxied,
                     });
                 }

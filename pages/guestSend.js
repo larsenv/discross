@@ -1,6 +1,6 @@
 'use strict';
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');

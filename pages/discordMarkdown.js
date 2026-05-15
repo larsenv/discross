@@ -1,5 +1,5 @@
 'use strict';
-const { renderTemplate, getTemplate } = require('./utils.js');
+const { renderTemplate, getTemplate, render } = require('./utils.js');
 const md = require('markdown-it')({
     breaks: true,
     linkify: true,
@@ -245,12 +245,12 @@ function renderDiscordMarkdown(text, options = {}) {
 
     function resolveNested(str) {
         str = str.replace(/\uE000SPOILER(\d+)\uE001/g, (m, i) => {
-            return renderTemplate(getTemplate('spoiler', 'discordMarkdown'), {
+            return render('discordMarkdown/spoiler', {
                 '{$SPOILER_CONTENT}': md.renderInline(spoilerPlaceholders[parseInt(i, 10)]),
             });
         });
         str = str.replace(/\uE000UNDERLINE(\d+)\uE001/g, (m, i) => {
-            return renderTemplate(getTemplate('underline', 'discordMarkdown'), {
+            return render('discordMarkdown/underline', {
                 CONTENT: md.renderInline(underlinePlaceholders[parseInt(i, 10)]),
             });
         });
@@ -260,13 +260,13 @@ function renderDiscordMarkdown(text, options = {}) {
     let final = resolveNested(rendered);
     final = final.replace(/\uE000HEADER(\d+)\uE001/g, (m, i) => {
         const h = headerPlaceholders[parseInt(i, 10)];
-        return renderTemplate(getTemplate('header', 'discordMarkdown'), {
+        return render('discordMarkdown/header', {
             LEVEL: h.level.toString(),
             CONTENT: resolveNested(md.renderInline(h.content)),
         });
     });
     final = final.replace(/\uE000SUBTEXT(\d+)\uE001/g, (m, i) => {
-        return renderTemplate(getTemplate('subtext', 'discordMarkdown'), {
+        return render('discordMarkdown/subtext', {
             CONTENT: resolveNested(md.renderInline(subtextPlaceholders[parseInt(i, 10)])),
         });
     });
@@ -275,7 +275,7 @@ function renderDiscordMarkdown(text, options = {}) {
         const processed = lines
             .map((l) => (l ? resolveNested(md.renderInline(l)) : '\u00A0'))
             .join(getTemplate('br', 'misc'));
-        return renderTemplate(getTemplate('blockquote', 'discordMarkdown'), {
+        return render('discordMarkdown/blockquote', {
             BAR_COLOR: barColor,
             CONTENT: processed,
         });
@@ -294,35 +294,35 @@ function renderDiscordMarkdown(text, options = {}) {
                 currentLevel++;
             }
             while (level < currentLevel) {
-                const inner = renderTemplate(getTemplate('list', 'discordMarkdown'), {
+                const inner = render('discordMarkdown/list', {
                     CONTENT: html,
                 });
                 html = stack.pop() + inner;
                 currentLevel--;
             }
-            html += renderTemplate(getTemplate('list-item', 'discordMarkdown'), {
+            html += render('discordMarkdown/list-item', {
                 CONTENT: resolveNested(md.renderInline(item.content)),
             });
         });
 
         while (currentLevel > 0) {
-            const inner = renderTemplate(getTemplate('list', 'discordMarkdown'), {
+            const inner = render('discordMarkdown/list', {
                 CONTENT: html,
             });
             html = stack.pop() + inner;
             currentLevel--;
         }
 
-        return renderTemplate(getTemplate('list', 'discordMarkdown'), { CONTENT: html });
+        return render('discordMarkdown/list', { CONTENT: html });
     });
     final = final.replace(/\uE000CODEINLINE(\d+)\uE001/g, (m, i) => {
-        return renderTemplate(getTemplate('inline-code', 'discordMarkdown'), {
+        return render('discordMarkdown/inline-code', {
             CONTENT: escapeHtml(codePlaceholders[parseInt(i, 10)].content),
         });
     });
     final = final.replace(/\uE000CODEBLOCK(\d+)\uE001/g, (m, i) => {
         const item = codePlaceholders[parseInt(i, 10)];
-        return renderTemplate(getTemplate('block-code', 'discordMarkdown'), {
+        return render('discordMarkdown/block-code', {
             LANG_CLASS: item.lang ? ` class="language-${item.lang}"` : '',
             CONTENT: highlightCode(item.content, item.lang),
         });
@@ -427,7 +427,7 @@ function renderDiscordMarkdown(text, options = {}) {
                     ' at ' +
                     formatTime(date);
         }
-        return renderTemplate(getTemplate('timestamp', 'discordMarkdown'), { CONTENT: formatted });
+        return render('discordMarkdown/timestamp', { CONTENT: formatted });
     });
 
     return final;
