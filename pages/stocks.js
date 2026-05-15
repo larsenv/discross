@@ -2,9 +2,10 @@
 
 const escape = require('escape-html');
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const {
     renderTemplate,
+    render,
     getPageThemeAttr,
     httpsGet,
     formatChangePct,
@@ -138,7 +139,7 @@ function renderQuoteRow(quote) {
             ? quote.regularMarketVolume.toLocaleString('en-US')
             : '--';
 
-    return renderTemplate(getTemplate('summary-card', 'stocks'), {
+    return render('stocks/summary-card', {
         NAME: name,
         SYMBOL: symbol,
         PRICE: price,
@@ -161,7 +162,7 @@ function renderTopIndices(quotes) {
             const change = formatChange(quote.regularMarketChange);
             const changePct = formatChangePct(quote.regularMarketChangePercent);
             const color = changeColor(quote.regularMarketChange);
-            return renderTemplate(getTemplate('index-row', 'stocks'), {
+            return render('stocks/index-row', {
                 NAME: name,
                 PRICE: price,
                 COLOR: color,
@@ -169,7 +170,7 @@ function renderTopIndices(quotes) {
                 CHANGE_PCT: changePct,
             });
         });
-    return renderTemplate(getTemplate('indices-table', 'stocks'), {
+    return render('stocks/indices-table', {
         ROWS: rows.join(''),
     });
 }
@@ -188,7 +189,7 @@ exports.processStocks = async function processStocks(req, res) {
             const safeTicker = ticker.slice(0, TICKER_MAX_LENGTH);
             const quote = await fetchStooqQuote(safeTicker);
             return !quote
-                ? renderTemplate(getTemplate('ticker-not-found', 'stocks'), {
+                ? render('stocks/ticker-not-found', {
                       TICKER: escape(safeTicker),
                   })
                 : renderQuoteRow(quote);
@@ -207,7 +208,7 @@ exports.processStocks = async function processStocks(req, res) {
     });
 
     const credit = getTemplate('stooq-credit', 'stocks');
-    const menuOptions = renderTemplate(logged_in_template, {
+    const menuOptions = render('index/logged-in', {
         USER: escape(await auth.getUsername(discordID)),
     });
 

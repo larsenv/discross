@@ -1,7 +1,7 @@
 'use strict';
 // Shared utility functions for processing and rendering reactions
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
-const { renderTemplate, getTemplate } = require('./utils.js');
+const { renderTemplate, getTemplate, render } = require('./utils.js');
 
 // Function to process and format reactions
 function processReactions(
@@ -42,7 +42,7 @@ function processReactions(
                             const extension =
                                 emoji.animated && animationsCookie === 1 ? 'gif' : 'png';
                             cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
-                            return renderTemplate(getTemplate('emoji-custom', 'channel'), {
+                            return render('channel/emoji-custom', {
                                 EMOJI_ID: emoji.id,
                                 EXT: extension,
                                 PX: '21',
@@ -54,7 +54,7 @@ function processReactions(
                     if (emoji.name) {
                         if (imagesCookie === 1) {
                             const output = unicodeToTwemojiCode(emoji.name);
-                            return renderTemplate(getTemplate('emoji-twemoji', 'channel'), {
+                            return render('channel/emoji-twemoji', {
                                 CODE: output,
                                 PX: '21',
                                 STYLE: 'width: 21px; height: 21px; vertical-align: middle;',

@@ -1,12 +1,12 @@
-<div class="message-input-bar-wrapper" style="background: {$COLOR}; border-radius: 8px; padding: 4px; margin: 8px 0; width: 100%; box-sizing: border-box;">
-  <table style="width: 100%; margin: 0; padding: 0; border-collapse: collapse">
+<div class="message-input-bar-wrapper">
+  <table>
     <tr>
       <td style="width: 100%; padding: 0">
-        <textarea name="message" id="message" class="message-input-field" style=" width: 100%; max-width: none; background: transparent; border: none; outline: none; height: 41px; padding: 10px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 19px; box-sizing: border-box; resize: none; overflow: hidden; display: block; margin: 0; " placeholder="Message {$CHANNEL_NAME}" onkeydown="return handleMessageKeydown(event);" oninput="autoResize(this)"></textarea>
+        <textarea name="message" id="message" class="message-input-field" placeholder="Message {$CHANNEL_NAME}" onkeydown="return handleMessageKeydown(event);" oninput="autoResize(this)" rows="1"></textarea>
       </td>
-      <td style="padding: 0">
+      <td style="padding: 0 4px 0 0">
         <input type="hidden" id="nonce" name="nonce" value="" />
-        <input type="submit" class="send-button-input" value="Send" style=" border: none; border-radius: 4px; color: white; padding: 0px 24px; cursor: pointer; font-family: rodin, Whitney, Helvetica Neue, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; height: 38px; line-height: 38px; text-align: center; white-space: nowrap; background: rgb(88, 101, 242); " onmouseover="this.style.background = '#4752c4'" onmouseout="this.style.background = '#5865f2'" />
+        <input type="submit" class="send-button-input" value="Send" />
       </td>
     </tr>
   </table>

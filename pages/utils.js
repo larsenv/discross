@@ -14,7 +14,8 @@ const fs = require('fs');
  * @returns {string} The template content.
  */
 function getTemplate(name, folder = 'channel') {
-    const filePath = `pages/templates/${folder}/${name}.html`;
+    const folderPath = folder ? `${folder}/` : '';
+    const filePath = `pages/templates/${folderPath}${name}.html`;
     try {
         const content = fs.readFileSync(filePath, 'utf-8');
         // Remove #end comments that might be present in some templates
@@ -34,10 +35,11 @@ function getTemplate(name, folder = 'channel') {
  * @returns {string} The rendered page content.
  */
 function loadAndRenderPageTemplate(name, folder = '', data = {}) {
-    const headPartial = getTemplate('head', 'partials');
-    const mainTemplate = getTemplate(name, folder);
-    const templateWithHead = renderTemplate(mainTemplate, { COMMON_HEAD: headPartial });
-    return renderTemplate(templateWithHead, data);
+    const path = folder ? `${folder}/${name}` : `/${name}`;
+    return render(path, {
+        ...data,
+        COMMON_HEAD: getTemplate('head', 'partials'),
+    });
 }
 
 /**
@@ -278,7 +280,7 @@ function buildEmojiToggleUrl(baseUrl, emojiOpen, sessionParam) {
 function buildEmojiExpandUrl(baseUrl, expanded, sessionParam) {
     const separator = sessionParam ? '&' : '?';
     const base = baseUrl + (sessionParam || '');
-    
+
     // Ensure emoji=1 is present
     let url = base;
     if (!url.includes('emoji=1')) {
@@ -442,9 +444,41 @@ function reportError(message, error) {
     console.error(message, error);
 }
 
+/**
+ * Loads and renders a template in one call.
+ *
+ * @param {string} path - Template path (e.g. 'channel/input' or 'input'). Defaults to 'channel/' if no folder specified.
+ * @param {object} [data={}] - Data to inject into the template.
+ * @returns {string} The rendered HTML.
+ */
+function render(path, data = {}) {
+    let parts;
+    const isAbsolute = path.startsWith('/');
+
+    if (isAbsolute) {
+        parts = path.substring(1).split('/');
+    } else {
+        parts = path.split('/');
+    }
+
+    if (parts.length === 1 && !isAbsolute) {
+        // Default to 'channel' folder for simple paths like 'input'
+        return renderTemplate(getTemplate(parts[0], 'channel'), data);
+    }
+
+    // Last part is the filename, everything before is the folder path
+    const name = parts.pop();
+    const folder = parts.join('/');
+
+    // If absolute, folder can be empty (top-level). If relative, default to 'channel'.
+    const finalFolder = isAbsolute ? folder : folder || 'channel';
+    return renderTemplate(getTemplate(name, finalFolder), data);
+}
+
 module.exports = {
     getTemplate,
     renderTemplate,
+    render,
     loadAndRenderPageTemplate,
     isValidSnowflake,
     isBotReady,

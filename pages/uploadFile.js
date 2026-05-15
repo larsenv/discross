@@ -1,11 +1,11 @@
 'use strict';
 const fs = require('fs');
 const https = require('https');
-const bot = require('../bot.js');
+const bot = require('../src/bot.js');
 const discord = require('discord.js');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const { formidable } = require('formidable');
-const { isBotReady } = require('./utils.js');
+const { isBotReady, getTemplate, renderTemplate, render } = require('./utils.js');
 const { getOrCreateWebhook } = require('./webhookCache');
 const mime = require('mime-types');
 
@@ -39,8 +39,8 @@ async function uploadToTransfer(filePath, filename) {
                     'Content-Length': stats.size,
                     'Content-Type': contentType,
                 },
-                // Set a high timeout for large files (15 minutes = 15 * 60 * 1000 ms)
-                timeout: 15 * 60 * 1000,
+                // Set a high timeout for large files (30 minutes = 30 * 60 * 1000 ms)
+                timeout: 30 * 60 * 1000,
             };
 
             const req = https.request(options, (res) => {
@@ -101,7 +101,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                 if (isTraditionalSubmission) {
                     res.writeHead(503, { 'Content-Type': 'text/html' });
                     res.end(
-                        renderTemplate(getTemplate('script-alert-back', 'misc'), {
+                        render('misc/script-alert-back', {
                             MESSAGE: 'Bot is not connected',
                         })
                     );
@@ -125,7 +125,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         if (isTraditionalSubmission) {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
                             res.end(
-                                renderTemplate(getTemplate('script-alert-back', 'misc'), {
+                                render('misc/script-alert-back', {
                                     MESSAGE: 'Failed to parse upload',
                                 })
                             );
@@ -147,7 +147,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(400, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
+                                    render('misc/script-alert-back', {
                                         MESSAGE: 'Invalid channel',
                                     })
                                 );
@@ -160,6 +160,34 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             resolve();
                             return;
                         }
+
+                        // Get the file object safely
+                        const fileObj = files.file || Object.values(files)[0]; // Fallback if input name isn't 'file'
+                        const file = Array.isArray(fileObj) ? fileObj[0] : fileObj;
+
+                        if (!file || file.size === 0) {
+                            const errorMsg = !file ? 'No file provided' : 'Uploaded file is empty';
+                            console.log(`Upload error: ${errorMsg}`);
+                            if (isTraditionalSubmission) {
+                                res.writeHead(400, { 'Content-Type': 'text/html' });
+                                res.end(
+                                    render('misc/script-alert-back', {
+                                        MESSAGE: errorMsg,
+                                    })
+                                );
+                            } else {
+                                res.writeHead(400, { 'Content-Type': 'application/json' });
+                                res.end(
+                                    JSON.stringify({ success: false, error: errorMsg })
+                                );
+                            }
+                            resolve();
+                            return;
+                        }
+
+                        const originalFilename = file.originalFilename || file.name || 'uploaded_file';
+                        const isMKV = originalFilename.toLowerCase().endsWith('.mkv');
+
                         const messageText = Array.isArray(fields.message)
                             ? fields.message[0]
                             : fields.message;
@@ -172,26 +200,12 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             ? rawSessionId
                             : '';
 
-                        // Get the file object safely
-                        const fileObj = files.file || Object.values(files)[0]; // Fallback if input name isn't 'file'
-                        const file = Array.isArray(fileObj) ? fileObj[0] : fileObj;
+                        // Log upload start
+                        console.log(`Starting upload to transfer service: ${originalFilename} (${file.size} bytes)`);
 
-                        if (!file) {
-                            if (isTraditionalSubmission) {
-                                res.writeHead(400, { 'Content-Type': 'text/html' });
-                                res.end(
-                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
-                                        MESSAGE: 'No file provided',
-                                    })
-                                );
-                            } else {
-                                res.writeHead(400, { 'Content-Type': 'application/json' });
-                                res.end(
-                                    JSON.stringify({ success: false, error: 'No file provided' })
-                                );
-                            }
-                            resolve();
-                            return;
+                        // Basic sanity check for common file types
+                        if (isMKV && file.size < 1024 * 50) { // MKV headers alone are usually a few KB, but 50KB is a very safe "is this even a video" floor
+                            console.warn(`Warning: MKV file ${originalFilename} is suspiciously small (${file.size} bytes).`);
                         }
 
                         // SUPPORT BOTH VERSIONS OF FORMIDABLE (v1 uses .path, v2/v3 uses .filepath)
@@ -208,7 +222,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(403, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
+                                    render('misc/script-alert-back', {
                                         MESSAGE: 'No permission to send messages',
                                     })
                                 );
@@ -236,7 +250,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(403, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
+                                    render('misc/script-alert-back', {
                                         MESSAGE:
                                             'Failed to send message. Discross needs "Manage Webhooks" permission.',
                                     })
@@ -270,7 +284,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                                     'Failed to upload file: ' + uploadError.message
                                 );
                                 res.end(
-                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
+                                    render('misc/script-alert-back', {
                                         MESSAGE: 'Failed to upload file: ' + uploadError.message,
                                     })
                                 );
@@ -325,7 +339,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
+                                    render('misc/script-alert-back', {
                                         MESSAGE: 'Error: ' + error.message,
                                     })
                                 );
@@ -348,7 +362,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             if (isTraditionalSubmission) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
                 res.end(
-                    renderTemplate(getTemplate('script-alert-back', 'misc'), {
+                    render('misc/script-alert-back', {
                         MESSAGE: 'Internal Server Error',
                     })
                 );

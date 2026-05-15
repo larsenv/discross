@@ -9,8 +9,8 @@ pages/static/ico/server/*
 .DS_Store
 package-lock.json
 .env
-db/discross.dbtoken.txt
-.DS_Store
+db/
+token.txt
 docs/
 .claude/
 .codex/
@@ -20,4 +20,3 @@ docs/
 .mcp.json
 opencode.json
 todo.md
-db/

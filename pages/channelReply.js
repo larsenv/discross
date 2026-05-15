@@ -2,13 +2,18 @@
 const escape = require('escape-html');
 const { PermissionFlagsBits } = require('discord.js');
 const { getDisplayName } = require('./memberUtils');
-const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
+const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../src/timezoneUtils');
 const { buildMessagesHtml } = require('./channel');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
-const { getSkinToneSelectorHTML, getQuickEmojiHTML, getExpandedEmojiHTML } = require('./emojiUtils');
+const {
+    getSkinToneSelectorHTML,
+    getQuickEmojiHTML,
+    getExpandedEmojiHTML,
+} = require('./emojiUtils');
 const notFound = require('./notFound.js');
 const {
     renderTemplate,
+    render,
     isBotReady,
     parseCookies,
     resolveTheme,
@@ -90,11 +95,15 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     const urlEmoji = parsedUrl.searchParams.get('emoji');
     const urlExpanded = parsedUrl.searchParams.get('expanded');
 
-    const { whiteThemeCookie, images: imagesCookieValue, emojiSkinTone: cookieSkinTone } = parseCookies(req);
+    const {
+        whiteThemeCookie,
+        images: imagesCookieValue,
+        emojiSkinTone: cookieSkinTone,
+    } = parseCookies(req);
 
     // Handle Skin Tone
     const querySkinTone = parsedUrl.searchParams.get('skinTone');
-    const skinTone = querySkinTone !== null ? querySkinTone : (cookieSkinTone || '');
+    const skinTone = querySkinTone !== null ? querySkinTone : cookieSkinTone || '';
 
     if (querySkinTone !== null) {
         res.setHeader('Set-Cookie', `emojiSkinTone=${querySkinTone}; Path=/; Max-Age=31536000`);
@@ -162,11 +171,11 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
             let serverEmojis = [];
             let serverEmojisJSON = '[]';
             if (chnl.guild && chnl.guild.emojis && chnl.guild.emojis.cache) {
-                serverEmojis = chnl.guild.emojis.cache.map(e => ({
+                serverEmojis = chnl.guild.emojis.cache.map((e) => ({
                     id: e.id,
                     name: e.name,
                     animated: e.animated,
-                    url: e.imageURL()
+                    url: e.imageURL(),
                 }));
                 serverEmojisJSON = JSON.stringify(serverEmojis);
             }
@@ -176,14 +185,24 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
                 COMMON_HEAD: getTemplate('head', 'partials'),
                 SERVER_ID: chnl.guild.id,
                 CHANNEL_ID: chnl.id,
-                EMOJI_PICKER: renderTemplate(getTemplate('emoji-picker', 'partials'), {
+                EMOJI_PICKER: render('partials/emoji-picker', {
                     SERVER_EMOJIS_JSON: serverEmojisJSON,
-                    SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(args[3], urlEmoji === '1', urlExpanded === '1', sessionParam),
+                    SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(
+                        args[3],
+                        urlEmoji === '1',
+                        urlExpanded === '1',
+                        sessionParam
+                    ),
                     SKIN_TONE: skinTone,
                     EMOJI_OPEN: urlExpanded === '1' ? 'open' : '',
-                    EMOJI_EXPAND_URL: buildEmojiExpandUrl(args[3], urlExpanded === '1', sessionParam),
+                    EMOJI_EXPAND_URL: buildEmojiExpandUrl(
+                        args[3],
+                        urlExpanded === '1',
+                        sessionParam
+                    ),
                     EMOJI_QUICK_HTML: getQuickEmojiHTML(skinTone),
-                    EMOJI_EXPANDED_HTML: urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : ''
+                    EMOJI_EXPANDED_HTML:
+                        urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : '',
                 }),
             });
 
@@ -302,7 +321,10 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
     } catch (error) {
         console.error(error);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        if (error.message && error.message.toString().includes('error reading from remote stream')) {
+        if (
+            error.message &&
+            error.message.toString().includes('error reading from remote stream')
+        ) {
             res.end(getTemplate('proxy-timeout-error', 'misc'));
         } else {
             res.end(getTemplate('generic-error', 'misc'));

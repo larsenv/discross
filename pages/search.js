@@ -2,7 +2,7 @@
 
 const escape = require('escape-html');
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const {
     renderTemplate,
     getPageThemeAttr,

@@ -1,9 +1,9 @@
 'use strict';
 const discord = require('discord.js');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { isBotReady, resolveMentions } = require('./utils.js');
+const { isBotReady, resolveMentions, getTemplate, renderTemplate, render } = require('./utils.js');
 
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
     try {
@@ -33,7 +33,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             if (!member) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
                 res.end(
-                    renderTemplate(getTemplate('error-text', 'misc'), {
+                    render('misc/error-text', {
                         MESSAGE:
                             'Failed to verify user permissions. Please ensure you have access to this channel or try again later.',
                     })
@@ -44,7 +44,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
                 res.end(
-                    renderTemplate(getTemplate('error-text', 'misc'), {
+                    render('misc/error-text', {
                         MESSAGE: "You don't have permission to do that!",
                     })
                 );
@@ -65,7 +65,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             if (reply_message.channelId !== channel.id) {
                 res.writeHead(400, { 'Content-Type': 'text/html' });
                 res.end(
-                    renderTemplate(getTemplate('error-text', 'misc'), {
+                    render('misc/error-text', {
                         MESSAGE: 'Reply message does not belong to this channel',
                     })
                 );

@@ -1,10 +1,10 @@
 'use strict';
 const escape = require('escape-html');
 const { renderDiscordMarkdown } = require('./discordMarkdown');
-const { formatDateWithTimezone } = require('../timezoneUtils');
+const { formatDateWithTimezone } = require('../src/timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText, cacheCustomEmoji } = require('./emojiUtils');
-const { renderTemplate, parseCookies, getTemplate } = require('./utils.js');
+const { renderTemplate, parseCookies, getTemplate, render } = require('./utils.js');
 
 const embed_template = getTemplate('embed', 'message');
 
@@ -49,7 +49,7 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
         const emojiExt = animated && animationsCookie === 1 ? 'gif' : 'png';
         return acc.replace(
             match[0],
-            renderTemplate(getTemplate('emoji-custom', 'channel'), {
+            render('channel/emoji-custom', {
                 EMOJI_ID: emojiId,
                 EXT: emojiExt,
                 PX: '20',
@@ -96,7 +96,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
 
             // Process embed author
             const authorContent = embed.author
-                ? renderTemplate(getTemplate('author', 'embed'), {
+                ? render('embed/author', {
                       COLOR: embedHead,
                       NAME: escape(normalizeWeirdUnicode(embed.author.name)),
                   })
@@ -104,7 +104,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             const authorHtml =
                 embed.author && authorContent
                     ? embed.author.url
-                        ? renderTemplate(getTemplate('author-link', 'embed'), {
+                        ? render('embed/author-link', {
                               URL: escape(embed.author.url),
                               CONTENT: authorContent,
                           })
@@ -114,15 +114,13 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             // Process embed title
             const titleContent = embed.title
                 ? embed.url
-                    ? renderTemplate(getTemplate('title-link', 'embed'), {
+                    ? render('embed/title-link', {
                           URL: escape(embed.url),
                           CONTENT: escape(normalizeWeirdUnicode(embed.title)),
                       })
                     : escape(normalizeWeirdUnicode(embed.title))
                 : '';
-            const titleHtml = titleContent
-                ? renderTemplate(getTemplate('title', 'embed'), { CONTENT: titleContent })
-                : '';
+            const titleHtml = titleContent ? render('embed/title', { CONTENT: titleContent }) : '';
 
             // Process embed description with emoji support (#11)
             const processedDescription = embed.description
@@ -133,7 +131,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                   )
                 : null;
             const descriptionHtml = processedDescription
-                ? renderTemplate(getTemplate('description', 'embed'), {
+                ? render('embed/description', {
                       COLOR: embedText,
                       CONTENT: processedDescription,
                   })
@@ -163,7 +161,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                                 rowOpen = false;
                                 inlineCount = 0;
                             }
-                            body += renderTemplate(getTemplate('field-block', 'embed'), {
+                            body += render('embed/field-block', {
                                 HEAD_COLOR: embedHead,
                                 NAME: renderedName,
                                 TEXT_COLOR: embedText,
@@ -175,7 +173,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                                 rowOpen = true;
                                 inlineCount = 0;
                             }
-                            body += renderTemplate(getTemplate('field-inline', 'embed'), {
+                            body += render('embed/field-inline', {
                                 HEAD_COLOR: embedHead,
                                 NAME: renderedName,
                                 TEXT_COLOR: embedText,
@@ -194,7 +192,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                     { body: '', rowOpen: false, inlineCount: 0 }
                 );
                 const closingTag = lastRowOpen ? getTemplate('row-close', 'embed') : '';
-                return renderTemplate(getTemplate('fields-table', 'embed'), {
+                return render('embed/fields-table', {
                     BODY: tableBody + closingTag,
                 });
             })();
@@ -202,7 +200,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             // Process embed image (#29 - restore image rendering)
             const imageHtml =
                 embed.image && imagesCookie === 1
-                    ? renderTemplate(getTemplate('image', 'embed'), {
+                    ? render('embed/image', {
                           URL: escape(
                               proxyExternalImageUrl(embed.image.url || embed.image.proxyURL)
                           ),
@@ -213,7 +211,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             // Thumbnail should be positioned BEFORE title/description so it floats to top-right
             const thumbnailHtml =
                 embed.thumbnail && imagesCookie === 1
-                    ? renderTemplate(getTemplate('thumbnail', 'embed'), {
+                    ? render('embed/thumbnail', {
                           URL: escape(
                               proxyExternalImageUrl(embed.thumbnail.url || embed.thumbnail.proxyURL)
                           ),
@@ -225,26 +223,26 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                 if (!embed.footer && !embed.timestamp) return '';
                 const footerIconHtml =
                     embed.footer && embed.footer.icon_url && imagesCookie === 1
-                        ? renderTemplate(getTemplate('footer-icon', 'embed'), {
+                        ? render('embed/footer-icon', {
                               URL: proxyExternalImageUrl(embed.footer.icon_url),
                           })
                         : '';
                 const footerText = embed.footer
-                    ? renderTemplate(getTemplate('footer-text', 'embed'), {
+                    ? render('embed/footer-text', {
                           CONTENT: escape(normalizeWeirdUnicode(embed.footer.text)),
                       })
                     : '';
                 const separator =
                     embed.footer && embed.timestamp ? getTemplate('footer-separator', 'embed') : '';
                 const timestamp = embed.timestamp
-                    ? renderTemplate(getTemplate('footer-text', 'embed'), {
+                    ? render('embed/footer-text', {
                           CONTENT: formatDateWithTimezone(
                               new Date(embed.timestamp),
                               clientTimezone
                           ),
                       })
                     : '';
-                return renderTemplate(getTemplate('message-footer', 'misc'), {
+                return render('misc/message-footer', {
                     FOOTER_ICON: footerIconHtml,
                     FOOTER_TEXT: footerText,
                     SEPARATOR: separator,
@@ -265,7 +263,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             });
 
             // Margin right wrapper
-            return renderTemplate(getTemplate('wrapper', 'embed'), { CONTENT: embedHtml });
+            return render('embed/wrapper', { CONTENT: embedHtml });
         })
         .join('');
 

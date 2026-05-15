@@ -3,9 +3,9 @@ const https = require('https');
 const escape = require('escape-html');
 const crypto = require('crypto');
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const notFound = require('./notFound.js');
-const { getTimezoneFromIP, formatDateWithTimezone } = require('../timezoneUtils');
+const { getTimezoneFromIP, formatDateWithTimezone } = require('../src/timezoneUtils');
 const {
     renderTemplate,
     getPageThemeAttr,

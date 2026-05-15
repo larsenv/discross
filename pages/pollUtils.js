@@ -1,5 +1,5 @@
 'use strict';
-const { renderTemplate, getTemplate } = require('./utils.js');
+const { renderTemplate, getTemplate, render } = require('./utils.js');
 
 const poll_template = getTemplate('poll', 'message');
 const poll_answer_template = getTemplate('poll-answer', 'message');
@@ -8,7 +8,7 @@ function buildPollEmojiHtml(emoji, imagesCookie) {
     if (!emoji) return '';
     if (emoji.id && imagesCookie === 1) {
         const extension = emoji.animated ? 'gif' : 'png';
-        return renderTemplate(getTemplate('poll-emoji-custom', 'message/partials'), {
+        return render('message/partials/poll-emoji-custom', {
             EMOJI_ID: emoji.id,
             EXT: extension,
         });
@@ -23,12 +23,12 @@ function buildPollEmojiHtml(emoji, imagesCookie) {
             }
         }
         const emojiCode = codePoints.join('-');
-        return renderTemplate(getTemplate('poll-emoji-twemoji', 'message/partials'), {
+        return render('message/partials/poll-emoji-twemoji', {
             CODE: emojiCode,
         });
     }
     if (emoji.name) {
-        return renderTemplate(getTemplate('poll-emoji-text', 'message/partials'), {
+        return render('message/partials/poll-emoji-text', {
             NAME: emoji.name,
         });
     }
@@ -93,7 +93,7 @@ function processPoll(poll, imagesCookie) {
         return pollHtml;
     } catch (error) {
         console.error('Error processing poll:', error);
-        return renderTemplate(getTemplate('poll-error', 'message/partials'), {
+        return render('message/partials/poll-error', {
             MESSAGE: 'Error displaying poll',
         });
     }

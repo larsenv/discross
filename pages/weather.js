@@ -4,9 +4,10 @@ const https = require('https');
 const zlib = require('zlib');
 const escape = require('escape-html');
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const {
     renderTemplate,
+    render,
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
@@ -99,7 +100,7 @@ function formatHour(dateStr) {
 function iconImg(code, size) {
     const file = WEATHER_ICONS[parseInt(code, 10)] || '2600';
     const s = size || 24;
-    return renderTemplate(getTemplate('icon', 'weather'), {
+    return render('weather/icon', {
         FILE: file,
         SIZE: s.toString(),
     });
@@ -110,7 +111,7 @@ function buildNavButtons(city, activeView, urlSessionID) {
     const sessionSuffix = urlSessionID ? `&sessionID=${encodeURIComponent(urlSessionID)}` : '';
     const rows = VIEWS.map((v) => {
         const cls = v.id === activeView ? 'discross-button' : 'discross-button secondary';
-        return renderTemplate(getTemplate('nav-button', 'weather'), {
+        return render('weather/nav-button', {
             CITY_ENC: cityEnc,
             VIEW_ID: v.id,
             SESSION_SUFFIX: sessionSuffix,
@@ -118,7 +119,7 @@ function buildNavButtons(city, activeView, urlSessionID) {
             LABEL: v.label,
         });
     });
-    return renderTemplate(getTemplate('nav-table', 'weather'), { ROWS: rows.join('') });
+    return render('weather/nav-table', { ROWS: rows.join('') });
 }
 
 const weather_template = loadAndRenderPageTemplate('weather');
@@ -209,7 +210,7 @@ function renderCurrent(cond) {
     const dewPointF = c.DewPoint?.Imperial?.Value ?? '--';
     const dewPointC = c.DewPoint?.Metric?.Value ?? '--';
 
-    return renderTemplate(getTemplate('current-view', 'weather'), {
+    return render('weather/current-view', {
         ICON_HTML: iconImg(iconCode, 64),
         WEATHER_TEXT: weatherText,
         TEMP_F: tempF.toString(),
@@ -239,7 +240,7 @@ function renderToday(daily) {
                 `AccuWeather daily forecast API returned HTTP ${daily.status}. Response:`,
                 JSON.stringify(daily.data)
             );
-        return renderTemplate(getTemplate('forecast-error', 'weather'), { VIEW_NAME: "Today's" });
+        return render('weather/forecast-error', { VIEW_NAME: "Today's" });
     }
     const today = daily.data.DailyForecasts[0];
     const headline = daily.data.Headline?.Text ? escape(daily.data.Headline.Text) : '';
@@ -254,11 +255,9 @@ function renderToday(daily) {
     const dayPrecip = today.Day?.PrecipitationProbability ?? '--';
     const nightPrecip = today.Night?.PrecipitationProbability ?? '--';
 
-    const headlineHtml = headline
-        ? renderTemplate(getTemplate('headline', 'weather'), { TEXT: headline })
-        : '';
+    const headlineHtml = headline ? render('weather/headline', { TEXT: headline }) : '';
 
-    return renderTemplate(getTemplate('today-view', 'weather'), {
+    return render('weather/today-view', {
         HEADLINE_HTML: headlineHtml,
         DAY_ICON_HTML: iconImg(dayIcon, 32),
         DAY_PHRASE: dayPhrase,
@@ -280,7 +279,7 @@ function renderHourly(hourly) {
                 `AccuWeather hourly forecast API returned HTTP ${hourly.status}. Response:`,
                 JSON.stringify(hourly.data)
             );
-        return renderTemplate(getTemplate('forecast-error', 'weather'), { VIEW_NAME: 'Hourly' });
+        return render('weather/forecast-error', { VIEW_NAME: 'Hourly' });
     }
     const rows = hourly.data.map((hour) => {
         const time = formatHour(hour.DateTime);
@@ -296,7 +295,7 @@ function renderHourly(hourly) {
             windMph !== null && windMph !== undefined
                 ? ` &mdash; Wind: ${windMph} mph / ${windKmh} km/h`
                 : '';
-        return renderTemplate(getTemplate('hourly-row', 'weather'), {
+        return render('weather/hourly-row', {
             TIME: time,
             ICON_HTML: iconImg(iconCode, 24),
             TEMP_F: tempF.toString(),
@@ -306,7 +305,7 @@ function renderHourly(hourly) {
             PRECIP_PROB: precipProb.toString(),
         });
     });
-    return renderTemplate(getTemplate('table', 'weather'), { ROWS: rows.join('') });
+    return render('weather/table', { ROWS: rows.join('') });
 }
 
 function renderDaily(daily) {
@@ -316,7 +315,7 @@ function renderDaily(daily) {
                 `AccuWeather daily forecast API returned HTTP ${daily.status}. Response:`,
                 JSON.stringify(daily.data)
             );
-        return renderTemplate(getTemplate('forecast-error', 'weather'), { VIEW_NAME: '5-day' });
+        return render('weather/forecast-error', { VIEW_NAME: '5-day' });
     }
     const rows = daily.data.DailyForecasts.map((day, i) => {
         const isLast = i === daily.data.DailyForecasts.length - 1;
@@ -327,7 +326,7 @@ function renderDaily(daily) {
         const lowC = fToC(lowF);
         const dayIcon = day.Day?.Icon || 1;
         const dayPhrase = escape(day.Day?.IconPhrase || '');
-        return renderTemplate(getTemplate('daily-row', 'weather'), {
+        return render('weather/daily-row', {
             ROW_STYLE: isLast ? '' : ' style="border-bottom:1px solid #40444b;"',
             DAY_LABEL: dayLabel,
             ICON_HTML: iconImg(dayIcon, 24),
@@ -338,7 +337,7 @@ function renderDaily(daily) {
             LOW_C: lowC.toString(),
         });
     });
-    return renderTemplate(getTemplate('table', 'weather'), { ROWS: rows.join('') });
+    return render('weather/table', { ROWS: rows.join('') });
 }
 
 exports.processWeather = async function processWeather(req, res) {
@@ -367,12 +366,12 @@ exports.processWeather = async function processWeather(req, res) {
                     'AccuWeather location API returned 401 (unauthorized). Check API key. Response:',
                     JSON.stringify(locResult.data)
                 );
-                weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+                weatherHtml = render('weather/partials/error-message', {
                     MESSAGE: 'Weather service unavailable. Please try again later.',
                 });
             } else if (locResult.status === 429) {
                 console.error('AccuWeather location API returned 429 (rate limited).');
-                weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+                weatherHtml = render('weather/partials/error-message', {
                     MESSAGE: 'Too many requests. Please wait a moment and try again.',
                 });
             } else if (locResult.status !== 200) {
@@ -380,11 +379,11 @@ exports.processWeather = async function processWeather(req, res) {
                     `AccuWeather location API returned HTTP ${locResult.status}. Response:`,
                     JSON.stringify(locResult.data)
                 );
-                weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+                weatherHtml = render('weather/partials/error-message', {
                     MESSAGE: 'Weather service unavailable. Please try again later.',
                 });
             } else if (!Array.isArray(locResult.data) || locResult.data.length === 0) {
-                weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+                weatherHtml = render('weather/partials/error-message', {
                     MESSAGE: 'City not found. Please try a different city name.',
                 });
             } else {
@@ -402,7 +401,7 @@ exports.processWeather = async function processWeather(req, res) {
                 navHtml = buildNavButtons(trimmedCity, view, urlSessionID);
 
                 // Location header
-                weatherHtml = renderTemplate(getTemplate('location-header', 'weather'), {
+                weatherHtml = render('weather/location-header', {
                     LOCATION: locationDisplay,
                 });
 
@@ -440,13 +439,13 @@ exports.processWeather = async function processWeather(req, res) {
             }
         } catch (err) {
             console.error('Weather API error:', err);
-            weatherHtml = renderTemplate(getTemplate('error-message', 'weather/partials'), {
+            weatherHtml = render('weather/partials/error-message', {
                 MESSAGE: 'Unable to fetch weather data. Please try again later.',
             });
         }
     }
 
-    const menuOptions = renderTemplate(logged_in_template, {
+    const menuOptions = render('index/logged-in', {
         USER: escape(await auth.getUsername(discordID)),
     });
 

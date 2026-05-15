@@ -13,7 +13,7 @@ const {
     areDifferentDays,
     formatForwardedTimestamp,
     replaceDiscordTimestamps,
-} = require('../timezoneUtils');
+} = require('../src/timezoneUtils');
 const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
@@ -21,7 +21,7 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode, cacheCustomEmoji, getSkinToneSelectorHTML } = require('./emojiUtils');
 const emojiRegex = require('./twemojiRegex').regex;
 const notFound = require('./notFound.js');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const { parseUserAgent } = require('./userAgentUtils.js');
 const {
     isBotReady,
@@ -32,6 +32,7 @@ const {
     buildEmojiToggleUrl,
     getTemplate,
     renderTemplate,
+    render,
 } = require('./utils.js');
 
 // ---------------------------------------------------------------------------
@@ -278,7 +279,7 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
                 galleryContent += renderTemplate(tmpl_gallery_item, { IMAGE_URL: data.url });
             }
         }
-        result += renderTemplate(getTemplate('image-gallery', 'channel'), {
+        result += render('channel/image-gallery', {
             COUNT: imageData.length,
             GALLERY_CONTENT: galleryContent,
         });
@@ -342,7 +343,7 @@ function buildProxiedImageTag(
 ) {
     if (!rawUrl || typeof rawUrl !== 'string') return { proxied: '', tag: '' };
     const proxied = `/imageProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
-    const tag = renderTemplate(getTemplate('image-tag', 'channel'), {
+    const tag = render('channel/image-tag', {
         IMAGE_SRC: proxied,
         CLASS: style,
         IMAGE_ALT: alt,
@@ -590,44 +591,44 @@ async function renderDiscordEvents(messagetext, item, bot, imagesCookie, clientT
             const iconUrl = guild.iconURL({ size: 128 });
             const guildIconHtml =
                 iconUrl && imagesCookie === 1
-                    ? renderTemplate(getTemplate('event-guild-icon', 'embed'), {
+                    ? render('embed/event-guild-icon', {
                           ICON_URL: `/imageProxy/external/${Buffer.from(iconUrl).toString('base64')}`,
                       })
-                    : renderTemplate(getTemplate('event-guild-icon-none', 'embed'), {});
+                    : render('embed/event-guild-icon-none', {});
 
             let locationHtml = '';
             if (event.entityMetadata?.location) {
-                locationHtml = renderTemplate(getTemplate('event-location-external', 'embed'), {
+                locationHtml = render('embed/event-location-external', {
                     LOCATION: escape(event.entityMetadata.location),
                 });
             } else if (event.channelId) {
                 const chan = bot.client.channels.cache.get(event.channelId);
-                locationHtml = renderTemplate(getTemplate('event-location-voice', 'embed'), {
+                locationHtml = render('embed/event-location-voice', {
                     CHANNEL_NAME: escape(chan?.name || 'Voice Channel'),
                 });
             }
 
             const descriptionHtml = event.description
-                ? renderTemplate(getTemplate('event-description', 'embed'), {
+                ? render('embed/event-description', {
                       DESCRIPTION: renderDiscordMarkdown(event.description),
                   })
                 : '';
 
-            const interestedHtml = renderTemplate(getTemplate('event-interested-count', 'embed'), {
+            const interestedHtml = render('embed/event-interested-count', {
                 COUNT: (event.userCount || 0).toLocaleString(),
             });
 
             const coverUrl = event.coverImageURL({ size: 512 });
             const imageHtml =
                 coverUrl && imagesCookie === 1
-                    ? renderTemplate(getTemplate('event-image', 'embed'), {
+                    ? render('embed/event-image', {
                           IMAGE_URL: `/imageProxy/external/${Buffer.from(coverUrl).toString(
                               'base64'
                           )}`,
                       })
                     : '';
 
-            const eventEmbed = renderTemplate(getTemplate('event', 'embed'), {
+            const eventEmbed = render('embed/event', {
                 GUILD_ICON: guildIconHtml,
                 GUILD_NAME: escape(guild.name),
                 EVENT_NAME: escape(event.name),
@@ -670,12 +671,12 @@ async function renderDiscordInvites(messagetext, item, bot, imagesCookie) {
             const iconUrl = invite.guild.iconURL({ size: 128 });
             const iconHtml =
                 iconUrl && imagesCookie === 1
-                    ? renderTemplate(getTemplate('invite-icon', 'embed'), {
+                    ? render('embed/invite-icon', {
                           ICON_URL: `/imageProxy/external/${Buffer.from(iconUrl).toString('base64')}`,
                       })
-                    : renderTemplate(getTemplate('invite-icon-none', 'embed'), {});
+                    : render('embed/invite-icon-none', {});
 
-            const inviteEmbed = renderTemplate(getTemplate('invite', 'embed'), {
+            const inviteEmbed = render('embed/invite', {
                 GUILD_NAME: escape(invite.guild.name),
                 ONLINE_COUNT: (invite.presenceCount || 0).toLocaleString(),
                 MEMBER_COUNT: (invite.memberCount || 0).toLocaleString(),
@@ -748,7 +749,6 @@ function renderActivityBanner(item, context) {
     });
 }
 
-
 /**
  * Renders a poll result summary from a Discord poll embed.
  *
@@ -767,7 +767,7 @@ function renderPollResultEmbed(embed) {
     const totalVotes = fieldMap['total_votes'] ?? '0';
     const emojiPart = winnerEmoji ? escape(winnerEmoji) + ' ' : '';
 
-    return renderTemplate(getTemplate('poll-result', 'channel'), {
+    return render('channel/poll-result', {
         QUESTION: escape(question),
         WINNER_EMOJI: emojiPart,
         WINNER_TEXT: escape(winnerText),
@@ -795,7 +795,7 @@ function roleMentionPill(role, tmpl_mention) {
         const r = parseInt(hex.slice(1, 3), 16),
             g = parseInt(hex.slice(3, 5), 16),
             b = parseInt(hex.slice(5, 7), 16);
-        return renderTemplate(getTemplate('role-mention-colored', 'channel'), {
+        return render('channel/role-mention-colored', {
             HEX: hex,
             R: r.toString(),
             G: g.toString(),
@@ -803,7 +803,7 @@ function roleMentionPill(role, tmpl_mention) {
             NAME: name,
         });
     }
-    return renderTemplate(getTemplate('role-mention-plain', 'channel'), { NAME: name });
+    return render('channel/role-mention-plain', { NAME: name });
 }
 
 /**
@@ -916,7 +916,7 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
         if (!ch) return match;
         if (ch.type === ChannelType.GuildForum || ch.type === ChannelType.GuildMedia)
             return '#' + escape(normalizeWeirdUnicode(ch.name));
-        return renderTemplate(getTemplate('channel-mention', 'channel'), {
+        return render('channel/channel-mention', {
             CHANNEL_URL: `/channels/${ch.id}`,
             CHANNEL_NAME: escape(normalizeWeirdUnicode(ch.name)),
         });
@@ -1018,14 +1018,14 @@ async function resolveForwardData(
 
             if (!fwdChannel) return '';
 
-            const chanLink = renderTemplate(getTemplate('forwarded-origin-channel', 'misc'), {
+            const chanLink = render('misc/forwarded-origin-channel', {
                 JUMP_LINK: `/channels/${fwdMsg.channelId}/${fwdMsg.id}`,
                 CHANNEL_NAME: escape(normalizeWeirdUnicode(fwdChannel.name)),
                 TIME: formatForwardedTimestamp(fwdMsg.createdAt, clientTimezone),
             });
 
             if (fwdMsg.guildId === chnl.guild.id)
-                return renderTemplate(getTemplate('forwarded-same-server', 'channel'), {
+                return render('channel/forwarded-same-server', {
                     CONTENT: chanLink,
                 });
 
@@ -1035,7 +1035,7 @@ async function resolveForwardData(
 
             await otherGuild.members.fetch(discordID);
 
-            return renderTemplate(getTemplate('forwarded-other-server', 'channel'), {
+            return render('channel/forwarded-other-server', {
                 GUILD_NAME: escape(normalizeWeirdUnicode(otherGuild.name)),
                 CONTENT: chanLink,
             });
@@ -1257,14 +1257,14 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
         .replace(/\s+/g, ' ')
         .trim();
     const contentTd = normalizedReplyContent
-        ? renderTemplate(getTemplate('reply-content-cell', 'channel'), {
+        ? render('channel/reply-content-cell', {
               REPLY_TEXT_TOP_OFFSET: '-1',
               REPLY_TEXT: replyText,
               REPLY_PREVIEW: he.encode(normalizedReplyContent, { useNamedReferences: true }),
           })
         : '';
 
-    const replyContent = renderTemplate(getTemplate('reply-with-content', 'channel'), {
+    const replyContent = render('channel/reply-with-content', {
         BAR_COLOR: barColor,
         REPLY_TEXT_TOP_OFFSET: '-1',
         AUTHOR_COLOR: replyData.authorColor,
@@ -1273,7 +1273,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
         CONTENT_TD: contentTd,
     });
 
-    return renderTemplate(getTemplate('reply-container', 'channel'), {
+    return render('channel/reply-container', {
         CONTENT: replyContent,
     });
 }
@@ -1315,7 +1315,7 @@ async function resolveInteractionData(item, chnl, memberCache, authorText) {
 }
 
 function buildInteractionIndicator(interactionData, textColor, barColor = '#808080') {
-    const content = renderTemplate(getTemplate('interaction-indicator', 'channel'), {
+    const content = render('channel/interaction-indicator', {
         BAR_COLOR: barColor,
         AUTHOR_COLOR: interactionData.authorColor,
         AUTHOR_NAME: escape(interactionData.author),
@@ -1323,7 +1323,7 @@ function buildInteractionIndicator(interactionData, textColor, barColor = '#8080
         COMMAND_NAME: escape(interactionData.commandName),
     });
 
-    return renderTemplate(getTemplate('interaction-container', 'channel'), {
+    return render('channel/interaction-container', {
         CONTENT: content,
     });
 }
@@ -1351,7 +1351,7 @@ function buildAuthorPills(state) {
         const icon = client ? `/resources/images/clients/${client.id}.png` : '/resources/logo.gif';
         const alt = client ? `Sent using ${client.name}` : 'Sent with an unknown client';
 
-        pills += renderTemplate(getTemplate('discross-pill', 'channel'), {
+        pills += render('channel/discross-pill', {
             CLIENT_ICON: icon,
             CLIENT_ALT: alt,
         });
@@ -1425,7 +1425,7 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
     // 2. Handle Forwarded Content Blocks.
     const contentBlock =
         state.isForwarded && state.forwardData.content
-            ? renderTemplate(getTemplate('forwarded-content-block', 'channel'), {
+            ? render('channel/forwarded-content-block', {
                   CONTENT: state.forwardData.content,
               })
             : '';
@@ -1869,7 +1869,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
         const messageHtml =
             isSystem && visibleText.length === 0
-                ? renderTemplate(getTemplate('system-message', 'channel'), {
+                ? render('channel/system-message', {
                       AUTHOR_NAME: escape(getDisplayName(currentMember, item.author)),
                       TEXT: SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action',
                   })
@@ -1951,7 +1951,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     // Handle Skin Tone
     const { emojiSkinTone: cookieSkinTone } = parseCookies(req);
     const querySkinTone = parsedUrl.searchParams.get('skinTone');
-    const skinTone = querySkinTone !== null ? querySkinTone : (cookieSkinTone || '');
+    const skinTone = querySkinTone !== null ? querySkinTone : cookieSkinTone || '';
 
     if (querySkinTone !== null) {
         res.setHeader('Set-Cookie', `emojiSkinTone=${querySkinTone}; Path=/; Max-Age=31536000`);
@@ -1996,31 +1996,38 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         let serverEmojis = [];
         let serverEmojisJSON = '[]';
         if (chnl.guild && chnl.guild.emojis && chnl.guild.emojis.cache) {
-            serverEmojis = chnl.guild.emojis.cache.map(e => ({
+            serverEmojis = chnl.guild.emojis.cache.map((e) => ({
                 id: e.id,
                 name: e.name,
                 animated: e.animated,
-                url: e.imageURL()
+                url: e.imageURL(),
             }));
             serverEmojisJSON = JSON.stringify(serverEmojis);
         }
 
-        const {
-            getQuickEmojiHTML,
-            getExpandedEmojiHTML
-        } = require('./emojiUtils');
+        const { getQuickEmojiHTML, getExpandedEmojiHTML } = require('./emojiUtils');
 
-        const baseTemplate = renderTemplate(getTemplate('channel', ''), {
+        const baseTemplate = render('/channel', {
             COMMON_HEAD: getTemplate('head', 'partials'),
             PAGE_CLASS: 'page-channel',
-            EMOJI_PICKER: renderTemplate(getTemplate('emoji-picker', 'partials'), {
+            EMOJI_PICKER: render('partials/emoji-picker', {
                 SERVER_EMOJIS_JSON: serverEmojisJSON,
-                SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(chnl.id, urlEmoji === '1', urlExpanded === '1', sessionParam),
+                SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(
+                    chnl.id,
+                    urlEmoji === '1',
+                    urlExpanded === '1',
+                    sessionParam
+                ),
                 SKIN_TONE: skinTone,
                 EMOJI_OPEN: urlExpanded === '1' ? 'open' : '',
-                EMOJI_EXPAND_URL: require('./utils.js').buildEmojiExpandUrl(chnl.id, urlExpanded === '1', sessionParam),
+                EMOJI_EXPAND_URL: require('./utils.js').buildEmojiExpandUrl(
+                    chnl.id,
+                    urlExpanded === '1',
+                    sessionParam
+                ),
                 EMOJI_QUICK_HTML: getQuickEmojiHTML(skinTone),
-                EMOJI_EXPANDED_HTML: urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : ''
+                EMOJI_EXPANDED_HTML:
+                    urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : '',
             }),
             EMOJI_BUTTON: getTemplate('emoji-picker-button', 'partials'),
             CHANNEL_REPLY: '',
@@ -2033,14 +2040,14 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         const inputHtml = !botMember
             .permissionsIn(chnl)
             .has(PermissionFlagsBits.ManageWebhooks, true)
-            ? renderTemplate(getTemplate('input-disabled', 'channel'), {
+            ? render('channel/input-disabled', {
                   COLOR: boxColor,
                   "You don't have permission to send messages in this channel.":
                       "Discross bot doesn't have the Manage Webhooks permission",
               })
             : member.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true)
-              ? renderTemplate(getTemplate('input', 'channel'), { COLOR: boxColor })
-              : renderTemplate(getTemplate('input-disabled', 'channel'), { COLOR: boxColor });
+              ? render('channel/input', { COLOR: boxColor })
+              : render('channel/input-disabled', { COLOR: boxColor });
 
         if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
             const final = renderTemplate(baseTemplate, {

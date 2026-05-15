@@ -106,7 +106,8 @@ const UNICODE_15_1_OVERRIDES = {
     ':broken_chain:': '\u{1F517}\u{200D}\u{1F4A5}',
     ':family_adult_adult_child:': '\u{1F9D1}\u{200D}\u{1F9D1}\u{200D}\u{1F9D2}',
     ':family_adult_child_child:': '\u{1F9D1}\u{200D}\u{1F9D2}\u{200D}\u{1F9D2}',
-    ':family_adult_adult_child_child:': '\u{1F9D1}\u{200D}\u{1F9D1}\u{200D}\u{1F9D2}\u{200D}\u{1F9D2}',
+    ':family_adult_adult_child_child:':
+        '\u{1F9D1}\u{200D}\u{1F9D1}\u{200D}\u{1F9D2}\u{200D}\u{1F9D2}',
     ':family_adult_child:': '\u{1F9D1}\u{200D}\u{1F9D2}',
 };
 

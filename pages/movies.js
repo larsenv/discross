@@ -2,7 +2,7 @@
 
 const escape = require('escape-html');
 const he = require('he');
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const { renderTemplate, getTemplate } = require('./utils.js');
 
 function loadTemplate(name) {

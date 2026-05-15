@@ -1,9 +1,10 @@
 'use strict';
 const escape = require('escape-html');
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 const {
     renderTemplate,
+    render,
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
@@ -18,7 +19,7 @@ exports.processLogin = async function (bot, req, res, args) {
     if (discordID) {
         res.writeHead(301, { Location: '/server/', 'Content-Type': 'text/html' });
         res.end(
-            renderTemplate(getTemplate('redirect-page', 'misc'), {
+            render('misc/redirect-page', {
                 REDIRECT_URL: '/server/',
             })
         );
@@ -28,7 +29,7 @@ exports.processLogin = async function (bot, req, res, args) {
         const redirectUrl = rawRedirect ? rawRedirect.replaceAll('"', '%22') : '/server/';
         const rawErrorText = parsedurl.searchParams.get('errortext');
         const errorHtml = rawErrorText
-            ? renderTemplate(error_template, {
+            ? render('login/error', {
                   ERROR_MESSAGE: escape(rawErrorText).replaceAll(
                       '\n',
                       getTemplate('line-break', 'misc')

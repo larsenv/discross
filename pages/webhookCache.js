@@ -1,6 +1,6 @@
 'use strict';
 
-const auth = require('../authentication.js');
+const auth = require('../src/authentication.js');
 
 // Module-level cache: webhook channel ID → Discord.js Webhook object.
 // fetchWebhooks() is a Discord API call on every message send; caching it
