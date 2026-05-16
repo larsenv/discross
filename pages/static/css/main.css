@@ -825,6 +825,7 @@ canvas {
     display: block;
     border: 1px solid #202225;
     max-width: 100%;
+    touch-action: none;
 }
 
 /* Mobile-only break in draw toolbar */
@@ -1293,7 +1294,7 @@ html.page-draw #wrapper {
 }
 
 html.page-draw body {
-    overflow-y: auto;
+    overflow: hidden;
     /* min-height: 100vh omitted — vh units not supported in IE8/Opera 9.x */
 }
 
