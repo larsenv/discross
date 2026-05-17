@@ -72,9 +72,14 @@
                 const assertion = await navigator.credentials.get({ publicKey: options });
                 const data = {
                 id: assertion.id,
-                rawId: btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)))
-                };
-                const verify = await fetch('/passkey/verify?type=login', {
+                rawId: btoa(String.fromCharCode(...new window.Uint8Array(assertion.rawId))),
+                type: assertion.type,
+                response: {
+                    authenticatorData: btoa(String.fromCharCode(...new window.Uint8Array(assertion.response.authenticatorData))),
+                    clientDataJSON: btoa(String.fromCharCode(...new window.Uint8Array(assertion.response.clientDataJSON))),
+                    signature: btoa(String.fromCharCode(...new window.Uint8Array(assertion.response.signature)))
+                }
+                };                const verify = await fetch('/passkey/verify?type=login', {
                 method: 'POST',
                 body: JSON.stringify(data),
                 headers: { 'Content-Type': 'application/json' }
