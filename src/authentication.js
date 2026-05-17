@@ -507,6 +507,11 @@ exports.handleLoginRegister = async function (req, res, body) {
                 });
                 res.end();
             }
+        } else {
+            res.writeHead(301, {
+                Location: `/login.html?errortext=${encodeURIComponent('Please enter both a username and password.')}`,
+            });
+            res.end();
         }
     } else if (req.url === '/register') {
         if (params.username && params.password && params.confirm && params.token) {
@@ -647,10 +652,16 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
             { alg: -257, type: 'public-key' },
         ];
     } else {
-        options.allowCredentials = queryAll(
+        const credentials = queryAll(
             'SELECT credentialID FROM passkeys WHERE discordID = ?',
             [discordID]
-        ).map((row) => ({ id: Array.from(Buffer.from(row.credentialID, 'base64')), type: 'public-key' }));
+        );
+        if (credentials.length > 0) {
+            options.allowCredentials = credentials.map((row) => ({
+                id: Array.from(Buffer.from(row.credentialID, 'base64')),
+                type: 'public-key'
+            }));
+        }
     }
     return options;
 };
