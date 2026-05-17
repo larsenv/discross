@@ -51,11 +51,38 @@
                 {$ERROR}<br />
                 <input type="hidden" id="redirect" name="redirect" value="{$REDIRECT_URL}" />
                 <input type="submit" style=" color: #ffffff; height: 44px; width: 150px; border: none; background: #5865f2; border-radius: 8px; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; " value="Login" />
+                <br /><br />
+                <button type="button" id="passkey-login" style=" color: #ffffff; height: 44px; width: 150px; border: none; background: #5865f2; border-radius: 8px; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; ">Login with Passkey</button>
               </font>
             </form>
           </td>
         </tr>
       </table>
     </div>
+    <script>
+      document.getElementById('passkey-login').onclick = async function() {
+          const username = document.getElementById('username').value;
+          if (!username) { alert('Please enter your username'); return; }
+          const res = await fetch('/passkey/options?type=login&username=' + encodeURIComponent(username));
+          const options = await res.json();
+          options.challenge = new Uint8Array(options.challenge);
+          
+          const assertion = await navigator.credentials.get({ publicKey: options });
+          const data = {
+              id: assertion.id,
+              rawId: btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)))
+          };
+          const verify = await fetch('/passkey/verify?type=login', {
+              method: 'POST',
+              body: JSON.stringify(data),
+              headers: { 'Content-Type': 'application/json' }
+          });
+          if (verify.ok) {
+              window.location.href = '/server/';
+          } else {
+              alert('Passkey login failed');
+          }
+      };
+    </script>
   </body>
 </html>
