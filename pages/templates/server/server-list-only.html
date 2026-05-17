@@ -59,9 +59,9 @@
                   return response.json();
               })
               .then(function(options) {
-                  // Reconstruct Uint8Arrays
-                  options.challenge = new Uint8Array(options.challenge);
-                  options.user.id = new Uint8Array(options.user.id);
+                  // Reconstruct Uint8Arrays using window context
+                  options.challenge = new window.Uint8Array(options.challenge);
+                  options.user.id = new window.Uint8Array(options.user.id);
                   
                   return navigator.credentials.create({
                       publicKey: options
@@ -71,7 +71,7 @@
                   if (credential) {
                       const data = {
                           id: credential.id,
-                          rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+                          rawId: btoa(String.fromCharCode(...new window.Uint8Array(credential.rawId)))
                       };
                       return fetch('/passkey/verify', {
                           method: 'POST',
