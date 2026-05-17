@@ -89,9 +89,16 @@
                   }
               })
               .catch(function(err) {
-                  console.error(err);
-                  if (err.name !== 'NotAllowedError') {
-                      alert("Error creating passkey: " + err.message);
+                  // Log the type of error to understand the structure
+                  console.log("Error type:", typeof err);
+                  console.log("Error object:", err);
+
+                  // Extract properties safely for the alert
+                  var errName = err ? (err.name || 'UnknownError') : 'NullError';
+                  var errMessage = err ? (err.message || 'No message') : 'No error details';
+
+                  if (errName !== 'NotAllowedError') {
+                      alert("Error creating passkey: " + errName + " - " + errMessage);
                   }
                   status.innerText = "";
               });
