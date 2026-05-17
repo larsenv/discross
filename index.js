@@ -843,16 +843,10 @@ server.on('error', (err) => {
     }
 });
 
-(async () => {
-    try {
-        console.info('Logging in to Discord...');
-        await bot.startBot();
-    } catch (err) {
-        console.error('Discord bot failed to start:', err.message);
-        console.info('Continuing server startup without Discord bot...');
-    }
+bot.startBot().catch((err) => {
+    console.error('Discord bot failed to start:', err.message);
+});
 
-    server.listen(4000, () => {
-        console.log('Discross running on port 4000');
-    });
-})();
+server.listen(4000, () => {
+    console.log('Discross running on port 4000');
+});
