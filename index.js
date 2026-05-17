@@ -350,6 +350,17 @@ async function handlePost(req, res) {
                 if (discordID) {
                     await foodpage.handlePost(bot, req, res, discordID, body);
                 }
+            } else if (parsedurl === '/passkey/verify') {
+                const discordID = await auth.checkAuth(req, res, true);
+                if (discordID) {
+                    const data = JSON.parse(body);
+                    const result = await auth.verifyPasskey(discordID, 'register', data);
+                    res.writeHead(result.success ? 200 : 500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(result));
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
+                }
             } else {
                 await auth.handleLoginRegister(req, res, body);
             }
@@ -368,6 +379,20 @@ async function handleGet(req, res) {
     const args = parsedurl.pathname.replaceAll('?', '/').split('/');
 
     switch (args[1]) {
+        case 'passkey': {
+            if (args[2] === 'options') {
+                const discordID = await auth.checkAuth(req, res, true);
+                if (discordID) {
+                    const options = auth.getPasskeyOptions(discordID, 'register');
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(options));
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Not authenticated' }));
+                }
+            }
+            break;
+        }
         case 'send': {
             const discordID = await auth.checkAuth(req, res);
             if (discordID) await sendpage.sendMessage(bot, req, res, args, discordID);

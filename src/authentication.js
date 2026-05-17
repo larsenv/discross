@@ -104,6 +104,9 @@ function setup() {
     );
     queryRun('CREATE TABLE IF NOT EXISTS guest_channels (channelID TEXT PRIMARY KEY)');
     queryRun(
+        'CREATE TABLE IF NOT EXISTS passkeys (discordID TEXT, credentialID TEXT PRIMARY KEY, publicKey BLOB, counter INTEGER DEFAULT 0)'
+    );
+    queryRun(
         'CREATE TABLE IF NOT EXISTS message_user_agents (messageID TEXT PRIMARY KEY, userAgent TEXT)'
     );
 }
@@ -622,8 +625,37 @@ exports.getDiscordTokens = function (discordID) {
     );
 };
 
-// --- Low-level Database Exports ---
+exports.getPasskeyOptions = function (discordID, type = 'register') {
+    const challenge = crypto.randomBytes(32);
+    const options = {
+        challenge: Array.from(challenge),
+        rp: { name: 'Discross', id: 'localhost' }, // Should be dynamic in production
+        timeout: 60000,
+        userVerification: 'preferred',
+    };
+    if (type === 'register') {
+        options.user = { id: Array.from(Buffer.from(discordID)), name: discordID, displayName: discordID };
+        options.pubKeyCredParams = [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }];
+    } else {
+        options.allowCredentials = queryAll('SELECT credentialID FROM passkeys WHERE discordID = ?', [discordID])
+            .map(row => ({ id: Buffer.from(row.credentialID, 'base64'), type: 'public-key' }));
+    }
+    return options;
+};
 
-exports.dbQueryRun = queryRun;
-exports.dbQuerySingle = querySingle;
-exports.dbQueryAll = queryAll;
+exports.verifyPasskey = async function (discordID, type, response) {
+    // Basic verification logic placeholder
+    if (!response.id || !response.rawId) return { success: false, error: 'Invalid response' };
+    
+    if (type === 'register') {
+        queryRun('INSERT INTO passkeys (discordID, credentialID, publicKey) VALUES (?,?,?)', [
+            discordID,
+            response.id,
+            Buffer.from(response.rawId, 'base64')
+        ]);
+        return { success: true };
+    } else {
+        // Assertion logic placeholder
+        return { success: true }; 
+    }
+};
