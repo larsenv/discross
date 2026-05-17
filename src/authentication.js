@@ -676,3 +676,5 @@ exports.verifyPasskey = async function (discordID, type, response) {
 };
 
 exports.querySingle = querySingle;
+exports.queryAll = queryAll;
+exports.queryRun = queryRun;
