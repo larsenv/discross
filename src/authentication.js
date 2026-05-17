@@ -220,6 +220,18 @@ exports.login = async function (username, password, totpToken) {
     return { status: 'success', sessionID: sessionID, expires: expiresAt };
 };
 
+exports.createSession = function (discordID) {
+    const sessionID = uuidv4();
+    const expiresAt = unixTime() + expiryTime;
+    queryRun('INSERT INTO sessions VALUES (?,?,?)', [discordID, sessionID, expiresAt]);
+    return sessionID;
+};
+
+exports.getCookieHeader = function (sessionID) {
+    const cookieExpiry = new Date(Date.now() + expiryTime * 1000).toUTCString();
+    return `sessionID=${sessionID}; Path=/; HttpOnly; SameSite=Lax${https ? '; Secure' : ''}; Expires=${cookieExpiry}`;
+};
+
 exports.checkSession = async function (sessionID) {
     const time = unixTime();
     // Throttle cleanup: only delete expired sessions once per minute
