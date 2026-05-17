@@ -48,41 +48,43 @@
                   <font color="#999999" size="4" face="'rodin', Arial, Helvetica, sans-serif">Forgot username or password</font>
                 </a>
                 <br />
-                {$ERROR}<br />
-                <input type="hidden" id="redirect" name="redirect" value="{$REDIRECT_URL}" />
-                <input type="submit" style=" color: #ffffff; height: 44px; width: 150px; border: none; background: #5865f2; border-radius: 8px; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; " value="Login" />
+                <input type="password" id="password" name="password" style="background: #202225; color: #ffffff; border: 1px solid #4f545c; height: 30px; width: 200px; padding: 5px; border-radius: 4px;" />
+                <br />
+                <a href="#" id="passkey-login" style="color: #5865f2; font-size: 12px; cursor: pointer; text-decoration: underline;">Or sign in with passkey</a>
                 <br /><br />
-                <button type="button" id="passkey-login" style=" color: #ffffff; height: 44px; width: 150px; border: none; background: #5865f2; border-radius: 8px; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; ">Login with Passkey</button>
-              </font>
-            </form>
-          </td>
-        </tr>
-      </table>
-    </div>
-    <script>
-      document.getElementById('passkey-login').onclick = async function() {
-          const username = document.getElementById('username').value;
-          if (!username) { alert('Please enter your username'); return; }
-          const res = await fetch('/passkey/options?type=login&username=' + encodeURIComponent(username));
-          const options = await res.json();
-          options.challenge = new Uint8Array(options.challenge);
-          
-          const assertion = await navigator.credentials.get({ publicKey: options });
-          const data = {
-              id: assertion.id,
-              rawId: btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)))
-          };
-          const verify = await fetch('/passkey/verify?type=login', {
-              method: 'POST',
-              body: JSON.stringify(data),
-              headers: { 'Content-Type': 'application/json' }
-          });
-          if (verify.ok) {
-              window.location.href = '/server/';
-          } else {
-              alert('Passkey login failed');
-          }
-      };
-    </script>
-  </body>
-</html>
+                <input type="submit" style=" color: #ffffff; height: 44px; width: 150px; border: none; background: #5865f2; border-radius: 8px; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; " value="Login" />
+                </font>
+                </form>
+                </td>
+                </tr>
+                </table>
+                </div>
+                <script>
+                document.getElementById('passkey-login').onclick = async function(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                if (!username) { alert('Please enter your username'); return; }
+                const res = await fetch('/passkey/options?type=login&username=' + encodeURIComponent(username));
+                const options = await res.json();
+                if (options.error) { alert('No passkey found for this user'); return; }
+                options.challenge = new Uint8Array(options.challenge);
+
+                const assertion = await navigator.credentials.get({ publicKey: options });
+                const data = {
+                id: assertion.id,
+                rawId: btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)))
+                };
+                const verify = await fetch('/passkey/verify?type=login', {
+                method: 'POST',
+                body: JSON.stringify(data),
+                headers: { 'Content-Type': 'application/json' }
+                });
+                if (verify.ok) {
+                window.location.href = '/server/';
+                } else {
+                alert('Passkey login failed');
+                }
+                };
+                </script>
+                </body>
+                </html>
