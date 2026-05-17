@@ -370,7 +370,7 @@ async function handlePost(req, res) {
                     if (result.success && type === 'login') {
                         const sessionID = auth.createSession(discordID);
                         res.writeHead(200, {
-                            'Set-Cookie': `sessionID=${sessionID}; Path=/; HttpOnly; SameSite=Lax`,
+                            'Set-Cookie': auth.getCookieHeader(sessionID),
                             'Content-Type': 'application/json',
                         });
                         res.end(JSON.stringify({ success: true }));
