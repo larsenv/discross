@@ -367,10 +367,19 @@ async function handlePost(req, res) {
 
                 if (discordID) {
                     const result = await auth.verifyPasskey(discordID, type, data);
-                    res.writeHead(result.success ? 200 : 500, {
-                        'Content-Type': 'application/json',
-                    });
-                    res.end(JSON.stringify(result));
+                    if (result.success && type === 'login') {
+                        const sessionID = auth.createSession(discordID);
+                        res.writeHead(200, {
+                            'Set-Cookie': `sessionID=${sessionID}; Path=/; HttpOnly; SameSite=Lax`,
+                            'Content-Type': 'application/json',
+                        });
+                        res.end(JSON.stringify({ success: true }));
+                    } else {
+                        res.writeHead(result.success ? 200 : 500, {
+                            'Content-Type': 'application/json',
+                        });
+                        res.end(JSON.stringify(result));
+                    }
                 } else {
                     res.writeHead(401, { 'Content-Type': 'application/json' });
                     res.end(
@@ -412,12 +421,12 @@ async function handleGet(req, res) {
                     discordID = await auth.checkAuth(req, res, true);
                 }
 
-                if (discordID) {
-                    const options = auth.getPasskeyOptions(discordID, type);
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(options));
-                } else {
-                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                if (discordID || type === 'login') {
+                   const rpId = req.headers.host ? req.headers.host.split(':')[0] : 'localhost';
+                   const options = auth.getPasskeyOptions(discordID, type, rpId);
+                   res.writeHead(200, { 'Content-Type': 'application/json' });
+                   res.end(JSON.stringify(options));
+                } else {                    res.writeHead(401, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ error: 'User not found or not authenticated' }));
                 }
             }

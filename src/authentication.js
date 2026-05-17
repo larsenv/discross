@@ -625,12 +625,12 @@ exports.getDiscordTokens = function (discordID) {
     );
 };
 
-exports.getPasskeyOptions = function (discordID, type = 'register') {
+exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'localhost') {
     const challenge = crypto.randomBytes(32);
     const options = {
         challenge: Array.from(challenge),
         rp: {
-            id: 'localhost',
+            id: rpId,
             name: 'Discross'
         },
         timeout: 60000,
@@ -650,7 +650,7 @@ exports.getPasskeyOptions = function (discordID, type = 'register') {
         options.allowCredentials = queryAll(
             'SELECT credentialID FROM passkeys WHERE discordID = ?',
             [discordID]
-        ).map((row) => ({ id: Buffer.from(row.credentialID, 'base64'), type: 'public-key' }));
+        ).map((row) => ({ id: Array.from(Buffer.from(row.credentialID, 'base64')), type: 'public-key' }));
     }
     return options;
 };
@@ -666,15 +666,18 @@ exports.verifyPasskey = async function (discordID, type, response) {
         ]);
         return { success: true };
     } else {
+        let finalDiscordID = discordID;
         const passkey = querySingle(
-            'SELECT publicKey, counter FROM passkeys WHERE credentialID = ? AND discordID = ?',
-            [response.id, discordID]
+            'SELECT discordID, publicKey, counter FROM passkeys WHERE credentialID = ?' + (discordID ? ' AND discordID = ?' : ''),
+            discordID ? [response.id, discordID] : [response.id]
         );
         if (!passkey) return { success: false, error: 'Passkey not found' };
+        
+        if (!finalDiscordID) finalDiscordID = passkey.discordID;
 
         // TODO: Signature verification logic using public key would go here.
         // For now, return success if credentialID is found.
-        return { success: true };
+        return { success: true, discordID: finalDiscordID };
     }
 };
 

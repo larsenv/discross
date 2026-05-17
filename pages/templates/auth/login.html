@@ -34,7 +34,7 @@
               <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
                 Username:
                 <br /><br />
-                <div style="padding: 16px; background: #222327; max-width: 300px; width: 100%"><input type="text" name="username" id="username" value="" style=" color: #dddddd; background: #222327; border: none; width: 100%; outline: none; " placeholder="Username" /></div>
+                <div style="padding: 16px; background: #222327; max-width: 300px; width: 100%"><input type="text" name="username" id="username" value="" style=" color: #dddddd; background: #222327; border: none; width: 100%; outline: none; " placeholder="Username" autocomplete="username webauthn" /></div>
                 <br />
                 Password:
                 <br /><br />
@@ -44,7 +44,9 @@
                 <br /><br />
                 <div style="padding: 16px; background: #222327; max-width: 300px; width: 100%"><input type="text" name="totp_code" id="totp_code" value="" style=" color: #dddddd; background: #222327; border: none; width: 100%; outline: none; " placeholder="6-digit code or backup code" /></div>
                 <br />
-                <button id="passkey-login" style="color: #5865f2; font-size: 16px; cursor: pointer; border: none; background: none; text-decoration: underline;">Or sign in with passkey</button>
+                <a href="#" id="passkey-login" style="text-decoration: none">
+                  <font color="#5865f2" size="4" face="'rodin', Arial, Helvetica, sans-serif">Or sign in with passkey</font>
+                </a>
                 <br /><br />
                 <a href="/forgot.html" style="text-decoration: none">
                   <font color="#999999" size="4" face="'rodin', Arial, Helvetica, sans-serif">Forgot username or password</font>
@@ -58,36 +60,80 @@
                 </table>
                 </div>
                 <script>
-                document.getElementById('passkey-login').onclick = async function(e) {
-                e.preventDefault();
-                const username = document.getElementById('username').value;
-                if (!username) { alert('Please enter your username'); return; }
-                const res = await fetch('/passkey/options?type=login&username=' + encodeURIComponent(username));
-                const options = await res.json();
-                if (options.error) { alert('No passkey found for this user'); return; }
-                options.challenge = new Uint8Array(options.challenge);
+                (function() {
+                    async function doPasskeyLogin(options, isConditional) {
+                        try {
+                            // Cast challenge and allowCredentials ids to window.Uint8Array
+                            options.challenge = new window.Uint8Array(options.challenge);
+                            if (options.allowCredentials) {
+                                for (var i = 0; i < options.allowCredentials.length; i++) {
+                                    options.allowCredentials[i].id = new window.Uint8Array(options.allowCredentials[i].id);
+                                }
+                            }
 
-                const assertion = await navigator.credentials.get({ publicKey: options });
-                const data = {
-                id: assertion.id,
-                rawId: btoa(String.fromCharCode(...new window.Uint8Array(assertion.rawId))),
-                type: assertion.type,
-                response: {
-                    authenticatorData: btoa(String.fromCharCode(...new window.Uint8Array(assertion.response.authenticatorData))),
-                    clientDataJSON: btoa(String.fromCharCode(...new window.Uint8Array(assertion.response.clientDataJSON))),
-                    signature: btoa(String.fromCharCode(...new window.Uint8Array(assertion.response.signature)))
-                }
-                };                const verify = await fetch('/passkey/verify?type=login', {
-                method: 'POST',
-                body: JSON.stringify(data),
-                headers: { 'Content-Type': 'application/json' }
-                });
-                if (verify.ok) {
-                window.location.href = '/server/';
-                } else {
-                alert('Passkey login failed');
-                }
-                };
+                            var getOptions = { publicKey: options };
+                            if (isConditional) {
+                                getOptions.mediation = 'conditional';
+                            }
+
+                            var assertion = await navigator.credentials.get(getOptions);
+                            if (!assertion) return;
+
+                            var data = {
+                                id: assertion.id,
+                                rawId: btoa(String.fromCharCode.apply(null, new window.Uint8Array(assertion.rawId))),
+                                type: assertion.type,
+                                response: {
+                                    authenticatorData: btoa(String.fromCharCode.apply(null, new window.Uint8Array(assertion.response.authenticatorData))),
+                                    clientDataJSON: btoa(String.fromCharCode.apply(null, new window.Uint8Array(assertion.response.clientDataJSON))),
+                                    signature: btoa(String.fromCharCode.apply(null, new window.Uint8Array(assertion.response.signature)))
+                                }
+                            };
+
+                            var verify = await fetch('/passkey/verify?type=login', {
+                                method: 'POST',
+                                body: JSON.stringify(data),
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+
+                            if (verify.ok) {
+                                window.location.href = '/server/';
+                            } else {
+                                alert('Passkey login failed');
+                            }
+                        } catch (err) {
+                            if (err.name !== 'NotAllowedError' && !isConditional) {
+                                alert('Error: ' + err.message);
+                            }
+                        }
+                    }
+
+                    // Manual login
+                    document.getElementById('passkey-login').onclick = async function(e) {
+                        e.preventDefault();
+                        var username = document.getElementById('username').value;
+                        if (!username) { alert('Please enter your username'); return; }
+                        
+                        var res = await fetch('/passkey/options?type=login&username=' + encodeURIComponent(username));
+                        var options = await res.json();
+                        if (options.error) { alert('No passkey found for this user'); return; }
+                        
+                        doPasskeyLogin(options, false);
+                    };
+
+                    // Conditional UI (Autofill)
+                    if (window.PublicKeyCredential && PublicKeyCredential.isConditionalMediationAvailable) {
+                        PublicKeyCredential.isConditionalMediationAvailable().then(function(available) {
+                            if (available) {
+                                fetch('/passkey/options?type=login')
+                                    .then(function(res) { return res.json(); })
+                                    .then(function(options) {
+                                        doPasskeyLogin(options, true);
+                                    });
+                            }
+                        });
+                    }
+                })();
                 </script>
                 </body>
                 </html>
