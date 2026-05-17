@@ -26,7 +26,7 @@ const client = new Discord.Client({
     intents: intentsArray,
 });
 
-client.on('clientReady', () => {
+client.on('ready', () => {
     console.info(`Logged in as ${client.user.tag}!`);
 });
 
@@ -131,7 +131,15 @@ client.on('messageCreate', async function (msg) {
 exports.startBot = async function () {
     const token = process.env.DISCORD_TOKEN;
     if (token) {
-        client.login(token);
+        return new Promise((resolve, reject) => {
+            client.once('ready', () => {
+                resolve(client);
+            });
+            client.once('error', (err) => {
+                reject(err);
+            });
+            client.login(token).catch(reject);
+        });
     } else {
         console.error(
             'No token found! Please set the DISCORD_TOKEN environment variable to your bot token.'
