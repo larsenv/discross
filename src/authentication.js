@@ -674,3 +674,5 @@ exports.verifyPasskey = async function (discordID, type, response) {
         return { success: true };
     }
 };
+
+exports.querySingle = querySingle;

@@ -358,10 +358,8 @@ async function handlePost(req, res) {
 
                 if (type === 'login') {
                     // For login, we need to lookup discordID from credential ID
-                    const passkey = auth.dbQuerySingle(
-                        'SELECT discordID FROM passkeys WHERE credentialID = ?',
-                        [data.id]
-                    );
+                    const passkey = auth.querySingle('SELECT discordID FROM passkeys WHERE credentialID = ?', [data.id]);
+
                     discordID = passkey ? passkey.discordID : null;
                 } else {
                     discordID = await auth.checkAuth(req, res, true);
@@ -407,10 +405,8 @@ async function handleGet(req, res) {
                 if (type === 'login') {
                     // For login, we need to lookup discordID by username first
                     const username = parsedurl.searchParams.get('username');
-                    const user = auth.dbQuerySingle(
-                        'SELECT discordID FROM users WHERE username = ?',
-                        [username]
-                    );
+                    const user = auth.querySingle('SELECT discordID FROM users WHERE username = ?', [username]);
+
                     discordID = user ? user.discordID : null;
                 } else {
                     discordID = await auth.checkAuth(req, res, true);
