@@ -236,10 +236,10 @@ canvas.addEventListener(
     function (e) {
         // Prevent scrolling and default browser touch actions on the canvas
         if (e.cancelable) e.preventDefault();
-        
+
         var pos = getTouchPos(e);
         if (!pos) return;
-        
+
         // Reset coordinate tracking
         lastX = pos.x;
         lastY = pos.y;
@@ -274,7 +274,7 @@ canvas.addEventListener(
 
         var pos = getTouchPos(e);
         if (!pos) return;
-        
+
         // Push segments to queue
         pointQueue.push({ x: pos.x, y: pos.y });
         lastX = pos.x;
