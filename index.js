@@ -15,6 +15,28 @@ const options = {};
 
 const sentryEnabled = !!process.env.SENTRY_DSN;
 
+process.on('SIGINT', async () => {
+    console.info('Shutting down gracefully...');
+    if (bot.client) {
+        bot.client.destroy();
+    }
+    if (sentryEnabled) {
+        await Sentry.flush(2000);
+    }
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.info('Shutting down gracefully...');
+    if (bot.client) {
+        bot.client.destroy();
+    }
+    if (sentryEnabled) {
+        await Sentry.flush(2000);
+    }
+    process.exit(0);
+});
+
 process.on('unhandledRejection', (err) => {
     console.error(err);
 });
@@ -75,8 +97,6 @@ const { handleServerIcon } = require('./pages/serverIconHandler.js');
 
 // Constants for imageProxy path lengths
 const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
-
-bot.startBot();
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -823,4 +843,16 @@ server.on('error', (err) => {
     }
 });
 
-server.listen(4000);
+(async () => {
+    try {
+        console.info('Logging in to Discord...');
+        await bot.startBot();
+    } catch (err) {
+        console.error('Discord bot failed to start:', err.message);
+        console.info('Continuing server startup without Discord bot...');
+    }
+
+    server.listen(4000, () => {
+        console.log('Discross running on port 4000');
+    });
+})();
