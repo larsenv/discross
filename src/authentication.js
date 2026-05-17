@@ -642,10 +642,12 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
         userVerification: type === 'login' ? 'required' : 'preferred',
     };
     if (type === 'register') {
+        const user = querySingle('SELECT username FROM users WHERE discordID = ?', [discordID]);
+        const username = user ? user.username : discordID;
         options.user = {
             id: Array.from(Buffer.from(discordID)),
-            name: discordID,
-            displayName: discordID,
+            name: username,
+            displayName: username,
         };
         options.pubKeyCredParams = [
             { alg: -7, type: 'public-key' },
