@@ -53,38 +53,39 @@
 
                   status.innerText = "Registering passkey... Follow your browser's prompts.";
 
-                  var challenge = new Uint8Array(32);
-                  window.crypto.getRandomValues(challenge);
-
-                  var userID = "{$USER_ID}";
-                  var publicKeyCredentialCreationOptions = {
-                      challenge: challenge,
-                      rp: {
-                          name: "Discross",
-                          id: window.location.hostname
-                      },
-                      user: {
-                          id: new TextEncoder().encode(userID),
-                          name: "{$USER_NAME}",
-                          displayName: "{$USER_NAME}"
-                      },
-                      pubKeyCredParams: [{alg: -7, type: "public-key"}, {alg: -257, type: "public-key"}],
-                      authenticatorSelection: {
-                          authenticatorAttachment: "platform",
-                          userVerification: "preferred"
-                      },
-                      timeout: 60000,
-                      attestation: "direct"
-                  };
-
+                  return fetch('/passkey/options');
+              })
+              .then(function(response) {
+                  return response.json();
+              })
+              .then(function(options) {
+                  // Reconstruct Uint8Arrays
+                  options.challenge = new Uint8Array(options.challenge);
+                  options.user.id = new Uint8Array(options.user.id);
+                  
                   return navigator.credentials.create({
-                      publicKey: publicKeyCredentialCreationOptions
+                      publicKey: options
                   });
               })
               .then(function(credential) {
                   if (credential) {
+                      const data = {
+                          id: credential.id,
+                          rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+                      };
+                      return fetch('/passkey/verify', {
+                          method: 'POST',
+                          body: JSON.stringify(data),
+                          headers: { 'Content-Type': 'application/json' }
+                      });
+                  }
+              })
+              .then(function(response) {
+                  if (response && response.ok) {
                       alert("Passkey registered successfully!");
                       status.innerText = "Passkey added.";
+                  } else {
+                      throw new Error("Verification failed");
                   }
               })
               .catch(function(err) {
