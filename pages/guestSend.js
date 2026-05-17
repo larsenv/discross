@@ -89,7 +89,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
 
         const userAgent = req.headers['user-agent'];
         if (userAgent && message && message.id) {
-            auth.dbQueryRun(
+            auth.queryRun(
                 'INSERT OR REPLACE INTO message_user_agents (messageID, userAgent) VALUES (?, ?)',
                 [message.id, userAgent]
             );

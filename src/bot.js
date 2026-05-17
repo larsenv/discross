@@ -95,7 +95,7 @@ client.on('messageCreate', async function (msg) {
     // Auto-sync server membership when a registered user sends a message
     // This ensures active servers are added to the user's list without manual sync.
     if (msg.guild && msg.author && !msg.author.bot) {
-        const user = auth.dbQuerySingle('SELECT discordID FROM users WHERE discordID=?', [
+        const user = auth.querySingle('SELECT discordID FROM users WHERE discordID=?', [
             msg.author.id,
         ]);
         if (user) {
@@ -104,13 +104,13 @@ client.on('messageCreate', async function (msg) {
             ]);
         }
     }
-});
+    });
 
-// Auto-sync server membership when GuildMembers intent is enabled
-if (guildMembersIntentEnabled) {
+    // Auto-sync server membership when GuildMembers intent is enabled
+    if (guildMembersIntentEnabled) {
     client.on('guildMemberAdd', (member) => {
         // Only add the server if the user is a registered Discross user
-        const user = auth.dbQuerySingle('SELECT discordID FROM users WHERE discordID=?', [
+        const user = auth.querySingle('SELECT discordID FROM users WHERE discordID=?', [
             member.user.id,
         ]);
         if (user) {
@@ -121,12 +121,12 @@ if (guildMembersIntentEnabled) {
     });
 
     client.on('guildMemberRemove', (member) => {
-        auth.dbQueryRun('DELETE FROM servers WHERE serverID=? AND discordID=?', [
+        auth.queryRun('DELETE FROM servers WHERE serverID=? AND discordID=?', [
             member.guild.id,
             member.user.id,
         ]);
     });
-}
+    }
 
 exports.startBot = async function () {
     const token = process.env.DISCORD_TOKEN;

@@ -137,7 +137,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
             const message = await webhook.send(sendOptions);
 
             if (userAgentStr && message && message.id) {
-                auth.dbQueryRun(
+                auth.queryRun(
                     'INSERT OR REPLACE INTO message_user_agents (messageID, userAgent) VALUES (?, ?)',
                     [message.id, userAgentStr]
                 );

@@ -315,7 +315,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
 
                         const userAgentStr = req.headers['user-agent'];
                         if (userAgentStr && message && message.id) {
-                            auth.dbQueryRun(
+                            auth.queryRun(
                                 'INSERT OR REPLACE INTO message_user_agents (messageID, userAgent) VALUES (?, ?)',
                                 [message.id, userAgentStr]
                             );

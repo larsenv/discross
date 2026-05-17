@@ -289,7 +289,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                 refreshDiscordServers(bot, discordID).catch(console.error);
             }
 
-            const data = auth.dbQueryAll('SELECT * FROM servers WHERE discordID=?', [discordID]);
+            const data = auth.queryAll('SELECT * FROM servers WHERE discordID=?', [discordID]);
 
             for (const serverData of data) {
                 const serverID = serverData.serverID;
@@ -307,7 +307,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                             };
                         } catch (err) {
                             // Delete from database if member isn't found
-                            auth.dbQueryRun(
+                            auth.queryRun(
                                 'DELETE FROM servers WHERE serverID=? AND discordID=?',
                                 [server.id, discordID]
                             );
@@ -337,7 +337,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                     // If the bot hasn't connected yet, skip deletion so servers are preserved during boot.
                     if (clientIsReady) {
                         // bot is connected and the guild truly isn't in cache -> safe to delete
-                        auth.dbQueryRun('DELETE FROM servers WHERE serverID=?', [serverID]);
+                        auth.queryRun('DELETE FROM servers WHERE serverID=?', [serverID]);
                         serversDeleted++;
                     } else {
                         // bot not ready / not connected: do not delete the server row; treat as temporarily missing
