@@ -13,7 +13,92 @@
 <a class="discross-button" href="/changepassword.html{$SESSION_PARAM}">Change Password</a>
 <br />
 <a class="discross-button" href="/setup2fa.html{$SESSION_PARAM}">Manage 2FA</a>
+<br />
+<button id="add-passkey" class="discross-button" style="padding-top: 8px; padding-bottom: 8px;">Add Passkey</button>
+<span id="passkey-status" style="font-size: 0.8em; color: #aaaaaa; margin-left: 8px;"></span>
 <br /><br />
 {$IMAGES_WARNING}
 <br />
 <a class="discross-button" href="/switchtheme{$SESSION_PARAM}">Switch Theme</a>
+
+<script>
+  (function() {
+      var btn = document.getElementById('add-passkey');
+      var status = document.getElementById('passkey-status');
+      if (!btn) return;
+
+      btn.onclick = function() {
+          if (window.isSecureContext === false) {
+                  alert("Passkey authentication requires a secure context (HTTPS). Please ensure you are accessing Discross via HTTPS.");
+                  return;
+          }
+
+          if (!window.PublicKeyCredential || typeof navigator.credentials === 'undefined' || typeof navigator.credentials.create !== 'function') {
+                  btn.disabled = true;
+                  btn.style.cursor = 'not-allowed';
+                  btn.style.opacity = '0.6';
+                  status.innerText = "Passkey authentication is not available on this device or browser.";
+                  alert("Passkey authentication is not available on this device or browser.");
+                  return;
+          }
+          status.innerText = "Checking availability...";
+
+          PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+              .then(function(available) {
+                  if (!available) {
+                      alert("Passkey authentication is not available on this device.");
+                      status.innerText = "";
+                      return;
+                  }
+
+                  status.innerText = "Registering passkey... Follow your browser's prompts.";
+
+                  return fetch('/passkey/options');
+              })
+              .then(function(response) {
+                  return response.json();
+              })
+              .then(function(options) {
+                  options.challenge = new window.Uint8Array(options.challenge);
+                  options.user.id = new window.Uint8Array(options.user.id);
+
+                  return navigator.credentials.create({
+                      publicKey: options
+                  });
+              })
+              .then(function(credential) {
+                  if (credential) {
+                      const response = credential.response;
+                      const data = {
+                          id: credential.id,
+                          rawId: btoa(String.fromCharCode(...new window.Uint8Array(credential.rawId))),
+                          clientDataJSON: btoa(String.fromCharCode(...new window.Uint8Array(response.clientDataJSON))),
+                          attestationObject: btoa(String.fromCharCode(...new window.Uint8Array(response.attestationObject)))
+                      };
+                      return fetch('/passkey/verify', {
+                          method: 'POST',
+                          body: JSON.stringify(data),
+                          headers: { 'Content-Type': 'application/json' }
+                      });
+                  }
+              })
+              .then(function(response) {
+                  if (response && response.ok) {
+                      alert("Passkey registered successfully!");
+                      status.innerText = "Passkey added.";
+                  } else {
+                      throw new Error("Verification failed");
+                  }
+              })
+              .catch(function(err) {
+                  var errName = err ? (err.name || 'UnknownError') : 'NullError';
+                  var errMessage = err ? (err.message || 'No message') : 'No error details';
+
+                  if (errName !== 'NotAllowedError') {
+                      alert("Error creating passkey: " + errName + " - " + errMessage);
+                  }
+                  status.innerText = "";
+              });
+      };
+  })();
+</script>
