@@ -373,7 +373,7 @@ async function handlePost(req, res) {
                             'Set-Cookie': auth.getCookieHeader(sessionID),
                             'Content-Type': 'application/json',
                         });
-                        res.end(JSON.stringify({ success: true }));
+                        res.end(JSON.stringify({ success: true, sessionID: sessionID }));
                     } else {
                         res.writeHead(result.success ? 200 : 500, {
                             'Content-Type': 'application/json',

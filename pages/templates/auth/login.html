@@ -102,7 +102,7 @@
 
                             var result = await verify.json();
                             if (verify.ok && result.success) {
-                                window.location.href = '/server/';
+                                window.location.href = '/server/?sessionID=' + encodeURIComponent(result.sessionID) + '#end';
                             } else {
                                 if (!isConditional) alert('Passkey login failed: ' + (result.error || 'Unknown error'));
                             }

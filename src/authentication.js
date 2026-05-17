@@ -229,7 +229,7 @@ exports.createSession = function (discordID) {
 
 exports.getCookieHeader = function (sessionID) {
     const cookieExpiry = new Date(Date.now() + expiryTime * 1000).toUTCString();
-    return `sessionID=${sessionID}; Path=/; HttpOnly; SameSite=Lax${https ? '; Secure' : ''}; Expires=${cookieExpiry}`;
+    return `sessionID=${sessionID}; path=/; expires=${cookieExpiry}; HttpOnly${https ? '; Secure' : ''}`;
 };
 
 exports.checkSession = async function (sessionID) {
