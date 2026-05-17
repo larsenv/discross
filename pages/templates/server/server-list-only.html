@@ -15,7 +15,6 @@
 <a class="discross-button" href="/setup2fa.html{$SESSION_PARAM}">Manage 2FA</a>
 <br />
 <button id="add-passkey" class="discross-button" style="padding-top: 8px; padding-bottom: 8px;">Add Passkey</button>
-<span id="passkey-status" style="font-size: 0.8em; color: #aaaaaa; margin-left: 8px;"></span>
 <br />
 {$IMAGES_WARNING}
 <br />
@@ -24,7 +23,6 @@
 <script>
   (function() {
       var btn = document.getElementById('add-passkey');
-      var status = document.getElementById('passkey-status');
       if (!btn) return;
 
       btn.onclick = function() {
@@ -37,21 +35,16 @@
                   btn.disabled = true;
                   btn.style.cursor = 'not-allowed';
                   btn.style.opacity = '0.6';
-                  status.innerText = "Passkey authentication is not available on this device or browser.";
                   alert("Passkey authentication is not available on this device or browser.");
                   return;
           }
-          status.innerText = "Checking availability...";
 
           PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
               .then(function(available) {
                   if (!available) {
                       alert("Passkey authentication is not available on this device.");
-                      status.innerText = "";
                       return;
                   }
-
-                  status.innerText = "Registering passkey... Follow your browser's prompts.";
 
                   return fetch('/passkey/options');
               })
@@ -85,7 +78,6 @@
               .then(function(response) {
                   if (response && response.ok) {
                       alert("Passkey registered successfully!");
-                      status.innerText = "Passkey added.";
                   } else {
                       throw new Error("Verification failed");
                   }
@@ -97,7 +89,6 @@
                   if (errName !== 'NotAllowedError') {
                       alert("Error creating passkey: " + errName + " - " + errMessage);
                   }
-                  status.innerText = "";
               });
       };
   })();
