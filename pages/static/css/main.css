@@ -811,10 +811,11 @@ textarea:focus {
 }
 #canvas-wrapper {
     margin: 0 auto 20px auto;
-    display: block;
+    display: flex;
+    justify-content: center;
     padding: 5px;
-    width: 610px;
-    max-width: 100%;
+    width: 100%;
+    max-width: 610px;
     box-sizing: border-box;
     position: relative;
     z-index: 10;

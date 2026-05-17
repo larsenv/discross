@@ -234,9 +234,19 @@ function getTouchPos(e) {
 canvas.addEventListener(
     'touchstart',
     function (e) {
-        if (e.preventDefault) e.preventDefault(); // Prevent scrolling
+        // Prevent scrolling and default browser touch actions on the canvas
+        if (e.cancelable) e.preventDefault();
+        
         var pos = getTouchPos(e);
         if (!pos) return;
+        
+        // Reset coordinate tracking
+        lastX = pos.x;
+        lastY = pos.y;
+        lastDrawnX = pos.x;
+        lastDrawnY = pos.y;
+        pointQueue = [];
+
         if (currTool === 'fill') {
             saveHistory();
             floodFill(pos.x, pos.y);
@@ -245,11 +255,6 @@ canvas.addEventListener(
 
         saveHistory();
         isDrawing = true;
-        lastX = pos.x;
-        lastY = pos.y;
-        lastDrawnX = pos.x;
-        lastDrawnY = pos.y;
-        pointQueue = [];
 
         ctx.beginPath();
         ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
@@ -258,22 +263,24 @@ canvas.addEventListener(
         ctx.fill();
         ctx.beginPath();
     },
-    false
+    { passive: false }
 );
 
 canvas.addEventListener(
     'touchmove',
     function (e) {
         if (!isDrawing) return;
-        if (e.preventDefault) e.preventDefault(); // Prevent scrolling
+        if (e.cancelable) e.preventDefault();
 
         var pos = getTouchPos(e);
         if (!pos) return;
+        
+        // Push segments to queue
         pointQueue.push({ x: pos.x, y: pos.y });
         lastX = pos.x;
         lastY = pos.y;
     },
-    false
+    { passive: false }
 );
 
 canvas.addEventListener(
