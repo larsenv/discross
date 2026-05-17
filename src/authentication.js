@@ -639,7 +639,7 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
             name: 'Discross'
         },
         timeout: 60000,
-        userVerification: 'preferred',
+        userVerification: type === 'login' ? 'required' : 'preferred',
     };
     if (type === 'register') {
         options.user = {
