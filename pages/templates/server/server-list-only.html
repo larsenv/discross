@@ -52,6 +52,7 @@
                   return response.json();
               })
               .then(function(options) {
+                  console.log("Registering passkey with options:", options);
                   options.challenge = new window.Uint8Array(options.challenge);
                   options.user.id = new window.Uint8Array(options.user.id);
 
