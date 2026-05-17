@@ -629,7 +629,7 @@ exports.getPasskeyOptions = function (discordID, type = 'register') {
     const challenge = crypto.randomBytes(32);
     const options = {
         challenge: Array.from(challenge),
-        rp: { name: 'Discross', id: 'localhost' }, // Should be dynamic in production
+        rpId: 'localhost', // Should be dynamic
         timeout: 60000,
         userVerification: 'preferred',
     };
@@ -644,7 +644,6 @@ exports.getPasskeyOptions = function (discordID, type = 'register') {
 };
 
 exports.verifyPasskey = async function (discordID, type, response) {
-    // Basic verification logic placeholder
     if (!response.id || !response.rawId) return { success: false, error: 'Invalid response' };
     
     if (type === 'register') {
@@ -655,7 +654,11 @@ exports.verifyPasskey = async function (discordID, type, response) {
         ]);
         return { success: true };
     } else {
-        // Assertion logic placeholder
-        return { success: true }; 
+        const passkey = querySingle('SELECT publicKey, counter FROM passkeys WHERE credentialID = ? AND discordID = ?', [response.id, discordID]);
+        if (!passkey) return { success: false, error: 'Passkey not found' };
+        
+        // TODO: Signature verification logic using public key would go here.
+        // For now, return success if credentialID is found.
+        return { success: true };
     }
 };

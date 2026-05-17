@@ -351,15 +351,25 @@ async function handlePost(req, res) {
                     await foodpage.handlePost(bot, req, res, discordID, body);
                 }
             } else if (parsedurl === '/passkey/verify') {
-                const discordID = await auth.checkAuth(req, res, true);
+                const type = new URL(req.url, 'http://localhost').searchParams.get('type') || 'register';
+                let discordID;
+                const data = JSON.parse(body);
+
+                if (type === 'login') {
+                    // For login, we need to lookup discordID from credential ID
+                    const passkey = auth.dbQuerySingle('SELECT discordID FROM passkeys WHERE credentialID = ?', [data.id]);
+                    discordID = passkey ? passkey.discordID : null;
+                } else {
+                    discordID = await auth.checkAuth(req, res, true);
+                }
+
                 if (discordID) {
-                    const data = JSON.parse(body);
-                    const result = await auth.verifyPasskey(discordID, 'register', data);
+                    const result = await auth.verifyPasskey(discordID, type, data);
                     res.writeHead(result.success ? 200 : 500, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify(result));
                 } else {
                     res.writeHead(401, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
+                    res.end(JSON.stringify({ success: false, error: 'Not authenticated or invalid credential' }));
                 }
             } else {
                 await auth.handleLoginRegister(req, res, body);
@@ -381,14 +391,24 @@ async function handleGet(req, res) {
     switch (args[1]) {
         case 'passkey': {
             if (args[2] === 'options') {
-                const discordID = await auth.checkAuth(req, res, true);
+                const type = parsedurl.searchParams.get('type') || 'register';
+                let discordID;
+                if (type === 'login') {
+                    // For login, we need to lookup discordID by username first
+                    const username = parsedurl.searchParams.get('username');
+                    const user = auth.dbQuerySingle('SELECT discordID FROM users WHERE username = ?', [username]);
+                    discordID = user ? user.discordID : null;
+                } else {
+                    discordID = await auth.checkAuth(req, res, true);
+                }
+
                 if (discordID) {
-                    const options = auth.getPasskeyOptions(discordID, 'register');
+                    const options = auth.getPasskeyOptions(discordID, type);
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify(options));
                 } else {
                     res.writeHead(401, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'Not authenticated' }));
+                    res.end(JSON.stringify({ error: 'User not found or not authenticated' }));
                 }
             }
             break;
