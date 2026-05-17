@@ -422,7 +422,8 @@ async function handleGet(req, res) {
                 }
 
                 if (discordID || type === 'login') {
-                   const rpId = req.headers.host ? req.headers.host.split(':')[0] : 'localhost';
+                   const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
+                   const rpId = host.split(':')[0];
                    const options = auth.getPasskeyOptions(discordID, type, rpId);
                    res.writeHead(200, { 'Content-Type': 'application/json' });
                    res.end(JSON.stringify(options));

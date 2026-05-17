@@ -651,6 +651,11 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
             { alg: -7, type: 'public-key' },
             { alg: -257, type: 'public-key' },
         ];
+        options.authenticatorSelection = {
+            residentKey: 'required',
+            requireResidentKey: true,
+            userVerification: 'preferred'
+        };
     } else {
         const credentials = queryAll(
             'SELECT credentialID FROM passkeys WHERE discordID = ?',
