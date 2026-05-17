@@ -351,13 +351,17 @@ async function handlePost(req, res) {
                     await foodpage.handlePost(bot, req, res, discordID, body);
                 }
             } else if (parsedurl === '/passkey/verify') {
-                const type = new URL(req.url, 'http://localhost').searchParams.get('type') || 'register';
+                const type =
+                    new URL(req.url, 'http://localhost').searchParams.get('type') || 'register';
                 let discordID;
                 const data = JSON.parse(body);
 
                 if (type === 'login') {
                     // For login, we need to lookup discordID from credential ID
-                    const passkey = auth.dbQuerySingle('SELECT discordID FROM passkeys WHERE credentialID = ?', [data.id]);
+                    const passkey = auth.dbQuerySingle(
+                        'SELECT discordID FROM passkeys WHERE credentialID = ?',
+                        [data.id]
+                    );
                     discordID = passkey ? passkey.discordID : null;
                 } else {
                     discordID = await auth.checkAuth(req, res, true);
@@ -365,11 +369,18 @@ async function handlePost(req, res) {
 
                 if (discordID) {
                     const result = await auth.verifyPasskey(discordID, type, data);
-                    res.writeHead(result.success ? 200 : 500, { 'Content-Type': 'application/json' });
+                    res.writeHead(result.success ? 200 : 500, {
+                        'Content-Type': 'application/json',
+                    });
                     res.end(JSON.stringify(result));
                 } else {
                     res.writeHead(401, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, error: 'Not authenticated or invalid credential' }));
+                    res.end(
+                        JSON.stringify({
+                            success: false,
+                            error: 'Not authenticated or invalid credential',
+                        })
+                    );
                 }
             } else {
                 await auth.handleLoginRegister(req, res, body);
@@ -396,7 +407,10 @@ async function handleGet(req, res) {
                 if (type === 'login') {
                     // For login, we need to lookup discordID by username first
                     const username = parsedurl.searchParams.get('username');
-                    const user = auth.dbQuerySingle('SELECT discordID FROM users WHERE username = ?', [username]);
+                    const user = auth.dbQuerySingle(
+                        'SELECT discordID FROM users WHERE username = ?',
+                        [username]
+                    );
                     discordID = user ? user.discordID : null;
                 } else {
                     discordID = await auth.checkAuth(req, res, true);

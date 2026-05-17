@@ -131,7 +131,7 @@ function uploadFile(file) {
                 messageInput.value = '';
                 if (typeof autoResize === 'function') autoResize(messageInput);
                 messageInput.focus();
-                
+
                 // Optional: Refresh message container to show the new message
                 // For now, we rely on the user refreshing or the periodic refresh
             } else {
@@ -203,7 +203,7 @@ function handleMessageKeydown(event) {
 
 function autoResize(el) {
     if (!el) return;
-    
+
     var currentLen = el.value.length;
     var lastLen = parseInt(el.getAttribute('data-last-len') || '0');
     el.setAttribute('data-last-len', currentLen);

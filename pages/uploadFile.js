@@ -177,15 +177,14 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                                 );
                             } else {
                                 res.writeHead(400, { 'Content-Type': 'application/json' });
-                                res.end(
-                                    JSON.stringify({ success: false, error: errorMsg })
-                                );
+                                res.end(JSON.stringify({ success: false, error: errorMsg }));
                             }
                             resolve();
                             return;
                         }
 
-                        const originalFilename = file.originalFilename || file.name || 'uploaded_file';
+                        const originalFilename =
+                            file.originalFilename || file.name || 'uploaded_file';
                         const isMKV = originalFilename.toLowerCase().endsWith('.mkv');
 
                         const messageText = Array.isArray(fields.message)
@@ -201,11 +200,16 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             : '';
 
                         // Log upload start
-                        console.log(`Starting upload to transfer service: ${originalFilename} (${file.size} bytes)`);
+                        console.log(
+                            `Starting upload to transfer service: ${originalFilename} (${file.size} bytes)`
+                        );
 
                         // Basic sanity check for common file types
-                        if (isMKV && file.size < 1024 * 50) { // MKV headers alone are usually a few KB, but 50KB is a very safe "is this even a video" floor
-                            console.warn(`Warning: MKV file ${originalFilename} is suspiciously small (${file.size} bytes).`);
+                        if (isMKV && file.size < 1024 * 50) {
+                            // MKV headers alone are usually a few KB, but 50KB is a very safe "is this even a video" floor
+                            console.warn(
+                                `Warning: MKV file ${originalFilename} is suspiciously small (${file.size} bytes).`
+                            );
                         }
 
                         // SUPPORT BOTH VERSIONS OF FORMIDABLE (v1 uses .path, v2/v3 uses .filepath)

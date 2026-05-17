@@ -115,9 +115,10 @@ replace the token in .env with your bot's token (DISCORD_TOKEN=...)
 
 ```bash
 docker compose up -d
-``` 
+```
 
 ### Bot setup
+
 Go to [discord.dev](https://discord.com/developers/applications) and create a new application
 
 In the application menu go to "Bot" and click on "Reset Token"
@@ -147,8 +148,6 @@ Open Discord and type ^connect in the same server you invited the bot in
 The bot will send you a verification code in DMs
 
 Go to [localhost:4000](http://localhost:4000) and use it to register
-
-
 
 ## Contributors
 

@@ -634,29 +634,41 @@ exports.getPasskeyOptions = function (discordID, type = 'register') {
         userVerification: 'preferred',
     };
     if (type === 'register') {
-        options.user = { id: Array.from(Buffer.from(discordID)), name: discordID, displayName: discordID };
-        options.pubKeyCredParams = [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }];
+        options.user = {
+            id: Array.from(Buffer.from(discordID)),
+            name: discordID,
+            displayName: discordID,
+        };
+        options.pubKeyCredParams = [
+            { alg: -7, type: 'public-key' },
+            { alg: -257, type: 'public-key' },
+        ];
     } else {
-        options.allowCredentials = queryAll('SELECT credentialID FROM passkeys WHERE discordID = ?', [discordID])
-            .map(row => ({ id: Buffer.from(row.credentialID, 'base64'), type: 'public-key' }));
+        options.allowCredentials = queryAll(
+            'SELECT credentialID FROM passkeys WHERE discordID = ?',
+            [discordID]
+        ).map((row) => ({ id: Buffer.from(row.credentialID, 'base64'), type: 'public-key' }));
     }
     return options;
 };
 
 exports.verifyPasskey = async function (discordID, type, response) {
     if (!response.id || !response.rawId) return { success: false, error: 'Invalid response' };
-    
+
     if (type === 'register') {
         queryRun('INSERT INTO passkeys (discordID, credentialID, publicKey) VALUES (?,?,?)', [
             discordID,
             response.id,
-            Buffer.from(response.rawId, 'base64')
+            Buffer.from(response.rawId, 'base64'),
         ]);
         return { success: true };
     } else {
-        const passkey = querySingle('SELECT publicKey, counter FROM passkeys WHERE credentialID = ? AND discordID = ?', [response.id, discordID]);
+        const passkey = querySingle(
+            'SELECT publicKey, counter FROM passkeys WHERE credentialID = ? AND discordID = ?',
+            [response.id, discordID]
+        );
         if (!passkey) return { success: false, error: 'Passkey not found' };
-        
+
         // TODO: Signature verification logic using public key would go here.
         // For now, return success if credentialID is found.
         return { success: true };
