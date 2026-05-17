@@ -629,7 +629,10 @@ exports.getPasskeyOptions = function (discordID, type = 'register') {
     const challenge = crypto.randomBytes(32);
     const options = {
         challenge: Array.from(challenge),
-        rpId: 'localhost', // Should be dynamic
+        rp: {
+            id: 'localhost',
+            name: 'Discross'
+        },
         timeout: 60000,
         userVerification: 'preferred',
     };
