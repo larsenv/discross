@@ -63,6 +63,7 @@
                 (function() {
                     async function doPasskeyLogin(options, isConditional) {
                         try {
+                            console.log('Starting passkey login, conditional:', isConditional, 'options:', options);
                             // Cast challenge and allowCredentials ids to window.Uint8Array
                             options.challenge = new window.Uint8Array(options.challenge);
                             if (options.allowCredentials) {
@@ -77,6 +78,7 @@
                             }
 
                             var assertion = await navigator.credentials.get(getOptions);
+                            console.log('Assertion received:', assertion);
                             if (!assertion) return;
 
                             var data = {
@@ -90,18 +92,22 @@
                                 }
                             };
 
+                            console.log('Verifying passkey data:', data);
                             var verify = await fetch('/passkey/verify?type=login', {
                                 method: 'POST',
                                 body: JSON.stringify(data),
                                 headers: { 'Content-Type': 'application/json' }
                             });
 
-                            if (verify.ok) {
+                            var result = await verify.json();
+                            console.log('Verification result:', result);
+                            if (verify.ok && result.success) {
                                 window.location.href = '/server/';
                             } else {
-                                alert('Passkey login failed');
+                                alert('Passkey login failed: ' + (result.error || 'Unknown error'));
                             }
                         } catch (err) {
+                            console.error('Passkey error:', err);
                             if (err.name !== 'NotAllowedError' && !isConditional) {
                                 alert('Error: ' + err.message);
                             }
@@ -114,22 +120,32 @@
                         var username = document.getElementById('username').value;
                         if (!username) { alert('Please enter your username'); return; }
                         
-                        var res = await fetch('/passkey/options?type=login&username=' + encodeURIComponent(username));
-                        var options = await res.json();
-                        if (options.error) { alert('No passkey found for this user'); return; }
-                        
-                        doPasskeyLogin(options, false);
+                        try {
+                            var res = await fetch('/passkey/options?type=login&username=' + encodeURIComponent(username));
+                            var options = await res.json();
+                            if (options.error) { alert('No passkey found for this user'); return; }
+                            
+                            doPasskeyLogin(options, false);
+                        } catch (err) {
+                            alert('Failed to fetch passkey options: ' + err.message);
+                        }
                     };
 
                     // Conditional UI (Autofill)
                     if (window.PublicKeyCredential && PublicKeyCredential.isConditionalMediationAvailable) {
                         PublicKeyCredential.isConditionalMediationAvailable().then(function(available) {
                             if (available) {
-                                fetch('/passkey/options?type=login')
-                                    .then(function(res) { return res.json(); })
-                                    .then(function(options) {
-                                        doPasskeyLogin(options, true);
-                                    });
+                                // Small delay to let password managers initialize
+                                setTimeout(function() {
+                                    fetch('/passkey/options?type=login')
+                                        .then(function(res) { return res.json(); })
+                                        .then(function(options) {
+                                            doPasskeyLogin(options, true);
+                                        })
+                                        .catch(function(err) {
+                                            console.error('Failed to fetch conditional passkey options:', err);
+                                        });
+                                }, 500);
                             }
                         });
                     }
