@@ -725,7 +725,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     // --- Tracker page ---
     if (subpath === 'track') {
         let html = common(templates.track);
-        const lastOrder = auth.dbQuerySingle(
+        const lastOrder = auth.querySingle(
             'SELECT store_name, timestamp FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC LIMIT 1',
             [discordID]
         );
@@ -750,7 +750,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
     // --- Receipts / order history ---
     if (subpath === 'receipts') {
-        const orders = auth.dbQueryAll(
+        const orders = auth.queryAll(
             'SELECT * FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC',
             [discordID]
         );
@@ -800,7 +800,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
     // --- Cancel order ---
     if (subpath === 'cancel-order') {
-        auth.dbQueryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID]);
+        auth.queryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID]);
         res.writeHead(302, {
             Location: '/food/cart' + sessionData.persistentParam,
             'Set-Cookie':
@@ -1202,7 +1202,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
 
         const code = String(crypto.randomInt(VERIFICATION_CODE_MIN, VERIFICATION_CODE_MAX));
         const expires = unixTime() + 600;
-        auth.dbQueryRun(
+        auth.queryRun(
             'INSERT OR REPLACE INTO pizza_verifications (discordID, code, cart_json, expires) VALUES (?,?,?,?)',
             [discordID, code, '', expires]
         );
@@ -1255,7 +1255,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
     // --- Place order ---
     if (subpath === 'place-order') {
         const code = (params.code || '').replace(/[^0-9]/g, '').slice(0, 6);
-        const verification = auth.dbQuerySingle(
+        const verification = auth.querySingle(
             'SELECT * FROM pizza_verifications WHERE discordID=? AND code=? AND expires > ?',
             [discordID, code, unixTime()]
         );
@@ -1552,7 +1552,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
                   ? cartTotal
                   : parseFloat(orderResult.data.Order?.Amounts?.Payment || 0);
 
-        auth.dbQueryRun(
+        auth.queryRun(
             'INSERT INTO pizza_orders (discordID, store_id, store_name, items_json, total, timestamp) VALUES (?,?,?,?,?,?)',
             [
                 discordID,
@@ -1570,7 +1570,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
                 unixTime(),
             ]
         );
-        auth.dbQueryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID]);
+        auth.queryRun('DELETE FROM pizza_verifications WHERE discordID=?', [discordID]);
 
         res.writeHead(302, {
             Location: buildRedirect('/food/receipts', ['placed=1']),

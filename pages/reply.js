@@ -98,7 +98,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
             const userAgentStr = req.headers['user-agent'];
             if (userAgentStr && message && message.id) {
-                auth.dbQueryRun(
+                auth.queryRun(
                     'INSERT OR REPLACE INTO message_user_agents (messageID, userAgent) VALUES (?, ?)',
                     [message.id, userAgentStr]
                 );

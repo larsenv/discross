@@ -74,7 +74,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
         const message = await webhook.send(payload);
 
         if (userAgentStr && message && message.id) {
-            auth.dbQueryRun(
+            auth.queryRun(
                 'INSERT OR REPLACE INTO message_user_agents (messageID, userAgent) VALUES (?, ?)',
                 [message.id, userAgentStr]
             );

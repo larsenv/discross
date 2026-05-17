@@ -1691,12 +1691,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             const isBotSelf = item.author.id === bot.client.user.id;
             const isDiscrossWebhook =
                 item.webhookId &&
-                auth.dbQuerySingle('SELECT webhookID FROM webhooks WHERE webhookID=?', [
+                auth.querySingle('SELECT webhookID FROM webhooks WHERE webhookID=?', [
                     item.webhookId,
                 ]);
             currentIsDiscross = !!(isBotSelf || isDiscrossWebhook);
             if (currentIsDiscross) {
-                const uaRow = auth.dbQuerySingle(
+                const uaRow = auth.querySingle(
                     'SELECT userAgent FROM message_user_agents WHERE messageID=?',
                     [item.id]
                 );

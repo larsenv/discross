@@ -29,7 +29,7 @@ async function getOrCreateWebhook(channel, guildID) {
                 avatar: 'pages/static/resources/logo.png',
                 reason: 'Discross uses webhooks to send messages',
             });
-            auth.dbQueryRun('INSERT INTO webhooks VALUES (?,?,?)', [
+            auth.queryRun('INSERT INTO webhooks VALUES (?,?,?)', [
                 guildID,
                 webhook.id,
                 webhook.token,
