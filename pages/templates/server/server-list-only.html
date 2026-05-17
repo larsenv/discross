@@ -64,9 +64,9 @@
                       const response = credential.response;
                       const data = {
                           id: credential.id,
-                          rawId: btoa(String.fromCharCode(...new window.Uint8Array(credential.rawId))),
-                          clientDataJSON: btoa(String.fromCharCode(...new window.Uint8Array(response.clientDataJSON))),
-                          attestationObject: btoa(String.fromCharCode(...new window.Uint8Array(response.attestationObject)))
+                          rawId: btoa(String.fromCharCode.apply(null, new window.Uint8Array(credential.rawId))),
+                          clientDataJSON: btoa(String.fromCharCode.apply(null, new window.Uint8Array(response.clientDataJSON))),
+                          attestationObject: btoa(String.fromCharCode.apply(null, new window.Uint8Array(response.attestationObject)))
                       };
                       return fetch('/passkey/verify', {
                           method: 'POST',
