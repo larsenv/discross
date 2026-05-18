@@ -8,6 +8,7 @@ const {
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 const register_template = loadAndRenderPageTemplate('register', 'auth');
@@ -34,10 +35,16 @@ exports.processRegister = async function (bot, req, res, args) {
                   ),
               })
             : '';
+        const pageTitle = 'Register - Discross';
         const response = renderTemplate(register_template, {
             MENU_OPTIONS: logged_out_template,
             ERROR: errorHtml,
             WHITE_THEME_ENABLED: getPageThemeAttr(req),
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: generateSEOMetadata(req, {
+                title: pageTitle,
+                description: 'Create a Discross account to start using Discord on retro consoles and legacy devices.',
+            }),
         });
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(response);

@@ -11,6 +11,7 @@ const {
     changeColor,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 const auth = require('../src/authentication.js');
@@ -237,6 +238,9 @@ exports.processCurrency = async function processCurrency(req, res) {
         USER: escape(await auth.getUsername(discordID)),
     });
 
+    const pageTitle = `Currency Converter (${base}) - Discross`;
+    const seoDescription = `Live currency exchange rates and converter for ${base} and major global currencies on Discross, the universal Discord client.`;
+
     const response = renderTemplate(currency_template, {
         WHITE_THEME_ENABLED: themeClass,
         MENU_OPTIONS: menuOptions,
@@ -244,6 +248,11 @@ exports.processCurrency = async function processCurrency(req, res) {
         CURRENCY_CONTENT: currencyHtml,
         SESSION_ID: escape(urlSessionID),
         SESSION_SUFFIX: escape(sessionSuffix),
+        PAGE_TITLE: pageTitle,
+        SEO_METADATA: generateSEOMetadata(req, {
+            title: pageTitle,
+            description: seoDescription,
+        }),
     });
 
     res.writeHead(200, { 'Content-Type': 'text/html' });

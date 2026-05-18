@@ -4,7 +4,7 @@ const https = require('https');
 const escape = require('escape-html');
 
 const auth = require('../src/authentication.js');
-const { renderTemplate, loadAndRenderPageTemplate, getTemplate, render } = require('./utils.js');
+const { renderTemplate, loadAndRenderPageTemplate, getTemplate, render, generateSEOMetadata } = require('./utils.js');
 
 // Fallback timezone when user cookie is absent or invalid
 const DEFAULT_TZ = 'America/New_York';
@@ -313,11 +313,19 @@ exports.processSports = async function processSports(req, res) {
         USER: escape(await auth.getUsername(discordID)),
     });
 
+    const pageTitle = `Sports Scores (${sport.label}) - Discross`;
+    const seoDescription = `Get live scores, schedules, and results for ${sport.label} games on Discross, the universal Discord client.`;
+
     const response = renderTemplate(sports_template, {
         WHITE_THEME_ENABLED: themeClass,
         MENU_OPTIONS: menuOptions,
         NAV_BUTTONS: navHtml,
         SPORTS_CONTENT: sportsHtml,
+        PAGE_TITLE: pageTitle,
+        SEO_METADATA: generateSEOMetadata(req, {
+            title: pageTitle,
+            description: seoDescription,
+        }),
     });
 
     res.writeHead(200, { 'Content-Type': 'text/html' });

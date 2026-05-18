@@ -6,6 +6,7 @@ const {
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 const forgot_template = loadAndRenderPageTemplate('forgot', 'auth');
@@ -20,10 +21,16 @@ exports.processForgot = function (bot, req, res, args) {
               ERROR_MESSAGE: escape(rawError).replaceAll('\n', getTemplate('line-break', 'misc')),
           })
         : '';
+    const pageTitle = 'Forgot Password - Discross';
     const response = renderTemplate(forgot_template, {
         MENU_OPTIONS: logged_out_template,
         ERROR: errorHtml,
         WHITE_THEME_ENABLED: getPageThemeAttr(req),
+        PAGE_TITLE: pageTitle,
+        SEO_METADATA: generateSEOMetadata(req, {
+            title: pageTitle,
+            description: 'Recover your Discross account password.',
+        }),
     });
     res.end(response);
 };

@@ -12,6 +12,7 @@ const {
     changeColor,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 // Maximum ticker symbol length to prevent abuse
@@ -212,12 +213,22 @@ exports.processStocks = async function processStocks(req, res) {
         USER: escape(await auth.getUsername(discordID)),
     });
 
+    const pageTitle = ticker ? `Stock Quote (${ticker}) - Discross` : 'Stock Market Indices - Discross';
+    const seoDescription = ticker
+        ? `View live stock market quotes and data for ${ticker} on Discross, the universal Discord client.`
+        : 'View live stock market index data and major indices on Discross, the universal Discord client.';
+
     const response = renderTemplate(stocks_template, {
         WHITE_THEME_ENABLED: themeClass,
         MENU_OPTIONS: menuOptions,
         TICKER_VALUE: escape(ticker),
         STOCKS_CONTENT: stocksHtml,
         CREDIT: credit,
+        PAGE_TITLE: pageTitle,
+        SEO_METADATA: generateSEOMetadata(req, {
+            title: pageTitle,
+            description: seoDescription,
+        }),
     });
 
     res.writeHead(200, { 'Content-Type': 'text/html' });

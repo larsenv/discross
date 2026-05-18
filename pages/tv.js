@@ -2,7 +2,7 @@
 
 const https = require('https');
 const escape = require('escape-html');
-const { renderTemplate, loadAndRenderPageTemplate, getTemplate, render } = require('./utils.js');
+const { renderTemplate, loadAndRenderPageTemplate, getTemplate, render, generateSEOMetadata } = require('./utils.js');
 const he = require('he');
 
 const auth = require('../src/authentication.js');
@@ -802,6 +802,11 @@ async function serveMainPage(
         }
     }
 
+    const pageTitle = zip ? `TV Guide for ${zip} - Discross` : 'TV Guide - Discross';
+    const seoDescription = zip
+        ? `View local TV listings and schedules for ${zip} on Discross, the universal Discord client.`
+        : 'View local TV listings and schedules on Discross, the universal Discord client.';
+
     const response = renderTemplate(tv_template, {
         WHITE_THEME_ENABLED: themeClass,
         MENU_OPTIONS: menuHtml,
@@ -809,6 +814,11 @@ async function serveMainPage(
         DATE_VALUE: escape(date),
         TV_CONTENT: contentHtml,
         SESSION_ID: escape(urlSessionID),
+        PAGE_TITLE: pageTitle,
+        SEO_METADATA: generateSEOMetadata(req, {
+            title: pageTitle,
+            description: seoDescription,
+        }),
     });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);

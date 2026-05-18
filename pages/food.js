@@ -12,6 +12,7 @@ const {
     parseCookies,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 const AsyncLock = require('async-lock');
 
@@ -332,17 +333,37 @@ exports.handleGet = async function (bot, req, res, discordID) {
     sessionData.persistentParam = _pParts.length ? '?' + _pParts.join('&') : '';
     sessionData.persistentSuffix = _pParts.length ? '&' + _pParts.join('&') : '';
 
-    const common = (html) => applyCommonFields(html, req, templates, theme, sessionData);
+    const common = (html, seoOptions = {}) => {
+        const pageTitle = seoOptions.title || 'Pizza - Discross';
+        const seoDescription =
+            seoOptions.description ||
+            'Order pizza from Domino\'s through Discross, the universal Discord client.';
+
+        let result = applyCommonFields(html, req, templates, theme, sessionData);
+        result = renderTemplate(result, {
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: generateSEOMetadata(req, {
+                title: pageTitle,
+                description: seoDescription,
+            }),
+        });
+        return result;
+    };
 
     // --- Store finder ---
     if (subpath === '' || subpath === 'index' || subpath === 'index.html') {
-        return res.end(common(templates.index));
+        return res.end(common(templates.index, { title: 'Order Pizza - Discross' }));
     }
 
     // --- Store search ---
     if (subpath === 'store-search') {
         const address = parsedurl.searchParams.get('address') || '';
-        let html = common(templates.storeSearch);
+        let html = common(templates.storeSearch, {
+            title: address ? `Stores near ${address} - Discross` : 'Store Search - Discross',
+            description: address
+                ? `Find Domino's stores near ${address} on Discross.`
+                : 'Search for Domino\'s stores to order pizza on Discross.',
+        });
         html = strReplace(html, '{$SEARCH_ADDRESS}', escape(address));
 
         if (!address) {

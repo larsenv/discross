@@ -8,6 +8,7 @@ const {
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 const search_template = loadAndRenderPageTemplate('search');
@@ -45,6 +46,10 @@ exports.processSearch = async function processSearch(req, res) {
     const menuOptions = renderTemplate(logged_in_template, {
         USER: escape(await auth.getUsername(discordID)),
     });
+
+    const pageTitle = 'Search - Discross';
+    const seoDescription = 'Search the web using FrogFind, Wiby, or Google on Discross, the universal Discord client.';
+
     const response = renderTemplate(search_template, {
         WHITE_THEME_ENABLED: themeClass,
         MENU_OPTIONS: menuOptions,
@@ -53,6 +58,11 @@ exports.processSearch = async function processSearch(req, res) {
         WIBY_CHECKED: safeEngine === 'wiby' ? 'checked' : '',
         GOOGLE_CHECKED: safeEngine === 'google' ? 'checked' : '',
         SESSION_ID: escape(urlSessionID),
+        PAGE_TITLE: pageTitle,
+        SEO_METADATA: generateSEOMetadata(req, {
+            title: pageTitle,
+            description: seoDescription,
+        }),
     });
 
     res.writeHead(200, { 'Content-Type': 'text/html' });

@@ -33,6 +33,7 @@ const {
     getTemplate,
     renderTemplate,
     render,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 // ---------------------------------------------------------------------------
@@ -2049,15 +2050,26 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
               ? render('channel/input', { COLOR: boxColor })
               : render('channel/input-disabled', { COLOR: boxColor });
 
+        const channelDisplayName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
+        const serverName = chnl.guild.name;
+        const pageTitle = `${channelDisplayName} - ${normalizeWeirdUnicode(serverName)} - Discross`;
+        const seoDescription = `Chat in ${channelDisplayName} on ${normalizeWeirdUnicode(serverName)} using Discross, the universal Discord client.`;
+        const seoMetadata = generateSEOMetadata(req, {
+            title: pageTitle,
+            description: seoDescription,
+        });
+
         if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
             const final = renderTemplate(baseTemplate, {
                 INPUT: inputHtml,
                 MESSAGES: getTemplate('no-message-history', 'channel'),
-                CHANNEL_NAME: (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name),
+                CHANNEL_NAME: escape(channelDisplayName),
                 SESSION_ID: urlSessionID,
                 SESSION_PARAM: sessionParam,
                 EMOJI_DISPLAY: urlEmoji === '1' ? '' : 'display: none;',
                 EMOJI_TOGGLE_URL: buildEmojiToggleUrl(chnl.id, urlEmoji === '1', sessionParam),
+                PAGE_TITLE: pageTitle,
+                SEO_METADATA: seoMetadata,
             });
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(final);
@@ -2089,12 +2101,14 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             REFRESH_URL: refreshUrl,
             INPUT: inputHtml,
             RANDOM_EMOJI: RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)],
-            CHANNEL_NAME: (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name),
+            CHANNEL_NAME: escape(channelDisplayName),
             MESSAGES: messagesHtml,
             SESSION_ID: urlSessionID,
             SESSION_PARAM: sessionParam,
             EMOJI_DISPLAY: urlEmoji === '1' ? '' : 'display: none;',
             EMOJI_TOGGLE_URL: buildEmojiToggleUrl(chnl.id, urlEmoji === '1', sessionParam),
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: seoMetadata,
         });
 
         res.writeHead(200, { 'Content-Type': 'text/html' });

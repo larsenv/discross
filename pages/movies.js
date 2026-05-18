@@ -3,7 +3,7 @@
 const escape = require('escape-html');
 const he = require('he');
 const auth = require('../src/authentication.js');
-const { renderTemplate, getTemplate } = require('./utils.js');
+const { renderTemplate, getTemplate, generateSEOMetadata } = require('./utils.js');
 
 function loadTemplate(name) {
     const head_partial = getTemplate('head', 'partials');
@@ -776,12 +776,21 @@ exports.processMovies = async function processMovies(req, res, discordID) {
     }
 
     const username = await auth.getUsername(discordID);
-    const menuOptions = renderTemplate(templates.loggedIn, { '{$USER}': escape(username) });
+    const menuOptions = renderTemplate(templates.loggedIn, { USER: escape(username) });
+
+    const pageTitle = `Movies & TV (${tab.label}) - Discross`;
+    const seoDescription = `Browse popular ${tab.label} and ratings from Rotten Tomatoes on Discross, the universal Discord client.`;
+
     const final = renderTemplate(templates.movies, {
-        '{$WHITE_THEME_ENABLED}': theme.themeClass,
-        '{$MENU_OPTIONS}': menuOptions,
-        '{$TABS}': tabsHtml,
-        '{$MOVIES_ITEMS}': moviesHtml,
+        WHITE_THEME_ENABLED: theme.themeClass,
+        MENU_OPTIONS: menuOptions,
+        TABS: tabsHtml,
+        MOVIES_ITEMS: moviesHtml,
+        PAGE_TITLE: pageTitle,
+        SEO_METADATA: generateSEOMetadata(req, {
+            title: pageTitle,
+            description: seoDescription,
+        }),
     });
 
     res.writeHead(200, { 'Content-Type': 'text/html' });

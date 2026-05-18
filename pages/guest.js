@@ -18,6 +18,7 @@ const {
     sanitizeGuestName,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 const TEMPLATE_CHANNEL = loadAndRenderPageTemplate('channel', 'guest');
@@ -89,10 +90,16 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     // Show name entry page if no guest name set
     if (!guestName) {
         const hasError = parsedUrl.searchParams.get('guest_name_error') === '1';
+        const pageTitle = 'Guest Access - Discross';
         const page = renderTemplate(TEMPLATE_NAME, {
             WHITE_THEME_ENABLED: theme.themeClass,
             CHANNEL_ID: escape(channelId),
             ERROR: hasError ? getTemplate('invalid-name-error', 'misc') : '',
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: generateSEOMetadata(req, {
+                title: pageTitle,
+                description: 'Join a public Discord channel as a guest on Discross.',
+            }),
         });
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(page);
@@ -140,6 +147,10 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
         const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
         const refreshUrl = `${channelId}?random=${Math.random()}`;
 
+        const serverName = chnl.guild.name;
+        const pageTitle = `${channelDisplayName} - ${normalizeWeirdUnicode(serverName)} - Discross`;
+        const seoDescription = `Chat in ${channelDisplayName} on ${normalizeWeirdUnicode(serverName)} as a guest using Discross, the universal Discord client.`;
+
         const page = renderTemplate(TEMPLATE_CHANNEL, {
             WHITE_THEME_ENABLED: theme.themeClass,
             CHANNEL_ID: escape(channelId),
@@ -149,6 +160,11 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
             REFRESH_URL: refreshUrl,
             INPUT: inputHtml,
             MESSAGES: messagesHtml,
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: generateSEOMetadata(req, {
+                title: pageTitle,
+                description: seoDescription,
+            }),
         });
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(page);

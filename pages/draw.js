@@ -9,6 +9,7 @@ const {
     buildSessionParam,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 const channel_template = loadAndRenderPageTemplate('draw');
 
@@ -49,12 +50,21 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                 return;
             }
 
+            const channelName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
+            const pageTitle = `Draw in ${channelName} - Discross`;
+            const seoDescription = `Draw and send sketches to ${channelName} on Discross, the universal Discord client.`;
+
             const finalTemplate = renderTemplate(baseTemplate, {
                 SERVER_ID: chnl.guild.id,
                 CHANNEL_ID: chnl.id,
-                CHANNEL_NAME: (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name),
+                CHANNEL_NAME: channelName,
                 SESSION_ID: urlSessionID,
                 SESSION_PARAM: sessionParam,
+                PAGE_TITLE: pageTitle,
+                SEO_METADATA: generateSEOMetadata(req, {
+                    title: pageTitle,
+                    description: seoDescription,
+                }),
             });
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(finalTemplate);
