@@ -11,6 +11,7 @@ const {
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY;
@@ -449,6 +450,11 @@ exports.processWeather = async function processWeather(req, res) {
         USER: escape(await auth.getUsername(discordID)),
     });
 
+    const pageTitle = city.trim() ? `Weather in ${city} - Discross` : 'Weather - Discross';
+    const seoDescription = city.trim()
+        ? `Get current weather conditions and 5-day forecast for ${city} on Discross, the universal Discord client.`
+        : 'Get current weather conditions and forecasts for cities worldwide on Discross.';
+
     const response = renderTemplate(weather_template, {
         WHITE_THEME_ENABLED: themeClass,
         MENU_OPTIONS: menuOptions,
@@ -456,6 +462,11 @@ exports.processWeather = async function processWeather(req, res) {
         NAV_BUTTONS: navHtml,
         WEATHER_CONTENT: weatherHtml,
         SESSION_ID: escape(urlSessionID),
+        PAGE_TITLE: pageTitle,
+        SEO_METADATA: generateSEOMetadata(req, {
+            title: pageTitle,
+            description: seoDescription,
+        }),
     });
 
     res.writeHead(200, { 'Content-Type': 'text/html' });

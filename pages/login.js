@@ -8,6 +8,7 @@ const {
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 const login_template = loadAndRenderPageTemplate('login', 'auth');
@@ -36,11 +37,17 @@ exports.processLogin = async function (bot, req, res, args) {
                   ),
               })
             : '';
+        const pageTitle = 'Login - Discross';
         const response = renderTemplate(login_template, {
             MENU_OPTIONS: logged_out_template,
             REDIRECT_URL: redirectUrl,
             ERROR: errorHtml,
             WHITE_THEME_ENABLED: getPageThemeAttr(req),
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: generateSEOMetadata(req, {
+                title: pageTitle,
+                description: 'Login to your Discross account to access Discord on any device.',
+            }),
         });
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(response);

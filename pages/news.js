@@ -13,6 +13,7 @@ const {
     buildSessionParam,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 const news_template = loadAndRenderPageTemplate('index', 'news');
@@ -471,6 +472,9 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
         const bylinesEscaped = bylines ? `${escapeContent(bylines, imagesCookie !== 0)} - ` : '';
         const dateStr = date ? escape(formatDateWithTimezone(date, timezone)) : '';
 
+        const pageTitle = `${headline || 'News'} - AP News - Discross`;
+        const seoDescription = `Read this AP News article on Discross, the universal Discord client. ${headline || ''}`;
+
         const final = renderTemplate(article_template, {
             WHITE_THEME_ENABLED: theme.themeClass,
             HEADLINE: headlineEscaped,
@@ -479,6 +483,11 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
             SESSION_PARAM: sessionParam,
             LEAD_IMAGE: leadImageHtml,
             ARTICLE_CONTENT: contentHtml,
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: generateSEOMetadata(req, {
+                title: pageTitle,
+                description: seoDescription,
+            }),
         });
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(final);

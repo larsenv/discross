@@ -58,6 +58,8 @@ function renderTemplate(template, data) {
         DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
         DISCORD_REDIRECT_URL: process.env.DISCORD_REDIRECT_URL,
         DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent(process.env.DISCORD_REDIRECT_URL || ''),
+        PAGE_TITLE: 'Discross - Use Discord Anywhere',
+        SEO_METADATA: '',
     };
 
     // Merge global data with provided data (provided data takes precedence)
@@ -110,7 +112,78 @@ function isBotReady(bot) {
  */
 function getBaseUrl(req) {
     const scheme = req.socket && req.socket.encrypted ? 'https' : 'http';
-    return scheme + '://' + (req.headers.host || 'localhost');
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
+    return scheme + '://' + host;
+}
+
+/**
+ * Generates SEO metadata HTML (meta tags, JSON-LD, canonical).
+ *
+ * @param {object} req - Node.js IncomingMessage.
+ * @param {object} options - SEO options (title, description, canonical, type, image).
+ * @returns {string}
+ */
+function generateSEOMetadata(req, options = {}) {
+    const baseUrl = getBaseUrl(req);
+    const path = new URL(req.url, 'http://localhost').pathname;
+    const url = baseUrl + path;
+
+    const title = options.title || 'Discross - Use Discord Anywhere';
+    const description =
+        options.description ||
+        'Discross is a universal Discord client designed to work on any device with a basic HTML web browser. Access Discord on everything from retro consoles to modern smartphones.';
+    const canonical = options.canonical || url;
+    const type = options.type || 'website';
+    const image = options.image || baseUrl + '/android-chrome-256x256.png';
+    const siteName = 'Discross';
+
+    let html = `
+    <meta name="description" content="${escapeHtml(description)}" />
+    <link rel="canonical" href="${escapeHtml(canonical)}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="${escapeHtml(type)}" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta property="og:url" content="${escapeHtml(url)}" />
+    <meta property="og:site_name" content="${escapeHtml(siteName)}" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${escapeHtml(image)}" />
+    `;
+
+    // JSON-LD Structured Data
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': options.schemaType || 'WebApplication',
+        name: siteName,
+        url: baseUrl,
+        description: description,
+        applicationCategory: 'CommunicationApplication',
+        operatingSystem: 'Any with a web browser',
+    };
+
+    if (options.schemaExtra) {
+        Object.assign(jsonLd, options.schemaExtra);
+    }
+
+    html += `\n    <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`;
+
+    return html;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 /**
@@ -480,6 +553,7 @@ module.exports = {
     renderTemplate,
     render,
     loadAndRenderPageTemplate,
+    generateSEOMetadata,
     isValidSnowflake,
     isBotReady,
     getBaseUrl,

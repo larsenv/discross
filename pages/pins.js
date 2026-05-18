@@ -13,6 +13,7 @@ const {
     buildSessionParam,
     loadAndRenderPageTemplate,
     getTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 const channel_template = loadAndRenderPageTemplate('pins');
@@ -98,13 +99,22 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
                       messages: pinnedMessages,
                   });
 
+        const channelName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
+        const pageTitle = `Pinned Messages - ${channelName} - Discross`;
+        const seoDescription = `View pinned messages in ${channelName} on Discross, the universal Discord client.`;
+
         const final = renderTemplate(channel_template, {
             WHITE_THEME_ENABLED: theme.themeClass,
             CHANNEL_ID: chnl.id,
             SERVER_ID: chnl.guild.id,
-            CHANNEL_NAME: (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name),
+            CHANNEL_NAME: channelName,
             MESSAGES: messagesHtml,
             SESSION_PARAM: sessionParam,
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: generateSEOMetadata(req, {
+                title: pageTitle,
+                description: seoDescription,
+            }),
         });
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(final);
