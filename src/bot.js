@@ -26,7 +26,7 @@ const client = new Discord.Client({
     intents: intentsArray,
 });
 
-client.on('ready', () => {
+client.on('clientReady', () => {
     console.info(`Logged in as ${client.user.tag}!`);
 });
 
@@ -132,7 +132,7 @@ exports.startBot = async function () {
     const token = process.env.DISCORD_TOKEN;
     if (token) {
         return new Promise((resolve, reject) => {
-            client.once('ready', () => {
+            client.once('clientReady', () => {
                 resolve(client);
             });
             client.once('error', (err) => {
