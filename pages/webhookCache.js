@@ -6,6 +6,7 @@ const auth = require('../src/authentication.js');
 // fetchWebhooks() is a Discord API call on every message send; caching it
 // here means the first send to a channel pays the cost, subsequent sends are free.
 const _webhookCache = new Map();
+const MAX_WEBHOOK_CACHE_SIZE = 500;
 
 async function getOrCreateWebhook(channel, guildID) {
     // Threads don't own webhooks — use the parent text channel
@@ -36,6 +37,9 @@ async function getOrCreateWebhook(channel, guildID) {
             ]);
         }
 
+        if (_webhookCache.size >= MAX_WEBHOOK_CACHE_SIZE) {
+            _webhookCache.delete(_webhookCache.keys().next().value);
+        }
         _webhookCache.set(channelId, webhook);
         return webhook;
     } catch (err) {

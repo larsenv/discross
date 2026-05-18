@@ -34,7 +34,7 @@ const {
     renderTemplate,
     render,
     generateSEOMetadata,
-} = require('./utils.js');
+const { parseUserAgent, isLegacyClient } = require('./userAgentUtils.js');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -43,6 +43,8 @@ const {
 const FORWARDED_CONTENT_MAX_LENGTH = 100;
 const REPLY_CONTENT_MAX_LENGTH = 25;
 const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
+const LEGACY_MESSAGE_LIMIT = 25;
+
 
 const SYSTEM_MESSAGE_TEXT = {
     1: 'added a new member',
@@ -1635,7 +1637,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     };
 
     // 2. Fetch messages (or use override).
-    const messages = overrideMessages ?? (await bot.getHistoryCached(chnl));
+    let messages = overrideMessages ?? (await bot.getHistoryCached(chnl));
+
+    // For legacy devices, we limit the number of messages to save memory.
+    if (isLegacyClient(req.headers['user-agent'])) {
+        messages = messages.slice(-LEGACY_MESSAGE_LIMIT);
+    }
 
     // memberCache is used to avoid redundant Discord API calls for avatars/names within this render pass.
     const memberCache = new Map();
@@ -2007,11 +2014,12 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         }
 
         const { getQuickEmojiHTML, getExpandedEmojiHTML } = require('./emojiUtils');
+        const isLegacy = isLegacyClient(req.headers['user-agent']);
 
         const baseTemplate = render('/channel', {
             COMMON_HEAD: getTemplate('head', 'partials'),
             PAGE_CLASS: 'page-channel',
-            EMOJI_PICKER: render('partials/emoji-picker', {
+            EMOJI_PICKER: render(isLegacy ? 'partials/emoji-picker-lite' : 'partials/emoji-picker', {
                 SERVER_EMOJIS_JSON: serverEmojisJSON,
                 SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(
                     chnl.id,

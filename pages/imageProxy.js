@@ -23,7 +23,7 @@ function cacheSet(key, value) {
     imageCache.set(key, value);
 }
 
-exports.imageProxy = async function imageProxy(res, URL, fullSize = false) {
+exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) {
     const cacheKey = fullSize ? URL + ':full' : URL;
     // Serve from in-memory cache if available
     if (imageCache.has(cacheKey)) {
