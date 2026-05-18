@@ -1,27 +1,37 @@
 // Security Warnings
 // ================
-for (var i = 0; i < 4; i++) {
+(function () {
+    var ua = navigator.userAgent;
+    var isLegacy =
+        /Nintendo (DSi|3DS|DS)|Nitro|Playstation [23]|PS[23]|PSP|Xbox( 360)?|Sega (Saturn|Dreamcast)/i.test(
+            ua
+        );
+
+    if (isLegacy) return;
+
+    for (var i = 0; i < 4; i++) {
+        console.log(
+            '%cHold Up!',
+            'font-weight: bold; -webkit-text-fill-color: #5865f2; -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: black; font-size: 71px;'
+        );
+        console.log(
+            "%cIf someone told you to copy/paste something here you have an 11/10 chance you're being scammed.",
+            'font-size: 17px;'
+        );
+        console.log(
+            '%cPasting anything in here could give attackers access to your Discross account.',
+            'color: red; font-weight: bold; font-size: 17px;'
+        );
+    }
     console.log(
-        '%cHold Up!',
-        'font-weight: bold; -webkit-text-fill-color: #5865f2; -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: black; font-size: 71px;'
-    );
-    console.log(
-        "%cIf someone told you to copy/paste something here you have an 11/10 chance you're being scammed.",
+        '%cUnless you understand exactly what you are doing, close this window and stay safe.',
         'font-size: 17px;'
     );
     console.log(
-        '%cPasting anything in here could give attackers access to your Discross account.',
-        'color: red; font-weight: bold; font-size: 17px;'
+        '%cIf you do understand exactly what you are doing, you should come work with us http://discross.net/jobs/',
+        'font-size: 17px;'
     );
-}
-console.log(
-    '%cUnless you understand exactly what you are doing, close this window and stay safe.',
-    'font-size: 17px;'
-);
-console.log(
-    '%cIf you do understand exactly what you are doing, you should come work with us http://discross.net/jobs/',
-    'font-size: 17px;'
-);
+})();
 
 // Nonce Generation
 // =============

@@ -25,8 +25,11 @@ const _insertCustom = db.prepare(
 // In-memory caches to avoid repeated DB round-trips within the same process lifetime.
 // unicodeToTwemojiCode: emoji string → codepoint string (e.g. "1f600")
 const _emojiCodeCache = new Map();
+const MAX_EMOJI_CODE_CACHE_SIZE = 1000;
+
 // cacheCustomEmoji: set of emoji IDs already written to the DB this session
 const _cachedCustomEmojiIds = new Set();
+const MAX_CUSTOM_EMOJI_CACHE_SIZE = 5000;
 
 /**
  * Convert a unicode emoji string to its twemoji codepoint string.
@@ -68,6 +71,9 @@ function unicodeToTwemojiCode(emojiStr) {
         }
     }
     const code = points.join('-');
+    if (_emojiCodeCache.size >= MAX_EMOJI_CODE_CACHE_SIZE) {
+        _emojiCodeCache.delete(_emojiCodeCache.keys().next().value);
+    }
     _emojiCodeCache.set(emojiStr, code);
     try {
         _insertCode.run(emojiStr, code);
@@ -88,7 +94,12 @@ function unicodeToTwemojiCode(emojiStr) {
 function cacheCustomEmoji(emojiId, emojiName, animated) {
     // Skip the DB write if we already recorded this emoji in the current process lifetime
     if (_cachedCustomEmojiIds.has(emojiId)) return;
+
+    if (_cachedCustomEmojiIds.size >= MAX_CUSTOM_EMOJI_CACHE_SIZE) {
+        _cachedCustomEmojiIds.delete(_cachedCustomEmojiIds.values().next().value);
+    }
     _cachedCustomEmojiIds.add(emojiId);
+
     try {
         _insertCustom.run(emojiId, emojiName, animated ? 1 : 0);
     } catch (err) {
@@ -194,6 +205,14 @@ const quickNames = [
     'eyes',
 ];
 
+const skinToneMapping = {
+    '1f3fb': '1',
+    '1f3fc': '2',
+    '1f3fd': '3',
+    '1f3fe': '4',
+    '1f3ff': '5',
+};
+
 function renderEmojiLink(emoji, isCustom, skinTone, animated = false) {
     const code = isCustom ? emoji.id : emoji.code;
     const name = emoji.name;
@@ -216,9 +235,17 @@ function renderEmojiLink(emoji, isCustom, skinTone, animated = false) {
         ? `https://cdn.discordapp.com/emojis/${code}${animated ? '.gif' : '.png'}?size=48`
         : `/resources/twemoji/${finalCode}`;
 
-    // For JS-free, we can't easily insert into the textarea without a form or JS.
-    // But we can at least show them.
-    return `<a title=":${name}:" style="display: inline-block; background: none; cursor: pointer; padding: 8px; border-radius: 4px; text-decoration: none;" onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.1)'" onmouseout="this.style.backgroundColor='transparent'">
+    let onclick = '';
+    if (isCustom) {
+        const tag = `<${animated ? 'a' : ''}:${name}:${code}>`;
+        onclick = `if(typeof insertEmoji==='function')insertEmoji('${tag}');`;
+    } else {
+        const toneIdx = skinToneMapping[skinTone] || '';
+        const suffix = toneIdx ? `:skin-tone-${toneIdx}:` : '';
+        onclick = `if(typeof insertEmoji==='function')insertEmoji(':${name}:${suffix}');`;
+    }
+
+    return `<a title=":${name}:" style="display: inline-block; background: none; cursor: pointer; padding: 8px; border-radius: 4px; text-decoration: none;" onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.1)'" onmouseout="this.style.backgroundColor='transparent'" onclick="${onclick}return false;">
         <img src="${src}" alt="${name}" width="24" height="24" style="width: 24px; height: 24px" loading="lazy" />
     </a>`;
 }

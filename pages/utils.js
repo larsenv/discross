@@ -134,7 +134,7 @@ function generateSEOMetadata(req, options = {}) {
         'Discross is a universal Discord client designed to work on any device with a basic HTML web browser. Access Discord on everything from retro consoles to modern smartphones.';
     const canonical = options.canonical || url;
     const type = options.type || 'website';
-    const image = options.image || baseUrl + '/android-chrome-256x256.png';
+    const image = options.image || baseUrl + '/resources/logo_full.png';
     const siteName = 'Discross';
 
     let html = `
@@ -165,6 +165,12 @@ function generateSEOMetadata(req, options = {}) {
         description: description,
         applicationCategory: 'CommunicationApplication',
         operatingSystem: 'Any with a web browser',
+        softwareVersion: '1.0.0',
+        offers: {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'USD',
+        },
     };
 
     if (options.schemaExtra) {

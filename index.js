@@ -799,15 +799,15 @@ async function handleImageProxy(req, res, parsedurl, args) {
     if (args[2] === 'external') {
         const encodedUrl = req.url.slice(EXTERNAL_PROXY_PREFIX_LENGTH).split('?')[0];
         const fullImageUrl = Buffer.from(encodedUrl, 'base64').toString();
-        await imageProxy(res, fullImageUrl, isFull);
+        await imageProxy(req, res, fullImageUrl, isFull);
     } else if (args[2] === 'sticker') {
         const stickerId = args[3].replace(/\.[^.]*$/, '');
-        await imageProxy(res, `https://media.discordapp.net/stickers/${stickerId}.png`, isFull);
+        await imageProxy(req, res, `https://media.discordapp.net/stickers/${stickerId}.png`, isFull);
     } else {
         const urlObj = new URL(req.url, 'http://localhost');
         urlObj.searchParams.delete('full');
         const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${args[2] === 'emoji' ? urlObj.pathname.slice(18) : urlObj.pathname.slice(12)}${urlObj.search}`;
-        await imageProxy(res, fullImageUrl, isFull);
+        await imageProxy(req, res, fullImageUrl, isFull);
     }
 }
 
