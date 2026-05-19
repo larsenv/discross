@@ -4,6 +4,7 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound.js');
 const {
     renderTemplate,
+    render,
     parseCookies,
     resolveTheme,
     buildSessionParam,
@@ -122,7 +123,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
     } catch (error) {
         console.error(error);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        if ((err.message || err).toString().includes('error reading from remote stream')) {
+        if ((error.message || error).toString().includes('error reading from remote stream')) {
             res.end(getTemplate('proxy-timeout-error', 'misc'));
         } else {
             res.end(getTemplate('generic-error', 'misc'));

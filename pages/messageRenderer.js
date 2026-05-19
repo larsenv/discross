@@ -189,7 +189,7 @@ function renderEmojis(messagetext, item, imagesCookie, animationsCookie) {
     // 2. Process Custom Discord emojis (e.g. <:pepe:123456789>)
     // These come in as HTML-escaped sequences (&lt;:...&gt;) because messagetext is already escaped.
     const customMatchesIterator = result.matchAll(
-        /&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})?(?:(?!\1).)*&gt;/g
+        /&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})&gt;/g
     );
     for (const match of customMatchesIterator) {
         const animated = !!match[2]; // 'a' indicates animation
