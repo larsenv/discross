@@ -22,7 +22,6 @@ const { unicodeToTwemojiCode, cacheCustomEmoji, getSkinToneSelectorHTML } = requ
 const emojiRegex = require('./twemojiRegex').regex;
 const notFound = require('./notFound.js');
 const auth = require('../src/authentication.js');
-const { parseUserAgent } = require('./userAgentUtils.js');
 const {
     isBotReady,
     parseCookies,
@@ -30,10 +29,13 @@ const {
     RANDOM_EMOJIS,
     buildSessionParam,
     buildEmojiToggleUrl,
+    buildEmojiExpandUrl,
     getTemplate,
     renderTemplate,
     render,
     generateSEOMetadata,
+    canViewChannel,
+} = require('./utils.js');
 const { parseUserAgent, isLegacyClient } = require('./userAgentUtils.js');
 
 // ---------------------------------------------------------------------------
@@ -44,7 +46,6 @@ const FORWARDED_CONTENT_MAX_LENGTH = 100;
 const REPLY_CONTENT_MAX_LENGTH = 25;
 const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
 const LEGACY_MESSAGE_LIMIT = 25;
-
 
 const SYSTEM_MESSAGE_TEXT = {
     1: 'added a new member',
@@ -1992,7 +1993,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             return;
         }
 
-        const canView = await require('./utils.js').canViewChannel(member, botMember, chnl);
+        const canView = await canViewChannel(member, botMember, chnl);
 
         if (!canView) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
@@ -2019,25 +2020,28 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         const baseTemplate = render('/channel', {
             COMMON_HEAD: getTemplate('head', 'partials'),
             PAGE_CLASS: 'page-channel',
-            EMOJI_PICKER: render(isLegacy ? 'partials/emoji-picker-lite' : 'partials/emoji-picker', {
-                SERVER_EMOJIS_JSON: serverEmojisJSON,
-                SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(
-                    chnl.id,
-                    urlEmoji === '1',
-                    urlExpanded === '1',
-                    sessionParam
-                ),
-                SKIN_TONE: skinTone,
-                EMOJI_OPEN: urlExpanded === '1' ? 'open' : '',
-                EMOJI_EXPAND_URL: require('./utils.js').buildEmojiExpandUrl(
-                    chnl.id,
-                    urlExpanded === '1',
-                    sessionParam
-                ),
-                EMOJI_QUICK_HTML: getQuickEmojiHTML(skinTone),
-                EMOJI_EXPANDED_HTML:
-                    urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : '',
-            }),
+            EMOJI_PICKER: render(
+                isLegacy ? 'partials/emoji-picker-lite' : 'partials/emoji-picker',
+                {
+                    SERVER_EMOJIS_JSON: serverEmojisJSON,
+                    SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(
+                        chnl.id,
+                        urlEmoji === '1',
+                        urlExpanded === '1',
+                        sessionParam
+                    ),
+                    SKIN_TONE: skinTone,
+                    EMOJI_OPEN: urlExpanded === '1' ? 'open' : '',
+                    EMOJI_EXPAND_URL: buildEmojiExpandUrl(
+                        chnl.id,
+                        urlExpanded === '1',
+                        sessionParam
+                    ),
+                    EMOJI_QUICK_HTML: getQuickEmojiHTML(skinTone),
+                    EMOJI_EXPANDED_HTML:
+                        urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : '',
+                }
+            ),
             EMOJI_BUTTON: getTemplate('emoji-picker-button', 'partials'),
             CHANNEL_REPLY: '',
             REPLY_MESSAGE_ID_INPUT: '',
