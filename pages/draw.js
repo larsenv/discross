@@ -11,6 +11,9 @@ const {
     loadAndRenderPageTemplate,
     getTemplate,
     generateSEOMetadata,
+    RANDOM_EMOJIS,
+    buildEmojiToggleUrl,
+    buildEmojiExpandUrl,
 } = require('./utils.js');
 const channel_template = loadAndRenderPageTemplate('draw');
 
@@ -68,7 +71,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                 serverEmojisJSON = JSON.stringify(serverEmojis);
             }
 
-            const { getQuickEmojiHTML, getExpandedEmojiHTML } = require('./emojiUtils');
+            const { getQuickEmojiHTML, getExpandedEmojiHTML, getSkinToneSelectorHTML } = require('./emojiUtils');
             const isLegacy = require('./userAgentUtils.js').isLegacyClient(req.headers['user-agent']);
 
             const emojiPickerHTML = render(
@@ -85,7 +88,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                     EMOJI_OPEN: urlExpanded === '1' ? 'open' : '',
                     EMOJI_EXPAND_URL: buildEmojiExpandUrl(
                         chnl.id,
-                        urlEmoji === '1',
                         urlExpanded === '1',
                         sessionParam
                     ),
