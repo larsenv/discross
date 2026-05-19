@@ -55,6 +55,11 @@ window.onload = function () {
     setTimeout(function () {
         window.location.hash = '';
         window.location.hash = 'end';
+        
+        // Fallback for Kindle and other browsers where hash nav fails
+        try {
+            window.scrollTo(0, document.body ? document.body.scrollHeight : 999999);
+        } catch (e) {}
     }, 1000);
 };
 

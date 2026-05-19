@@ -235,7 +235,7 @@ canvas.addEventListener(
     'touchstart',
     function (e) {
         // Prevent scrolling and default browser touch actions on the canvas
-        if (e.cancelable) e.preventDefault();
+        if (e.cancelable !== false && e.preventDefault) e.preventDefault();
 
         var pos = getTouchPos(e);
         if (!pos) return;
@@ -270,7 +270,7 @@ canvas.addEventListener(
     'touchmove',
     function (e) {
         if (!isDrawing) return;
-        if (e.cancelable) e.preventDefault();
+        if (e.cancelable !== false && e.preventDefault) e.preventDefault();
 
         var pos = getTouchPos(e);
         if (!pos) return;
@@ -421,6 +421,16 @@ function wipe() {
 function prepareAndSend() {
     var inputField = document.getElementById('drawinginput');
     var form = document.getElementById('sendform');
+    var data = canvas.toDataURL('image/png');
+    inputField.value = data;
+    form.submit();
+}
+
+// Initialize UI
+setColor('#000000', 'c1');
+setSize(5, 's2');
+setTool('draw');
+ form = document.getElementById('sendform');
     var data = canvas.toDataURL('image/png');
     inputField.value = data;
     form.submit();
