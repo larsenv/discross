@@ -186,7 +186,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             return;
         }
 
-        const messagesHtml = await exports.buildMessagesHtml({
+        const messagesHtml = await buildMessagesHtml({
             bot,
             chnl,
             member,
