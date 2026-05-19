@@ -4,7 +4,7 @@ const md = require('markdown-it')({
     breaks: true,
     linkify: true,
     html: false,
-});
+}).disable(['blockquote']);
 const hljs = require('highlight.js');
 
 // Color map from highlight.js token classes to atom-one-dark hex colors.

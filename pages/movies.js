@@ -68,7 +68,7 @@ const TABS = [
     {
         id: 'tv',
         label: 'TV Shows',
-        url: '/browse/tv-series-streaming/',
+        url: '/browse/tv_series_browse/sort:popular',
         apiType: 'tv-series-browsing',
     },
 ];
