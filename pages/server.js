@@ -402,11 +402,12 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             response = renderTemplate(response, { DISCORD_NAME: '' });
         }
 
-        const pageTitle = serverName
-            ? `${normalizeWeirdUnicode(serverName)} - Discross`
+        const normalizedServerName = serverName ? normalizeWeirdUnicode(serverName) : '';
+        const pageTitle = normalizedServerName
+            ? `${normalizedServerName}${normalizedServerName.toLowerCase() === 'discross' ? '' : ' - Discross'}`
             : 'Server Menu - Discross';
-        const seoDescription = serverName
-            ? `Browse channels and chat in ${normalizeWeirdUnicode(serverName)} on Discross, the universal Discord client.`
+        const seoDescription = normalizedServerName
+            ? `Browse channels and chat in ${normalizedServerName} on Discross, the universal Discord client.`
             : 'Access your Discord servers and channels on Discross, the universal Discord client.';
 
         // Render remaining placeholders including USER_ID and USER_NAME

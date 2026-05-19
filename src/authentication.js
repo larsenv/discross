@@ -15,7 +15,7 @@ const { getTemplate, renderTemplate } = require('../pages/utils.js');
 // --- Configuration & Constants ---
 
 const saltRounds = 10;
-const expiryTime = 24 * 60 * 60; // For sessions - expires in 24 hours
+const expiryTime = 7 * 24 * 60 * 60; // For sessions - expires in 7 days
 const codeExpiryTime = 30 * 60; // For verification codes - expires in 30 minutes
 const pendingTotpExpiryTime = 10 * 60; // Pending TOTP setup expires in 10 minutes
 const actionCodeExpiryTime = 10 * 60; // In-session action codes expire in 10 minutes

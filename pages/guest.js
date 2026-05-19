@@ -6,7 +6,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const auth = require('../src/authentication.js');
 const notFound = require('./notFound.js');
 const { getClientIP, getTimezoneFromIP } = require('../src/timezoneUtils');
-const { buildMessagesHtml } = require('./channel.js');
+const { buildMessagesHtml } = require('./messageRenderer.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {
     renderTemplate,
@@ -148,8 +148,9 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
         const refreshUrl = `${channelId}?random=${Math.random()}`;
 
         const serverName = chnl.guild.name;
-        const pageTitle = `${channelDisplayName} - ${normalizeWeirdUnicode(serverName)} - Discross`;
-        const seoDescription = `Chat in ${channelDisplayName} on ${normalizeWeirdUnicode(serverName)} as a guest using Discross, the universal Discord client.`;
+        const normalizedServerName = normalizeWeirdUnicode(serverName);
+        const pageTitle = `${channelDisplayName} - ${normalizedServerName}${normalizedServerName.toLowerCase() === 'discross' ? '' : ' - Discross'}`;
+        const seoDescription = `Chat in ${channelDisplayName} on ${normalizedServerName} as a guest using Discross, the universal Discord client.`;
 
         const page = renderTemplate(TEMPLATE_CHANNEL, {
             WHITE_THEME_ENABLED: theme.themeClass,

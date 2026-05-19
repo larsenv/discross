@@ -3,7 +3,7 @@ const escape = require('escape-html');
 const { PermissionFlagsBits } = require('discord.js');
 const { getDisplayName } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../src/timezoneUtils');
-const { buildMessagesHtml } = require('./channel');
+const { buildMessagesHtml } = require('./messageRenderer.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {
     getSkinToneSelectorHTML,

@@ -816,6 +816,7 @@ textarea:focus {
     margin: 0 auto 20px auto;
     display: flex;
     justify-content: center;
+    text-align: center;
     padding: 5px;
     width: 100%;
     max-width: 610px;
@@ -826,7 +827,7 @@ textarea:focus {
 canvas {
     background: #ffffff;
     cursor: crosshair;
-    display: block;
+    display: inline-block;
     border: 1px solid #202225;
     max-width: 100%;
     touch-action: none;

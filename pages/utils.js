@@ -36,10 +36,7 @@ function getTemplate(name, folder = 'channel') {
  */
 function loadAndRenderPageTemplate(name, folder = '', data = {}) {
     const path = folder ? `${folder}/${name}` : `/${name}`;
-    return render(path, {
-        ...data,
-        COMMON_HEAD: getTemplate('head', 'partials'),
-    });
+    return render(path, data);
 }
 
 /**
@@ -53,13 +50,16 @@ function renderTemplate(template, data) {
     if (!template) return '';
     if (!data) data = {};
 
+    const isCachingPass = Object.keys(data).length === 0;
+
     // Global template variables
     const globalData = {
         DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
         DISCORD_REDIRECT_URL: process.env.DISCORD_REDIRECT_URL,
         DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent(process.env.DISCORD_REDIRECT_URL || ''),
-        PAGE_TITLE: 'Discross - Use Discord Anywhere',
-        SEO_METADATA: '',
+        PAGE_TITLE: isCachingPass ? '{$PAGE_TITLE}' : 'Discross - Use Discord Anywhere',
+        SEO_METADATA: isCachingPass ? '{$SEO_METADATA}' : '',
+        COMMON_HEAD: getTemplate('head', 'partials'),
     };
 
     // Merge global data with provided data (provided data takes precedence)
@@ -75,6 +75,15 @@ function renderTemplate(template, data) {
         const placeholder = `{$${normalizedKey}}`;
         result = result.split(placeholder).join(value ?? '');
     }
+
+    // Secondary pass for global templates that might have injected more placeholders
+    if (result.includes('{$PAGE_TITLE}')) {
+        result = result.split('{$PAGE_TITLE}').join(mergedData.PAGE_TITLE ?? globalData.PAGE_TITLE);
+    }
+    if (result.includes('{$SEO_METADATA}')) {
+        result = result.split('{$SEO_METADATA}').join(mergedData.SEO_METADATA ?? globalData.SEO_METADATA);
+    }
+
     return result;
 }
 
