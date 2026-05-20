@@ -40,7 +40,9 @@
         </div>
 
         <div class="message-form-container">
-            <div>
+            {$EMOJI_PICKER}
+            <form action="../senddrawing" method="post" id="sendform" style="position: relative">
+                <div>
                     {$EMOJI_BUTTON}
                     <a href="/upload/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
                         <img src="/resources/twemoji/1f4e4.gif" alt="Upload file" width="24" height="24" style="width: 24px; height: 24px;">
@@ -84,9 +86,8 @@
                     <a href="javascript:void(0)" onclick="location.reload()" class="message-action-btn">
                         <img src="/resources/twemoji/1f501.gif" alt="Refresh" width="24" height="24" style="width: 24px; height: 24px;">
                     </a>
-            </div>
-            {$EMOJI_PICKER}
-            <form action="../senddrawing" method="post" id="sendform">
+                </div>
+
                 <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
                 <input type="hidden" name="sessionID" value="{$SESSION_ID}">
                 <input type="hidden" id="drawinginput" name="drawinginput" value="">

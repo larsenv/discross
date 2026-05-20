@@ -430,13 +430,3 @@ function prepareAndSend() {
 setColor('#000000', 'c1');
 setSize(5, 's2');
 setTool('draw');
- form = document.getElementById('sendform');
-    var data = canvas.toDataURL('image/png');
-    inputField.value = data;
-    form.submit();
-}
-
-// Initialize UI
-setColor('#000000', 'c1');
-setSize(5, 's2');
-setTool('draw');
