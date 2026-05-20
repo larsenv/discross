@@ -464,6 +464,7 @@ pre code {
     background: #1a1a1e;
     border-top: 1px solid #40444b;
     padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
     width: 100%;
 }
 
@@ -827,7 +828,8 @@ textarea:focus {
 canvas {
     background: #ffffff;
     cursor: crosshair;
-    display: inline-block;
+    display: block;
+    margin: 0 auto;
     border: 1px solid #202225;
     max-width: 100%;
     touch-action: none;
@@ -2748,12 +2750,11 @@ html.page-draw #wrapper {
 
 #canvas-wrapper {
     flex: 1;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
+    display: block;
     overflow: auto;
     width: 100%;
-    margin: 0;
+    max-width: none;
+    margin: 0 auto;
 }
 
 /* ================================================================
