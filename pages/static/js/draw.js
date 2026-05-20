@@ -420,10 +420,45 @@ function wipe() {
 // --- SEND LOGIC ---
 function prepareAndSend() {
     var inputField = document.getElementById('drawinginput');
-    var form = document.getElementById('sendform');
     var data = canvas.toDataURL('image/png');
     inputField.value = data;
-    form.submit();
+}
+
+function handleMessageKeydown(event) {
+    var keyCode = event.keyCode || event.which;
+    if (keyCode === 13 && !event.shiftKey) {
+        event.preventDefault();
+        prepareAndSend();
+        var form = document.getElementById('sendform');
+        if (form) form.submit();
+        return false;
+    }
+}
+
+function autoResize(el) {
+    if (!el) return;
+
+    var currentLen = el.value.length;
+    var lastLen = parseInt(el.getAttribute('data-last-len') || '0');
+    el.setAttribute('data-last-len', currentLen);
+
+    if (currentLen > lastLen) {
+        if (el.scrollHeight > el.offsetHeight && el.offsetHeight < 200) {
+            var newHeight = Math.min(el.scrollHeight, 200);
+            el.style.height = newHeight + 'px';
+        }
+    } else {
+        el.style.height = 'auto';
+        var newHeight = el.scrollHeight;
+        if (newHeight < 40) newHeight = 40;
+        if (newHeight > 200) newHeight = 200;
+        el.style.height = newHeight + 'px';
+    }
+
+    var overflow = el.scrollHeight > 200 ? 'auto' : 'hidden';
+    if (el.style.overflowY !== overflow) {
+        el.style.overflowY = overflow;
+    }
 }
 
 // Initialize UI

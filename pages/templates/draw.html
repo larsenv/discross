@@ -41,7 +41,7 @@
 
         <div class="message-form-container">
             {$EMOJI_PICKER}
-            <form action="../senddrawing" method="post" id="sendform" style="position: relative">
+            <form action="../senddrawing" method="post" id="sendform" onsubmit="prepareAndSend()" style="position: relative">
                 <div>
                     {$EMOJI_BUTTON}
                     <a href="/upload/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
@@ -97,10 +97,10 @@
                     <table>
                         <tr>
                             <td style="width: 100%; padding: 0;">
-                                <input type="text" name="message" id="message" value="" class="message-input-field" placeholder="Message {$CHANNEL_NAME}">
+                                <textarea name="message" id="message" class="message-input-field" placeholder="Message {$CHANNEL_NAME}" onkeydown="return handleMessageKeydown(event);" oninput="autoResize(this)" rows="1"></textarea>
                             </td>
                             <td style="padding: 0 4px 0 0;">
-                                <input type="button" onclick="prepareAndSend()" class="send-button-input" value="Send">
+                                <input type="submit" class="send-button-input" value="Send">
                             </td>
                         </tr>
                     </table>
