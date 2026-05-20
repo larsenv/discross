@@ -464,6 +464,11 @@ pre code {
     background: #1a1a1e;
     border-top: 1px solid #40444b;
     padding: 12px;
+    /* iOS safe area: constant() for older iOS (<11.2), env() for newer */
+    padding-bottom: 12px;
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: calc(12px + constant(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
     width: 100%;
 }
@@ -2755,6 +2760,9 @@ html.page-draw #wrapper {
     width: 100%;
     max-width: none;
     margin: 0 auto;
+    /* text-align: center centers the inline-block canvas on browsers
+       that don't support flexbox (Old 3DS NetFront / Opera 9.5 DSi) */
+    text-align: center;
 }
 
 /* ================================================================
