@@ -420,8 +420,10 @@ function wipe() {
 // --- SEND LOGIC ---
 function prepareAndSend() {
     var inputField = document.getElementById('drawinginput');
+    var form = document.getElementById('sendform');
     var data = canvas.toDataURL('image/png');
     inputField.value = data;
+    form.submit();
 }
 
 function handleMessageKeydown(event) {
