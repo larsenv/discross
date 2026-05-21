@@ -328,7 +328,7 @@ function getTouchPos(e) {
     var scroll = getScrollOffset();
     var pageX = touch.pageX !== undefined ? touch.pageX : touch.clientX + scroll.x;
     var pageY = touch.pageY !== undefined ? touch.pageY : touch.clientY + scroll.y;
-    var cp = getCanvasPagePos();
+    var cp = is3DS ? _cachedCanvasPos : getCanvasPagePos();
     return {
         x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
         y: (pageY - cp.top) * (canvas.height / canvasDisplayH),
@@ -340,6 +340,9 @@ canvas.addEventListener(
     function (e) {
         // Prevent scrolling and default browser touch actions on the canvas
         if (e.cancelable !== false && e.preventDefault) e.preventDefault();
+        
+        // Cache canvas position once per stroke to avoid DOM reads during touchmove
+        _cachedCanvasPos = getCanvasPagePos();
 
         var pos = getTouchPos(e);
         if (!pos) return;
