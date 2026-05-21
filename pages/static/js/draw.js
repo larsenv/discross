@@ -7,6 +7,12 @@ var ctx = canvas.getContext('2d');
 var isDSi = screen.width && screen.width <= 256;
 var isSlowDevice = screen.width && screen.width <= 320;
 
+// Cache UA checks once — these are called on every mouse/touch event so
+// scanning the UA string inline would add measurable overhead on slow CPUs.
+var isWii = navigator.userAgent.indexOf('Nintendo Wii') !== -1;
+// Old 3DS uses NetFront; New 3DS uses its own WebKit but both report 'Nintendo 3DS'
+var is3DS = navigator.userAgent.indexOf('Nintendo 3DS') !== -1;
+
 // On small screens, shrink the canvas backing buffer before any drawing.
 // 240×140 has the same 12:7 aspect ratio as 600×350 but only ~33,600 pixels
 // vs 210,000 — roughly 6× fewer, making drawing usable on legacy hardware.
@@ -135,12 +141,12 @@ function getScrollOffset() {
 }
 
 function getPos(e) {
-    // NetFront on Old 3DS has a buggy e.offsetX, so skip it for that specific browser
-    var isNetFront = navigator.userAgent.indexOf('Nintendo 3DS') !== -1;
-    
+    // NetFront on Old 3DS has a buggy e.offsetX, so skip it for that specific browser.
+    // Use the module-level is3DS flag (cached) instead of scanning the UA string each call.
+    //
     // e.offsetX/offsetY: element-relative CSS pixels. Available in Opera 9+.
     // Works correctly regardless of page scroll or element position.
-    if (!isNetFront && e.offsetX !== undefined) {
+    if (!is3DS && e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
             y: e.offsetY * (canvas.height / canvasDisplayH),
@@ -189,7 +195,7 @@ if (isDSi) {
 function onCanvasMouseDown(e) {
     // Stop Wii Drag, but don't preventDefault unconditionally as it can cause
     // the Old 3DS to glitch into "cursor mode"
-    if (navigator.userAgent.indexOf('Nintendo Wii') !== -1 && e.preventDefault) {
+    if (isWii && e.preventDefault) {
         e.preventDefault();
     }
     var pos = getPos(e);
@@ -215,7 +221,7 @@ function onCanvasMouseDown(e) {
 
 function onCanvasMouseMove(e) {
     if (!isDrawing) return;
-    if (navigator.userAgent.indexOf('Nintendo Wii') !== -1 && e.preventDefault) {
+    if (isWii && e.preventDefault) {
         e.preventDefault();
     }
 
@@ -224,7 +230,7 @@ function onCanvasMouseMove(e) {
         // DSi: batch to reduce repaint overhead (stroke() repaints entire canvas)
         pointQueue.push({ x: pos.x, y: pos.y });
     } else {
-        // All others (including Old 3DS): draw immediately like 3DSPaint
+        // All others (including Old 3DS): draw immediately
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(pos.x, pos.y);
@@ -240,9 +246,16 @@ function onCanvasMouseUp() {
 }
 
 canvas.addEventListener('mousedown', onCanvasMouseDown, true);
-canvas.addEventListener('mousemove', onCanvasMouseMove, true);
 canvas.addEventListener('mouseup', onCanvasMouseUp, true);
 canvas.addEventListener('mouseout', onCanvasMouseUp, true);
+
+// Old 3DS NetFront fires mousemove at the document level (not on the canvas
+// element itself) during stylus drag. Listening on canvas alone means those
+// events are never received, so the user only sees the initial mousedown dot.
+// Fix: listen on document in capture phase so we catch every mousemove
+// regardless of where NetFront dispatches it, then delegate to onCanvasMouseMove.
+var _mouseMoveTarget = is3DS ? document : canvas;
+_mouseMoveTarget.addEventListener('mousemove', onCanvasMouseMove, true);
 
 // --- TOUCH SUPPORT FOR MOBILE ---
 // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
