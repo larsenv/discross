@@ -146,25 +146,41 @@ function getScrollOffset() {
     return { x: sx, y: sy };
 }
 
-var _cachedCanvasPos = { left: 0, top: 0 };
+// Cache canvas bounding rect for Old 3DS — calling getBoundingClientRect()
+// inside every mousemove is expensive, so we refresh only on mousedown and
+// on resize. This is the recommended pattern for 3DS drawing apps.
+var _cachedRect = null;
+function refreshCanvasRect() {
+    if (canvas.getBoundingClientRect) {
+        _cachedRect = canvas.getBoundingClientRect();
+    }
+}
+refreshCanvasRect();
 
 function getPos(e) {
-    // e.offsetX/offsetY: element-relative CSS pixels.
-    // This is the fastest path on modern engines (including New 3DS SKATER).
+    // Old 3DS (SPIDER/NetFront): e.offsetX is buggy. Use clientX with
+    // cached getBoundingClientRect, which is the most reliable method on
+    // this browser according to 3DS dev communities.
+    if (isOld3DS && _cachedRect) {
+        var cx = (e.clientX !== undefined ? e.clientX : (e.pageX || 0));
+        var cy = (e.clientY !== undefined ? e.clientY : (e.pageY || 0));
+        return {
+            x: (cx - _cachedRect.left) * (canvas.width / canvasDisplayW),
+            y: (cy - _cachedRect.top) * (canvas.height / canvasDisplayH),
+        };
+    }
+    // New 3DS and modern browsers: e.offsetX works correctly.
     if (e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
             y: e.offsetY * (canvas.height / canvasDisplayH),
         };
     }
-    // Fast path: pageX/pageY minus cached canvas offset (zero DOM reads)
+    // Fallback: pageX/pageY + canvas page offset (DSi Opera, Firefox <39)
     var scroll = getScrollOffset();
     var pageX = e.pageX !== undefined ? e.pageX : e.clientX + scroll.x;
     var pageY = e.pageY !== undefined ? e.pageY : e.clientY + scroll.y;
-    
-    // For 3DS, we use the cached position populated on mousedown.
-    // For others (DSi, etc) if they somehow hit this fallback, we get it live.
-    var cp = is3DS ? _cachedCanvasPos : getCanvasPagePos();
+    var cp = getCanvasPagePos();
     return {
         x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
         y: (pageY - cp.top) * (canvas.height / canvasDisplayH),
@@ -201,18 +217,13 @@ if (isDSi) {
 // reference uses this exact pattern. DOM0 handlers (canvas.onmousedown)
 // are unreliable on some legacy WebKit/NetFront browsers.
 // isOld3DSDrawing: tracks whether the Old 3DS stylus is in an active stroke.
-// On Old 3DS, mousemove never fires; each tap is mousedown+mouseup. We keep
-// a flag so consecutive taps connect into a line.
 var isOld3DSDrawing = false;
 
 // Draw a line between two points using fillRect interpolation.
-// Used for Old 3DS because ctx.stroke() may be broken on NetFront.
-// Also used in flush queue for DSi compatibility.
 function drawLineViaFill(x0, y0, x1, y1, size) {
     var dx = x1 - x0;
     var dy = y1 - y0;
     var dist = Math.sqrt(dx * dx + dy * dy);
-    // Step every half-pixel so there are no gaps at any angle
     var steps = Math.ceil(dist * 2) || 1;
     for (var i = 0; i <= steps; i++) {
         var t = i / steps;
@@ -223,13 +234,13 @@ function drawLineViaFill(x0, y0, x1, y1, size) {
 }
 
 function onCanvasMouseDown(e) {
-    // Stop Wii Drag
+    // Stop Wii Drag, but don't preventDefault unconditionally as it can cause
+    // the Old 3DS to glitch into "cursor mode"
     if (isWii && e.preventDefault) {
         e.preventDefault();
     }
-    
-    // Cache canvas position once per stroke to avoid DOM reads during mousemove
-    _cachedCanvasPos = getCanvasPagePos();
+    // Refresh cached rect on every mousedown (cheap, and catches scrolls/resizes)
+    refreshCanvasRect();
 
     var pos = getPos(e);
     if (currTool === 'fill') {
@@ -239,18 +250,11 @@ function onCanvasMouseDown(e) {
     }
 
     if (isOld3DS) {
-        // Old 3DS never fires mousemove. Drawing works by connecting consecutive
-        // taps with lines. Each mousedown either starts a new stroke (first tap)
-        // or extends the current stroke (subsequent taps).
         var col = currTool === 'eraser' ? '#ffffff' : currColor;
         ctx.fillStyle = col;
         if (isOld3DSDrawing) {
-            // Extend stroke: draw filled line from previous tap to this one.
-            // Use fillRect interpolation instead of ctx.stroke() because
-            // stroke() may not render on Old 3DS NetFront.
             drawLineViaFill(lastX, lastY, pos.x, pos.y, currSize);
         } else {
-            // Start new stroke: draw a dot at the first tap position
             saveHistory();
             isOld3DSDrawing = true;
             isDrawing = true;
@@ -269,8 +273,6 @@ function onCanvasMouseDown(e) {
     lastDrawnY = pos.y;
     pointQueue = [];
 
-    // Draw a dot at click position for visual feedback
-    // (using fillRect instead of arc() because arc is buggy/missing on NetFront)
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
     ctx.fillRect(lastX - Math.floor(currSize / 2), lastY - Math.floor(currSize / 2), currSize, currSize);
 }
@@ -305,16 +307,14 @@ canvas.addEventListener('mousedown', onCanvasMouseDown, true);
 canvas.addEventListener('mouseup', onCanvasMouseUp, true);
 canvas.addEventListener('mouseout', onCanvasMouseUp, true);
 
-// 3DS (Old and New) event handling:
-// - Old 3DS (SPIDER): mousemove never fires during drag, so this listener
-//   is effectively unused, but kept for symmetry.
-// - New 3DS (SKATER): canvas-level listener is required for performance. Document-level
-//   causes extreme slowdowns because it processes every mouse event on the entire page.
-// - Non-3DS: canvas-level is sufficient.
+// Old 3DS (SPIDER): mousemove may fire at the document level rather than on the
+// canvas during stylus drag. Attach to document to catch all events. Also attach
+// mouseup on document in case the stylus lifts off the canvas.
+// New 3DS & others: keep listeners on canvas only (document-level would catch
+// extraneous events from toolbar/scrollbar, hurting performance).
 if (isOld3DS) {
+    document.addEventListener('mousemove', onCanvasMouseMove, true);
     document.addEventListener('mouseup', onCanvasMouseUp, true);
-    // Old 3DS doesn't fire mousemove, but we add it to canvas just in case
-    canvas.addEventListener('mousemove', onCanvasMouseMove, true);
 } else {
     canvas.addEventListener('mousemove', onCanvasMouseMove, true);
 }
@@ -327,7 +327,7 @@ function getTouchPos(e) {
     var scroll = getScrollOffset();
     var pageX = touch.pageX !== undefined ? touch.pageX : touch.clientX + scroll.x;
     var pageY = touch.pageY !== undefined ? touch.pageY : touch.clientY + scroll.y;
-    var cp = is3DS ? _cachedCanvasPos : getCanvasPagePos();
+    var cp = getCanvasPagePos();
     return {
         x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
         y: (pageY - cp.top) * (canvas.height / canvasDisplayH),
@@ -339,9 +339,6 @@ canvas.addEventListener(
     function (e) {
         // Prevent scrolling and default browser touch actions on the canvas
         if (e.cancelable !== false && e.preventDefault) e.preventDefault();
-        
-        // Cache canvas position once per stroke to avoid DOM reads during touchmove
-        _cachedCanvasPos = getCanvasPagePos();
 
         var pos = getTouchPos(e);
         if (!pos) return;
@@ -436,7 +433,6 @@ function setColor(col, id) {
 
 function setTool(tool) {
     currTool = tool;
-    // Switching tools ends any active tap-to-tap stroke on Old 3DS
     isOld3DSDrawing = false;
     var drawBtn = document.getElementById('btn-draw');
     if (drawBtn) {
@@ -530,7 +526,6 @@ function wipe() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-    // Reset tap-to-tap stroke state so next tap starts a fresh stroke
     isOld3DSDrawing = false;
     isDrawing = false;
 }
