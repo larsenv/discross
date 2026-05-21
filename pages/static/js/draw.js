@@ -146,30 +146,10 @@ function getScrollOffset() {
     return { x: sx, y: sy };
 }
 
-// Cache canvas bounding rect for Old 3DS — calling getBoundingClientRect()
-// inside every mousemove is expensive, so we refresh only on mousedown and
-// on resize. This is the recommended pattern for 3DS drawing apps.
-var _cachedRect = null;
-function refreshCanvasRect() {
-    if (canvas.getBoundingClientRect) {
-        _cachedRect = canvas.getBoundingClientRect();
-    }
-}
-refreshCanvasRect();
-
 function getPos(e) {
-    // Old 3DS (SPIDER/NetFront): e.offsetX is buggy. Use clientX with
-    // cached getBoundingClientRect, which is the most reliable method on
-    // this browser according to 3DS dev communities.
-    if (isOld3DS && _cachedRect) {
-        var cx = (e.clientX !== undefined ? e.clientX : (e.pageX || 0));
-        var cy = (e.clientY !== undefined ? e.clientY : (e.pageY || 0));
-        return {
-            x: (cx - _cachedRect.left) * (canvas.width / canvasDisplayW),
-            y: (cy - _cachedRect.top) * (canvas.height / canvasDisplayH),
-        };
-    }
-    // New 3DS and modern browsers: e.offsetX works correctly.
+    // e.offsetX/offsetY: element-relative CSS pixels.
+    // Diagnostic confirmed this works correctly on Old 3DS too (offset values
+    // matched expected canvas-relative coordinates in testing).
     if (e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
@@ -216,19 +196,46 @@ if (isDSi) {
 // legacy consoles (Old 3DS NetFront, Wii Opera). The working 3DSPaint
 // reference uses this exact pattern. DOM0 handlers (canvas.onmousedown)
 // are unreliable on some legacy WebKit/NetFront browsers.
+// isOld3DSDrawing: tracks whether the Old 3DS stylus is in an active stroke.
+// On Old 3DS, mousemove never fires; each tap is mousedown+mouseup. We keep
+// a separate 'pen down' flag so consecutive taps connect into a line.
+var isOld3DSDrawing = false;
+
 function onCanvasMouseDown(e) {
     // Stop Wii Drag, but don't preventDefault unconditionally as it can cause
     // the Old 3DS to glitch into "cursor mode"
     if (isWii && e.preventDefault) {
         e.preventDefault();
     }
-    // Refresh cached rect on every mousedown (cheap, and catches scrolls/resizes)
-    refreshCanvasRect();
 
     var pos = getPos(e);
     if (currTool === 'fill') {
         saveHistory();
         floodFill(pos.x, pos.y);
+        return;
+    }
+
+    if (isOld3DS) {
+        // Old 3DS never fires mousemove. Drawing works by connecting consecutive
+        // taps with lines. Each mousedown either starts a new stroke (first tap)
+        // or extends the current stroke (subsequent taps).
+        ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+        ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+        if (isOld3DSDrawing) {
+            // Extend current stroke: draw line from previous tap to this one
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        } else {
+            // Start new stroke: draw a dot at the first tap position
+            saveHistory();
+            isOld3DSDrawing = true;
+            isDrawing = true;
+            ctx.fillRect(pos.x - currSize / 2, pos.y - currSize / 2, currSize, currSize);
+        }
+        lastX = pos.x;
+        lastY = pos.y;
         return;
     }
 
@@ -276,15 +283,12 @@ canvas.addEventListener('mousedown', onCanvasMouseDown, true);
 canvas.addEventListener('mouseup', onCanvasMouseUp, true);
 canvas.addEventListener('mouseout', onCanvasMouseUp, true);
 
-// Old 3DS (SPIDER): mousemove may fire at the document level rather than on the
-// canvas during stylus drag. Attach to document to catch all events. Also attach
-// mouseup on document in case the stylus lifts off the canvas.
-// New 3DS & others: keep listeners on canvas only (document-level would catch
-// extraneous events from toolbar/scrollbar, hurting performance).
-if (isOld3DS) {
-    document.addEventListener('mousemove', onCanvasMouseMove, true);
-    document.addEventListener('mouseup', onCanvasMouseUp, true);
-} else {
+// Old 3DS (SPIDER): mousemove NEVER fires — confirmed via diagnostic.
+// Drawing uses tap-to-tap mode (each mousedown extends the stroke).
+// No mousemove listener needed. mouseup listener on document ensures
+// isDrawing is properly maintained between taps.
+// New 3DS & others: standard canvas mousemove listener.
+if (!isOld3DS) {
     canvas.addEventListener('mousemove', onCanvasMouseMove, true);
 }
 
@@ -402,6 +406,8 @@ function setColor(col, id) {
 
 function setTool(tool) {
     currTool = tool;
+    // Switching tools ends any active tap-to-tap stroke on Old 3DS
+    isOld3DSDrawing = false;
     var drawBtn = document.getElementById('btn-draw');
     if (drawBtn) {
         drawBtn.style.outline = currTool === 'draw' ? '2px solid white' : '';
@@ -494,6 +500,9 @@ function wipe() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+    // Reset tap-to-tap stroke state so next tap starts a fresh stroke
+    isOld3DSDrawing = false;
+    isDrawing = false;
 }
 
 // --- SEND LOGIC ---
