@@ -135,9 +135,12 @@ function getScrollOffset() {
 }
 
 function getPos(e) {
+    // NetFront on Old 3DS has a buggy e.offsetX, so skip it for that specific browser
+    var isNetFront = navigator.userAgent.indexOf('Nintendo 3DS') !== -1;
+    
     // e.offsetX/offsetY: element-relative CSS pixels. Available in Opera 9+.
     // Works correctly regardless of page scroll or element position.
-    if (e.offsetX !== undefined) {
+    if (!isNetFront && e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
             y: e.offsetY * (canvas.height / canvasDisplayH),
@@ -184,7 +187,11 @@ if (isDSi) {
 // reference uses this exact pattern. DOM0 handlers (canvas.onmousedown)
 // are unreliable on some legacy WebKit/NetFront browsers.
 function onCanvasMouseDown(e) {
-    if (e.preventDefault) e.preventDefault(); // Stop Wii Drag
+    // Stop Wii Drag, but don't preventDefault unconditionally as it can cause
+    // the Old 3DS to glitch into "cursor mode"
+    if (navigator.userAgent.indexOf('Nintendo Wii') !== -1 && e.preventDefault) {
+        e.preventDefault();
+    }
     var pos = getPos(e);
     if (currTool === 'fill') {
         saveHistory();
@@ -201,17 +208,16 @@ function onCanvasMouseDown(e) {
     pointQueue = [];
 
     // Draw a dot at click position for visual feedback
+    // (using fillRect instead of arc() because arc is buggy/missing on NetFront)
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-    ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-    ctx.beginPath();
-    ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
-    ctx.fill();
-    ctx.beginPath();
+    ctx.fillRect(lastX - currSize / 2, lastY - currSize / 2, currSize, currSize);
 }
 
 function onCanvasMouseMove(e) {
     if (!isDrawing) return;
-    if (e.preventDefault) e.preventDefault();
+    if (navigator.userAgent.indexOf('Nintendo Wii') !== -1 && e.preventDefault) {
+        e.preventDefault();
+    }
 
     var pos = getPos(e);
     if (isDSi) {
@@ -285,7 +291,7 @@ canvas.addEventListener(
         ctx.fill();
         ctx.beginPath();
     },
-    { passive: false }
+    true
 );
 
 canvas.addEventListener(
@@ -309,7 +315,7 @@ canvas.addEventListener(
         lastX = pos.x;
         lastY = pos.y;
     },
-    { passive: false }
+    true
 );
 
 canvas.addEventListener(
