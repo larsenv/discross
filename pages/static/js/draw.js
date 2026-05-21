@@ -149,10 +149,9 @@ function getScrollOffset() {
 var _cachedCanvasPos = { left: 0, top: 0 };
 
 function getPos(e) {
-    // 3DS (SKATER/SPIDER): reading e.offsetX on mousemove can trigger a synchronous
-    // layout recalculation (reflow) in the browser engine, causing severe slowdowns
-    // during stylus drag. We bypass it and use purely cached math.
-    if (!is3DS && e.offsetX !== undefined) {
+    // e.offsetX/offsetY: element-relative CSS pixels.
+    // This is the fastest path on modern engines (including New 3DS SKATER).
+    if (e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
             y: e.offsetY * (canvas.height / canvasDisplayH),
