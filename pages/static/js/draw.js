@@ -1,13 +1,17 @@
 var canvas = document.getElementById('sketchpad');
 var ctx = canvas.getContext('2d');
 
-// On very small screens (DSi: 256px wide), shrink the canvas backing buffer
-// before any drawing. The internal canvas is 600×350 = 210,000 pixels; even
-// a single ctx.stroke() forces Opera 9.5 to repaint all of them which is
-// very slow. 240×140 has the same 12:7 aspect ratio but only ~33,600 pixels
-// — roughly 6× fewer pixels per repaint, which brings drawing to a usable fps.
+// Detect device capability tiers:
+// DSi (screen.width <= 256): very slow, needs batched rendering + small canvas
+// Old 3DS and similar (screen.width <= 320): needs small canvas + immediate draw
+var isDSi = screen.width && screen.width <= 256;
+var isSlowDevice = screen.width && screen.width <= 320;
+
+// On small screens, shrink the canvas backing buffer before any drawing.
+// 240×140 has the same 12:7 aspect ratio as 600×350 but only ~33,600 pixels
+// vs 210,000 — roughly 6× fewer, making drawing usable on legacy hardware.
 // This must happen BEFORE ctx operations (resizing canvas resets its content).
-if (screen.width && screen.width <= 256) {
+if (isSlowDevice) {
     canvas.width = 240;
     canvas.height = 140;
 }
@@ -24,10 +28,13 @@ var historyStack = [];
 var maxHistory = 20;
 
 function saveHistory() {
-    if (historyStack.length >= maxHistory) {
-        historyStack.shift();
-    }
-    historyStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    if (isSlowDevice) return; // getImageData too expensive for Old 3DS / DSi
+    try {
+        if (historyStack.length >= maxHistory) {
+            historyStack.shift();
+        }
+        historyStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    } catch (ex) {}
 }
 
 function undo() {
@@ -165,18 +172,24 @@ function flushDrawQueue() {
     lastDrawnY = last.y;
     pointQueue = [];
 }
-// Flush at ~30ms intervals (~33fps). DSi Opera 9.5 does not support
-// requestAnimationFrame, so setInterval is used instead.
-setInterval(flushDrawQueue, 30);
+// DSi: flush batched draw calls via interval to minimize expensive repaint calls.
+// All other browsers draw immediately in their mousemove/touchmove handlers.
+if (isDSi) {
+    setInterval(flushDrawQueue, 30);
+}
 
 // --- DRAWING EVENTS ---
-canvas.onmousedown = function (e) {
+// Use addEventListener with useCapture=true for reliable event handling on
+// legacy consoles (Old 3DS NetFront, Wii Opera). The working 3DSPaint
+// reference uses this exact pattern. DOM0 handlers (canvas.onmousedown)
+// are unreliable on some legacy WebKit/NetFront browsers.
+function onCanvasMouseDown(e) {
     if (e.preventDefault) e.preventDefault(); // Stop Wii Drag
     var pos = getPos(e);
     if (currTool === 'fill') {
         saveHistory();
         floodFill(pos.x, pos.y);
-        return false;
+        return;
     }
 
     saveHistory();
@@ -187,34 +200,43 @@ canvas.onmousedown = function (e) {
     lastDrawnY = pos.y;
     pointQueue = [];
 
-    ctx.beginPath();
-    ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
+    // Draw a dot at click position for visual feedback
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
     ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
     ctx.fill();
     ctx.beginPath();
+}
 
-    return false;
-};
-
-canvas.onmousemove = function (e) {
+function onCanvasMouseMove(e) {
     if (!isDrawing) return;
     if (e.preventDefault) e.preventDefault();
 
     var pos = getPos(e);
-    pointQueue.push({ x: pos.x, y: pos.y });
+    if (isDSi) {
+        // DSi: batch to reduce repaint overhead (stroke() repaints entire canvas)
+        pointQueue.push({ x: pos.x, y: pos.y });
+    } else {
+        // All others (including Old 3DS): draw immediately like 3DSPaint
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
     lastX = pos.x;
     lastY = pos.y;
-};
+}
 
-canvas.onmouseup = function () {
+function onCanvasMouseUp() {
     flushDrawQueue();
     isDrawing = false;
-};
-canvas.onmouseout = function () {
-    flushDrawQueue();
-    isDrawing = false;
-};
+}
+
+canvas.addEventListener('mousedown', onCanvasMouseDown, true);
+canvas.addEventListener('mousemove', onCanvasMouseMove, true);
+canvas.addEventListener('mouseup', onCanvasMouseUp, true);
+canvas.addEventListener('mouseout', onCanvasMouseUp, true);
 
 // --- TOUCH SUPPORT FOR MOBILE ---
 // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
@@ -275,8 +297,15 @@ canvas.addEventListener(
         var pos = getTouchPos(e);
         if (!pos) return;
 
-        // Push segments to queue
-        pointQueue.push({ x: pos.x, y: pos.y });
+        if (isDSi) {
+            pointQueue.push({ x: pos.x, y: pos.y });
+        } else {
+            // Draw immediately like 3DSPaint
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
         lastX = pos.x;
         lastY = pos.y;
     },
