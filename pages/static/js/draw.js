@@ -201,6 +201,10 @@ if (isDSi) {
 // legacy consoles (Old 3DS NetFront, Wii Opera). The working 3DSPaint
 // reference uses this exact pattern. DOM0 handlers (canvas.onmousedown)
 // are unreliable on some legacy WebKit/NetFront browsers.
+// isOld3DSDrawing: tracks whether the Old 3DS stylus is in an active stroke.
+// On Old 3DS, mousemove never fires; each tap is mousedown+mouseup. We keep
+// a flag so consecutive taps connect into a line.
+var isOld3DSDrawing = false;
 
 // Draw a line between two points using fillRect interpolation.
 // Used for Old 3DS because ctx.stroke() may be broken on NetFront.
@@ -232,6 +236,29 @@ function onCanvasMouseDown(e) {
     if (currTool === 'fill') {
         saveHistory();
         floodFill(pos.x, pos.y);
+        return;
+    }
+
+    if (isOld3DS) {
+        // Old 3DS never fires mousemove. Drawing works by connecting consecutive
+        // taps with lines. Each mousedown either starts a new stroke (first tap)
+        // or extends the current stroke (subsequent taps).
+        var col = currTool === 'eraser' ? '#ffffff' : currColor;
+        ctx.fillStyle = col;
+        if (isOld3DSDrawing) {
+            // Extend stroke: draw filled line from previous tap to this one.
+            // Use fillRect interpolation instead of ctx.stroke() because
+            // stroke() may not render on Old 3DS NetFront.
+            drawLineViaFill(lastX, lastY, pos.x, pos.y, currSize);
+        } else {
+            // Start new stroke: draw a dot at the first tap position
+            saveHistory();
+            isOld3DSDrawing = true;
+            isDrawing = true;
+            ctx.fillRect(pos.x - Math.floor(currSize / 2), pos.y - Math.floor(currSize / 2), currSize, currSize);
+        }
+        lastX = pos.x;
+        lastY = pos.y;
         return;
     }
 
@@ -410,6 +437,8 @@ function setColor(col, id) {
 
 function setTool(tool) {
     currTool = tool;
+    // Switching tools ends any active tap-to-tap stroke on Old 3DS
+    isOld3DSDrawing = false;
     var drawBtn = document.getElementById('btn-draw');
     if (drawBtn) {
         drawBtn.style.outline = currTool === 'draw' ? '2px solid white' : '';
@@ -502,6 +531,8 @@ function wipe() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+    // Reset tap-to-tap stroke state so next tap starts a fresh stroke
+    isOld3DSDrawing = false;
     isDrawing = false;
 }
 
@@ -553,35 +584,3 @@ function autoResize(el) {
 setColor('#000000', 'c1');
 setSize(5, 's2');
 setTool('draw');
-
-// --- Old 3DS Freeform Drag Hack ---
-// The SPIDER browser swallows mousemove events if the page is scrollable, treating
-// drags as panning. 3DSPaint works around this by forcing the body to exactly
-// match the 3DS screen size with overflow: hidden. We do the same here just for
-// Old 3DS, hiding extra UI elements to ensure the Send button fits on-screen.
-if (isOld3DS) {
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.position = 'fixed';
-    document.documentElement.style.width = '320px';
-    document.documentElement.style.height = '240px';
-
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '320px';
-    document.body.style.height = '240px';
-    document.body.style.margin = '0px';
-    document.body.style.padding = '0px';
-
-    // Hide the emoji/action buttons above the text input so the Send button fits
-    var style = document.createElement('style');
-    style.innerHTML = '.message-action-btn { display: none !important; }';
-    document.head.appendChild(style);
-
-    // Make sure the wrapper fits in the remaining space without scrolling
-    var wrapper = document.getElementById('wrapper');
-    if (wrapper) {
-        wrapper.style.height = '100%';
-        wrapper.style.overflow = 'hidden';
-    }
-}
-
