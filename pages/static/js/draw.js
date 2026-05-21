@@ -219,9 +219,9 @@ function drawLineViaFill(x0, y0, x1, y1, size) {
 }
 
 function onCanvasMouseDown(e) {
-    // Stop Wii Drag. Also trying preventDefault on Old 3DS to see if it unlocks
-    // mousemove events (even if it glitches into cursor mode).
-    if ((isWii || isOld3DS) && e.preventDefault) {
+    // Stop Wii Drag, but don't preventDefault unconditionally as it can cause
+    // the Old 3DS to glitch into "cursor mode"
+    if (isWii && e.preventDefault) {
         e.preventDefault();
     }
 
@@ -232,14 +232,19 @@ function onCanvasMouseDown(e) {
         return;
     }
 
-    /*
     if (isOld3DS) {
-        // Tap-to-tap logic temporarily disabled to test freeform drag via preventDefault
+        // Old 3DS never fires mousemove. Drawing works by connecting consecutive
+        // taps with lines. Each mousedown either starts a new stroke (first tap)
+        // or extends the current stroke (subsequent taps).
         var col = currTool === 'eraser' ? '#ffffff' : currColor;
         ctx.fillStyle = col;
         if (isOld3DSDrawing) {
+            // Extend stroke: draw filled line from previous tap to this one.
+            // Use fillRect interpolation instead of ctx.stroke() because
+            // stroke() may not render on Old 3DS NetFront.
             drawLineViaFill(lastX, lastY, pos.x, pos.y, currSize);
         } else {
+            // Start new stroke: draw a dot at the first tap position
             saveHistory();
             isOld3DSDrawing = true;
             isDrawing = true;
@@ -249,7 +254,6 @@ function onCanvasMouseDown(e) {
         lastY = pos.y;
         return;
     }
-    */
 
     saveHistory();
     isDrawing = true;
@@ -267,7 +271,7 @@ function onCanvasMouseDown(e) {
 
 function onCanvasMouseMove(e) {
     if (!isDrawing) return;
-    if ((isWii || isOld3DS) && e.preventDefault) {
+    if (isWii && e.preventDefault) {
         e.preventDefault();
     }
 
