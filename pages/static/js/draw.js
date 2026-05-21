@@ -198,8 +198,25 @@ if (isDSi) {
 // are unreliable on some legacy WebKit/NetFront browsers.
 // isOld3DSDrawing: tracks whether the Old 3DS stylus is in an active stroke.
 // On Old 3DS, mousemove never fires; each tap is mousedown+mouseup. We keep
-// a separate 'pen down' flag so consecutive taps connect into a line.
+// a flag so consecutive taps connect into a line.
 var isOld3DSDrawing = false;
+
+// Draw a line between two points using fillRect interpolation.
+// Used for Old 3DS because ctx.stroke() may be broken on NetFront.
+// Also used in flush queue for DSi compatibility.
+function drawLineViaFill(x0, y0, x1, y1, size) {
+    var dx = x1 - x0;
+    var dy = y1 - y0;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    // Step every half-pixel so there are no gaps at any angle
+    var steps = Math.ceil(dist * 2) || 1;
+    for (var i = 0; i <= steps; i++) {
+        var t = i / steps;
+        var px = Math.round(x0 + dx * t);
+        var py = Math.round(y0 + dy * t);
+        ctx.fillRect(px - Math.floor(size / 2), py - Math.floor(size / 2), size, size);
+    }
+}
 
 function onCanvasMouseDown(e) {
     // Stop Wii Drag, but don't preventDefault unconditionally as it can cause
@@ -219,20 +236,19 @@ function onCanvasMouseDown(e) {
         // Old 3DS never fires mousemove. Drawing works by connecting consecutive
         // taps with lines. Each mousedown either starts a new stroke (first tap)
         // or extends the current stroke (subsequent taps).
-        ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-        ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+        var col = currTool === 'eraser' ? '#ffffff' : currColor;
+        ctx.fillStyle = col;
         if (isOld3DSDrawing) {
-            // Extend current stroke: draw line from previous tap to this one
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
+            // Extend stroke: draw filled line from previous tap to this one.
+            // Use fillRect interpolation instead of ctx.stroke() because
+            // stroke() may not render on Old 3DS NetFront.
+            drawLineViaFill(lastX, lastY, pos.x, pos.y, currSize);
         } else {
             // Start new stroke: draw a dot at the first tap position
             saveHistory();
             isOld3DSDrawing = true;
             isDrawing = true;
-            ctx.fillRect(pos.x - currSize / 2, pos.y - currSize / 2, currSize, currSize);
+            ctx.fillRect(pos.x - Math.floor(currSize / 2), pos.y - Math.floor(currSize / 2), currSize, currSize);
         }
         lastX = pos.x;
         lastY = pos.y;
@@ -250,7 +266,7 @@ function onCanvasMouseDown(e) {
     // Draw a dot at click position for visual feedback
     // (using fillRect instead of arc() because arc is buggy/missing on NetFront)
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-    ctx.fillRect(lastX - currSize / 2, lastY - currSize / 2, currSize, currSize);
+    ctx.fillRect(lastX - Math.floor(currSize / 2), lastY - Math.floor(currSize / 2), currSize, currSize);
 }
 
 function onCanvasMouseMove(e) {
@@ -283,12 +299,16 @@ canvas.addEventListener('mousedown', onCanvasMouseDown, true);
 canvas.addEventListener('mouseup', onCanvasMouseUp, true);
 canvas.addEventListener('mouseout', onCanvasMouseUp, true);
 
-// Old 3DS (SPIDER): mousemove NEVER fires — confirmed via diagnostic.
-// Drawing uses tap-to-tap mode (each mousedown extends the stroke).
-// No mousemove listener needed. mouseup listener on document ensures
-// isDrawing is properly maintained between taps.
-// New 3DS & others: standard canvas mousemove listener.
-if (!isOld3DS) {
+// 3DS (both Old and New): attach mousemove at document level in capture phase.
+// - Old 3DS (SPIDER): mousemove never fires during drag, so this listener
+//   is effectively unused, but kept for symmetry.
+// - New 3DS (SKATER): document-level capture is required for reliable mousemove
+//   delivery during stylus drag (confirmed working in testing).
+// Non-3DS: canvas-level is sufficient and avoids processing unrelated page events.
+if (is3DS) {
+    document.addEventListener('mousemove', onCanvasMouseMove, true);
+    document.addEventListener('mouseup', onCanvasMouseUp, true);
+} else {
     canvas.addEventListener('mousemove', onCanvasMouseMove, true);
 }
 
