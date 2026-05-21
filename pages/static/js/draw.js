@@ -561,7 +561,12 @@ setTool('draw');
 // Old 3DS, hiding extra UI elements to ensure the Send button fits on-screen.
 if (isOld3DS) {
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.position = 'fixed';
+    document.documentElement.style.width = '320px';
+    document.documentElement.style.height = '240px';
+
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
     document.body.style.width = '320px';
     document.body.style.height = '240px';
     document.body.style.margin = '0px';
