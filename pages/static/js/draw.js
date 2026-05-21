@@ -299,15 +299,16 @@ canvas.addEventListener('mousedown', onCanvasMouseDown, true);
 canvas.addEventListener('mouseup', onCanvasMouseUp, true);
 canvas.addEventListener('mouseout', onCanvasMouseUp, true);
 
-// 3DS (both Old and New): attach mousemove at document level in capture phase.
+// 3DS (Old and New) event handling:
 // - Old 3DS (SPIDER): mousemove never fires during drag, so this listener
 //   is effectively unused, but kept for symmetry.
-// - New 3DS (SKATER): document-level capture is required for reliable mousemove
-//   delivery during stylus drag (confirmed working in testing).
-// Non-3DS: canvas-level is sufficient and avoids processing unrelated page events.
-if (is3DS) {
-    document.addEventListener('mousemove', onCanvasMouseMove, true);
+// - New 3DS (SKATER): canvas-level listener is required for performance. Document-level
+//   causes extreme slowdowns because it processes every mouse event on the entire page.
+// - Non-3DS: canvas-level is sufficient.
+if (isOld3DS) {
     document.addEventListener('mouseup', onCanvasMouseUp, true);
+    // Old 3DS doesn't fire mousemove, but we add it to canvas just in case
+    canvas.addEventListener('mousemove', onCanvasMouseMove, true);
 } else {
     canvas.addEventListener('mousemove', onCanvasMouseMove, true);
 }
