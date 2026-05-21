@@ -146,21 +146,26 @@ function getScrollOffset() {
     return { x: sx, y: sy };
 }
 
+var _cachedCanvasPos = { left: 0, top: 0 };
+
 function getPos(e) {
-    // e.offsetX/offsetY: element-relative CSS pixels.
-    // Diagnostic confirmed this works correctly on Old 3DS too (offset values
-    // matched expected canvas-relative coordinates in testing).
-    if (e.offsetX !== undefined) {
+    // 3DS (SKATER/SPIDER): reading e.offsetX on mousemove can trigger a synchronous
+    // layout recalculation (reflow) in the browser engine, causing severe slowdowns
+    // during stylus drag. We bypass it and use purely cached math.
+    if (!is3DS && e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
             y: e.offsetY * (canvas.height / canvasDisplayH),
         };
     }
-    // Fallback: pageX/pageY + canvas page offset (DSi Opera, Firefox <39)
+    // Fast path: pageX/pageY minus cached canvas offset (zero DOM reads)
     var scroll = getScrollOffset();
     var pageX = e.pageX !== undefined ? e.pageX : e.clientX + scroll.x;
     var pageY = e.pageY !== undefined ? e.pageY : e.clientY + scroll.y;
-    var cp = getCanvasPagePos();
+    
+    // For 3DS, we use the cached position populated on mousedown.
+    // For others (DSi, etc) if they somehow hit this fallback, we get it live.
+    var cp = is3DS ? _cachedCanvasPos : getCanvasPagePos();
     return {
         x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
         y: (pageY - cp.top) * (canvas.height / canvasDisplayH),
@@ -219,11 +224,13 @@ function drawLineViaFill(x0, y0, x1, y1, size) {
 }
 
 function onCanvasMouseDown(e) {
-    // Stop Wii Drag, but don't preventDefault unconditionally as it can cause
-    // the Old 3DS to glitch into "cursor mode"
+    // Stop Wii Drag
     if (isWii && e.preventDefault) {
         e.preventDefault();
     }
+    
+    // Cache canvas position once per stroke to avoid DOM reads during mousemove
+    _cachedCanvasPos = getCanvasPagePos();
 
     var pos = getPos(e);
     if (currTool === 'fill') {
