@@ -10,8 +10,14 @@ var isSlowDevice = screen.width && screen.width <= 320;
 // Cache UA checks once — these are called on every mouse/touch event so
 // scanning the UA string inline would add measurable overhead on slow CPUs.
 var isWii = navigator.userAgent.indexOf('Nintendo Wii') !== -1;
-// Old 3DS uses NetFront; New 3DS uses its own WebKit but both report 'Nintendo 3DS'
-var is3DS = navigator.userAgent.indexOf('Nintendo 3DS') !== -1;
+// Old 3DS ("SPIDER") UA: 'Mozilla/5.0 (Nintendo 3DS; ...) Version/...'
+//   — does NOT contain 'NintendoBrowser'
+// New 3DS ("SKATER") UA: '... (New Nintendo 3DS like iPhone) ... NintendoBrowser/...'
+//   — contains 'NintendoBrowser'
+var _ua = navigator.userAgent;
+var is3DS = _ua.indexOf('Nintendo 3DS') !== -1;
+var isNew3DS = is3DS && _ua.indexOf('NintendoBrowser') !== -1;
+var isOld3DS = is3DS && !isNew3DS;
 
 // On small screens, shrink the canvas backing buffer before any drawing.
 // 240×140 has the same 12:7 aspect ratio as 600×350 but only ~33,600 pixels
@@ -140,19 +146,37 @@ function getScrollOffset() {
     return { x: sx, y: sy };
 }
 
+// Cache canvas bounding rect for Old 3DS — calling getBoundingClientRect()
+// inside every mousemove is expensive, so we refresh only on mousedown and
+// on resize. This is the recommended pattern for 3DS drawing apps.
+var _cachedRect = null;
+function refreshCanvasRect() {
+    if (canvas.getBoundingClientRect) {
+        _cachedRect = canvas.getBoundingClientRect();
+    }
+}
+refreshCanvasRect();
+
 function getPos(e) {
-    // NetFront on Old 3DS has a buggy e.offsetX, so skip it for that specific browser.
-    // Use the module-level is3DS flag (cached) instead of scanning the UA string each call.
-    //
-    // e.offsetX/offsetY: element-relative CSS pixels. Available in Opera 9+.
-    // Works correctly regardless of page scroll or element position.
-    if (!is3DS && e.offsetX !== undefined) {
+    // Old 3DS (SPIDER/NetFront): e.offsetX is buggy. Use clientX with
+    // cached getBoundingClientRect, which is the most reliable method on
+    // this browser according to 3DS dev communities.
+    if (isOld3DS && _cachedRect) {
+        var cx = (e.clientX !== undefined ? e.clientX : (e.pageX || 0));
+        var cy = (e.clientY !== undefined ? e.clientY : (e.pageY || 0));
+        return {
+            x: (cx - _cachedRect.left) * (canvas.width / canvasDisplayW),
+            y: (cy - _cachedRect.top) * (canvas.height / canvasDisplayH),
+        };
+    }
+    // New 3DS and modern browsers: e.offsetX works correctly.
+    if (e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
             y: e.offsetY * (canvas.height / canvasDisplayH),
         };
     }
-    // Fallback: pageX/pageY + canvas page offset
+    // Fallback: pageX/pageY + canvas page offset (DSi Opera, Firefox <39)
     var scroll = getScrollOffset();
     var pageX = e.pageX !== undefined ? e.pageX : e.clientX + scroll.x;
     var pageY = e.pageY !== undefined ? e.pageY : e.clientY + scroll.y;
@@ -198,6 +222,9 @@ function onCanvasMouseDown(e) {
     if (isWii && e.preventDefault) {
         e.preventDefault();
     }
+    // Refresh cached rect on every mousedown (cheap, and catches scrolls/resizes)
+    refreshCanvasRect();
+
     var pos = getPos(e);
     if (currTool === 'fill') {
         saveHistory();
@@ -249,13 +276,17 @@ canvas.addEventListener('mousedown', onCanvasMouseDown, true);
 canvas.addEventListener('mouseup', onCanvasMouseUp, true);
 canvas.addEventListener('mouseout', onCanvasMouseUp, true);
 
-// Old 3DS NetFront fires mousemove at the document level (not on the canvas
-// element itself) during stylus drag. Listening on canvas alone means those
-// events are never received, so the user only sees the initial mousedown dot.
-// Fix: listen on document in capture phase so we catch every mousemove
-// regardless of where NetFront dispatches it, then delegate to onCanvasMouseMove.
-var _mouseMoveTarget = is3DS ? document : canvas;
-_mouseMoveTarget.addEventListener('mousemove', onCanvasMouseMove, true);
+// Old 3DS (SPIDER): mousemove may fire at the document level rather than on the
+// canvas during stylus drag. Attach to document to catch all events. Also attach
+// mouseup on document in case the stylus lifts off the canvas.
+// New 3DS & others: keep listeners on canvas only (document-level would catch
+// extraneous events from toolbar/scrollbar, hurting performance).
+if (isOld3DS) {
+    document.addEventListener('mousemove', onCanvasMouseMove, true);
+    document.addEventListener('mouseup', onCanvasMouseUp, true);
+} else {
+    canvas.addEventListener('mousemove', onCanvasMouseMove, true);
+}
 
 // --- TOUCH SUPPORT FOR MOBILE ---
 // Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
@@ -478,9 +509,7 @@ function handleMessageKeydown(event) {
     var keyCode = event.keyCode || event.which;
     if (keyCode === 13 && !event.shiftKey) {
         event.preventDefault();
-        prepareAndSend();
-        var form = document.getElementById('sendform');
-        if (form) form.submit();
+        prepareAndSend(); // prepareAndSend() already calls form.submit()
         return false;
     }
 }

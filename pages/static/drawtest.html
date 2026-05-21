@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+<title>Draw Event Test</title>
+<style>
+body { margin: 5px; font-family: monospace; font-size: 10px; background: #222; color: #0f0; }
+canvas { border: 2px solid #0f0; display: block; background: #fff; touch-action: none; }
+#log { height: 150px; overflow-y: auto; background: #000; padding: 4px; margin-top: 4px; white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<div>UA: <span id="ua"></span></div>
+<div>Screen: <span id="scr"></span></div>
+<canvas id="c" width="200" height="120"></canvas>
+<div id="log"></div>
+<script>
+document.getElementById('ua').textContent = navigator.userAgent;
+document.getElementById('scr').textContent = screen.width + 'x' + screen.height;
+
+var c = document.getElementById('c');
+var ctx = c.getContext('2d');
+var log = document.getElementById('log');
+var drawing = false;
+var lx = 0, ly = 0;
+var evCount = 0;
+
+function addLog(msg) {
+    evCount++;
+    var line = evCount + ': ' + msg + '\n';
+    log.textContent += line;
+    log.scrollTop = log.scrollHeight;
+}
+
+function getMousePos(e) {
+    var r = 'offset(' + (e.offsetX||'?') + ',' + (e.offsetY||'?') + ')';
+    r += ' client(' + (e.clientX||'?') + ',' + (e.clientY||'?') + ')';
+    r += ' page(' + (e.pageX||'?') + ',' + (e.pageY||'?') + ')';
+    r += ' tgt=' + (e.target ? e.target.id || e.target.tagName : '?');
+    return r;
+}
+
+// Test ALL event binding methods
+
+// --- DOM0 on canvas ---
+c.onmousedown = function(e) {
+    addLog('DOM0 canvas.mousedown ' + getMousePos(e));
+    drawing = true;
+    var rect = c.getBoundingClientRect();
+    lx = (e.clientX || e.pageX || 0) - rect.left;
+    ly = (e.clientY || e.pageY || 0) - rect.top;
+    ctx.fillStyle = '#f00';
+    ctx.fillRect(lx - 2, ly - 2, 4, 4);
+};
+
+c.onmousemove = function(e) {
+    if (!drawing) return;
+    addLog('DOM0 canvas.mousemove ' + getMousePos(e));
+    var rect = c.getBoundingClientRect();
+    var x = (e.clientX || e.pageX || 0) - rect.left;
+    var y = (e.clientY || e.pageY || 0) - rect.top;
+    ctx.strokeStyle = '#00f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    lx = x; ly = y;
+};
+
+c.onmouseup = function(e) {
+    addLog('DOM0 canvas.mouseup ' + getMousePos(e));
+    drawing = false;
+};
+
+// --- addEventListener on canvas (capture) ---
+if (c.addEventListener) {
+    c.addEventListener('mousedown', function(e) {
+        addLog('AELC canvas.mousedown ' + getMousePos(e));
+    }, true);
+    c.addEventListener('mousemove', function(e) {
+        if (drawing) addLog('AELC canvas.mousemove ' + getMousePos(e));
+    }, true);
+    c.addEventListener('mouseup', function(e) {
+        addLog('AELC canvas.mouseup ' + getMousePos(e));
+    }, true);
+}
+
+// --- addEventListener on document (capture) ---
+if (document.addEventListener) {
+    document.addEventListener('mousedown', function(e) {
+        addLog('AELD doc.mousedown tgt=' + (e.target ? e.target.id || e.target.tagName : '?'));
+    }, true);
+    document.addEventListener('mousemove', function(e) {
+        if (drawing) addLog('AELD doc.mousemove tgt=' + (e.target ? e.target.id || e.target.tagName : '?'));
+    }, true);
+    document.addEventListener('mouseup', function(e) {
+        addLog('AELD doc.mouseup tgt=' + (e.target ? e.target.id || e.target.tagName : '?'));
+    }, true);
+}
+
+// --- touch events on canvas ---
+if (c.addEventListener) {
+    c.addEventListener('touchstart', function(e) {
+        addLog('TOUCH canvas.touchstart touches=' + (e.touches ? e.touches.length : '?'));
+    }, false);
+    c.addEventListener('touchmove', function(e) {
+        addLog('TOUCH canvas.touchmove touches=' + (e.touches ? e.touches.length : '?'));
+    }, false);
+    c.addEventListener('touchend', function(e) {
+        addLog('TOUCH canvas.touchend');
+    }, false);
+}
+
+// --- touch events on document ---
+if (document.addEventListener) {
+    document.addEventListener('touchstart', function(e) {
+        addLog('TOUCHD doc.touchstart');
+    }, true);
+    document.addEventListener('touchmove', function(e) {
+        addLog('TOUCHD doc.touchmove');
+    }, true);
+    document.addEventListener('touchend', function(e) {
+        addLog('TOUCHD doc.touchend');
+    }, true);
+}
+
+// --- click events ---
+c.onclick = function(e) {
+    addLog('DOM0 canvas.click ' + getMousePos(e));
+};
+
+addLog('Ready. Tap and drag on the canvas above.');
+addLog('addEventListener: ' + (c.addEventListener ? 'YES' : 'NO'));
+addLog('getBoundingClientRect: ' + (c.getBoundingClientRect ? 'YES' : 'NO'));
+</script>
+</body>
+</html>
