@@ -55,10 +55,10 @@ function renderTemplate(template, data) {
     // Global template variables
     const globalData = {
         DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
-        DISCORD_REDIRECT_URL: process.env.DISCORD_REDIRECT_URL,
-        DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent(process.env.DISCORD_REDIRECT_URL || ''),
-        PAGE_TITLE: isCachingPass ? '{$PAGE_TITLE}' : 'Discross - Use Discord Anywhere',
-        SEO_METADATA: isCachingPass ? '{$SEO_METADATA}' : '',
+        DISCORD_REDIRECT_URL: (process.env.DISCORD_REDIRECT_URL || '').trim(),
+        DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent((process.env.DISCORD_REDIRECT_URL || '').trim()),
+        PAGE_TITLE: data.PAGE_TITLE ?? '{$PAGE_TITLE}',
+        SEO_METADATA: data.SEO_METADATA ?? '{$SEO_METADATA}',
         COMMON_HEAD: getTemplate('head', 'partials'),
     };
 
@@ -81,7 +81,9 @@ function renderTemplate(template, data) {
         result = result.split('{$PAGE_TITLE}').join(mergedData.PAGE_TITLE ?? globalData.PAGE_TITLE);
     }
     if (result.includes('{$SEO_METADATA}')) {
-        result = result.split('{$SEO_METADATA}').join(mergedData.SEO_METADATA ?? globalData.SEO_METADATA);
+        result = result
+            .split('{$SEO_METADATA}')
+            .join(mergedData.SEO_METADATA ?? globalData.SEO_METADATA);
     }
 
     return result;
@@ -140,7 +142,7 @@ function generateSEOMetadata(req, options = {}) {
     const title = options.title || 'Discross - Use Discord Anywhere';
     const description =
         options.description ||
-        'Discross is a universal Discord client designed to work on any device with a basic HTML web browser. Access Discord on everything from retro consoles to modern smartphones.';
+        'Discross is a universal Discord client that brings modern communication to any device with a web browser. Access Discord, check weather, read news, view sports scores, and more on everything from retro consoles to modern smartphones.';
     const canonical = options.canonical || url;
     const type = options.type || 'website';
     const image = options.image || baseUrl + '/resources/logo_full.png';
@@ -149,6 +151,7 @@ function generateSEOMetadata(req, options = {}) {
     let html = `
     <meta name="description" content="${escapeHtml(description)}" />
     <link rel="canonical" href="${escapeHtml(canonical)}" />
+    ${options.noindex ? '<meta name="robots" content="noindex" />' : ''}
 
     <!-- Open Graph -->
     <meta property="og:type" content="${escapeHtml(type)}" />
@@ -277,7 +280,7 @@ function getPageThemeAttr(req) {
               : 0;
     if (theme === 1) return 'class="light-theme"';
     if (theme === 2) return 'class="amoled-theme"';
-    return 'bgcolor="303338"';
+    return 'bgcolor="#303338"';
 }
 
 /**

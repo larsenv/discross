@@ -4,7 +4,13 @@ const https = require('https');
 const escape = require('escape-html');
 
 const auth = require('../src/authentication.js');
-const { renderTemplate, loadAndRenderPageTemplate, getTemplate, render, generateSEOMetadata } = require('./utils.js');
+const {
+    renderTemplate,
+    loadAndRenderPageTemplate,
+    getTemplate,
+    render,
+    generateSEOMetadata,
+} = require('./utils.js');
 
 // Fallback timezone when user cookie is absent or invalid
 const DEFAULT_TZ = 'America/New_York';

@@ -218,7 +218,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         // Function to safely delete the temp file
                         const cleanup = () => {
                             fs.unlink(filePath, (err) => {
-                                if (err) console.warn(`Failed to delete temp file ${filePath}:`, err);
+                                if (err)
+                                    console.warn(`Failed to delete temp file ${filePath}:`, err);
                             });
                         };
 

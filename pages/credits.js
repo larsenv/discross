@@ -29,5 +29,6 @@ exports.processCredits = async function (bot, req, res, args) {
             description: 'Credits and open-source dependencies used in Discross.',
         }),
     });
+    res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);
 };

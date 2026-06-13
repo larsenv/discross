@@ -109,29 +109,26 @@ function cacheCustomEmoji(emojiId, emojiName, animated) {
     }
 }
 
-/**
- * Replace unicode emojis in text with twemoji <img> tags.
- * Always uses .gif extension since only GIF twemoji files are available.
- * @param {string} text - Text that may contain unicode emojis
- * @param {number} sizePx - Size in pixels (e.g. 22)
- * @param {string} sizeEm - Size in em (e.g. "1.375em")
- * @returns {string} Text with unicode emojis replaced by img tags
- */
 const tmpl = {
     image: getTemplate('twemoji-image', 'emojiUtils'),
     skintone: getTemplate('skintone-button', 'emojiUtils'),
 };
 
-// Load emoji categories for server-side rendering
+// Load emoji categories for server-side rendering.
+// emojiList.js is a browser script (`window.EMOJI_CATEGORIES = { ... }`) written
+// as a JS object literal — single quotes, unquoted keys — which is NOT valid
+// JSON, and it spans many lines. The previous regex+JSON.parse approach silently
+// failed (no `s` flag, invalid JSON), leaving categories empty and the quick
+// emoji row blank. Evaluate the file in a sandboxed VM with a `window` shim so
+// the real object literal is read directly.
 let emojiCategories = {};
 try {
+    const vm = require('vm');
     const emojiListPath = require('path').join(__dirname, 'static/js/emojiList.js');
     const content = fs.readFileSync(emojiListPath, 'utf-8');
-    // Extract JSON from window.EMOJI_CATEGORIES = {...};
-    const jsonMatch = content.match(/window\.EMOJI_CATEGORIES\s*=\s*(\{.*\});/);
-    if (jsonMatch) {
-        emojiCategories = JSON.parse(jsonMatch[1]);
-    }
+    const sandbox = { window: {} };
+    vm.runInNewContext(content, sandbox, { timeout: 5000 });
+    emojiCategories = sandbox.window.EMOJI_CATEGORIES || {};
 } catch (err) {
     console.error('Failed to load emoji categories for server-side rendering:', err);
 }
@@ -194,15 +191,20 @@ function getSkinToneSelectorHTML(baseUrl, emojiOpen, expanded, sessionParam) {
         .join('');
 }
 
+// Original quick-emoji row (restored to match the pre-refactor set).
+// Names map to current emojiList.js shortcodes: face_with_raised_eyebrow/thumbsup/
+// thumbsdown/slight_smile were renamed to raised_eyebrow/+1/-1/slightly_smiling_face.
 const quickNames = [
     'sob',
+    'raised_eyebrow',
     'skull',
     'pleading_face',
     'heart',
-    'joy',
-    'fire',
-    'white_check_mark',
-    'eyes',
+    '+1',
+    '-1',
+    'pray',
+    'tada',
+    'slightly_smiling_face',
 ];
 
 const skinToneMapping = {
@@ -240,7 +242,9 @@ function renderEmojiLink(emoji, isCustom, skinTone, animated = false) {
         const tag = `<${animated ? 'a' : ''}:${name}:${code}>`;
         onclick = `if(typeof insertEmoji==='function')insertEmoji('${tag}');`;
     } else {
-        const toneIdx = skinToneMapping[skinTone] || '';
+        // Only append a skin-tone suffix for emojis that actually support it;
+        // otherwise we'd emit invalid shortcodes like ":sob::skin-tone-3:".
+        const toneIdx = supportsSkinTone ? skinToneMapping[skinTone] || '' : '';
         const suffix = toneIdx ? `:skin-tone-${toneIdx}:` : '';
         onclick = `if(typeof insertEmoji==='function')insertEmoji(':${name}:${suffix}');`;
     }
@@ -292,6 +296,14 @@ function getExpandedEmojiHTML(skinTone, serverEmojis) {
     return html.join('');
 }
 
+/**
+ * Replace unicode emojis in text with twemoji <img> tags.
+ * Always uses .gif extension since only GIF twemoji files are available.
+ * @param {string} text - Text that may contain unicode emojis
+ * @param {number} sizePx - Size in pixels (e.g. 22)
+ * @param {string} sizeEm - Size in em (e.g. "1.375em")
+ * @returns {string} Text with unicode emojis replaced by img tags
+ */
 function processUnicodeEmojiInText(text, sizePx, sizeEm) {
     return text.replace(emojiRegex, (match) => {
         const code = unicodeToTwemojiCode(match);

@@ -308,10 +308,10 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                             };
                         } catch (err) {
                             // Delete from database if member isn't found
-                            auth.queryRun(
-                                'DELETE FROM servers WHERE serverID=? AND discordID=?',
-                                [server.id, discordID]
-                            );
+                            auth.queryRun('DELETE FROM servers WHERE serverID=? AND discordID=?', [
+                                server.id,
+                                discordID,
+                            ]);
                             serversDeleted++;
                             continue;
                         }
@@ -404,8 +404,8 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
         const normalizedServerName = serverName ? normalizeWeirdUnicode(serverName) : '';
         const pageTitle = normalizedServerName
-            ? `${normalizedServerName}${normalizedServerName.toLowerCase() === 'discross' ? '' : ' - Discross'}`
-            : 'Server Menu - Discross';
+            ? `Discross - ${normalizedServerName}`
+            : 'Discross - Server Menu';
         const seoDescription = normalizedServerName
             ? `Browse channels and chat in ${normalizedServerName} on Discross, the universal Discord client.`
             : 'Access your Discord servers and channels on Discross, the universal Discord client.';

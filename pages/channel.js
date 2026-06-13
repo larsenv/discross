@@ -111,7 +111,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             serverEmojisJSON = JSON.stringify(serverEmojis);
         }
 
-        const { getQuickEmojiHTML, getExpandedEmojiHTML, getSkinToneSelectorHTML } = require('./emojiUtils');
+        const {
+            getQuickEmojiHTML,
+            getExpandedEmojiHTML,
+            getSkinToneSelectorHTML,
+        } = require('./emojiUtils');
         const isLegacy = isLegacyClient(req.headers['user-agent']);
 
         const baseTemplate = render('/channel', {
@@ -162,7 +166,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         const channelDisplayName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
         const serverName = chnl.guild.name;
         const normalizedServerName = normalizeWeirdUnicode(serverName);
-        const pageTitle = `${channelDisplayName} - ${normalizedServerName}${normalizedServerName.toLowerCase() === 'discross' ? '' : ' - Discross'}`;
+        const pageTitle = `Discross - ${channelDisplayName} - ${normalizedServerName}`;
         const seoDescription = `Chat in ${channelDisplayName} on ${normalizedServerName} using Discross, the universal Discord client.`;
         const seoMetadata = generateSEOMetadata(req, {
             title: pageTitle,

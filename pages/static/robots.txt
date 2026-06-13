@@ -1,3 +1,5 @@
 User-agent: *
-Disallow: 
+Disallow: /food
+Disallow: /foodProxy
+Disallow: /news/
 Sitemap: https://discross.net/sitemap.xml

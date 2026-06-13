@@ -105,24 +105,57 @@ function getTemplates() {
     return _templates;
 }
 
-// --- Cart cookie helpers ---// --- Cart cookie helpers ---
+// --- Cart cookie helpers ---
+//
+// The cart travels two ways: as a cookie AND as a `pizzaCart` URL query param
+// (the fallback for cookieless / no-JS legacy consoles). Standard base64 uses
+// '+', '/' and '=', none of which survive a URL round-trip cleanly — most
+// notably URLSearchParams decodes '+' to a space, which silently corrupted the
+// cart and emptied it. We therefore use URL-safe base64 (base64url) everywhere,
+// which is safe in both cookies and query strings without extra escaping.
+
+// Decode either base64url (new) or legacy percent-encoded standard base64 (old
+// cookies still in the wild) into a parsed object. Tolerant so existing
+// cart/checkout values keep working across the cookie and URL transports.
+function decodeBase64Json(raw) {
+    if (!raw) return null;
+    let s = raw;
+    // Legacy values were wrapped in encodeURIComponent; undo if present.
+    if (s.indexOf('%') !== -1) {
+        try {
+            s = decodeURIComponent(s);
+        } catch (e) {
+            /* not percent-encoded after all */
+        }
+    }
+    // A stray space means a '+' was eaten by URL parsing — restore it.
+    s = s.replace(/ /g, '+');
+    // Convert base64url back to standard base64 for Buffer.
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(Buffer.from(s, 'base64').toString('utf-8'));
+}
+
+function decodeCartString(raw) {
+    const cart = decodeBase64Json(raw);
+    if (!cart) return null;
+    if (!cart.items) cart.items = [];
+    return cart;
+}
+
 function getCart(req) {
     try {
         const cookie = req.headers.cookie || '';
         const cartCookie = cookie.split('; ').find((c) => c.startsWith('pizzaCart='));
         if (cartCookie) {
             const val = cartCookie.split('=').slice(1).join('=');
-            const decoded = Buffer.from(decodeURIComponent(val), 'base64').toString('utf-8');
-            const cart = JSON.parse(decoded);
-            if (!cart.items) cart.items = [];
-            return cart;
+            const cart = decodeCartString(val);
+            if (cart) return cart;
         }
+        // URLSearchParams has already decoded this value once — do NOT decode again.
         const urlCart = new URL(req.url, 'http://localhost').searchParams.get('pizzaCart');
         if (urlCart) {
-            const decoded = Buffer.from(decodeURIComponent(urlCart), 'base64').toString('utf-8');
-            const cart = JSON.parse(decoded);
-            if (!cart.items) cart.items = [];
-            return cart;
+            const cart = decodeCartString(urlCart);
+            if (cart) return cart;
         }
     } catch (e) {
         console.error('getCart: failed to parse cart cookie:', e.message);
@@ -130,13 +163,24 @@ function getCart(req) {
     return { storeId: null, items: [] };
 }
 
+// URL-safe base64 (base64url): no '+', '/', or '=' padding. Safe in both
+// cookies and query strings without further escaping.
+function encodeBase64Json(obj) {
+    return Buffer.from(JSON.stringify(obj))
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
 function encodeCart(cart) {
-    return Buffer.from(JSON.stringify(cart)).toString('base64');
+    return encodeBase64Json(cart);
 }
 
 function cartCookieHeader(cart, useSecure) {
+    // base64url is already cookie- and URL-safe, so no encodeURIComponent needed.
     const encoded = encodeCart(cart);
-    return `pizzaCart=${encodeURIComponent(encoded)}; path=/; HttpOnly${useSecure ? '; Secure' : ''}`;
+    return `pizzaCart=${encoded}; path=/; HttpOnly; SameSite=Lax${useSecure ? '; Secure' : ''}`;
 }
 
 function clearCartCookieHeader() {
@@ -337,7 +381,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
         const pageTitle = seoOptions.title || 'Pizza - Discross';
         const seoDescription =
             seoOptions.description ||
-            'Order pizza from Domino\'s through Discross, the universal Discord client.';
+            "Order pizza from Domino's through Discross, the universal Discord client.";
 
         let result = applyCommonFields(html, req, templates, theme, sessionData);
         result = renderTemplate(result, {
@@ -345,6 +389,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
             SEO_METADATA: generateSEOMetadata(req, {
                 title: pageTitle,
                 description: seoDescription,
+                noindex: true,
             }),
         });
         return result;
@@ -362,7 +407,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
             title: address ? `Stores near ${address} - Discross` : 'Store Search - Discross',
             description: address
                 ? `Find Domino's stores near ${address} on Discross.`
-                : 'Search for Domino\'s stores to order pizza on Discross.',
+                : "Search for Domino's stores to order pizza on Discross.",
         });
         html = strReplace(html, '{$SEARCH_ADDRESS}', escape(address));
 
@@ -1251,14 +1296,14 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
                 100
             ),
         };
-        const checkoutCookie = Buffer.from(JSON.stringify(checkoutData)).toString('base64');
+        const checkoutCookie = encodeBase64Json(checkoutData);
 
         if (await bot.sendPizzaVerification(discordID, code)) {
             res.writeHead(302, {
                 Location: buildRedirect('/food/verify', [
                     'pizzaCheckout=' + encodeURIComponent(checkoutCookie),
                 ]),
-                'Set-Cookie': `pizzaCheckout=${encodeURIComponent(checkoutCookie)}; path=/food; HttpOnly${secure ? '; Secure' : ''}; Max-Age=600`,
+                'Set-Cookie': `pizzaCheckout=${encodeURIComponent(checkoutCookie)}; path=/food; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}; Max-Age=600`,
             });
         } else {
             res.writeHead(302, {
@@ -1298,11 +1343,7 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
                         .split('; ')
                         .find((c) => c.startsWith('pizzaCheckout='))
                         ?.split('=')[1] || urlCheckoutEncoded;
-                return rawVal
-                    ? JSON.parse(
-                          Buffer.from(decodeURIComponent(rawVal), 'base64').toString('utf-8')
-                      )
-                    : null;
+                return rawVal ? decodeBase64Json(rawVal) : null;
             } catch (e) {
                 return null;
             }

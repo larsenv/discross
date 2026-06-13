@@ -29,5 +29,6 @@ exports.processPrivacy = async function (bot, req, res, args) {
             description: 'Learn how Discross handles your data and protects your privacy.',
         }),
     });
+    res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);
 };

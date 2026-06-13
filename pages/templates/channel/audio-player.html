@@ -1,0 +1,10 @@
+<div class="audio-player" style="margin-top: 4px; padding: 10px 14px; background: #2b2d31; border-radius: 4px; border: 1px solid #1e1f22; max-width: 400px; min-width: 200px;">
+  <a href="{$FILE_LINK}" style="color: #00A8FC; text-decoration: none; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 14px; display: block; margin-bottom: 2px;">{$FILE_NAME}</a>
+  <font size="1" face="'rodin', Arial, Helvetica, sans-serif" color="#949ba4">{$FILE_SIZE}</font><br />
+  <audio controls preload="none" style="width: 100%; margin-top: 8px; max-width: 380px;">
+    <source src="{$FILE_LINK}" type="{$MIME_TYPE}" />
+    <!-- Fallback for older browsers -->
+    <embed src="{$FILE_LINK}" type="{$MIME_TYPE}" autostart="false" width="300" height="40" /><br />
+    <a href="{$FILE_LINK}">Download audio file</a>
+  </audio>
+</div>

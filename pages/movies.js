@@ -22,6 +22,7 @@ function getTemplates() {
         _templates = {
             movies: loadTemplate('movies.html'),
             loggedIn: getTemplate('logged-in', 'index'),
+            loggedOut: getTemplate('logged-out', 'index'),
             // Partials
             scoreBadge: loadPartial('movie-score-badge.html'),
             card: loadPartial('movie-card.html'),
@@ -775,8 +776,13 @@ exports.processMovies = async function processMovies(req, res, discordID) {
         );
     }
 
-    const username = await auth.getUsername(discordID);
-    const menuOptions = renderTemplate(templates.loggedIn, { USER: escape(username) });
+    let menuOptions;
+    if (discordID) {
+        const username = await auth.getUsername(discordID);
+        menuOptions = renderTemplate(templates.loggedIn, { USER: escape(username) });
+    } else {
+        menuOptions = templates.loggedOut;
+    }
 
     const pageTitle = `Movies & TV (${tab.label}) - Discross`;
     const seoDescription = `Browse popular ${tab.label} and ratings from Rotten Tomatoes on Discross, the universal Discord client.`;

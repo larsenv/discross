@@ -42,7 +42,7 @@ const { parseUserAgent, isLegacyClient } = require('./userAgentUtils.js');
 // Constants
 // ---------------------------------------------------------------------------
 
-const FORWARDED_CONTENT_MAX_LENGTH = 100;
+const FORWARDED_CONTENT_MAX_LENGTH = 4000;
 const REPLY_CONTENT_MAX_LENGTH = 25;
 const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
 const LEGACY_MESSAGE_LIMIT = 25;
@@ -188,9 +188,7 @@ function renderEmojis(messagetext, item, imagesCookie, animationsCookie) {
 
     // 2. Process Custom Discord emojis (e.g. <:pepe:123456789>)
     // These come in as HTML-escaped sequences (&lt;:...&gt;) because messagetext is already escaped.
-    const customMatchesIterator = result.matchAll(
-        /&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})&gt;/g
-    );
+    const customMatchesIterator = result.matchAll(/&lt;(:)?(?:(a):)?(\w{2,32}):(\d{16,20})&gt;/g);
     for (const match of customMatchesIterator) {
         const animated = !!match[2]; // 'a' indicates animation
         const ext = animated && animationsCookie === 1 ? 'gif' : 'png';
@@ -209,20 +207,40 @@ function renderEmojis(messagetext, item, imagesCookie, animationsCookie) {
     return result;
 }
 
+// MIME type map for audio extensions — used to fill in the <source type> attribute.
+const AUDIO_MIME = {
+    mp3: 'audio/mpeg',
+    ogg: 'audio/ogg',
+    oga: 'audio/ogg',
+    wav: 'audio/wav',
+    wave: 'audio/wav',
+    flac: 'audio/flac',
+    m4a: 'audio/mp4',
+    aac: 'audio/aac',
+    opus: 'audio/ogg; codecs=opus',
+    weba: 'audio/webm',
+    webm: 'audio/webm',
+    aiff: 'audio/aiff',
+    aif: 'audio/aiff',
+};
+
 /**
  * Renders message attachments (images, videos, files) into HTML.
  *
  * Images are rendered as <img> tags (wrapped in spoiler tags if necessary).
+ * Audio files are rendered as an HTML5 <audio> player (modern) or download
+ * card (legacy clients), detected via User-Agent.
  * Other files (videos, PDFs, etc.) are rendered as download cards/links.
  *
  * @param {string} messagetext - The current message HTML.
  * @param {object} item - The Discord message object containing attachments.
  * @param {number} imagesCookie - User preference for showing images (1 = enabled).
  * @param {string} tmpl_file_download - The template for file download cards.
+ * @param {object} req - The incoming HTTP request (used for UA detection).
  * @returns {string} The HTML with attachments appended to the message text.
  */
 
-function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) {
+function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download, req) {
     let result = messagetext || '';
     const attachments = item?.attachments;
 
@@ -234,16 +252,21 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
 
     const tmpl_spoiler = getTemplate('spoiler-image', 'channel');
     const tmpl_normal_image = getTemplate('normal-image', 'channel');
+    const tmpl_audio_player = getTemplate('audio-player', 'channel');
+    const tmpl_audio_link = getTemplate('audio-link', 'channel');
 
     const IMAGE_EXT = /\.(jpg|gif|png|jpeg|avif|svg|webp|tif|tiff)$/i;
     const VIDEO_EXT = /\.(mp4|webm|mov|avi|mkv)$/i;
+    const AUDIO_EXT = /\.(mp3|ogg|oga|wav|wave|flac|m4a|aac|opus|weba|aiff|aif)$/i;
     const imageData = [];
 
+    // Legacy clients can't play HTML5 audio, but we fall back to <embed> inside tmpl_audio_player.
     for (const attachment of list) {
         if (!attachment) continue;
 
         const isImage = IMAGE_EXT.test(attachment.name);
         const isVideo = VIDEO_EXT.test(attachment.name);
+        const isAudio = AUDIO_EXT.test(attachment.name);
         const isSpoiler = attachment.name?.toUpperCase().startsWith('SPOILER_');
 
         // We proxy images to avoid hotlinking issues and to resize them if needed.
@@ -254,6 +277,19 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
 
         if (isImage && imagesCookie === 1) {
             imageData.push({ url, isSpoiler });
+        } else if (isAudio) {
+            // Derive MIME type from extension for the <source type> hint.
+            const ext = (attachment.name || '').split('.').pop().toLowerCase();
+            const mimeType = AUDIO_MIME[ext] || 'audio/mpeg';
+            // Modern clients get HTML5 <audio> player with controls.
+            // Legacy clients will fall back to the <embed> tag inside tmpl_audio_player.
+            const card = renderTemplate(tmpl_audio_player, {
+                '{$FILE_NAME}': escape(truncateFileName(attachment.name || 'audio')),
+                '{$FILE_SIZE}': formatFileSize(attachment.size || 0),
+                '{$FILE_LINK}': escape(url),
+                '{$MIME_TYPE}': escape(mimeType),
+            });
+            result = (result ? result + getTemplate('br', 'misc') : '') + card;
         } else {
             // Render a file download card for non-images or if images are disabled.
             const card = renderTemplate(tmpl_file_download, {
@@ -1254,7 +1290,7 @@ async function resolveReplyData(
     }
 }
 
-function buildReplyIndicator(replyData, replyText, barColor = '#808080') {
+function buildReplyIndicator(replyData, replyText, barColor = '#808080', imagesCookie = 0) {
     const normalizedReplyContent = (replyData.content || '')
         .replace(/<br[^>]*>/gi, ' ')
         .replace(/\r?\n/g, ' ')
@@ -1450,7 +1486,7 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
 
     // If the group starts with a reply or was an interaction, build the top "indicator" bar.
     const replyIndicator = state.lastReply
-        ? buildReplyIndicator(state.lastReplyData, replyText, barColor)
+        ? buildReplyIndicator(state.lastReplyData, replyText, barColor, state.imagesCookie)
         : state.lastInteraction
           ? buildInteractionIndicator(state.lastInteractionData, replyText, barColor)
           : '';
@@ -1503,7 +1539,8 @@ async function renderMessageContent(item, context) {
         withEmojis,
         item,
         imagesCookie,
-        templates.fileDownload
+        templates.fileDownload,
+        req
     );
 
     const withStickers = renderStickers(withAttachments, item, imagesCookie);
@@ -1667,6 +1704,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     // 3. The State Machine.
     // Tracks the current message block's metadata.
     const state = {
+        imagesCookie,
         lastauthor: undefined, // Author of the previous message
         lastmember: undefined, // GuildMember object of the previous author
         lastdate: new Date('1995-12-17T03:24:00'), // Timestamp of the last message in the group
@@ -1924,4 +1962,3 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
  * @param {string[]} args - URL segments (e.g., ["channels", "guildID", "channelID"]).
  * @param {string} discordID - The authenticated user's Discord ID.
  */
-

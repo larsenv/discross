@@ -1,6 +1,11 @@
 'use strict';
 
-const { renderTemplate, getPageThemeAttr, loadAndRenderPageTemplate, generateSEOMetadata } = require('./utils.js');
+const {
+    renderTemplate,
+    getPageThemeAttr,
+    loadAndRenderPageTemplate,
+    generateSEOMetadata,
+} = require('./utils.js');
 
 const template404 = loadAndRenderPageTemplate('404');
 

@@ -162,8 +162,8 @@ function getPos(e) {
     // cached getBoundingClientRect, which is the most reliable method on
     // this browser according to 3DS dev communities.
     if (isOld3DS && _cachedRect) {
-        var cx = (e.clientX !== undefined ? e.clientX : (e.pageX || 0));
-        var cy = (e.clientY !== undefined ? e.clientY : (e.pageY || 0));
+        var cx = e.clientX !== undefined ? e.clientX : e.pageX || 0;
+        var cy = e.clientY !== undefined ? e.clientY : e.pageY || 0;
         return {
             x: (cx - _cachedRect.left) * (canvas.width / canvasDisplayW),
             y: (cy - _cachedRect.top) * (canvas.height / canvasDisplayH),
@@ -258,7 +258,12 @@ function onCanvasMouseDown(e) {
             saveHistory();
             isOld3DSDrawing = true;
             isDrawing = true;
-            ctx.fillRect(pos.x - Math.floor(currSize / 2), pos.y - Math.floor(currSize / 2), currSize, currSize);
+            ctx.fillRect(
+                pos.x - Math.floor(currSize / 2),
+                pos.y - Math.floor(currSize / 2),
+                currSize,
+                currSize
+            );
         }
         lastX = pos.x;
         lastY = pos.y;
@@ -274,7 +279,12 @@ function onCanvasMouseDown(e) {
     pointQueue = [];
 
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-    ctx.fillRect(lastX - Math.floor(currSize / 2), lastY - Math.floor(currSize / 2), currSize, currSize);
+    ctx.fillRect(
+        lastX - Math.floor(currSize / 2),
+        lastY - Math.floor(currSize / 2),
+        currSize,
+        currSize
+    );
 }
 
 function onCanvasMouseMove(e) {

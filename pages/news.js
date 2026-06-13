@@ -487,6 +487,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
             SEO_METADATA: generateSEOMetadata(req, {
                 title: pageTitle,
                 description: seoDescription,
+                noindex: true,
             }),
         });
         res.writeHead(200, { 'Content-Type': 'text/html' });
