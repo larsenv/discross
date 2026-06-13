@@ -14,7 +14,12 @@ const CLIENTS = [
     { id: 'wiiu', name: 'Nintendo Wii U', keywords: ['Nintendo WiiU'] },
     { id: 'wii', name: 'Nintendo Wii', keywords: ['Nintendo Wii'] },
     { id: 'switch', name: 'Nintendo Switch', keywords: ['Nintendo Switch'] },
-    { id: 'ps2', name: 'PlayStation 2', keywords: ['Playstation2', 'PS2', 'EGBrowser'], isLegacy: true },
+    {
+        id: 'ps2',
+        name: 'PlayStation 2',
+        keywords: ['Playstation2', 'PS2', 'EGBrowser'],
+        isLegacy: true,
+    },
     { id: 'ps3', name: 'PlayStation 3', keywords: ['PLAYSTATION 3'], isLegacy: true },
     { id: 'ps4', name: 'PlayStation 4', keywords: ['PlayStation 4'] },
     { id: 'psp', name: 'PSP', keywords: ['PSP (PlayStation Portable)'], isLegacy: true },
@@ -38,7 +43,6 @@ const CLIENTS = [
     { id: 'edgedev', name: 'Microsoft Edge Dev', keywords: ['EdgD/'] },
     { id: 'edge', name: 'Microsoft Edge', keywords: ['Edge/', 'Edg/', 'EdgA/', 'EdgiOS/'] },
     { id: 'edgecanary', name: 'Microsoft Edge Canary', keywords: ['Canary/'] },
-    { id: 'firefoxdev', name: 'Firefox Developer Edition', keywords: ['a1', 'a2'] },
     { id: 'firefox', name: 'Firefox', keywords: ['Firefox/'] },
     { id: 'duckduckgo', name: 'DuckDuckGo', keywords: ['DuckDuckGo/'] },
     { id: 'icab', name: 'iCab', keywords: ['iCab/'] },
@@ -50,7 +54,7 @@ const CLIENTS = [
     { id: 'operatouch', name: 'Opera Touch', keywords: ['OPT/'] },
     { id: 'operacrypto', name: 'Opera Crypto', keywords: ['Opera Crypto', 'Crypto Browser'] },
     { id: 'operaneon', name: 'Opera Neon', keywords: ['Opera Neon'] },
-    { id: 'operadev', name: 'Opera Developer', keywords: ['Developer'] },
+    { id: 'operadev', name: 'Opera Developer', keywords: ['Opera Developer'] },
     { id: 'opera', name: 'Opera', keywords: ['Opera/', 'OPR/'] },
     {
         id: 'safaritech',
@@ -63,9 +67,42 @@ const CLIENTS = [
     { id: 'uc', name: 'UC Browser', keywords: ['UCBrowser/'], isLegacy: true },
     { id: 'waterfox', name: 'Waterfox', keywords: ['Waterfox/'] },
     { id: 'chrome', name: 'Chrome', keywords: ['Chrome/'] },
-    { id: 'chromecanary', name: 'Chrome Canary', keywords: ['Canary/'] },
     { id: 'safari', name: 'Safari', keywords: ['Safari/'] },
 ];
+
+// Browsers/engines that embed "Chrome/" or "Safari/" in their UA. When a more
+// specific client from these sets also matches, it wins over the generic
+// Chrome/Safari fallback. Hoisted to module scope so they aren't rebuilt on
+// every parse. Safari additionally yields to Chrome and several consoles.
+const CHROME_OVERRIDES = new Set([
+    'edge',
+    'edgebeta',
+    'edgedev',
+    'edgecanary',
+    'brave',
+    'opera',
+    'operagx',
+    'operadev',
+    'operacrypto',
+    'operaneon',
+    'arc',
+    'kindle',
+    'vivaldi',
+    'yandex',
+    'samsung',
+    'uc',
+    'duckduckgo',
+    'atlas',
+    'supermium',
+]);
+const SAFARI_OVERRIDES = new Set([
+    ...CHROME_OVERRIDES,
+    'chrome',
+    'ps4',
+    'switch',
+    'psvita',
+    'safaritech',
+]);
 
 /**
  * Parses a User-Agent string to identify the client.
@@ -84,6 +121,11 @@ function parseUserAgent(userAgent) {
         detectedClient = { id: 'xboxone', name: 'Xbox One', isLegacy: false };
     } else if (userAgent.includes('Xbox')) {
         detectedClient = { id: 'xbox360', name: 'Xbox 360', isLegacy: true };
+    } else if (
+        userAgent.includes('Firefox/') &&
+        (userAgent.includes('0a1') || userAgent.includes('0a2'))
+    ) {
+        detectedClient = { id: 'firefoxdev', name: 'Firefox Developer Edition', isLegacy: false };
     } else {
         // General keyword search
         for (const client of CLIENTS) {
@@ -91,65 +133,12 @@ function parseUserAgent(userAgent) {
 
             const matches = client.keywords.some((keyword) => userAgent.includes(keyword));
             if (matches) {
-                // Secondary checks for generic engines
-                if (client.id === 'chrome') {
-                    // Chrome is often in Edge, Brave, Opera, Arc, etc.
+                // Chrome/Safari are substrings of many other browsers' UAs; if a
+                // more specific client also matches, let it win instead.
+                if (client.id === 'chrome' || client.id === 'safari') {
+                    const overrides = client.id === 'chrome' ? CHROME_OVERRIDES : SAFARI_OVERRIDES;
                     const isOther = CLIENTS.some(
-                        (c) =>
-                            [
-                                'edge',
-                                'edgebeta',
-                                'edgedev',
-                                'edgecanary',
-                                'brave',
-                                'opera',
-                                'operagx',
-                                'operadev',
-                                'operacrypto',
-                                'operaneon',
-                                'arc',
-                                'kindle',
-                                'vivaldi',
-                                'yandex',
-                                'samsung',
-                                'uc',
-                                'duckduckgo',
-                                'atlas',
-                                'supermium',
-                            ].includes(c.id) && c.keywords.some((k) => userAgent.includes(k))
-                    );
-                    if (isOther) continue;
-                }
-                if (client.id === 'safari') {
-                    // Safari is in Chrome, Edge, etc.
-                    const isOther = CLIENTS.some(
-                        (c) =>
-                            [
-                                'chrome',
-                                'edge',
-                                'edgebeta',
-                                'edgedev',
-                                'edgecanary',
-                                'brave',
-                                'opera',
-                                'operagx',
-                                'operadev',
-                                'operacrypto',
-                                'operaneon',
-                                'arc',
-                                'kindle',
-                                'ps4',
-                                'switch',
-                                'psvita',
-                                'vivaldi',
-                                'yandex',
-                                'samsung',
-                                'uc',
-                                'duckduckgo',
-                                'atlas',
-                                'supermium',
-                                'safaritech',
-                            ].includes(c.id) && c.keywords.some((k) => userAgent.includes(k))
+                        (c) => overrides.has(c.id) && c.keywords.some((k) => userAgent.includes(k))
                     );
                     if (isOther) continue;
                 }

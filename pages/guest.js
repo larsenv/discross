@@ -49,7 +49,7 @@ exports.processGuestName = async function processGuestName(req, res) {
 
     res.writeHead(302, {
         Location: `/channels/${channelId}`,
-        'Set-Cookie': `guest_name=${encodeURIComponent(name)}; path=/; expires=${expires}; HttpOnly`,
+        'Set-Cookie': `guest_name=${encodeURIComponent(name)}; path=/; expires=${expires}; HttpOnly; SameSite=Lax`,
     });
     res.end();
 };

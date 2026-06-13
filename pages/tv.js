@@ -2,7 +2,13 @@
 
 const https = require('https');
 const escape = require('escape-html');
-const { renderTemplate, loadAndRenderPageTemplate, getTemplate, render, generateSEOMetadata } = require('./utils.js');
+const {
+    renderTemplate,
+    loadAndRenderPageTemplate,
+    getTemplate,
+    render,
+    generateSEOMetadata,
+} = require('./utils.js');
 const he = require('he');
 
 const auth = require('../src/authentication.js');
@@ -373,12 +379,14 @@ function smartTitleCase(str) {
                     if (lowerPart.length === 2 && states.indexOf(lowerPart) !== -1)
                         return lowerPart.toUpperCase();
                     if (/^[kwcx][a-z0-9]{2,3}$/i.test(part)) return part.toUpperCase();
+                    if (/^[a-z]+[0-9]+$/i.test(part)) return part.toUpperCase();
                     return lowerPart.charAt(0).toUpperCase() + lowerPart.slice(1);
                 })
                 .join('-');
         }
 
         var lower = word.toLowerCase();
+        if (/^[a-z]+[0-9]+$/i.test(word)) return word.toUpperCase();
         if (word !== word.toUpperCase() && word !== word.toLowerCase()) return word;
         if (acronyms.indexOf(lower) !== -1) return lower.toUpperCase();
         if (lower.length === 2 && states.indexOf(lower) !== -1) return lower.toUpperCase();

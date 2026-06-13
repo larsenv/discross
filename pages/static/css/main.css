@@ -279,6 +279,9 @@ pre code {
     font-size: 17px;
     margin: 0 0 8px 0;
 }
+.messagecontent p:empty {
+    display: none;
+}
 .large-emoji.messagecontent p {
     font-size: 48px;
     line-height: 56px;
@@ -305,14 +308,37 @@ pre code {
 .messagecontent h3:first-child {
     margin-top: 0 !important;
 }
-/* Ensure headings aren't smaller than paragraph text (17px) */
-.messagecontent h1,
-.messagecontent h2,
-.messagecontent h3 {
+/* Ensure headings have proper standard discord sizes */
+.messagecontent h1 {
+    font-size: 24px;
+    line-height: 30px;
     font-weight: 700;
+    margin: 16px 0 8px 0;
+}
+.messagecontent h2 {
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: 700;
+    margin: 16px 0 8px 0;
+}
+.messagecontent h3 {
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 700;
+    margin: 16px 0 8px 0;
 }
 .firstmessage {
     margin: 0;
+}
+
+/* Attachment images in message content */
+.standard-image {
+    display: block;
+    max-width: 100%;
+    max-height: 350px;
+    height: auto;
+    border-radius: 4px;
+    margin-top: 4px;
 }
 
 /* Message mentions */
@@ -833,7 +859,7 @@ textarea:focus {
 canvas {
     background: #ffffff;
     cursor: crosshair;
-    display: block;
+    display: inline-block;
     margin: 0 auto;
     border: 1px solid #202225;
     max-width: 100%;

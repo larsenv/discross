@@ -1,68 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url>
-	<loc>https://discross.net/</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>1.0</priority>
-</url>
-<url>
-	<loc>https://discross.net/login.html</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.8</priority>
-</url>
-<url>
-	<loc>https://discross.net/register.html</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.8</priority>
-</url>
-<url>
-	<loc>https://discross.net/forgot.html</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.5</priority>
-</url>
-<url>
-	<loc>https://discross.net/privacy.html</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.3</priority>
-</url>
-<url>
-	<loc>https://discross.net/terms.html</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.3</priority>
-</url>
-<url>
-	<loc>https://discross.net/weather</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.6</priority>
-</url>
-<url>
-	<loc>https://discross.net/currency</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.6</priority>
-</url>
-<url>
-	<loc>https://discross.net/sports</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.6</priority>
-</url>
-<url>
-	<loc>https://discross.net/stocks</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.6</priority>
-</url>
-<url>
-	<loc>https://discross.net/search</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.6</priority>
-</url>
-<url>
-	<loc>https://discross.net/tv</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.6</priority>
-</url>
-<url>
-	<loc>https://discross.net/movies</loc>
-	<lastmod>2026-03-25T12:00:00+00:00</lastmod>
-	<priority>0.6</priority>
-</url>
+   <url>
+      <loc>https://discross.net/</loc>
+      <changefreq>weekly</changefreq>
+      <priority>1.0</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/news</loc>
+      <changefreq>hourly</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/weather</loc>
+      <changefreq>hourly</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/sports</loc>
+      <changefreq>hourly</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/stocks</loc>
+      <changefreq>hourly</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/currency</loc>
+      <changefreq>hourly</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/tv</loc>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/movies</loc>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/search</loc>
+      <changefreq>monthly</changefreq>
+      <priority>0.5</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/privacy.html</loc>
+      <changefreq>monthly</changefreq>
+      <priority>0.3</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/terms.html</loc>
+      <changefreq>monthly</changefreq>
+      <priority>0.3</priority>
+   </url>
+   <url>
+      <loc>https://discross.net/credits.html</loc>
+      <changefreq>monthly</changefreq>
+      <priority>0.3</priority>
+   </url>
 </urlset>

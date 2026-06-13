@@ -32,5 +32,6 @@ exports.processForgot = function (bot, req, res, args) {
             description: 'Recover your Discross account password.',
         }),
     });
+    res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);
 };

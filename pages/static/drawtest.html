@@ -1,111 +1,190 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-<meta name="viewport" content="width=device-width">
-<title>Draw Event Test v2</title>
-<style>
-body { margin: 5px; font-family: monospace; font-size: 10px; background: #222; color: #0f0; }
-canvas { border: 2px solid #0f0; display: block; background: #fff; }
-#log { height: 160px; overflow-y: auto; background: #000; padding: 4px; margin-top: 4px; white-space: pre-wrap; word-break: break-all; }
-</style>
-</head>
-<body>
-<canvas id="c" width="200" height="120"></canvas>
-<div id="log"></div>
-<script>
-var c = document.getElementById('c');
-var ctx = c.getContext('2d');
-var log = document.getElementById('log');
-var n = 0;
-var drawing = false;
-var lx = 0, ly = 0;
+    <head>
+        <meta name="viewport" content="width=device-width" />
+        <title>Draw Event Test v2</title>
+        <style>
+            body {
+                margin: 5px;
+                font-family: monospace;
+                font-size: 10px;
+                background: #222;
+                color: #0f0;
+            }
+            canvas {
+                border: 2px solid #0f0;
+                display: block;
+                background: #fff;
+            }
+            #log {
+                height: 160px;
+                overflow-y: auto;
+                background: #000;
+                padding: 4px;
+                margin-top: 4px;
+                white-space: pre-wrap;
+                word-break: break-all;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="c" width="200" height="120"></canvas>
+        <div id="log"></div>
+        <script>
+            var c = document.getElementById('c');
+            var ctx = c.getContext('2d');
+            var log = document.getElementById('log');
+            var n = 0;
+            var drawing = false;
+            var lx = 0,
+                ly = 0;
 
-function addLog(msg) { n++; log.textContent += n + ': ' + msg + '\n'; log.scrollTop = 9999; }
+            function addLog(msg) {
+                n++;
+                log.textContent += n + ': ' + msg + '\n';
+                log.scrollTop = 9999;
+            }
 
-// -- UA detection (same logic as draw.js) --
-var _ua = navigator.userAgent;
-var is3DS       = _ua.indexOf('Nintendo 3DS') !== -1;
-var isNew3DS    = is3DS && _ua.indexOf('NintendoBrowser') !== -1;
-var isOld3DS    = is3DS && !isNew3DS;
+            // -- UA detection (same logic as draw.js) --
+            var _ua = navigator.userAgent;
+            var is3DS = _ua.indexOf('Nintendo 3DS') !== -1;
+            var isNew3DS = is3DS && _ua.indexOf('NintendoBrowser') !== -1;
+            var isOld3DS = is3DS && !isNew3DS;
 
-// Log diagnostics immediately
-addLog('UA: ' + _ua.substring(0, 80));
-addLog('is3DS=' + is3DS + ' isOld3DS=' + isOld3DS + ' isNew3DS=' + isNew3DS);
-addLog('addEventListener: ' + (!!c.addEventListener));
-addLog('getBoundingClientRect: ' + (!!c.getBoundingClientRect));
-addLog('screen: ' + screen.width + 'x' + screen.height);
+            // Log diagnostics immediately
+            addLog('UA: ' + _ua.substring(0, 80));
+            addLog('is3DS=' + is3DS + ' isOld3DS=' + isOld3DS + ' isNew3DS=' + isNew3DS);
+            addLog('addEventListener: ' + !!c.addEventListener);
+            addLog('getBoundingClientRect: ' + !!c.getBoundingClientRect);
+            addLog('screen: ' + screen.width + 'x' + screen.height);
 
-// -- Test ctx.stroke() works --
-ctx.fillStyle = '#000';
-ctx.strokeStyle = '#000';
-ctx.lineWidth = 3;
-ctx.fillRect(5, 5, 8, 8);        // dot via fillRect (should always work)
-ctx.beginPath();
-ctx.moveTo(20, 5);
-ctx.lineTo(50, 25);
-ctx.stroke();                     // line via stroke (may be broken on Old 3DS)
-// Label
-addLog('TOP-LEFT: dot=fillRect, right=stroke (see canvas)');
+            // -- Test ctx.stroke() works --
+            ctx.fillStyle = '#000';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+            ctx.fillRect(5, 5, 8, 8); // dot via fillRect (should always work)
+            ctx.beginPath();
+            ctx.moveTo(20, 5);
+            ctx.lineTo(50, 25);
+            ctx.stroke(); // line via stroke (may be broken on Old 3DS)
+            // Label
+            addLog('TOP-LEFT: dot=fillRect, right=stroke (see canvas)');
 
-// -- DOM0 mousedown on canvas --
-c.onmousedown = function(e) {
-    drawing = true;
-    var rect = c.getBoundingClientRect ? c.getBoundingClientRect() : {left:0,top:0};
-    lx = (e.offsetX !== undefined) ? e.offsetX : ((e.clientX||0) - rect.left);
-    ly = (e.offsetY !== undefined) ? e.offsetY : ((e.clientY||0) - rect.top);
-    ctx.fillStyle = '#00f';
-    ctx.fillRect(lx - 3, ly - 3, 6, 6);
-    addLog('mousedown off=(' + (e.offsetX||'?') + ',' + (e.offsetY||'?') + ') cli=(' + (e.clientX||'?') + ',' + (e.clientY||'?') + ') tgt=' + (e.target&&(e.target.id||e.target.tagName)));
-};
-c.onmouseup = function(e) {
-    drawing = false;
-    addLog('mouseup');
-};
-c.onclick = function(e) {
-    addLog('click');
-};
+            // -- DOM0 mousedown on canvas --
+            c.onmousedown = function (e) {
+                drawing = true;
+                var rect = c.getBoundingClientRect
+                    ? c.getBoundingClientRect()
+                    : { left: 0, top: 0 };
+                lx = e.offsetX !== undefined ? e.offsetX : (e.clientX || 0) - rect.left;
+                ly = e.offsetY !== undefined ? e.offsetY : (e.clientY || 0) - rect.top;
+                ctx.fillStyle = '#00f';
+                ctx.fillRect(lx - 3, ly - 3, 6, 6);
+                addLog(
+                    'mousedown off=(' +
+                        (e.offsetX || '?') +
+                        ',' +
+                        (e.offsetY || '?') +
+                        ') cli=(' +
+                        (e.clientX || '?') +
+                        ',' +
+                        (e.clientY || '?') +
+                        ') tgt=' +
+                        (e.target && (e.target.id || e.target.tagName))
+                );
+            };
+            c.onmouseup = function (e) {
+                drawing = false;
+                addLog('mouseup');
+            };
+            c.onclick = function (e) {
+                addLog('click');
+            };
 
-// -- Canvas mousemove (capture) --
-if (c.addEventListener) {
-    c.addEventListener('mousemove', function(e) {
-        if (!drawing) return;
-        var rect = c.getBoundingClientRect ? c.getBoundingClientRect() : {left:0,top:0};
-        var x = (e.offsetX !== undefined) ? e.offsetX : ((e.clientX||0) - rect.left);
-        var y = (e.offsetY !== undefined) ? e.offsetY : ((e.clientY||0) - rect.top);
-        // Draw with stroke
-        ctx.strokeStyle = '#f00';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(lx, ly);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        // Draw with fillRect interpolation
-        var dx = x-lx, dy = y-ly, dist = Math.sqrt(dx*dx+dy*dy);
-        var steps = Math.max(1, Math.ceil(dist/2));
-        ctx.fillStyle = '#080';
-        for (var i=0;i<=steps;i++) { var t=i/steps; ctx.fillRect(Math.round(lx+dx*t)-1,Math.round(ly+dy*t)-1,3,3); }
-        lx = x; ly = y;
-        addLog('CANVAS mousemove x=' + Math.round(x) + ' y=' + Math.round(y));
-    }, true);
-}
+            // -- Canvas mousemove (capture) --
+            if (c.addEventListener) {
+                c.addEventListener(
+                    'mousemove',
+                    function (e) {
+                        if (!drawing) return;
+                        var rect = c.getBoundingClientRect
+                            ? c.getBoundingClientRect()
+                            : { left: 0, top: 0 };
+                        var x = e.offsetX !== undefined ? e.offsetX : (e.clientX || 0) - rect.left;
+                        var y = e.offsetY !== undefined ? e.offsetY : (e.clientY || 0) - rect.top;
+                        // Draw with stroke
+                        ctx.strokeStyle = '#f00';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(lx, ly);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                        // Draw with fillRect interpolation
+                        var dx = x - lx,
+                            dy = y - ly,
+                            dist = Math.sqrt(dx * dx + dy * dy);
+                        var steps = Math.max(1, Math.ceil(dist / 2));
+                        ctx.fillStyle = '#080';
+                        for (var i = 0; i <= steps; i++) {
+                            var t = i / steps;
+                            ctx.fillRect(
+                                Math.round(lx + dx * t) - 1,
+                                Math.round(ly + dy * t) - 1,
+                                3,
+                                3
+                            );
+                        }
+                        lx = x;
+                        ly = y;
+                        addLog('CANVAS mousemove x=' + Math.round(x) + ' y=' + Math.round(y));
+                    },
+                    true
+                );
+            }
 
-// -- Document mousemove (capture) --
-if (document.addEventListener) {
-    document.addEventListener('mousemove', function(e) {
-        if (!drawing) return;
-        addLog('DOC mousemove tgt=' + (e.target&&(e.target.id||e.target.tagName)));
-    }, true);
-}
+            // -- Document mousemove (capture) --
+            if (document.addEventListener) {
+                document.addEventListener(
+                    'mousemove',
+                    function (e) {
+                        if (!drawing) return;
+                        addLog(
+                            'DOC mousemove tgt=' + (e.target && (e.target.id || e.target.tagName))
+                        );
+                    },
+                    true
+                );
+            }
 
-// -- Touch events --
-if (c.addEventListener) {
-    c.addEventListener('touchstart',  function(e) { addLog('touchstart touches=' + (e.touches?e.touches.length:0)); if(e.preventDefault)e.preventDefault(); }, true);
-    c.addEventListener('touchmove',   function(e) { addLog('touchmove');  if(e.preventDefault)e.preventDefault(); }, true);
-    c.addEventListener('touchend',    function(e) { addLog('touchend'); }, true);
-}
+            // -- Touch events --
+            if (c.addEventListener) {
+                c.addEventListener(
+                    'touchstart',
+                    function (e) {
+                        addLog('touchstart touches=' + (e.touches ? e.touches.length : 0));
+                        if (e.preventDefault) e.preventDefault();
+                    },
+                    true
+                );
+                c.addEventListener(
+                    'touchmove',
+                    function (e) {
+                        addLog('touchmove');
+                        if (e.preventDefault) e.preventDefault();
+                    },
+                    true
+                );
+                c.addEventListener(
+                    'touchend',
+                    function (e) {
+                        addLog('touchend');
+                    },
+                    true
+                );
+            }
 
-addLog('Tap once, then tap elsewhere to test line draw.');
-addLog('Red=stroke line, Green=fillRect line, Blue=dot');
-</script>
-</body>
+            addLog('Tap once, then tap elsewhere to test line draw.');
+            addLog('Red=stroke line, Green=fillRect line, Blue=dot');
+        </script>
+    </body>
 </html>

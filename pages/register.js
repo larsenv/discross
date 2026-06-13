@@ -43,7 +43,8 @@ exports.processRegister = async function (bot, req, res, args) {
             PAGE_TITLE: pageTitle,
             SEO_METADATA: generateSEOMetadata(req, {
                 title: pageTitle,
-                description: 'Create a Discross account to start using Discord on retro consoles and legacy devices.',
+                description:
+                    'Create a Discross account to start using Discord on retro consoles and legacy devices.',
             }),
         });
         res.writeHead(200, { 'Content-Type': 'text/html' });

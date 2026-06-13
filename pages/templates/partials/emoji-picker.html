@@ -10,9 +10,10 @@
             <a id="emoji-more-button" class="discross-button" style="padding: 8px 16px; cursor: pointer; display: inline-block; width: auto; margin: 0 auto; text-decoration: none;" href="{$EMOJI_EXPAND_URL}">More</a>
           </summary>
           
-          <!-- Skin Tone Selector (only shows when expanded) -->
-          <div style="padding: 8px 4px; text-align: center; background: #2f3136; border-radius: 0; border: 1px solid #202225; margin-top: 8px;">
-            <div style="display: flex; justify-content: center; gap: 4px;">
+          <!-- Skin Tone Selector (only shows when expanded; hidden without JS via noscript) -->
+          <noscript><style>.skintone-wrapper{display:none}</style></noscript>
+          <div class="skintone-wrapper" style="padding: 8px 4px; text-align: center; background: #2f3136; border-radius: 0; border: 1px solid #202225; margin-top: 8px;">
+            <div style="display: table; margin: 0 auto;">
               {$SKINTONE_SELECTOR_HTML}
             </div>
           </div>

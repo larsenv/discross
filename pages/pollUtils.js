@@ -1,5 +1,7 @@
 'use strict';
+const escapeHtml = require('escape-html');
 const { renderTemplate, getTemplate, render } = require('./utils.js');
+const { unicodeToTwemojiCode } = require('./emojiUtils.js');
 
 const poll_template = getTemplate('poll', 'message');
 const poll_answer_template = getTemplate('poll-answer', 'message');
@@ -14,17 +16,10 @@ function buildPollEmojiHtml(emoji, imagesCookie) {
         });
     }
     if (emoji.name && imagesCookie === 1) {
-        const codePoints = [];
-        for (let i = 0; i < emoji.name.length; i++) {
-            const code = emoji.name.codePointAt(i);
-            if (code) {
-                codePoints.push(code.toString(16));
-                if (code > 0xffff) i++;
-            }
-        }
-        const emojiCode = codePoints.join('-');
+        // Reuse the canonical converter so poll emojis resolve to the same
+        // twemoji files (and FE0F handling) used everywhere else in the app.
         return render('message/partials/poll-emoji-twemoji', {
-            CODE: emojiCode,
+            CODE: unicodeToTwemojiCode(emoji.name),
         });
     }
     if (emoji.name) {
@@ -45,11 +40,20 @@ function processPoll(poll, imagesCookie) {
     if (!poll) return '';
 
     try {
+        // Check if poll has ended
+        const now = Date.now();
+        const isEnded = poll.expiresTimestamp && poll.expiresTimestamp < now;
+
         // Calculate total votes across all answers
         const totalVotes =
             poll.answers?.size > 0
                 ? Array.from(poll.answers.values()).reduce((sum, a) => sum + (a.voteCount || 0), 0)
                 : 0;
+
+        // Find max votes for winning highlight
+        const maxVotes = totalVotes > 0 
+            ? Math.max(...Array.from(poll.answers.values()).map(a => a.voteCount || 0))
+            : 0;
 
         // Process each answer
         const answersHtml =
@@ -59,35 +63,40 @@ function processPoll(poll, imagesCookie) {
                           const voteCount = answer.voteCount || 0;
                           const votePercentage =
                               totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                          
+                          const isWinner = isEnded && voteCount === maxVotes && maxVotes > 0;
+                          const borderColor = isWinner ? '#23a559' : 'transparent';
+                          const fillColor = isWinner ? '#1f3d2f' : '#3f4147';
+
                           return renderTemplate(poll_answer_template, {
-                              '{$ANSWER_TEXT}': escape(answer.text || ''),
+                              '{$ANSWER_TEXT}': escapeHtml(answer.text || ''),
                               '{$ANSWER_EMOJI}': buildPollEmojiHtml(answer._emoji, imagesCookie),
                               '{$VOTE_COUNT}': voteCount,
                               '{$VOTE_PERCENTAGE}': votePercentage,
+                              '{$BORDER_COLOR}': borderColor,
+                              '{$FILL_COLOR}': fillColor,
                           });
                       })
                       .join('')
                 : getTemplate('poll-no-answers', 'misc');
 
         // Create footer with poll metadata
-        const footerParts = [`${totalVotes} total vote${totalVotes !== 1 ? 's' : ''}`];
+        const footerParts = [`${totalVotes} vote${totalVotes !== 1 ? 's' : ''}`];
 
         if (poll.allowMultiselect) {
             footerParts.push('Multiple choice');
         }
 
-        // Check if poll has ended
-        const now = Date.now();
-        if (poll.expiresTimestamp && poll.expiresTimestamp < now) {
-            footerParts.push('Poll ended');
+        if (isEnded) {
+            footerParts.push('Poll closed');
         } else if (poll.expiresTimestamp) {
             footerParts.push(`Ends ${new Date(poll.expiresTimestamp).toLocaleDateString()}`);
         }
 
         const pollHtml = renderTemplate(poll_template, {
-            '{$POLL_QUESTION}': escape(poll.question?.text || 'Poll'),
+            '{$POLL_QUESTION}': escapeHtml(poll.question?.text || 'Poll'),
             '{$POLL_ANSWERS}': answersHtml,
-            '{$POLL_FOOTER}': escape(footerParts.join(' • ')),
+            '{$POLL_FOOTER}': escapeHtml(footerParts.join(' • ')),
         });
 
         return pollHtml;

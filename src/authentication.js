@@ -109,6 +109,17 @@ function setup() {
     queryRun(
         'CREATE TABLE IF NOT EXISTS message_user_agents (messageID TEXT PRIMARY KEY, userAgent TEXT)'
     );
+
+    // DM Email System tables
+    queryRun(
+        'CREATE TABLE IF NOT EXISTS mail_users (discordID TEXT PRIMARY KEY, email_prefix TEXT UNIQUE, active INTEGER DEFAULT 1)'
+    );
+    queryRun(
+        'CREATE TABLE IF NOT EXISTS mail_verifications (discordID TEXT PRIMARY KEY, code TEXT, email_prefix TEXT, backup_email TEXT, expires INT)'
+    );
+    queryRun(
+        'CREATE TABLE IF NOT EXISTS mail_blocks (discordID TEXT, blocked_email TEXT, PRIMARY KEY(discordID, blocked_email))'
+    );
 }
 
 setup();
@@ -229,7 +240,7 @@ exports.createSession = function (discordID) {
 
 exports.getCookieHeader = function (sessionID) {
     const cookieExpiry = new Date(Date.now() + expiryTime * 1000).toUTCString();
-    return `sessionID=${sessionID}; Path=/; expires=${cookieExpiry}; HttpOnly${https ? '; Secure' : ''}`;
+    return `sessionID=${sessionID}; Path=/; expires=${cookieExpiry}; HttpOnly; SameSite=Lax${https ? '; Secure' : ''}`;
 };
 
 exports.checkSession = async function (sessionID) {
@@ -503,7 +514,7 @@ exports.handleLoginRegister = async function (req, res, body) {
                 const redirectPath = `${redirectBase}${sep}sessionID=${encodeURIComponent(result.sessionID)}#end`;
                 res.writeHead(200, {
                     'Set-Cookie': [
-                        `sessionID=${result.sessionID}; path=/; expires=${cookieExpiry}; HttpOnly${https ? '; Secure' : ''}`,
+                        `sessionID=${result.sessionID}; path=/; expires=${cookieExpiry}; HttpOnly; SameSite=Lax${https ? '; Secure' : ''}`,
                     ],
                     Location: redirectPath,
                     'Content-Type': 'text/html',
@@ -648,7 +659,7 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
         challenge: Array.from(challenge),
         rp: {
             id: rpId,
-            name: 'Discross'
+            name: 'Discross',
         },
         timeout: 60000,
         userVerification: type === 'login' ? 'required' : 'preferred',
@@ -668,17 +679,16 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
         options.authenticatorSelection = {
             residentKey: 'required',
             requireResidentKey: true,
-            userVerification: 'preferred'
+            userVerification: 'preferred',
         };
     } else {
-        const credentials = queryAll(
-            'SELECT credentialID FROM passkeys WHERE discordID = ?',
-            [discordID]
-        );
+        const credentials = queryAll('SELECT credentialID FROM passkeys WHERE discordID = ?', [
+            discordID,
+        ]);
         if (credentials.length > 0) {
             options.allowCredentials = credentials.map((row) => ({
                 id: Array.from(Buffer.from(row.credentialID, 'base64')),
-                type: 'public-key'
+                type: 'public-key',
             }));
         }
     }
@@ -698,17 +708,105 @@ exports.verifyPasskey = async function (discordID, type, response) {
     } else {
         let finalDiscordID = discordID;
         const passkey = querySingle(
-            'SELECT discordID, publicKey, counter FROM passkeys WHERE credentialID = ?' + (discordID ? ' AND discordID = ?' : ''),
+            'SELECT discordID, publicKey, counter FROM passkeys WHERE credentialID = ?' +
+                (discordID ? ' AND discordID = ?' : ''),
             discordID ? [response.id, discordID] : [response.id]
         );
         if (!passkey) return { success: false, error: 'Passkey not found' };
-        
+
         if (!finalDiscordID) finalDiscordID = passkey.discordID;
 
         // TODO: Signature verification logic using public key would go here.
         // For now, return success if credentialID is found.
         return { success: true, discordID: finalDiscordID };
     }
+};
+
+// --- Mail System Management ---
+
+exports.getMailUser = function (discordID) {
+    return querySingle('SELECT * FROM mail_users WHERE discordID=?', [discordID]);
+};
+
+exports.getMailUserByEmail = function (email_prefix) {
+    return querySingle('SELECT * FROM mail_users WHERE email_prefix=?', [email_prefix]);
+};
+
+exports.setMailUser = function (discordID, email_prefix, active = 1) {
+    try {
+        queryRun(
+            'INSERT OR REPLACE INTO mail_users (discordID, email_prefix, active) VALUES (?, ?, ?)',
+            [discordID, email_prefix, active]
+        );
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+};
+
+exports.toggleMailOptOut = function (discordID) {
+    const user = exports.getMailUser(discordID);
+    if (!user) return { success: false, error: 'User is not registered for email.' };
+    const newActive = user.active ? 0 : 1;
+    queryRun('UPDATE mail_users SET active=? WHERE discordID=?', [newActive, discordID]);
+    return { success: true, active: newActive };
+};
+
+exports.addMailBlock = function (discordID, blocked_email) {
+    try {
+        queryRun('INSERT OR IGNORE INTO mail_blocks (discordID, blocked_email) VALUES (?, ?)', [
+            discordID,
+            blocked_email.toLowerCase(),
+        ]);
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+};
+
+exports.isMailBlocked = function (discordID, checkEmail) {
+    const match = querySingle('SELECT 1 FROM mail_blocks WHERE discordID=? AND blocked_email=?', [
+        discordID,
+        checkEmail.toLowerCase(),
+    ]);
+    return !!match;
+};
+
+exports.createMailVerificationCode = function (discordID, email_prefix, backup_email) {
+    const time = unixTime();
+    queryRun('DELETE FROM mail_verifications WHERE NOT expires > ?', [time]);
+
+    const existing = querySingle(
+        'SELECT code FROM mail_verifications WHERE discordID=? AND expires > ?',
+        [discordID, time]
+    );
+    if (existing) {
+        return existing.code;
+    }
+
+    // 6 digit code for email verification
+    const code = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
+    // Code expires in 10 minutes
+    queryRun(
+        'INSERT OR REPLACE INTO mail_verifications (discordID, code, email_prefix, backup_email, expires) VALUES (?,?,?,?,?)',
+        [discordID, code, email_prefix, backup_email, time + 10 * 60]
+    );
+    return code;
+};
+
+exports.verifyMailCode = function (discordID, code) {
+    const time = unixTime();
+    const match = querySingle(
+        'SELECT * FROM mail_verifications WHERE discordID=? AND expires > ?',
+        [discordID, time]
+    );
+
+    if (!match || match.code !== (code || '').trim()) {
+        return { success: false, error: 'Invalid or expired verification code.' };
+    }
+
+    queryRun('DELETE FROM mail_verifications WHERE discordID=?', [discordID]);
+    return { success: true, email_prefix: match.email_prefix };
 };
 
 exports.querySingle = querySingle;

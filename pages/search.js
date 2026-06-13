@@ -48,7 +48,8 @@ exports.processSearch = async function processSearch(req, res) {
     });
 
     const pageTitle = 'Search - Discross';
-    const seoDescription = 'Search the web using FrogFind, Wiby, or Google on Discross, the universal Discord client.';
+    const seoDescription =
+        'Search the web using FrogFind, Wiby, or Google on Discross, the universal Discord client.';
 
     const response = renderTemplate(search_template, {
         WHITE_THEME_ENABLED: themeClass,

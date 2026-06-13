@@ -7,6 +7,7 @@ const mime = require('mime-types').lookup;
 const { SnowTransfer } = require('snowtransfer');
 const bot = require('./src/bot.js');
 const connectionHandler = require('./src/connectionHandler.js');
+const mail = require('./src/mail.js');
 const sharp = require('sharp');
 const sanitizer = require('path-sanitizer').default;
 const Sentry = require('@sentry/node');
@@ -101,7 +102,7 @@ const EXTERNAL_PROXY_PREFIX_LENGTH = '/imageProxy/external/'.length; // 21
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URL = process.env.DISCORD_REDIRECT_URL;
+const DISCORD_REDIRECT_URL = (process.env.DISCORD_REDIRECT_URL || '').trim();
 
 exports.DISCORD_TOKEN = DISCORD_TOKEN;
 exports.DISCORD_CLIENT_ID = DISCORD_CLIENT_ID;
@@ -320,6 +321,18 @@ async function handlePost(req, res) {
     });
     req.on('end', async () => {
         try {
+            if (parsedurl === '/api/inbound/mail') {
+                try {
+                    req.body = JSON.parse(body);
+                    await mail.handleInboundWebhook(req, res);
+                } catch (err) {
+                    console.error('Invalid JSON in inbound mail webhook', err);
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Invalid JSON' }));
+                }
+                return;
+            }
+
             if (parsedurl === '/toggleCategory') {
                 const discordID = await auth.checkAuth(req, res, true);
                 if (discordID) {
@@ -378,7 +391,10 @@ async function handlePost(req, res) {
 
                 if (type === 'login') {
                     // For login, we need to lookup discordID from credential ID
-                    const passkey = auth.querySingle('SELECT discordID FROM passkeys WHERE credentialID = ?', [data.id]);
+                    const passkey = auth.querySingle(
+                        'SELECT discordID FROM passkeys WHERE credentialID = ?',
+                        [data.id]
+                    );
 
                     discordID = passkey ? passkey.discordID : null;
                 } else {
@@ -434,7 +450,10 @@ async function handleGet(req, res) {
                 if (type === 'login') {
                     // For login, we need to lookup discordID by username first
                     const username = parsedurl.searchParams.get('username');
-                    const user = auth.querySingle('SELECT discordID FROM users WHERE username = ?', [username]);
+                    const user = auth.querySingle(
+                        'SELECT discordID FROM users WHERE username = ?',
+                        [username]
+                    );
 
                     discordID = user ? user.discordID : null;
                 } else {
@@ -442,12 +461,13 @@ async function handleGet(req, res) {
                 }
 
                 if (discordID || type === 'login') {
-                   const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
-                   const rpId = host.split(':')[0];
-                   const options = auth.getPasskeyOptions(discordID, type, rpId);
-                   res.writeHead(200, { 'Content-Type': 'application/json' });
-                   res.end(JSON.stringify(options));
-                } else {                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
+                    const rpId = host.split(':')[0];
+                    const options = auth.getPasskeyOptions(discordID, type, rpId);
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(options));
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ error: 'User not found or not authenticated' }));
                 }
             }
@@ -546,13 +566,10 @@ async function handleGet(req, res) {
             break;
         }
         case 'news': {
-            const discordID = await auth.checkAuth(req, res);
-            if (discordID) {
-                if (args.length >= 3 && args[2]) {
-                    await newspage.processNewsArticle(req, res, args, discordID);
-                } else {
-                    await newspage.processNews(req, res, args, discordID);
-                }
+            if (args.length >= 3 && args[2]) {
+                await newspage.processNewsArticle(req, res, args);
+            } else {
+                await newspage.processNews(req, res, args);
             }
             break;
         }
@@ -646,8 +663,9 @@ async function handleGet(req, res) {
             await tvpage.processTV(req, res);
             break;
         case 'movies': {
-            const discordID = await auth.checkAuth(req, res);
-            if (discordID) await moviespage.processMovies(req, res, discordID);
+            // Optional auth check just to get discordID, but don't redirect if not logged in.
+            const discordID = await auth.checkAuth(req, res, true);
+            await moviespage.processMovies(req, res, discordID);
             break;
         }
         case 'food': {
@@ -667,7 +685,7 @@ async function handleGet(req, res) {
             break;
         case 'fileProxy': {
             const filePath = req.url.slice(11);
-            await fileProxy(res, `https://cdn.discordapp.com/attachments/${filePath}`);
+            await fileProxy(res, `https://cdn.discordapp.com/attachments/${filePath}`, req);
             break;
         }
         case 'ico':
@@ -802,16 +820,33 @@ async function handleImageProxy(req, res, parsedurl, args) {
         await imageProxy(req, res, fullImageUrl, isFull);
     } else if (args[2] === 'sticker') {
         const stickerId = args[3].replace(/\.[^.]*$/, '');
-        await imageProxy(req, res, `https://media.discordapp.net/stickers/${stickerId}.png`, isFull);
+        await imageProxy(
+            req,
+            res,
+            `https://media.discordapp.net/stickers/${stickerId}.png`,
+            isFull
+        );
     } else {
         const urlObj = new URL(req.url, 'http://localhost');
         urlObj.searchParams.delete('full');
-        const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${args[2] === 'emoji' ? urlObj.pathname.slice(18) : urlObj.pathname.slice(12)}${urlObj.search}`;
+        let imagePath = args[2] === 'emoji' ? urlObj.pathname.slice(18) : urlObj.pathname.slice(12);
+        if (args[2] === 'emoji') {
+            imagePath = imagePath.replace(/\.(png|gif)$/i, '.webp');
+        }
+        const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${imagePath}${urlObj.search}`;
         await imageProxy(req, res, fullImageUrl, isFull);
     }
 }
 
 server.on('request', async (req, res) => {
+    // Security headers applied to every response. Set via setHeader (not
+    // writeHead) so they persist through the many writeHead calls downstream.
+    // Referrer-Policy is the important one here: sessions can ride in the URL
+    // (?sessionID=…) for cookieless legacy consoles, so we must never leak the
+    // full URL in the Referer header to external images/links.
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
     if (req.url.startsWith('//')) {
         res.writeHead(400, { 'Content-Type': 'text/html' });
         res.end(getTemplate('invalid-request-url', 'misc'));

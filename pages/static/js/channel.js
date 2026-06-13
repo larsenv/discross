@@ -51,12 +51,28 @@ function generateNonce() {
 // Page Load Handler
 // ================
 window.onload = function () {
-    // Security delay before scrolling
+    // Security delay before scrolling (prevents console-paste attacks from
+    // firing before the warning is visible)
     setTimeout(function () {
-        window.location.hash = '';
-        window.location.hash = 'end';
-        
-        // Fallback for Kindle and other browsers where hash nav fails
+        var endEl = document.getElementById('end');
+        if (endEl) {
+            // scrollIntoView(false) aligns element to bottom of viewport —
+            // more reliable than hash navigation and avoids two history entries
+            try {
+                endEl.scrollIntoView(false);
+            } catch (e) {
+                // Very old browsers (DSi Opera) may not support scrollIntoView
+                try {
+                    window.location.hash = 'end';
+                } catch (e2) {}
+            }
+        } else {
+            try {
+                window.location.hash = 'end';
+            } catch (e) {}
+        }
+        // Absolute-bottom fallback: catches Kindle and browsers where
+        // scrollIntoView/hash navigation doesn't reach the true bottom
         try {
             window.scrollTo(0, document.body ? document.body.scrollHeight : 999999);
         } catch (e) {}

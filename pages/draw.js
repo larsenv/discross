@@ -26,7 +26,11 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
     const urlExpanded = parsedUrl.searchParams.get('expanded');
     const querySkinTone = parsedUrl.searchParams.get('skinTone');
 
-    const { whiteThemeCookie, images: imagesCookieForParam, skinTone: cookieSkinTone } = parseCookies(req);
+    const {
+        whiteThemeCookie,
+        images: imagesCookieForParam,
+        skinTone: cookieSkinTone,
+    } = parseCookies(req);
     const skinTone = querySkinTone !== null ? querySkinTone : cookieSkinTone || '';
 
     // Build combined URL params for links — only include preference params when the
@@ -71,8 +75,14 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                 serverEmojisJSON = JSON.stringify(serverEmojis);
             }
 
-            const { getQuickEmojiHTML, getExpandedEmojiHTML, getSkinToneSelectorHTML } = require('./emojiUtils');
-            const isLegacy = require('./userAgentUtils.js').isLegacyClient(req.headers['user-agent']);
+            const {
+                getQuickEmojiHTML,
+                getExpandedEmojiHTML,
+                getSkinToneSelectorHTML,
+            } = require('./emojiUtils');
+            const isLegacy = require('./userAgentUtils.js').isLegacyClient(
+                req.headers['user-agent']
+            );
 
             const emojiPickerHTML = render(
                 isLegacy ? 'partials/emoji-picker-lite' : 'partials/emoji-picker',
@@ -92,7 +102,8 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                         sessionParam
                     ),
                     EMOJI_QUICK_HTML: getQuickEmojiHTML(skinTone),
-                    EMOJI_EXPANDED_HTML: urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : '',
+                    EMOJI_EXPANDED_HTML:
+                        urlExpanded === '1' ? getExpandedEmojiHTML(skinTone, serverEmojis) : '',
                     EMOJI_DISPLAY: urlEmoji === '1' ? '' : 'display: none;',
                 }
             );

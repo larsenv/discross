@@ -213,7 +213,9 @@ exports.processStocks = async function processStocks(req, res) {
         USER: escape(await auth.getUsername(discordID)),
     });
 
-    const pageTitle = ticker ? `Stock Quote (${ticker}) - Discross` : 'Stock Market Indices - Discross';
+    const pageTitle = ticker
+        ? `Stock Quote (${ticker}) - Discross`
+        : 'Stock Market Indices - Discross';
     const seoDescription = ticker
         ? `View live stock market quotes and data for ${ticker} on Discross, the universal Discord client.`
         : 'View live stock market index data and major indices on Discross, the universal Discord client.';

@@ -29,5 +29,6 @@ exports.processTerms = async function (bot, req, res, args) {
             description: 'Read the terms of service for using Discross.',
         }),
     });
+    res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);
 };

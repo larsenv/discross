@@ -21,8 +21,10 @@
         "otplib": "^13.3.0",
         "path-sanitizer": "^3.1.0",
         "qrcode": "^1.5.4",
+        "resend": "^6.12.3",
         "sharp": "^0.34.4",
         "snowtransfer": "^0.15.0",
+        "turndown": "^7.2.4",
         "ua-parser-js": "^2.0.8",
         "uuid": "^13.0.0",
         "ws": "^8.17.0"
