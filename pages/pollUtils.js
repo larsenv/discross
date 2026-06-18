@@ -51,9 +51,10 @@ function processPoll(poll, imagesCookie) {
                 : 0;
 
         // Find max votes for winning highlight
-        const maxVotes = totalVotes > 0 
-            ? Math.max(...Array.from(poll.answers.values()).map(a => a.voteCount || 0))
-            : 0;
+        const maxVotes =
+            totalVotes > 0
+                ? Math.max(...Array.from(poll.answers.values()).map((a) => a.voteCount || 0))
+                : 0;
 
         // Process each answer
         const answersHtml =
@@ -63,7 +64,7 @@ function processPoll(poll, imagesCookie) {
                           const voteCount = answer.voteCount || 0;
                           const votePercentage =
                               totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-                          
+
                           const isWinner = isEnded && voteCount === maxVotes && maxVotes > 0;
                           const borderColor = isWinner ? '#23a559' : 'transparent';
                           const fillColor = isWinner ? '#1f3d2f' : '#3f4147';

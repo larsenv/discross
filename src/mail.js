@@ -85,14 +85,19 @@ exports.handleInboundWebhook = async function (req, res) {
     }
 
     // Extract fields robustly from root or nested data object
-    const to = emailData ? (emailData.to || (emailData.data && emailData.data.to)) : null;
-    const from = emailData ? (emailData.from || (emailData.data && emailData.data.from)) : null;
-    const subject = emailData ? (emailData.subject || (emailData.data && emailData.data.subject)) : null;
-    const text = emailData ? (emailData.text || (emailData.data && emailData.data.text)) : null;
-    const html = emailData ? (emailData.html || (emailData.data && emailData.data.html)) : null;
+    const to = emailData ? emailData.to || (emailData.data && emailData.data.to) : null;
+    const from = emailData ? emailData.from || (emailData.data && emailData.data.from) : null;
+    const subject = emailData
+        ? emailData.subject || (emailData.data && emailData.data.subject)
+        : null;
+    const text = emailData ? emailData.text || (emailData.data && emailData.data.text) : null;
+    const html = emailData ? emailData.html || (emailData.data && emailData.data.html) : null;
 
     if (!emailData || !to || !from) {
-        console.warn('Invalid email payload received or fetched:', JSON.stringify(emailData || payload, null, 2));
+        console.warn(
+            'Invalid email payload received or fetched:',
+            JSON.stringify(emailData || payload, null, 2)
+        );
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ error: 'Invalid payload: missing to/from' }));
     }

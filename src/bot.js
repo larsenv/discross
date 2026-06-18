@@ -507,7 +507,11 @@ client.on('messageUpdate', async function (oldMsg, newMsg) {
             return;
         }
     }
-    if (newMsg.channel && msghistory.has(newMsg.channel.id) && msghistory.get(newMsg.channel.id).has(newMsg.id)) {
+    if (
+        newMsg.channel &&
+        msghistory.has(newMsg.channel.id) &&
+        msghistory.get(newMsg.channel.id).has(newMsg.id)
+    ) {
         msghistory.get(newMsg.channel.id).set(newMsg.id, newMsg);
     }
 });

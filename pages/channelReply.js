@@ -22,18 +22,11 @@ const {
     buildEmojiToggleUrl,
     buildEmojiExpandUrl,
     getTemplate,
-    loadAndRenderPageTemplate,
+    generateSEOMetadata,
 } = require('./utils.js');
 
 // Templates for viewing messages in a channel (Reply Context)
 const channel_reply_bar_template = getTemplate('channel-reply-bar', 'partials');
-const channel_template_base = loadAndRenderPageTemplate('channel');
-const channel_template = renderTemplate(channel_template_base, {
-    PAGE_CLASS: 'page-channel-reply',
-    CONTENT_EXTRA_PADDING: '',
-    EMOJI_BUTTON: getTemplate('emoji-picker-button', 'partials'),
-    REPLY_MESSAGE_ID_INPUT: getTemplate('reply-message-id-input', 'channel'),
-});
 
 // Reply-specific message wrapper templates
 const message_template = getTemplate('message-reply', 'message');
@@ -180,11 +173,28 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
                 serverEmojisJSON = JSON.stringify(serverEmojis);
             }
 
-            const baseTemplate = renderTemplate(channel_template, {
+            const channelDisplayName =
+                (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
+            const serverName = chnl.guild.name;
+            const normalizedServerName = normalizeWeirdUnicode(serverName);
+            const pageTitle = `Discross - Reply in ${channelDisplayName} - ${normalizedServerName}`;
+            const seoDescription = `Reply to a message in ${channelDisplayName} on ${normalizedServerName} using Discross, the universal Discord client.`;
+            const seoMetadata = generateSEOMetadata(req, {
+                title: pageTitle,
+                description: seoDescription,
+            });
+
+            const baseTemplate = render('/channel', {
                 WHITE_THEME_ENABLED: themeClass,
                 COMMON_HEAD: getTemplate('head', 'partials'),
+                PAGE_CLASS: 'page-channel-reply',
+                CONTENT_EXTRA_PADDING: '',
+                EMOJI_BUTTON: getTemplate('emoji-picker-button', 'partials'),
+                REPLY_MESSAGE_ID_INPUT: getTemplate('reply-message-id-input', 'channel'),
                 SERVER_ID: chnl.guild.id,
                 CHANNEL_ID: chnl.id,
+                PAGE_TITLE: pageTitle,
+                SEO_METADATA: seoMetadata,
                 EMOJI_PICKER: render('partials/emoji-picker', {
                     SERVER_EMOJIS_JSON: serverEmojisJSON,
                     SKINTONE_SELECTOR_HTML: getSkinToneSelectorHTML(
