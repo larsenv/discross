@@ -525,34 +525,24 @@ exports.handleLoginRegister = async function (req, res, body) {
                     })
                 );
             } else {
-                res.writeHead(301, {
-                    Location: `/login.html?errortext=${encodeURIComponent(result.reason)}`,
-                });
-                res.end();
+                req.url = `/login.html?errortext=${encodeURIComponent(result.reason)}`;
+                await require('../pages/login').processLogin(null, req, res, []);
             }
         } else {
-            res.writeHead(301, {
-                Location: `/login.html?errortext=${encodeURIComponent('Please enter both a username and password.')}`,
-            });
-            res.end();
+            req.url = `/login.html?errortext=${encodeURIComponent('Please enter both a username and password.')}`;
+            await require('../pages/login').processLogin(null, req, res, []);
         }
     } else if (req.url === '/register') {
         if (params.username && params.password && params.confirm && params.token) {
             if (params.confirm !== params.password) {
-                res.writeHead(301, {
-                    Location:
-                        "/register.html?errortext=Password+confirmation+doesn't+match+password!",
-                });
-                res.end();
+                req.url = `/register.html?errortext=${encodeURIComponent("Password confirmation doesn't match password!")}`;
+                await require('../pages/register').processRegister(null, req, res, []);
                 return;
             }
             const id = await exports.checkVerificationCode(params.token);
             if (!id) {
-                res.writeHead(301, {
-                    Location:
-                        '/register.html?errortext=Invalid+verification+code!%0AType+%5Econnect+on+a+server+with+the+Discross+bot.',
-                });
-                res.end();
+                req.url = `/register.html?errortext=${encodeURIComponent("Invalid verification code!\nType ^connect on a server with the Discross bot.")}`;
+                await require('../pages/register').processRegister(null, req, res, []);
                 return;
             }
             const result = await exports.createUser(id, params.username, params.password);
@@ -560,24 +550,19 @@ exports.handleLoginRegister = async function (req, res, body) {
                 res.writeHead(301, { Location: '/login.html' });
                 res.end();
             } else {
-                res.writeHead(301, {
-                    Location: `/register.html?errortext=${encodeURIComponent(result.reason)}`,
-                });
-                res.end();
+                req.url = `/register.html?errortext=${encodeURIComponent(result.reason)}`;
+                await require('../pages/register').processRegister(null, req, res, []);
             }
         } else {
-            res.writeHead(303, { Location: '/register.html?errortext=Please+fill+in+all+boxes!' });
-            res.end();
+            req.url = `/register.html?errortext=${encodeURIComponent('Please fill in all boxes!')}`;
+            await require('../pages/register').processRegister(null, req, res, []);
         }
     } else if (req.url === '/forgot') {
         if (params.token) {
             const id = await exports.checkVerificationCode(params.token);
             if (!id) {
-                res.writeHead(301, {
-                    Location:
-                        '/forgot.html?errortext=Invalid+verification+code!%0AType+%5Econnect+on+a+server+with+the+Discross+bot.',
-                });
-                res.end();
+                req.url = `/forgot.html?errortext=${encodeURIComponent("Invalid verification code!\nType ^connect on a server with the Discross bot.")}`;
+                await require('../pages/forgot').processForgot(null, req, res, []);
                 return;
             }
             queryRun('DELETE FROM users WHERE discordID = ?', [id]);
@@ -589,8 +574,8 @@ exports.handleLoginRegister = async function (req, res, body) {
             res.writeHead(303, { Location: '/register.html' });
             res.end();
         } else {
-            res.writeHead(303, { Location: '/forgot.html?errortext=Please+fill+the+code!' });
-            res.end();
+            req.url = `/forgot.html?errortext=${encodeURIComponent('Please fill the code!')}`;
+            await require('../pages/forgot').processForgot(null, req, res, []);
         }
     }
 };
