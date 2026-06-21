@@ -2,20 +2,21 @@
     "name": "discross",
     "version": "0.10.0",
     "description": "A webhook bridge to send messages on Discord through a webpage",
-    "main": "index.js",
+    "main": "index.ts",
     "dependencies": {
         "@sentry/node": "^10.40.0",
         "async-lock": "^1.4.1",
         "bcrypt": "^6.0.0",
         "better-sqlite3": "^12.4.1",
         "discord-emoji-converter": "^1.2.10",
-        "discord.js": "^14.14.1",
+        "discord.js": "^14.26.4",
         "dotenv": "^17.2.3",
         "escape-html": "^1.0.3",
         "formidable": "^3.5.4",
-        "geoip-lite": "^1.4.10",
+        "geoip-lite": "^2.0.3",
         "he": "^1.2.0",
         "highlight.js": "^11.11.1",
+        "ioredis": "^5.11.1",
         "markdown-it": "^14.1.0",
         "mime-types": "^3.0.1",
         "otplib": "^13.3.0",
@@ -26,14 +27,18 @@
         "snowtransfer": "^0.15.0",
         "turndown": "^7.2.4",
         "ua-parser-js": "^2.0.8",
+        "undici": "^6.27.0",
         "uuid": "^13.0.0",
         "ws": "^8.17.0"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "node .",
-        "format": "prettier --write \"**/*.{js,css,html,json}\"",
-        "format:check": "prettier --check \"**/*.{js,css,html,json}\""
+        "start": "tsx index.ts",
+        "format": "prettier --write \"**/*.{ts,css,html,json}\"",
+        "format:check": "prettier --check \"**/*.{ts,css,html,json}\""
+    },
+    "overrides": {
+        "undici": "$undici"
     },
     "repository": {
         "type": "git",
@@ -46,6 +51,21 @@
     },
     "homepage": "http://discross.net/",
     "devDependencies": {
-        "prettier": "^3.8.1"
+        "@types/async-lock": "^1.4.2",
+        "@types/bcrypt": "^6.0.0",
+        "@types/better-sqlite3": "^7.6.13",
+        "@types/escape-html": "^1.0.4",
+        "@types/formidable": "^3.5.1",
+        "@types/ioredis": "^4.28.10",
+        "@types/markdown-it": "^14.1.2",
+        "@types/mime-types": "^3.0.1",
+        "@types/node": "^26.0.0",
+        "@types/qrcode": "^1.5.6",
+        "@types/ua-parser-js": "^0.7.39",
+        "@types/uuid": "^10.0.0",
+        "@types/ws": "^8.18.1",
+        "prettier": "^3.8.1",
+        "tsx": "^4.22.4",
+        "typescript": "^6.0.3"
     }
 }
