@@ -189,7 +189,7 @@ async function servePage(filename, res, type, textToReplace, replacement, req) {
                     try {
                         const stats = fs.statSync(filename);
                         staticFileCache.set(filename, {
-                            data: data,
+                            data: isText ? Buffer.from(content, 'utf8') : data,
                             mtime: stats.mtime,
                         });
                     } catch (err) {

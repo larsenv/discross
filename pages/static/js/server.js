@@ -234,9 +234,9 @@ window.onload = function () {
 
             var iframe = document.createElement('iframe');
             iframe.style.display = 'none';
-            // Use the hardcoded client_id from the sync_warning template
+            // Use the templated variables replaced by the server
             var clientId = '{{DISCORD_CLIENT_ID}}';
-            var redirectUri = encodeURIComponent(origin + '/discord.html');
+            var redirectUri = encodeURIComponent('{{DISCORD_REDIRECT_URL}}');
             iframe.src =
                 'https://discord.com/oauth2/authorize?client_id=' +
                 clientId +
