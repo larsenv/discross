@@ -1,21 +1,27 @@
 FROM node:lts
 
-ENV NODE_ENV production
+# Skip downloading chromium for any dependencies, set env
+ENV NODE_ENV=production
 
 WORKDIR /usr/src/app
 
-COPY bot.js .
-COPY authentication.js .
-COPY connectionHandler.js .
-COPY index.js .
+# Copy dependency configuration
 COPY package.json .
-COPY pages pages
-COPY secrets secrets
+COPY package-lock.json* ./
+COPY tsconfig.json .
 
-RUN npm install --production --omit=dev && npm cache clean --force
+# Install dependencies (must not omit dev so tsx and typescript are installed for npm start)
+RUN npm install && npm cache clean --force
+
+# Copy source code
+COPY index.ts .
+COPY src src
+COPY pages pages
+# Copy secrets if they exist (will ignore if not copied gracefully with a glob or just rely on dockerignore)
+COPY secrets* secrets/
 
 USER node
 
 EXPOSE 4000
 
-CMD ["node", "index.js"]
+CMD ["npm", "start"]

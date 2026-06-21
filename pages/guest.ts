@@ -1,0 +1,181 @@
+'use strict';
+
+const escape = require('escape-html');
+const { PermissionFlagsBits } = require('discord');
+
+const auth = require('../src/authentication');
+const notFound = require('./notFound');
+const { getClientIP, getTimezoneFromIP } = require('../src/timezoneUtils');
+const { buildMessagesHtml } = require('./messageRenderer');
+const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const {
+    renderTemplate,
+    isValidSnowflake,
+    isBotReady,
+    parseCookies,
+    resolveTheme,
+    RANDOM_EMOJIS,
+    sanitizeGuestName,
+    loadAndRenderPageTemplate,
+    getTemplate,
+    generateSEOMetadata,
+} = require('./utils');
+
+const TEMPLATE_CHANNEL = loadAndRenderPageTemplate('channel', 'guest');
+const TEMPLATE_NAME = loadAndRenderPageTemplate('name', 'guest');
+const TEMPLATE_INPUT = getTemplate('input', 'channel');
+const TEMPLATE_INPUT_DISABLED = getTemplate('input-disabled', 'channel');
+
+exports.processGuestName = async function processGuestName(req, res) {
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const channelId = parsedUrl.searchParams.get('channel');
+    const rawName = parsedUrl.searchParams.get('name') || '';
+    const name = sanitizeGuestName(rawName);
+
+    if (!isValidSnowflake(channelId) || !auth.isGuestChannel(channelId)) {
+        res.writeHead(403, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('guest-access-disabled', 'misc'));
+        return;
+    }
+
+    if (!name) {
+        res.writeHead(302, { Location: `/channels/${channelId}?guest_name_error=1` });
+        res.end();
+        return;
+    }
+
+    const oneYear = 365 * 24 * 60 * 60 * 1000;
+    const expires = new Date(Date.now() + oneYear).toUTCString();
+
+    res.writeHead(302, {
+        Location: `/channels/${channelId}`,
+        'Set-Cookie': `guest_name=${encodeURIComponent(name)}; path=/; expires=${expires}; HttpOnly; SameSite=Lax`,
+    });
+    res.end();
+};
+
+exports.processGuestChannel = async function processGuestChannel(bot, req, res, channelId) {
+    const theme = resolveTheme(req);
+
+    if (!isBotReady(bot)) {
+        res.writeHead(503, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('bot-not-connected', 'misc'));
+        return;
+    }
+
+    const chnl = await bot.client.channels.fetch(channelId).catch(() => undefined);
+
+    if (!chnl) {
+        return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
+    }
+
+    const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
+    if (!botMember) {
+        res.writeHead(503, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('not-in-server', 'misc'));
+        return;
+    }
+
+    const canView = await require('./utils').canViewChannel(null, botMember, chnl);
+    if (!canView) {
+        res.writeHead(403, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('bot-no-permission', 'misc'));
+        return;
+    }
+
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const cookies = parseCookies(req);
+    const guestName = cookies.guest_name;
+
+    // Show name entry page if no guest name set
+    if (!guestName) {
+        const hasError = parsedUrl.searchParams.get('guest_name_error') === '1';
+        const pageTitle = 'Guest Access - Discross';
+        const page = renderTemplate(TEMPLATE_NAME, {
+            WHITE_THEME_ENABLED: theme.themeClass,
+            CHANNEL_ID: escape(channelId),
+            ERROR: hasError ? getTemplate('invalid-name-error', 'misc') : '',
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: generateSEOMetadata(req, {
+                title: pageTitle,
+                description: 'Join a public Discord channel as a guest on Discross.',
+            }),
+        });
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(page);
+        return;
+    }
+
+    // Render channel for guest
+    try {
+        const imagesCookie = (() => {
+            const urlImages = parsedUrl.searchParams.get('images');
+            const cookieImages = cookies.images;
+            return urlImages !== null
+                ? parseInt(urlImages, 10)
+                : cookieImages !== undefined
+                  ? parseInt(cookieImages, 10)
+                  : 1;
+        })();
+
+        const clientTimezone = getTimezoneFromIP(req);
+        const { boxColor, authorText, replyText } = theme;
+        const canSend =
+            botMember.permissionsIn(chnl).has(PermissionFlagsBits.ManageWebhooks, true) &&
+            botMember.permissionsIn(chnl).has(PermissionFlagsBits.SendMessages, true);
+
+        const channelDisplayName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
+        const inputTemplate = canSend ? TEMPLATE_INPUT : TEMPLATE_INPUT_DISABLED;
+        const inputHtml = renderTemplate(inputTemplate, {
+            COLOR: boxColor,
+            CHANNEL_NAME: escape(channelDisplayName),
+        });
+        const messagesHtml = await buildMessagesHtml({
+            bot,
+            chnl,
+            member: botMember,
+            discordID: bot.client.user.id,
+            req,
+            imagesCookie,
+            animationsCookie: 1,
+            authorText,
+            replyText,
+            clientTimezone,
+            channelId,
+        });
+
+        const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
+        const refreshUrl = `${channelId}?random=${Math.random()}`;
+
+        const serverName = chnl.guild.name;
+        const normalizedServerName = normalizeWeirdUnicode(serverName);
+        const pageTitle = `${channelDisplayName} - ${normalizedServerName}${normalizedServerName.toLowerCase() === 'discross' ? '' : ' - Discross'}`;
+        const seoDescription = `Chat in ${channelDisplayName} on ${normalizedServerName} as a guest using Discross, the universal Discord client.`;
+
+        const page = renderTemplate(TEMPLATE_CHANNEL, {
+            WHITE_THEME_ENABLED: theme.themeClass,
+            CHANNEL_ID: escape(channelId),
+            CHANNEL_NAME: escape(channelDisplayName),
+            GUEST_NAME: escape(guestName),
+            RANDOM_EMOJI: randomEmoji,
+            REFRESH_URL: refreshUrl,
+            INPUT: inputHtml,
+            MESSAGES: messagesHtml,
+            PAGE_TITLE: pageTitle,
+            SEO_METADATA: generateSEOMetadata(req, {
+                title: pageTitle,
+                description: seoDescription,
+            }),
+        });
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(page);
+    } catch (err) {
+        console.error(err);
+        res.writeHead(500, { 'Content-Type': 'text/html' });
+        if ((err.message || err).toString().includes('error reading from remote stream')) {
+            res.end(getTemplate('proxy-timeout-error', 'misc'));
+        } else {
+            res.end(getTemplate('generic-error', 'misc'));
+        }
+    }
+};
