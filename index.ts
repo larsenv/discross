@@ -308,9 +308,9 @@ async function handlePost(req, res) {
     }
 
     // For all other POST requests, read the body
-    let body = '';
+    let bodyChunks = [];
     req.on('data', (chunk) => {
-        body += chunk.toString();
+        bodyChunks.push(chunk);
     });
     req.on('error', (err) => {
         console.error('Error reading request body:', err);
@@ -321,6 +321,7 @@ async function handlePost(req, res) {
     });
     req.on('end', async () => {
         try {
+            let body = Buffer.concat(bodyChunks).toString();
             if (parsedurl === '/api/inbound/mail') {
                 try {
                     req.body = JSON.parse(body);
