@@ -10,7 +10,13 @@
     box-sizing: border-box;
 }
 
-html,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    max-width: 100%;
+}
+
 body,
 #wrapper {
     margin: 0;
@@ -18,6 +24,11 @@ body,
     height: 100%;
     max-width: 100%;
     overflow-x: hidden;
+}
+
+html,
+body,
+#wrapper {
     font-family:
         'rodin',
         -apple-system,
@@ -1286,6 +1297,10 @@ html.page-channel body,
 html.page-channel #wrapper {
     height: auto;
     min-height: 0;
+}
+
+html.page-channel {
+    overflow-y: hidden;
 }
 
 html.page-channel body {
