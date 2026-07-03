@@ -357,6 +357,7 @@ function buildToppingRow(item, inputName, normalizedDefaults, portions, template
 // GET handler
 // =============================================================================
 exports.handleGet = async function (bot, req, res, discordID) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     const parsedurl = new URL(req.url, 'http://localhost');
     const subpath = parsedurl.pathname.replace(/^\/food\/?/, '').replace(/\/$/, '');
     const theme = getPageThemeAttr(req);

@@ -46,7 +46,7 @@ async function sendToAll(message, channel) {
             }
         }
     }
-    
+
     // Fallback: send directly to local connected clients if Redis is offline/failing
     for (const [socket, state] of clients.entries()) {
         if (state.listenChannel === channel && socket.readyState === WebSocket.OPEN) {

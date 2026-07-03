@@ -18,98 +18,114 @@ const {
 // Maximum ticker symbol length to prevent abuse
 const TICKER_MAX_LENGTH = 10;
 
-// Stooq symbols for major indices (no API key required)
-const TOP_SYMBOLS = ['^dji', '^spx', '^ndq'];
+// Symbols for major indices
+const TOP_SYMBOLS = ['^DJI', '^GSPC', '^IXIC'];
 
 const DISPLAY_NAMES = {
     '^dji': 'Dow Jones Industrial Average',
+    '^gspc': 'S&P 500',
     '^spx': 'S&P 500',
+    '^ixic': 'NASDAQ',
     '^ndq': 'NASDAQ',
+    '^ndx': 'NASDAQ-100',
 };
 
 const stocks_template = loadAndRenderPageTemplate('stocks');
 
 const logged_in_template = getTemplate('logged-in', 'index');
 
+function normalizeSymbol(symbol) {
+    let sym = symbol.trim();
+    if (sym.toLowerCase().endsWith('.us')) {
+        sym = sym.slice(0, -3);
+    }
+    const lower = sym.toLowerCase();
+    if (lower === '^ndq') return '^IXIC';
+    if (lower === '^spx') return '^GSPC';
+    return sym;
+}
+
 /**
- * Fetch latest quote data from stooq.com for a single symbol.
+ * Fetch latest quote data from Yahoo Finance for a single symbol.
  * Returns a Promise resolving to a quote object or null.
  *
- * Uses the quote endpoint which does not require an API key for basic data.
- * Format: Symbol,Date,Time,Open,High,Low,Close,Volume,Prev
+ * Uses the v8 chart endpoint which does not require an API key for basic data.
  */
-function fetchStooqQuote(symbol) {
-    // Index symbols use ^ prefix; regular stock tickers need .us suffix for US stocks
-    const stooqSymbol = !symbol.startsWith('^') && !symbol.includes('.') ? symbol + '.us' : symbol;
-    const s = encodeURIComponent(stooqSymbol);
-    // f=sd2t2ohlcvp: symbol, date, time, open, high, low, close, volume, previous close
-    // h: include header, e: csv format
+function fetchQuote(symbol) {
+    const yahooSymbol = normalizeSymbol(symbol);
+    const s = encodeURIComponent(yahooSymbol);
     const options = {
-        hostname: 'stooq.com',
-        path: `/q/l/?s=${s}&f=sd2t2ohlcvp&h&e=csv`,
+        hostname: 'query1.finance.yahoo.com',
+        path: `/v8/finance/chart/${s}?interval=1d&range=1d`,
         method: 'GET',
         headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            Accept: 'text/csv,text/plain,*/*',
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept: 'application/json,*/*',
             'Accept-Encoding': 'identity',
-            Referer: 'https://stooq.com/',
+            Referer: 'https://finance.yahoo.com/',
         },
     };
     return httpsGet(options, 3).then(({ statusCode, body }) => {
-        if (statusCode !== 200) {
-            throw new Error(`Stooq returned HTTP ${statusCode} for ${symbol}`);
-        }
-        // If stooq returned an HTML error page instead of CSV, treat as no data
-        if (body.trimStart().startsWith('<')) {
+        if (statusCode === 404) {
             return null;
         }
-        return parseStooqQuote(symbol, body);
+        if (statusCode !== 200) {
+            throw new Error(`Yahoo Finance returned HTTP ${statusCode} for ${symbol}`);
+        }
+        return parseQuote(symbol, body);
     });
 }
 
 /**
- * Parse stooq quote CSV.
+ * Parse Yahoo Finance chart JSON.
  * Returns a quote object.
  * Returns null if not enough data.
  */
-function parseStooqQuote(symbol, csv) {
-    const lines = csv.trim().split('\n');
-    if (lines.length < 2) return null;
+function parseQuote(symbol, jsonStr) {
+    try {
+        const data = JSON.parse(jsonStr);
+        const result = data?.chart?.result?.[0];
+        if (!result || !result.meta) return null;
 
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-    const data = lines[1].split(',');
-    if (data.length < headers.length) return null;
+        const meta = result.meta;
+        const ind = result.indicators?.quote?.[0] || {};
 
-    const getVal = (name) => {
-        const idx = headers.indexOf(name);
-        return idx !== -1 ? parseFloat(data[idx]) : NaN;
-    };
+        const close = meta.regularMarketPrice;
+        if (close === undefined || close === null || isNaN(close)) return null;
 
-    const close = getVal('close');
-    const prevClose = getVal('prev');
-    const open = getVal('open');
-    const high = getVal('high');
-    const low = getVal('low');
-    const volume = getVal('volume');
+        const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? null;
+        const openVal = meta.regularMarketOpen ?? (ind.open && ind.open[0]) ?? null;
+        const highVal = meta.regularMarketDayHigh ?? (ind.high && ind.high[0]) ?? null;
+        const lowVal = meta.regularMarketDayLow ?? (ind.low && ind.low[0]) ?? null;
+        const volVal = meta.regularMarketVolume ?? (ind.volume && ind.volume[0]) ?? null;
 
-    if (isNaN(close)) return null;
+        const open = openVal !== null && !isNaN(openVal) ? openVal : null;
+        const high = highVal !== null && !isNaN(highVal) ? highVal : null;
+        const low = lowVal !== null && !isNaN(lowVal) ? lowVal : null;
+        const volume = volVal !== null && !isNaN(volVal) ? Math.round(volVal) : null;
 
-    // Use previous close (prior trading day) for daily change, fall back to open
-    const basePrice = !isNaN(prevClose) ? prevClose : !isNaN(open) ? open : null;
-    const change = basePrice !== null ? close - basePrice : null;
-    const changePct =
-        basePrice !== null && basePrice !== 0 ? ((close - basePrice) / basePrice) * 100 : null;
+        const basePrice = prevClose !== null && !isNaN(prevClose) ? prevClose : open;
+        const change = basePrice !== null ? close - basePrice : null;
+        const changePct =
+            basePrice !== null && basePrice !== 0 ? ((close - basePrice) / basePrice) * 100 : null;
 
-    return {
-        symbol: symbol.toUpperCase(),
-        regularMarketPrice: close,
-        regularMarketOpen: isNaN(open) ? null : open,
-        regularMarketDayHigh: isNaN(high) ? null : high,
-        regularMarketDayLow: isNaN(low) ? null : low,
-        regularMarketVolume: isNaN(volume) ? null : volume,
-        regularMarketChange: change,
-        regularMarketChangePercent: changePct,
-    };
+        const normalized = normalizeSymbol(symbol);
+
+        return {
+            symbol: normalized.toUpperCase(),
+            shortName: meta.shortName || meta.longName || null,
+            regularMarketPrice: close,
+            regularMarketOpen: open,
+            regularMarketDayHigh: high,
+            regularMarketDayLow: low,
+            regularMarketVolume: volume,
+            regularMarketChange: change,
+            regularMarketChangePercent: changePct,
+        };
+    } catch (e) {
+        return null;
+    }
 }
 
 function formatPrice(price) {
@@ -124,7 +140,9 @@ function formatChange(change) {
 }
 
 function renderQuoteRow(quote) {
-    const name = escape(DISPLAY_NAMES[quote.symbol.toLowerCase()] || quote.symbol || '');
+    const name = escape(
+        DISPLAY_NAMES[quote.symbol.toLowerCase()] || quote.shortName || quote.symbol || ''
+    );
     const symbol = escape(quote.symbol || '');
     const price = formatPrice(quote.regularMarketPrice);
     const change = formatChange(quote.regularMarketChange);
@@ -158,7 +176,8 @@ function renderTopIndices(quotes) {
     const rows = quotes
         .filter((quote) => !!quote)
         .map((quote) => {
-            const name = quote.shortName || quote.symbol;
+            const name =
+                DISPLAY_NAMES[quote.symbol.toLowerCase()] || quote.shortName || quote.symbol;
             const price = formatPrice(quote.regularMarketPrice);
             const change = formatChange(quote.regularMarketChange);
             const changePct = formatChangePct(quote.regularMarketChangePercent);
@@ -188,7 +207,7 @@ exports.processStocks = async function processStocks(req, res) {
     const stocksHtml = await (async () => {
         if (ticker) {
             const safeTicker = ticker.slice(0, TICKER_MAX_LENGTH);
-            const quote = await fetchStooqQuote(safeTicker);
+            const quote = await fetchQuote(safeTicker);
             return !quote
                 ? render('stocks/ticker-not-found', {
                       TICKER: escape(safeTicker),
@@ -196,7 +215,7 @@ exports.processStocks = async function processStocks(req, res) {
                 : renderQuoteRow(quote);
         }
         // Fetch all top indices in parallel
-        const results = await Promise.allSettled(TOP_SYMBOLS.map((sym) => fetchStooqQuote(sym)));
+        const results = await Promise.allSettled(TOP_SYMBOLS.map((sym) => fetchQuote(sym)));
         const quotes = results
             .filter((r) => r.status === 'fulfilled' && r.value !== null)
             .map((r) => r.value);
@@ -208,7 +227,7 @@ exports.processStocks = async function processStocks(req, res) {
         return getTemplate('fetch-error', 'stocks');
     });
 
-    const credit = getTemplate('stooq-credit', 'stocks');
+    const credit = getTemplate('yahoo-credit', 'stocks');
     const menuOptions = render('index/logged-in', {
         USER: escape(await auth.getUsername(discordID)),
     });

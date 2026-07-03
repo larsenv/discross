@@ -567,10 +567,11 @@ async function handleGet(req, res) {
             break;
         }
         case 'news': {
+            const discordID = await auth.checkAuth(req, res, true);
             if (args.length >= 3 && args[2]) {
-                await newspage.processNewsArticle(req, res, args);
+                await newspage.processNewsArticle(req, res, args, discordID);
             } else {
-                await newspage.processNews(req, res, args);
+                await newspage.processNews(req, res, args, discordID);
             }
             break;
         }

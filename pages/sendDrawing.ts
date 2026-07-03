@@ -31,6 +31,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         }
 
         if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
+            res.writeHead(403, { 'Content-Type': 'text/html' });
             res.end(
                 render('misc/error-text', {
                     MESSAGE: "You don't have permission to do that!",

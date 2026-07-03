@@ -40,7 +40,7 @@ var historyStack = [];
 var maxHistory = 20;
 
 function saveHistory() {
-    if (isSlowDevice) return; // getImageData too expensive for Old 3DS / DSi
+    if (isSlowDevice || isWii || isDSi) return; // getImageData too expensive for Old 3DS / DSi / Wii
     try {
         if (historyStack.length >= maxHistory) {
             historyStack.shift();
@@ -158,6 +158,7 @@ function refreshCanvasRect() {
 refreshCanvasRect();
 
 function getPos(e) {
+    e = e || window.event || {};
     // Old 3DS (SPIDER/NetFront): e.offsetX is buggy. Use clientX with
     // cached getBoundingClientRect, which is the most reliable method on
     // this browser according to 3DS dev communities.
@@ -234,9 +235,10 @@ function drawLineViaFill(x0, y0, x1, y1, size) {
 }
 
 function onCanvasMouseDown(e) {
+    e = e || window.event;
     // Stop Wii Drag, but don't preventDefault unconditionally as it can cause
     // the Old 3DS to glitch into "cursor mode"
-    if (isWii && e.preventDefault) {
+    if (isWii && e && e.preventDefault) {
         e.preventDefault();
     }
     // Refresh cached rect on every mousedown (cheap, and catches scrolls/resizes)
@@ -289,7 +291,8 @@ function onCanvasMouseDown(e) {
 
 function onCanvasMouseMove(e) {
     if (!isDrawing) return;
-    if (isWii && e.preventDefault) {
+    e = e || window.event;
+    if (isWii && e && e.preventDefault) {
         e.preventDefault();
     }
 
@@ -308,25 +311,54 @@ function onCanvasMouseMove(e) {
     lastY = pos.y;
 }
 
-function onCanvasMouseUp() {
+function onCanvasMouseUp(e) {
+    e = e || window.event;
     flushDrawQueue();
     isDrawing = false;
 }
 
-canvas.addEventListener('mousedown', onCanvasMouseDown, true);
-canvas.addEventListener('mouseup', onCanvasMouseUp, true);
-canvas.addEventListener('mouseout', onCanvasMouseUp, true);
-
-// Old 3DS (SPIDER): mousemove may fire at the document level rather than on the
-// canvas during stylus drag. Attach to document to catch all events. Also attach
-// mouseup on document in case the stylus lifts off the canvas.
-// New 3DS & others: keep listeners on canvas only (document-level would catch
-// extraneous events from toolbar/scrollbar, hurting performance).
-if (isOld3DS) {
-    document.addEventListener('mousemove', onCanvasMouseMove, true);
-    document.addEventListener('mouseup', onCanvasMouseUp, true);
+// Wii Opera (Opera 9.0/9.3) and DSi Opera (Opera 9.5): addEventListener with
+// useCapture=true is unreliable or broken on leaf/target elements in older Presto
+// engines. Use standard DOM0 event handlers (onmousedown, etc.) which work natively
+// and allow returning false to prevent default dragging/panning.
+if (isWii || isDSi) {
+    canvas.onmousedown = function (e) {
+        e = e || window.event;
+        if (e && e.preventDefault) e.preventDefault();
+        onCanvasMouseDown(e);
+        return false;
+    };
+    canvas.onmousemove = function (e) {
+        if (!isDrawing) return false;
+        e = e || window.event;
+        if (e && e.preventDefault) e.preventDefault();
+        onCanvasMouseMove(e);
+        return false;
+    };
+    canvas.onmouseup = function (e) {
+        e = e || window.event;
+        onCanvasMouseUp(e);
+    };
+    canvas.onmouseout = function (e) {
+        e = e || window.event;
+        onCanvasMouseUp(e);
+    };
 } else {
-    canvas.addEventListener('mousemove', onCanvasMouseMove, true);
+    canvas.addEventListener('mousedown', onCanvasMouseDown, true);
+    canvas.addEventListener('mouseup', onCanvasMouseUp, true);
+    canvas.addEventListener('mouseout', onCanvasMouseUp, true);
+
+    // Old 3DS (SPIDER): mousemove may fire at the document level rather than on the
+    // canvas during stylus drag. Attach to document to catch all events. Also attach
+    // mouseup on document in case the stylus lifts off the canvas.
+    // New 3DS & others: keep listeners on canvas only (document-level would catch
+    // extraneous events from toolbar/scrollbar, hurting performance).
+    if (isOld3DS) {
+        document.addEventListener('mousemove', onCanvasMouseMove, true);
+        document.addEventListener('mouseup', onCanvasMouseUp, true);
+    } else {
+        canvas.addEventListener('mousemove', onCanvasMouseMove, true);
+    }
 }
 
 // --- TOUCH SUPPORT FOR MOBILE ---

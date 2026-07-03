@@ -16,6 +16,10 @@ const {
     generateSEOMetadata,
 } = require('./utils');
 
+const auth = require('../src/authentication');
+const logged_in_template = getTemplate('logged-in', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
+
 const news_template = loadAndRenderPageTemplate('index', 'news');
 
 const article_template = loadAndRenderPageTemplate('article', 'news');
@@ -158,56 +162,65 @@ function extractDivContent(html, contentStart) {
 // Scrape the AP News hub HTML page for feed items.
 // Mirrors the approach used by RSSHub topics.ts but also extracts images.
 function parseHubHtml(html) {
-    const items = [];
-    const seen = new Set();
-
-    // Each article on the hub page is a div.PagePromo
-    const PROMO_OPEN_RE = /<div[^>]+class="[^"]*\bPagePromo\b[^"]*"[^>]*>/gi;
+    const itemsMap = new Map();
+    const PROMO_OPEN_RE = /<div[^>]+class="[^"]*\bPagePromo[^"]*"[^>]*>/gi;
     let m;
 
     while ((m = PROMO_OPEN_RE.exec(html)) !== null) {
         const contentStart = m.index + m[0].length;
-
-        // Timestamp lives as a data attribute on the PagePromo div itself
-        const tsMatch = m[0].match(/data-posted-date-timestamp="(\d+)"/);
-        const timestamp = tsMatch ? parseInt(tsMatch[1], 10) : 0;
-
         const block = extractDivContent(html, contentStart);
-
-        // Skip nested PagePromos by jumping past this block
         PROMO_OPEN_RE.lastIndex = contentStart + block.length;
 
-        // Article URL — prefer /article/ links to skip live-blog/hub links
         const urlMatch = block.match(/href="((?:https:\/\/apnews\.com)?\/article\/[^"#]+)"/i);
         if (!urlMatch) continue;
 
-        // Headline text from the PagePromoContentIcons-text span
-        const titleMatch = block.match(
+        const url = urlMatch[1].startsWith('http') ? urlMatch[1] : `${AP_BASE}${urlMatch[1]}`;
+        if (!itemsMap.has(url)) {
+            itemsMap.set(url, {
+                url,
+                title: '',
+                publishDateStamp: 0,
+                imageUrl: null,
+                imageAlt: '',
+                imageCaption: '',
+            });
+        }
+        const item = itemsMap.get(url);
+
+        const ariaMatch = block.match(/aria-label="([^"]+)"/i);
+        const spanMatch = block.match(
             /<span[^>]+class="[^"]*PagePromoContentIcons-text[^"]*"[^>]*>([\s\S]*?)<\/span>/i
         );
-        if (!titleMatch) continue;
+        const candidateTitle = ariaMatch
+            ? stripHtml(ariaMatch[1]).trim()
+            : spanMatch
+              ? stripHtml(spanMatch[1]).trim()
+              : null;
+        if (
+            candidateTitle &&
+            !candidateTitle.includes('AP Photo') &&
+            (!item.title || candidateTitle.length > item.title.length)
+        ) {
+            item.title = candidateTitle;
+        }
 
-        const url = urlMatch[1].startsWith('http') ? urlMatch[1] : `${AP_BASE}${urlMatch[1]}`;
-        const title = stripHtml(titleMatch[1]).trim();
-        if (!title || !url || seen.has(url)) continue;
-        seen.add(url);
+        const tsMatch = m[0].match(/data-posted-date-timestamp="(\d+)"/);
+        if (tsMatch) {
+            const ts = parseInt(tsMatch[1], 10);
+            if (ts > item.publishDateStamp) item.publishDateStamp = ts;
+        }
 
-        // Lead image: src from an img tag at dims/assets.apnews.com (not srcset)
         const imgMatch = block.match(AP_IMG_SRC_RE);
-        const altMatch = block.match(/<img[^>]+alt="([^"]*)"[^>]*>/i);
-        const captionMatch = block.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
-
-        items.push({
-            url,
-            title,
-            publishDateStamp: timestamp,
-            imageUrl: imgMatch ? imgMatch[1] : null,
-            imageAlt: altMatch ? altMatch[1] : title,
-            imageCaption: captionMatch ? stripHtml(captionMatch[1]) : '',
-        });
+        if (imgMatch && !item.imageUrl) {
+            item.imageUrl = imgMatch[1];
+            const altMatch = block.match(/<img[^>]+alt="([^"]*)"[^>]*>/i);
+            item.imageAlt = altMatch ? altMatch[1] : item.title;
+            const captionMatch = block.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
+            item.imageCaption = captionMatch ? stripHtml(captionMatch[1]) : '';
+        }
     }
 
-    return items;
+    return Array.from(itemsMap.values()).filter((i) => i.title);
 }
 
 // Extract the article slug from an AP News article URL
@@ -393,6 +406,9 @@ function parseArticlePage(html, showImages) {
 exports.processNews = async function processNews(req, res, args, discordID) {
     const { urlSessionID, sessionParam, theme, parsedUrl, imagesCookie } = resolvePrefs(req);
     const timezone = getTimezoneFromIP(req);
+    const menuOptions = discordID
+        ? renderTemplate(logged_in_template, { USER: escape(await auth.getUsername(discordID)) })
+        : logged_out_template;
 
     // Sanitise tag: allow letters, digits, hyphens (AP News topic format)
     const rawTag = parsedUrl.searchParams.get('tag') || '';
@@ -427,6 +443,7 @@ exports.processNews = async function processNews(req, res, args, discordID) {
         ].join('');
 
         const final = renderTemplate(news_template, {
+            MENU_OPTIONS: menuOptions,
             WHITE_THEME_ENABLED: theme.themeClass,
             TAG_DISPLAY: displayTag,
             TAG_VALUE: tagInputValue,
@@ -450,6 +467,9 @@ exports.processNews = async function processNews(req, res, args, discordID) {
 exports.processNewsArticle = async function processNewsArticle(req, res, args, discordID) {
     const { sessionParam, theme, imagesCookie } = resolvePrefs(req);
     const timezone = getTimezoneFromIP(req);
+    const menuOptions = discordID
+        ? renderTemplate(logged_in_template, { USER: escape(await auth.getUsername(discordID)) })
+        : logged_out_template;
 
     // args[2] is the article slug (letters, digits, hyphens only)
     const articleSlug = args[2] || '';
@@ -476,6 +496,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
         const seoDescription = `Read this AP News article on Discross, the universal Discord client. ${headline || ''}`;
 
         const final = renderTemplate(article_template, {
+            MENU_OPTIONS: menuOptions,
             WHITE_THEME_ENABLED: theme.themeClass,
             HEADLINE: headlineEscaped,
             BYLINE: bylinesEscaped,

@@ -16,6 +16,7 @@ const {
     buildEmojiExpandUrl,
 } = require('./utils');
 const channel_template = loadAndRenderPageTemplate('draw');
+const old3ds_template = loadAndRenderPageTemplate('draw-old3ds');
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
     const parsedUrl = new URL(req.url, 'http://localhost');
@@ -59,6 +60,39 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             if (!canView) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
                 res.end(getTemplate('draw-permission-error', 'misc'));
+                return;
+            }
+
+            const userAgentStr = req.headers['user-agent'] || '';
+            const is3DS = userAgentStr.indexOf('Nintendo 3DS') !== -1;
+            const isNew3DS = is3DS && userAgentStr.indexOf('NintendoBrowser') !== -1;
+            const isOld3DS = is3DS && !isNew3DS;
+
+            const urlMode = parsedUrl.searchParams.get('mode') || '';
+            const urlOld3DS = parsedUrl.searchParams.get('old3ds') || '';
+            const useOld3DSMode =
+                (isOld3DS || urlMode === 'old3ds' || urlMode === 'lite' || urlOld3DS === '1') &&
+                urlMode !== 'standard' &&
+                urlOld3DS !== '0';
+
+            const channelName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
+            const pageTitle = `Draw in ${channelName} - Discross`;
+
+            if (useOld3DSMode) {
+                const modeToggleUrl = sessionParam
+                    ? sessionParam + '&mode=standard'
+                    : '?mode=standard';
+                const final3DSTemplate = renderTemplate(old3ds_template, {
+                    SERVER_ID: chnl.guild.id,
+                    CHANNEL_ID: chnl.id,
+                    CHANNEL_NAME: channelName,
+                    SESSION_ID: urlSessionID,
+                    SESSION_PARAM: sessionParam,
+                    PAGE_TITLE: `3DS Paint in ${channelName} - Discross`,
+                    MODE_TOGGLE_URL: modeToggleUrl,
+                });
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.end(final3DSTemplate);
                 return;
             }
 
@@ -106,10 +140,9 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                 }
             );
 
-            const channelName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
-            const pageTitle = `Draw in ${channelName} - Discross`;
             const seoDescription = `Draw and send sketches to ${channelName} on Discross, the universal Discord client.`;
 
+            const modeToggleUrl = sessionParam ? sessionParam + '&mode=old3ds' : '?mode=old3ds';
             const finalTemplate = renderTemplate(baseTemplate, {
                 SERVER_ID: chnl.guild.id,
                 CHANNEL_ID: chnl.id,
@@ -120,6 +153,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                 EMOJI_BUTTON: getTemplate('emoji-picker-button', 'partials'),
                 RANDOM_EMOJI: RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)],
                 EMOJI_TOGGLE_URL: buildEmojiToggleUrl(chnl.id, urlEmoji === '1', sessionParam),
+                MODE_TOGGLE_URL: modeToggleUrl,
                 PAGE_TITLE: pageTitle,
                 SEO_METADATA: generateSEOMetadata(req, {
                     title: pageTitle,

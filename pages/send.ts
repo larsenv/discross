@@ -75,6 +75,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                 !member ||
                 !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)
             ) {
+                req_res.writeHead(403, { 'Content-Type': 'text/html' });
                 req_res.end(
                     render('misc/error-text', {
                         MESSAGE: "You don't have permission to do that!",
