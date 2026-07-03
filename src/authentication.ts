@@ -488,6 +488,14 @@ exports.checkAuth = async function (req, res, noRedirect) {
 
 exports.handleLoginRegister = async function (req, res, body) {
     const params = Object.fromEntries(new URLSearchParams(body));
+    // Re-parse username without + → space conversion: old browsers (DSi Opera 9.5) send
+    // + literally without encoding it as %2B, and some accounts predate username validation.
+    const rawUsernameMatch = body.match(/(?:^|&)username=([^&]*)/);
+    if (rawUsernameMatch) {
+        try {
+            params.username = decodeURIComponent(rawUsernameMatch[1]);
+        } catch {}
+    }
 
     if (req.url === '/login') {
         if (params.username && params.password) {
@@ -541,7 +549,7 @@ exports.handleLoginRegister = async function (req, res, body) {
             }
             const id = await exports.checkVerificationCode(params.token);
             if (!id) {
-                req.url = `/register.html?errortext=${encodeURIComponent("Invalid verification code!\nType ^connect on a server with the Discross bot.")}`;
+                req.url = `/register.html?errortext=${encodeURIComponent('Invalid verification code!\nType ^connect on a server with the Discross bot.')}`;
                 await require('../pages/register').processRegister(null, req, res, []);
                 return;
             }
@@ -561,7 +569,7 @@ exports.handleLoginRegister = async function (req, res, body) {
         if (params.token) {
             const id = await exports.checkVerificationCode(params.token);
             if (!id) {
-                req.url = `/forgot.html?errortext=${encodeURIComponent("Invalid verification code!\nType ^connect on a server with the Discross bot.")}`;
+                req.url = `/forgot.html?errortext=${encodeURIComponent('Invalid verification code!\nType ^connect on a server with the Discross bot.')}`;
                 await require('../pages/forgot').processForgot(null, req, res, []);
                 return;
             }

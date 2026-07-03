@@ -108,9 +108,7 @@ function formatGameTime(dateStr, userTZ) {
     try {
         const d = new Date(dateStr);
         return d.toLocaleString('en-US', {
-            weekday: 'short',
-            year: 'numeric',
-            month: 'long',
+            month: 'short',
             day: 'numeric',
             hour: 'numeric',
             minute: '2-digit',
@@ -206,15 +204,7 @@ function renderScoreboard(events, userTZ) {
         const awayWeight = awayWinner ? getTemplate('bold-open', 'misc') : '';
         const awayWeightEnd = awayWinner ? getTemplate('bold-close', 'misc') : '';
 
-        let gameTimeDisplay;
-        if (stateType === 'in') {
-            // Status is already shown in the center column; show start time dimmed for context
-            gameTimeDisplay = escape(formatGameTime(competition.date || event.date, userTZ));
-        } else if (stateType === 'post') {
-            gameTimeDisplay = `Final &mdash; ${escape(formatGameTime(competition.date || event.date, userTZ))}`;
-        } else {
-            gameTimeDisplay = escape(formatGameTime(competition.date || event.date, userTZ));
-        }
+        const gameTimeDisplay = escape(formatGameTime(competition.date || event.date, userTZ));
 
         const statusLabel =
             stateType === 'in' ? escape(statusDetail) : stateType === 'post' ? 'Final' : '';

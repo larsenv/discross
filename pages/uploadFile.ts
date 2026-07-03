@@ -9,37 +9,48 @@ const { isBotReady, getTemplate, renderTemplate, render } = require('./utils');
 const { getOrCreateWebhook } = require('./webhookCache');
 const mime = require('mime-types');
 
-// Upload file to transfer.archivete.am and return the URL
+// Upload file to catbox.moe and return the URL
 async function uploadToTransfer(filePath, filename) {
     return new Promise((resolve, reject) => {
-        // Sanitize filename - remove path traversal and keep only safe characters
-        const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
         const contentType = mime.lookup(filename) || 'application/octet-stream';
+        const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-        const fileStream = fs.createReadStream(filePath);
+        // Build multipart/form-data manually
+        const boundary = '----CatboxBoundary' + Date.now().toString(16);
 
-        // Handle file stream errors
-        fileStream.on('error', (err) => {
-            reject(new Error(`Failed to read file: ${err.message}`));
-        });
+        // Construct the multipart preamble (fields + file header)
+        const fieldParts =
+            `--${boundary}\r\n` +
+            `Content-Disposition: form-data; name="reqtype"\r\n\r\n` +
+            `fileupload\r\n` +
+            `--${boundary}\r\n` +
+            `Content-Disposition: form-data; name="fileToUpload"; filename="${sanitizedFilename}"\r\n` +
+            `Content-Type: ${contentType}\r\n\r\n`;
 
-        // Get file size asynchronously
+        const closingBoundary = `\r\n--${boundary}--\r\n`;
+
+        const preambleBuffer = Buffer.from(fieldParts, 'utf-8');
+        const epilogueBuffer = Buffer.from(closingBoundary, 'utf-8');
+
+        // Get file size to compute total Content-Length
         fs.stat(filePath, (statErr, stats) => {
             if (statErr) {
                 reject(new Error(`Failed to get file stats: ${statErr.message}`));
                 return;
             }
 
+            const totalLength = preambleBuffer.length + stats.size + epilogueBuffer.length;
+
             const options = {
-                hostname: 'transfer.archivete.am',
+                hostname: 'catbox.moe',
                 port: 443,
-                path: `/${encodeURIComponent(sanitizedFilename)}`,
-                method: 'PUT',
+                path: '/user/api.php',
+                method: 'POST',
                 headers: {
-                    'Content-Length': stats.size,
-                    'Content-Type': contentType,
+                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                    'Content-Length': totalLength,
                 },
-                // Set a high timeout for large files (30 minutes = 30 * 60 * 1000 ms)
+                // Set a high timeout for large files (30 minutes)
                 timeout: 30 * 60 * 1000,
             };
 
@@ -51,21 +62,20 @@ async function uploadToTransfer(filePath, filename) {
                 });
 
                 res.on('end', () => {
-                    if (res.statusCode === 200 || res.statusCode === 201) {
-                        // The response should contain the URL to download the file
-                        const transferUrl = data.trim();
+                    if (res.statusCode === 200) {
+                        const catboxUrl = data.trim();
 
-                        // Validate that the response is a valid HTTPS URL for security
-                        if (!transferUrl || !transferUrl.startsWith('https://')) {
+                        // Validate that the response is a valid URL
+                        if (!catboxUrl || !catboxUrl.startsWith('https://files.catbox.moe/')) {
                             reject(
                                 new Error(
-                                    `Invalid or insecure URL received from transfer service: ${transferUrl}`
+                                    `Invalid URL received from catbox.moe: ${catboxUrl}`
                                 )
                             );
                             return;
                         }
 
-                        resolve(transferUrl);
+                        resolve(catboxUrl);
                     } else {
                         reject(new Error(`Upload failed with status ${res.statusCode}: ${data}`));
                     }
@@ -81,7 +91,18 @@ async function uploadToTransfer(filePath, filename) {
                 reject(new Error('Upload timeout - file may be too large'));
             });
 
-            fileStream.pipe(req);
+            // Write preamble, then stream the file, then write epilogue
+            req.write(preambleBuffer);
+
+            const fileStream = fs.createReadStream(filePath);
+            fileStream.on('error', (err) => {
+                req.destroy();
+                reject(new Error(`Failed to read file: ${err.message}`));
+            });
+            fileStream.on('end', () => {
+                req.end(epilogueBuffer);
+            });
+            fileStream.pipe(req, { end: false });
         });
     });
 }
@@ -286,13 +307,13 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             ? messageText.replace(/\[Uploading:.*?\]/g, '').trim()
                             : '';
 
-                        // Upload file to transfer.archivete.am
+                        // Upload file to catbox.moe
                         const transferUrl = await uploadToTransfer(
                             filePath,
                             file.originalFilename || file.name || 'uploaded_file'
                         ).catch((uploadError) => {
                             cleanup();
-                            console.error('Error uploading to transfer.archivete.am:', uploadError);
+                            console.error('Error uploading to catbox.moe:', uploadError);
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 const safeMessage = JSON.stringify(
@@ -320,7 +341,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         // Delete temp file after successful upload
                         cleanup();
 
-                        // Send message with just the transfer.archivete.am URL as a link
+                        // Send message with just the catbox.moe URL as a link
                         const message = await webhook.send({
                             content: transferUrl,
                             username: member.displayName || member.user.tag,

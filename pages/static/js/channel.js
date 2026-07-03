@@ -48,35 +48,83 @@ function generateNonce() {
     return Math.random().toString(36).substring(2) + new Date().getTime().toString(36);
 }
 
-// Page Load Handler
-// ================
-window.onload = function () {
-    // Security delay before scrolling (prevents console-paste attacks from
-    // firing before the warning is visible)
-    setTimeout(function () {
-        var endEl = document.getElementById('end');
-        if (endEl) {
-            // scrollIntoView(false) aligns element to bottom of viewport —
-            // more reliable than hash navigation and avoids two history entries
-            try {
-                endEl.scrollIntoView(false);
-            } catch (e) {
-                // Very old browsers (DSi Opera) may not support scrollIntoView
-                try {
-                    window.location.hash = 'end';
-                } catch (e2) {}
-            }
-        } else {
-            try {
-                window.location.hash = 'end';
-            } catch (e) {}
+// Page Load & Scroll Handlers
+// ===========================
+function scrollToBottom() {
+    var endEl = document.getElementById('end');
+    var scrollHeight = Math.max(
+        document.body ? document.body.scrollHeight : 0,
+        document.documentElement ? document.documentElement.scrollHeight : 0,
+        999999
+    );
+
+    // 1. Universal window.scrollTo fallback (supported from early browsers to modern iOS/Android WebViews)
+    try {
+        window.scrollTo(0, scrollHeight);
+    } catch (e) {}
+    try {
+        if (typeof window.scroll === 'function') {
+            window.scroll(0, scrollHeight);
         }
-        // Absolute-bottom fallback: catches Kindle and browsers where
-        // scrollIntoView/hash navigation doesn't reach the true bottom
+    } catch (e) {}
+
+    // 2. Element scrollIntoView if supported
+    if (endEl) {
         try {
-            window.scrollTo(0, document.body ? document.body.scrollHeight : 999999);
+            endEl.scrollIntoView(false);
+        } catch (e) {
+            // Legacy anchor fallback
+            try {
+                if (window.location.hash !== '#end' && window.location.hash !== 'end') {
+                    window.location.hash = 'end';
+                }
+            } catch (e2) {}
+        }
+    } else {
+        try {
+            if (window.location.hash !== '#end' && window.location.hash !== 'end') {
+                window.location.hash = 'end';
+            }
         } catch (e) {}
-    }, 1000);
+    }
+
+    // 3. Final scrollTo check to ensure complete scroll to absolute bottom
+    try {
+        window.scrollTo(0, scrollHeight);
+    } catch (e) {}
+}
+
+function scheduleScrollToBottom() {
+    scrollToBottom();
+    setTimeout(scrollToBottom, 50);
+    setTimeout(scrollToBottom, 150);
+    setTimeout(scrollToBottom, 350);
+    setTimeout(scrollToBottom, 700);
+}
+
+// Execute as soon as DOM is ready (instantaneous on mobile native app without waiting for images)
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    scheduleScrollToBottom();
+} else if (document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', scheduleScrollToBottom, false);
+} else if (document.attachEvent) {
+    document.attachEvent('onreadystatechange', function () {
+        if (document.readyState === 'interactive' || document.readyState === 'complete') {
+            scheduleScrollToBottom();
+        }
+    });
+}
+
+// Execute on window.onload (when all network resources/images finish loading) without the 1000ms delay
+var oldOnload = window.onload;
+window.onload = function () {
+    if (typeof oldOnload === 'function') {
+        oldOnload();
+    }
+    scrollToBottom();
+    setTimeout(scrollToBottom, 100);
+    setTimeout(scrollToBottom, 300);
+    setTimeout(scrollToBottom, 600);
 };
 
 // Emoji System
@@ -112,8 +160,9 @@ function showEmoji() {
         try {
             emojiDiv.scrollIntoView();
         } catch (e) {
-            /* scrollIntoView not supported */
+            scrollToBottom();
         }
+        setTimeout(scrollToBottom, 50);
     }
 
     if (typeof updateToolbarPadding === 'function') {

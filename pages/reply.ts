@@ -112,6 +112,11 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
     } catch (err) {
         console.error('Error sending message:', err);
         res.writeHead(500, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('generic-error', 'misc').replace('{{ERROR_DETAILS}}', (err as Error).message || 'Unknown error occurred while replying.'));
+        res.end(
+            getTemplate('generic-error', 'misc').replace(
+                '{{ERROR_DETAILS}}',
+                (err as Error).message || 'Unknown error occurred while replying.'
+            )
+        );
     }
 };
