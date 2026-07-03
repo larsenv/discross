@@ -10,15 +10,15 @@
     box-sizing: border-box;
 }
 
-html,
-#wrapper {
+html {
     margin: 0;
     padding: 0;
     height: 100%;
     max-width: 100%;
 }
 
-body {
+body,
+#wrapper {
     margin: 0;
     padding: 0;
     height: 100%;
@@ -256,7 +256,7 @@ pre code {
    ================================================================ */
 
 .message {
-    margin: 4px 0 0 0;
+    margin: 0;
 }
 .message:hover {
     background: rgba(4, 4, 5, 0.07);
@@ -309,27 +309,6 @@ pre code {
 .messagecontent a {
     color: #00b0f4;
     word-wrap: break-word;
-}
-.messagecontent,
-.messagecontent-font,
-.messagecontent p,
-.messagecontent a,
-.message-link,
-.embed,
-.embed-content,
-.embed-content *,
-td,
-th,
-a {
-    word-wrap: break-word;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-}
-.embed img,
-.embed-content img,
-.messagecontent img {
-    max-width: 100%;
-    height: auto;
 }
 .messagecontent .message-link {
     color: inherit;
@@ -424,10 +403,6 @@ a {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
-    box-sizing: border-box;
-    word-wrap: break-word;
-    word-break: break-word;
-    overflow-wrap: anywhere;
 }
 .video-embed {
     max-width: 432px;
@@ -457,11 +432,8 @@ a {
     padding: 8px 12px;
     vertical-align: top;
     width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     word-wrap: break-word;
-    word-break: break-word;
 }
 
 /* ================================================================
@@ -1596,13 +1568,6 @@ html.page-server font[color='#dcddde'] {
     .menu-button {
         bottom: 8px;
         left: 8px;
-    }
-    .embed,
-    .video-embed,
-    .image-gallery {
-        max-width: 100% !important;
-        width: 100% !important;
-        box-sizing: border-box;
     }
 }
 
