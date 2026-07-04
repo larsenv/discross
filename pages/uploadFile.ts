@@ -15,31 +15,39 @@ async function uploadToTransfer(filePath, filename) {
         const contentType = mime.lookup(filename) || 'application/octet-stream';
         const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-        // Build multipart/form-data manually
-        const boundary = '----CatboxBoundary' + Date.now().toString(16);
-
-        // Construct the multipart preamble (fields + file header)
-        const fieldParts =
-            `--${boundary}\r\n` +
-            `Content-Disposition: form-data; name="reqtype"\r\n\r\n` +
-            `fileupload\r\n` +
-            `--${boundary}\r\n` +
-            `Content-Disposition: form-data; name="fileToUpload"; filename="${sanitizedFilename}"\r\n` +
-            `Content-Type: ${contentType}\r\n\r\n`;
-
-        const closingBoundary = `\r\n--${boundary}--\r\n`;
-
-        const preambleBuffer = Buffer.from(fieldParts, 'utf-8');
-        const epilogueBuffer = Buffer.from(closingBoundary, 'utf-8');
-
-        // Get file size to compute total Content-Length
-        fs.stat(filePath, (statErr, stats) => {
-            if (statErr) {
-                reject(new Error(`Failed to get file stats: ${statErr.message}`));
+        // Read the entire file into memory (catbox limit is 200MB, fine for Buffer)
+        fs.readFile(filePath, (readErr, fileBuffer) => {
+            if (readErr) {
+                reject(new Error(`Failed to read file: ${readErr.message}`));
                 return;
             }
 
-            const totalLength = preambleBuffer.length + stats.size + epilogueBuffer.length;
+            // Build multipart/form-data body
+            const boundary = '----CatboxBoundary' + Date.now().toString(16);
+
+            const parts = [];
+
+            // reqtype field
+            parts.push(Buffer.from(
+                `--${boundary}\r\n` +
+                `Content-Disposition: form-data; name="reqtype"\r\n\r\n` +
+                `fileupload\r\n`
+            ));
+
+            // fileToUpload field header
+            parts.push(Buffer.from(
+                `--${boundary}\r\n` +
+                `Content-Disposition: form-data; name="fileToUpload"; filename="${sanitizedFilename}"\r\n` +
+                `Content-Type: ${contentType}\r\n\r\n`
+            ));
+
+            // file content
+            parts.push(fileBuffer);
+
+            // closing boundary
+            parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
+
+            const body = Buffer.concat(parts);
 
             const options = {
                 hostname: 'catbox.moe',
@@ -48,7 +56,8 @@ async function uploadToTransfer(filePath, filename) {
                 method: 'POST',
                 headers: {
                     'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                    'Content-Length': totalLength,
+                    'Content-Length': body.length,
+                    'User-Agent': 'Discross/1.0',
                 },
                 // Set a high timeout for large files (30 minutes)
                 timeout: 30 * 60 * 1000,
@@ -91,18 +100,7 @@ async function uploadToTransfer(filePath, filename) {
                 reject(new Error('Upload timeout - file may be too large'));
             });
 
-            // Write preamble, then stream the file, then write epilogue
-            req.write(preambleBuffer);
-
-            const fileStream = fs.createReadStream(filePath);
-            fileStream.on('error', (err) => {
-                req.destroy();
-                reject(new Error(`Failed to read file: ${err.message}`));
-            });
-            fileStream.on('end', () => {
-                req.end(epilogueBuffer);
-            });
-            fileStream.pipe(req, { end: false });
+            req.end(body);
         });
     });
 }
