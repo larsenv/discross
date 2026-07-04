@@ -9,8 +9,8 @@ const { isBotReady, getTemplate, renderTemplate, render } = require('./utils');
 const { getOrCreateWebhook } = require('./webhookCache');
 const mime = require('mime-types');
 
-// Upload file to catbox.moe and return the URL (single attempt)
-async function uploadToTransferOnce(filePath, filename) {
+// Upload file to catbox.moe and return the URL
+async function uploadToTransfer(filePath, filename) {
     return new Promise((resolve, reject) => {
         const contentType = mime.lookup(filename) || 'application/octet-stream';
         const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -77,9 +77,7 @@ async function uploadToTransferOnce(filePath, filename) {
 
                         resolve(catboxUrl);
                     } else {
-                        const err: any = new Error(`Upload failed with status ${res.statusCode}: ${data}`);
-                        err.statusCode = res.statusCode;
-                        reject(err);
+                        reject(new Error(`Upload failed with status ${res.statusCode}: ${data}`));
                     }
                 });
             });
@@ -107,31 +105,6 @@ async function uploadToTransferOnce(filePath, filename) {
             fileStream.pipe(req, { end: false });
         });
     });
-}
-
-// Transient error codes that are worth retrying
-const RETRYABLE_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EPIPE', 'EAI_AGAIN']);
-
-// Upload with automatic retry (up to maxAttempts) and exponential backoff
-async function uploadToTransfer(filePath, filename, maxAttempts = 3) {
-    let lastError: any;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-            return await uploadToTransferOnce(filePath, filename);
-        } catch (err: any) {
-            lastError = err;
-            const isRetryable =
-                RETRYABLE_CODES.has(err.code) ||
-                (err.statusCode && err.statusCode >= 500);
-            if (!isRetryable || attempt === maxAttempts) throw err;
-            const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-            console.warn(
-                `catbox.moe upload attempt ${attempt} failed (${err.code || err.message}), retrying in ${delay}ms...`
-            );
-            await new Promise((r) => setTimeout(r, delay));
-        }
-    }
-    throw lastError;
 }
 
 const AsyncLock = require('async-lock');
