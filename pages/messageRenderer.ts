@@ -271,9 +271,20 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download, 
 
         // We proxy images to avoid hotlinking issues and to resize them if needed.
         // Files are served via a simple proxy that sets proper download headers.
-        const proxyBase = isImage && imagesCookie === 1 ? '/imageProxy/' : '/fileProxy/';
-        // Strip the CDN hostname and keep the path (e.g. /attachments/123/456/file.png)
-        const url = proxyBase + (attachment.url || '').replace(/^(.*?)(\d+)/, '$2');
+        let url;
+        if (
+            /^https?:\/\/(?:www\.)?(transfer\.archivete\.am|transfer\.notkiska\.pw|x0\.at)\//i.test(
+                attachment.url || ''
+            )
+        ) {
+            const proxyBase =
+                isImage && imagesCookie === 1 ? '/imageProxy/external/' : '/fileProxy/external/';
+            url = proxyBase + Buffer.from(attachment.url).toString('base64');
+        } else {
+            const proxyBase = isImage && imagesCookie === 1 ? '/imageProxy/' : '/fileProxy/';
+            // Strip the CDN hostname and keep the path (e.g. /attachments/123/456/file.png)
+            url = proxyBase + (attachment.url || '').replace(/^(.*?)(\d+)/, '$2');
+        }
 
         if (isImage && imagesCookie === 1) {
             imageData.push({ url, isSpoiler });

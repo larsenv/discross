@@ -9,6 +9,19 @@ const { renderTemplate, parseCookies, getTemplate, render } = require('./utils')
 const embed_template = getTemplate('embed', 'message');
 
 /**
+ * Encode an external file URL for use with the /fileProxy/external/ route.
+ */
+function proxyExternalFileUrl(url) {
+    if (!url || typeof url !== 'string') return url;
+    if (
+        /^https?:\/\/(?:www\.)?(transfer\.archivete\.am|transfer\.notkiska\.pw|x0\.at)\//i.test(url)
+    ) {
+        return `/fileProxy/external/${Buffer.from(url).toString('base64')}`;
+    }
+    return url;
+}
+
+/**
  * Encode an external image URL for use with the /imageProxy/external/ route.
  * @param {string} url - Raw image URL
  * @returns {string} Proxy path ready to embed in HTML
@@ -105,7 +118,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                 embed.author && authorContent
                     ? embed.author.url
                         ? render('embed/author-link', {
-                              URL: escape(embed.author.url),
+                              URL: escape(proxyExternalFileUrl(embed.author.url)),
                               CONTENT: authorContent,
                           })
                         : authorContent
@@ -115,7 +128,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             const titleContent = embed.title
                 ? embed.url
                     ? render('embed/title-link', {
-                          URL: escape(embed.url),
+                          URL: escape(proxyExternalFileUrl(embed.url)),
                           CONTENT: escape(normalizeWeirdUnicode(embed.title)),
                       })
                     : escape(normalizeWeirdUnicode(embed.title))

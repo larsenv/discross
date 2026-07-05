@@ -1,17 +1,42 @@
 'use strict';
+const http = require('http');
 const https = require('https');
+const { URL } = require('url');
 const { getTemplate } = require('./utils');
 
-exports.fileProxy = async function fileProxy(res, URL, req) {
+exports.fileProxy = async function fileProxy(res, urlStr, req, redirects = 0) {
+    if (redirects > 5) {
+        if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('generic-error', 'misc'));
+        }
+        return;
+    }
+
     // Basically image proxy but without image-specific stuff.
     // Forwards Range headers so audio/video seeking works in <audio>/<video> elements.
     const reqHeaders = {};
     if (req && req.headers && req.headers['range']) {
         reqHeaders['Range'] = req.headers['range'];
     }
+    reqHeaders['User-Agent'] = 'Discross/1.0';
 
-    https
-        .get(URL, { headers: reqHeaders }, (proxyRes) => {
+    const client = urlStr.startsWith('http:') ? http : https;
+    client
+        .get(urlStr, { headers: reqHeaders }, (proxyRes) => {
+            if (
+                [301, 302, 303, 307, 308].includes(proxyRes.statusCode) &&
+                proxyRes.headers['location']
+            ) {
+                proxyRes.resume();
+                try {
+                    const nextUrl = new URL(proxyRes.headers['location'], urlStr).href;
+                    return exports.fileProxy(res, nextUrl, req, redirects + 1);
+                } catch (e) {
+                    // fall through if URL is invalid
+                }
+            }
+
             const responseHeaders = {
                 'Content-Type': proxyRes.headers['content-type'] || 'application/octet-stream',
             };
