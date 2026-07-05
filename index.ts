@@ -686,6 +686,20 @@ async function handleGet(req, res) {
             await handleImageProxy(req, res, parsedurl, args);
             break;
         case 'fileProxy': {
+            if (args[2] === 'external') {
+                const encodedUrl = req.url.slice('/fileProxy/external/'.length).split('?')[0];
+                const fullFileUrl = Buffer.from(encodedUrl, 'base64').toString();
+                const allowedHosts = ['transfer.archivete.am', 'transfer.notkiska.pw', 'x0.at'];
+                try {
+                    const parsed = new URL(fullFileUrl);
+                    if (allowedHosts.includes(parsed.hostname)) {
+                        await fileProxy(res, fullFileUrl, req);
+                        break;
+                    }
+                } catch (e) {
+                    // fall through
+                }
+            }
             const filePath = req.url.slice(11);
             await fileProxy(res, `https://cdn.discordapp.com/attachments/${filePath}`, req);
             break;

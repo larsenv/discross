@@ -331,6 +331,14 @@ function renderDiscordMarkdown(text, options = {}) {
         /<a\s+href="https:\/\/discord\.com\/channels\/\d{16,20}\/(\d{16,20})\/(\d{16,20})"/gi,
         '<a href="/channels/$1/$2"'
     );
+    final = final.replace(
+        /<a\s+href="https?:\/\/(?:www\.)?(transfer\.archivete\.am|transfer\.notkiska\.pw|x0\.at)\/([^"]+)"/gi,
+        (match, host, path) => {
+            const rawUrl = `https://${host}/${path}`;
+            const proxied = `/fileProxy/external/${Buffer.from(rawUrl).toString('base64')}`;
+            return `<a href="${proxied}"`;
+        }
+    );
     final = final.replace(/\uE000TIMESTAMP(\d+)\uE001/g, (m, i) => {
         const ts = timestampPlaceholders[parseInt(i, 10)];
         const date = new Date(ts.timestamp * 1000);

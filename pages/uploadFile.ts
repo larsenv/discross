@@ -28,18 +28,22 @@ async function uploadToTransfer(filePath, filename) {
             const parts = [];
 
             // keep_name field
-            parts.push(Buffer.from(
-                `--${boundary}\r\n` +
-                `Content-Disposition: form-data; name="keep_name"\r\n\r\n` +
-                `1\r\n`
-            ));
+            parts.push(
+                Buffer.from(
+                    `--${boundary}\r\n` +
+                        `Content-Disposition: form-data; name="keep_name"\r\n\r\n` +
+                        `1\r\n`
+                )
+            );
 
             // file field header
-            parts.push(Buffer.from(
-                `--${boundary}\r\n` +
-                `Content-Disposition: form-data; name="file"; filename="${sanitizedFilename}"\r\n` +
-                `Content-Type: ${contentType}\r\n\r\n`
-            ));
+            parts.push(
+                Buffer.from(
+                    `--${boundary}\r\n` +
+                        `Content-Disposition: form-data; name="file"; filename="${sanitizedFilename}"\r\n` +
+                        `Content-Type: ${contentType}\r\n\r\n`
+                )
+            );
 
             // file content
             parts.push(fileBuffer);
@@ -58,7 +62,7 @@ async function uploadToTransfer(filePath, filename) {
                     'Content-Type': `multipart/form-data; boundary=${boundary}`,
                     'Content-Length': body.length,
                     'User-Agent': 'Discross/1.0',
-                    'Accept': '*/*',
+                    Accept: '*/*',
                 },
                 // Set a high timeout for large files (30 minutes)
                 timeout: 30 * 60 * 1000,
@@ -77,11 +81,7 @@ async function uploadToTransfer(filePath, filename) {
 
                         // Validate that the response is a valid URL
                         if (!x0Url || !x0Url.startsWith('https://x0.at/')) {
-                            reject(
-                                new Error(
-                                    `Invalid URL received from x0.at: ${x0Url}`
-                                )
-                            );
+                            reject(new Error(`Invalid URL received from x0.at: ${x0Url}`));
                             return;
                         }
 
