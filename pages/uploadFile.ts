@@ -9,13 +9,13 @@ const { isBotReady, getTemplate, renderTemplate, render } = require('./utils');
 const { getOrCreateWebhook } = require('./webhookCache');
 const mime = require('mime-types');
 
-// Upload file to catbox.moe and return the URL
+// Upload file to x0.at and return the URL
 async function uploadToTransfer(filePath, filename) {
     return new Promise((resolve, reject) => {
         const contentType = mime.lookup(filename) || 'application/octet-stream';
         const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-        // Read the entire file into memory (catbox limit is 200MB, fine for Buffer)
+        // Read the entire file into memory (x0.at limit is 1024MB, fine for Buffer up to form limit)
         fs.readFile(filePath, (readErr, fileBuffer) => {
             if (readErr) {
                 reject(new Error(`Failed to read file: ${readErr.message}`));
@@ -23,21 +23,21 @@ async function uploadToTransfer(filePath, filename) {
             }
 
             // Build multipart/form-data body
-            const boundary = '----CatboxBoundary' + Date.now().toString(16);
+            const boundary = '----X0Boundary' + Date.now().toString(16);
 
             const parts = [];
 
-            // reqtype field
+            // keep_name field
             parts.push(Buffer.from(
                 `--${boundary}\r\n` +
-                `Content-Disposition: form-data; name="reqtype"\r\n\r\n` +
-                `fileupload\r\n`
+                `Content-Disposition: form-data; name="keep_name"\r\n\r\n` +
+                `1\r\n`
             ));
 
-            // fileToUpload field header
+            // file field header
             parts.push(Buffer.from(
                 `--${boundary}\r\n` +
-                `Content-Disposition: form-data; name="fileToUpload"; filename="${sanitizedFilename}"\r\n` +
+                `Content-Disposition: form-data; name="file"; filename="${sanitizedFilename}"\r\n` +
                 `Content-Type: ${contentType}\r\n\r\n`
             ));
 
@@ -50,14 +50,15 @@ async function uploadToTransfer(filePath, filename) {
             const body = Buffer.concat(parts);
 
             const options = {
-                hostname: 'catbox.moe',
+                hostname: 'x0.at',
                 port: 443,
-                path: '/user/api.php',
+                path: '/',
                 method: 'POST',
                 headers: {
                     'Content-Type': `multipart/form-data; boundary=${boundary}`,
                     'Content-Length': body.length,
                     'User-Agent': 'Discross/1.0',
+                    'Accept': '*/*',
                 },
                 // Set a high timeout for large files (30 minutes)
                 timeout: 30 * 60 * 1000,
@@ -72,19 +73,19 @@ async function uploadToTransfer(filePath, filename) {
 
                 res.on('end', () => {
                     if (res.statusCode === 200) {
-                        const catboxUrl = data.trim();
+                        const x0Url = data.trim();
 
                         // Validate that the response is a valid URL
-                        if (!catboxUrl || !catboxUrl.startsWith('https://files.catbox.moe/')) {
+                        if (!x0Url || !x0Url.startsWith('https://x0.at/')) {
                             reject(
                                 new Error(
-                                    `Invalid URL received from catbox.moe: ${catboxUrl}`
+                                    `Invalid URL received from x0.at: ${x0Url}`
                                 )
                             );
                             return;
                         }
 
-                        resolve(catboxUrl);
+                        resolve(x0Url);
                     } else {
                         reject(new Error(`Upload failed with status ${res.statusCode}: ${data}`));
                     }
@@ -305,13 +306,13 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             ? messageText.replace(/\[Uploading:.*?\]/g, '').trim()
                             : '';
 
-                        // Upload file to catbox.moe
+                        // Upload file to x0.at
                         const transferUrl = await uploadToTransfer(
                             filePath,
                             file.originalFilename || file.name || 'uploaded_file'
                         ).catch((uploadError) => {
                             cleanup();
-                            console.error('Error uploading to catbox.moe:', uploadError);
+                            console.error('Error uploading to x0.at:', uploadError);
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 const safeMessage = JSON.stringify(
@@ -339,7 +340,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         // Delete temp file after successful upload
                         cleanup();
 
-                        // Send message with just the catbox.moe URL as a link
+                        // Send message with just the x0.at URL as a link
                         const message = await webhook.send({
                             content: transferUrl,
                             username: member.displayName || member.user.tag,
