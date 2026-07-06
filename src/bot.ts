@@ -11,6 +11,21 @@ const cachelength = 100; // Length of message history
 const msghistory = new Map();
 const MSGHISTORY_MAX_CHANNELS = 100; // Max number of channels to keep in history cache
 
+async function safeReply(msg, content) {
+    try {
+        return await msg.reply(content);
+    } catch (err) {
+        if (err && (err.code === 160002 || err.code === 50013)) {
+            try {
+                return await msg.channel.send(content);
+            } catch (e) {
+                // Ignore if cannot send in channel either
+            }
+        }
+        throw err;
+    }
+}
+
 // Optionally enable Guild Members Intent for automatic server sync
 const guildMembersIntentEnabled = process.env.GUILD_MEMBERS_INTENT === 'true';
 const intentsArray = [
@@ -383,19 +398,24 @@ client.on('messageCreate', async function (msg) {
             await msg.author.send(
                 `Verification code:\n\`${await auth.createVerificationCode(msg.author.id)}\``
             );
-            await msg.reply('You have been sent a direct message with your verification code.');
+            await safeReply(
+                msg,
+                'You have been sent a direct message with your verification code.'
+            );
         } catch (e) {
-            await msg.reply(
+            await safeReply(
+                msg,
                 'Your verification code could not be sent. Please make sure you have direct messages enabled and try again.'
             );
         }
     } else if (msg.content === '^help') {
-        await msg.reply(
+        await safeReply(
+            msg,
             '**Discross Bot Commands:**\n`^connect` or `/connect` - Link your Discord account to Discross\n`^guest` or `/guest` - Toggle guest access for this channel (requires Manage Channel permission)\n`^help` or `/help` - Show this help message'
         );
     } else if (msg.content === '^guest') {
         if (!msg.guild) {
-            await msg.reply('This command can only be used in a server channel.');
+            await safeReply(msg, 'This command can only be used in a server channel.');
             return;
         }
         try {
@@ -403,19 +423,20 @@ client.on('messageCreate', async function (msg) {
             if (
                 !member.permissionsIn(msg.channel).has(Discord.PermissionFlagsBits.ManageChannels)
             ) {
-                await msg.reply('You need the Manage Channel permission to use this command.');
+                await safeReply(msg, 'You need the Manage Channel permission to use this command.');
                 return;
             }
             const enabled = auth.toggleGuestChannel(msg.channel.id);
-            await msg.reply(
+            await safeReply(
+                msg,
                 `Guest access for this channel has been **${enabled ? 'enabled' : 'disabled'}**.`
             );
         } catch (e) {
-            await msg.reply('An error occurred while toggling guest access.');
+            await safeReply(msg, 'An error occurred while toggling guest access.');
         }
     } else if (msg.content === '^mail') {
         if (msg.guild) {
-            return msg.reply('This command can only be used in DMs with the bot.');
+            return safeReply(msg, 'This command can only be used in DMs with the bot.');
         }
         const row = new Discord.ActionRowBuilder().addComponents(
             new Discord.ButtonBuilder()
@@ -435,7 +456,7 @@ client.on('messageCreate', async function (msg) {
                 .setLabel('Send Email')
                 .setStyle(Discord.ButtonStyle.Primary)
         );
-        await msg.reply({
+        await safeReply(msg, {
             content:
                 '**Discross Mail System**\nUse the buttons below to manage your email account.',
             components: [row],
@@ -470,9 +491,9 @@ client.on('messageCreate', async function (msg) {
                         attachments
                     );
                     if (res.success) {
-                        await msg.reply('Email reply sent successfully!');
+                        await safeReply(msg, 'Email reply sent successfully!');
                     } else {
-                        await msg.reply(`Failed to send email: ${res.error}`);
+                        await safeReply(msg, `Failed to send email: ${res.error}`);
                     }
                     return; // Stop processing further for native email replies
                 }

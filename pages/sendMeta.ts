@@ -71,6 +71,10 @@ exports.sendMeta = async function (bot, req, res, channelId) {
             ],
         };
 
+        if (channel.isThread()) {
+            payload.threadId = channel.id;
+        }
+
         const message = await webhook.send(payload);
 
         if (userAgentStr && message && message.id) {

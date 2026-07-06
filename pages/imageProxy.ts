@@ -237,7 +237,9 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
                 .on('error', (err) => {
                     console.log('Error fetching image:', err.message || err);
                     res.writeHead(500, { 'Content-Type': 'text/html' });
-                    if ((err.message || err).includes('error reading from remote stream')) {
+                    if (
+                        (err.message || err).toString().includes('error reading from remote stream')
+                    ) {
                         res.end(getTemplate('proxy-timeout-error', 'misc'));
                     } else {
                         res.end(getTemplate('generic-error', 'misc'));
@@ -247,10 +249,13 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
         .on('error', (err) => {
             console.log('Image proxy request error:', err.message || err);
             res.writeHead(500, { 'Content-Type': 'text/html' });
-            if ((err.message || err).includes('error reading from remote stream')) {
+            if ((err.message || err).toString().includes('error reading from remote stream')) {
                 res.end(getTemplate('proxy-timeout-error', 'misc'));
             } else {
                 res.end(getTemplate('generic-error', 'misc'));
             }
         });
 };
+
+exports.isSafePublicUrl = isSafePublicUrl;
+exports.safeLookup = safeLookup;

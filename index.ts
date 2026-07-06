@@ -719,8 +719,13 @@ async function handleGet(req, res) {
             if (parsedurl.pathname === '/') {
                 await indexpage.processIndex(bot, req, res, args);
             } else {
-                const filename = path.resolve('pages/static', sanitizer(parsedurl.pathname));
-                await servePage(filename, res, undefined, undefined, undefined, req);
+                const staticDir = path.resolve('pages/static');
+                const filename = path.resolve(staticDir, sanitizer(parsedurl.pathname));
+                if (!filename.startsWith(staticDir)) {
+                    await notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
+                } else {
+                    await servePage(filename, res, undefined, undefined, undefined, req);
+                }
             }
     }
 }

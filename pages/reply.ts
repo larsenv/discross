@@ -89,12 +89,18 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
             const processedmessage = `> Replying to ${reply_message_content} from ${author_name}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${resolvedMsg}`;
 
-            const message = await webhook.send({
+            const sendOptions: any = {
                 content: processedmessage,
                 username: member.displayName || member.user.tag,
                 avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
                 disableEveryone: true,
-            });
+            };
+
+            if (channel.isThread()) {
+                sendOptions.threadId = channel.id;
+            }
+
+            const message = await webhook.send(sendOptions);
 
             const userAgentStr = req.headers['user-agent'];
             if (userAgentStr && message && message.id) {
