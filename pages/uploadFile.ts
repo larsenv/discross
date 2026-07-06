@@ -341,11 +341,15 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         cleanup();
 
                         // Send message with just the x0.at URL as a link
-                        const message = await webhook.send({
+                        const sendOptions: any = {
                             content: transferUrl,
                             username: member.displayName || member.user.tag,
                             avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-                        });
+                        };
+                        if (channel.isThread()) {
+                            sendOptions.threadId = channel.id;
+                        }
+                        const message = await webhook.send(sendOptions);
 
                         const userAgentStr = req.headers['user-agent'];
                         if (userAgentStr && message && message.id) {

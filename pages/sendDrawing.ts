@@ -112,6 +112,10 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             webhookOptions.content = processedmessage;
         }
 
+        if (channel.isThread()) {
+            webhookOptions.threadId = channel.id;
+        }
+
         const message = await webhook.send(webhookOptions);
 
         const userAgentStr = req.headers['user-agent'];
