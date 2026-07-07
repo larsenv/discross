@@ -99,6 +99,9 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         const webhookOptions = {
             username: member.displayName || member.user.tag,
             avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
+            // Webhooks bypass the member's own mention permissions — block
+            // @everyone/@here in the optional caption.
+            allowedMentions: { parse: ['users', 'roles'] },
             files: [
                 {
                     attachment: imageBuffer,

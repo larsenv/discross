@@ -123,21 +123,14 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
             // Reverted to plain content sending by default
             const finalMessage = replyInfo + resolvedMsg;
 
-            /**
-             * @typedef {Object} WebhookSendOptions
-             * @property {string} content - The message content
-             * @property {string} username - The username to display
-             * @property {string} avatarURL - The avatar URL
-             * @property {boolean} disableEveryone - Whether to disable @everyone mentions
-             * @property {string} [threadId] - Optional thread ID
-             */
-
-            /** @type {WebhookSendOptions} */
             const sendOptions = {
                 content: finalMessage,
                 username: normalizeWeirdUnicode(member.displayName || member.user.tag),
                 avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-                disableEveryone: true,
+                // Webhooks bypass the member's own mention permissions, so without
+                // this any user could ping @everyone/@here. (`disableEveryone` was
+                // the discord.js v11 option and is silently ignored by v14.)
+                allowedMentions: { parse: ['users', 'roles'] },
             };
 
             if (channel.isThread()) {

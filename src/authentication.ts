@@ -10,7 +10,34 @@ const he = require('he'); // Encodes HTML attributes
 const otplib = require('otplib');
 const qrcode = require('qrcode');
 const crypto = require('crypto');
+const webauthn = require('./webauthn');
 const { getTemplate, renderTemplate } = require('../pages/utils');
+
+// --- WebAuthn challenge store ------------------------------------------------
+// Passkey ceremonies are two requests (options → verify). We must remember the
+// server-issued challenge in between and allow it exactly once, or an attacker
+// could replay a captured assertion. Kept in-memory (single process) keyed by
+// the base64url challenge; entries expire after 5 minutes.
+const CHALLENGE_TTL_MS = 5 * 60 * 1000;
+const _passkeyChallenges = new Map();
+
+function storePasskeyChallenge(challengeB64url, meta) {
+    // Opportunistic cleanup of expired challenges.
+    const now = Date.now();
+    for (const [key, val] of _passkeyChallenges) {
+        if (val.expires <= now) _passkeyChallenges.delete(key);
+    }
+    _passkeyChallenges.set(challengeB64url, { ...meta, expires: now + CHALLENGE_TTL_MS });
+}
+
+// Look up and CONSUME a challenge (single use). Returns the metadata or null.
+function consumePasskeyChallenge(challengeB64url) {
+    const entry = _passkeyChallenges.get(challengeB64url);
+    if (!entry) return null;
+    _passkeyChallenges.delete(challengeB64url);
+    if (entry.expires <= Date.now()) return null;
+    return entry;
+}
 
 // --- Configuration & Constants ---
 
@@ -106,6 +133,20 @@ function setup() {
     queryRun(
         'CREATE TABLE IF NOT EXISTS passkeys (discordID TEXT, credentialID TEXT PRIMARY KEY, publicKey BLOB, counter INTEGER DEFAULT 0)'
     );
+    // One-time migration: earlier builds never verified passkeys and stored the
+    // credential ID in the `publicKey` column instead of the real public key, so
+    // those rows can't be used for signature verification. Clear them once so
+    // affected users simply re-register a working passkey.
+    try {
+        queryRun('CREATE TABLE passkeys_pubkey_migration_v1 (done INTEGER)');
+        try {
+            queryRun('DELETE FROM passkeys');
+        } catch (err) {
+            console.error('passkeys migration error:', err);
+        }
+    } catch {
+        // Migration already ran
+    }
     queryRun(
         'CREATE TABLE IF NOT EXISTS message_user_agents (messageID TEXT PRIMARY KEY, userAgent TEXT)'
     );
@@ -648,6 +689,10 @@ exports.getDiscordTokens = function (discordID) {
 
 exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'localhost') {
     const challenge = crypto.randomBytes(32);
+    // Remember the challenge so verifyPasskey() can confirm the authenticator
+    // signed exactly this value (single-use, tied to this RP ID and account).
+    const challengeB64url = challenge.toString('base64url');
+    storePasskeyChallenge(challengeB64url, { type, discordID, rpId, challengeB64url });
     const options = {
         challenge: Array.from(challenge),
         rp: {
@@ -680,7 +725,7 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
         ]);
         if (credentials.length > 0) {
             options.allowCredentials = credentials.map((row) => ({
-                id: Array.from(Buffer.from(row.credentialID, 'base64')),
+                id: Array.from(Buffer.from(row.credentialID, 'base64url')),
                 type: 'public-key',
             }));
         }
@@ -692,14 +737,60 @@ exports.verifyPasskey = async function (discordID, type, response) {
     if (!response.id || !response.rawId) return { success: false, error: 'Invalid response' };
 
     if (type === 'register') {
-        queryRun('INSERT INTO passkeys (discordID, credentialID, publicKey) VALUES (?,?,?)', [
-            discordID,
-            response.id,
-            Buffer.from(response.rawId, 'base64'),
-        ]);
+        if (!response.clientDataJSON || !response.attestationObject) {
+            return { success: false, error: 'Missing attestation data' };
+        }
+        // Recover the challenge from the client data so we can look up what we
+        // issued (and which RP ID it was bound to), then consume it.
+        let clientData;
+        try {
+            clientData = JSON.parse(
+                Buffer.from(response.clientDataJSON, 'base64').toString('utf8')
+            );
+        } catch {
+            return { success: false, error: 'Invalid client data' };
+        }
+        const challenge = consumePasskeyChallenge((clientData.challenge || '').replace(/=+$/, ''));
+        if (!challenge || challenge.type !== 'register' || challenge.discordID !== discordID) {
+            return { success: false, error: 'Challenge expired or invalid. Please try again.' };
+        }
+
+        let result;
+        try {
+            result = webauthn.verifyRegistration(response, {
+                expectedChallenge: challenge.challengeB64url,
+                expectedRpId: challenge.rpId,
+            });
+        } catch (err) {
+            console.error('Passkey registration verification failed:', err.message);
+            return { success: false, error: 'Passkey verification failed.' };
+        }
+
+        queryRun(
+            'INSERT OR REPLACE INTO passkeys (discordID, credentialID, publicKey, counter) VALUES (?,?,?,?)',
+            [discordID, result.credentialId, result.publicKeyDer, result.signCount]
+        );
         return { success: true };
     } else {
-        let finalDiscordID = discordID;
+        // The login client nests the assertion under `response.response`.
+        const assertion = response.response || {};
+        if (!assertion.clientDataJSON || !assertion.authenticatorData || !assertion.signature) {
+            return { success: false, error: 'Missing assertion data' };
+        }
+        let clientData;
+        try {
+            clientData = JSON.parse(
+                Buffer.from(assertion.clientDataJSON, 'base64').toString('utf8')
+            );
+        } catch {
+            return { success: false, error: 'Invalid client data' };
+        }
+        const challenge = consumePasskeyChallenge((clientData.challenge || '').replace(/=+$/, ''));
+        if (!challenge || challenge.type !== 'login') {
+            return { success: false, error: 'Challenge expired or invalid. Please try again.' };
+        }
+
+        // The credential id (response.id) is base64url; the DB stores it the same way.
         const passkey = querySingle(
             'SELECT discordID, publicKey, counter FROM passkeys WHERE credentialID = ?' +
                 (discordID ? ' AND discordID = ?' : ''),
@@ -707,11 +798,24 @@ exports.verifyPasskey = async function (discordID, type, response) {
         );
         if (!passkey) return { success: false, error: 'Passkey not found' };
 
-        if (!finalDiscordID) finalDiscordID = passkey.discordID;
+        let result;
+        try {
+            result = webauthn.verifyAssertion(assertion, {
+                publicKeyDer: passkey.publicKey,
+                expectedChallenge: challenge.challengeB64url,
+                expectedRpId: challenge.rpId,
+                storedSignCount: passkey.counter || 0,
+            });
+        } catch (err) {
+            console.error('Passkey assertion verification failed:', err.message);
+            return { success: false, error: 'Passkey verification failed.' };
+        }
 
-        // TODO: Signature verification logic using public key would go here.
-        // For now, return success if credentialID is found.
-        return { success: true, discordID: finalDiscordID };
+        queryRun('UPDATE passkeys SET counter=? WHERE credentialID=?', [
+            result.newSignCount,
+            response.id,
+        ]);
+        return { success: true, discordID: passkey.discordID };
     }
 };
 
