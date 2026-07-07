@@ -86,6 +86,13 @@ function renderDiscordMarkdown(text, options = {}) {
     const barColor = options.barColor || '#808080';
     const timezone = options.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+    // Strip the private-use marker characters used for internal placeholders
+    // below. Discord allows them in message content, so without this a message
+    // containing a literal "\uE000CODEINLINE0\uE001" (with no real code span)
+    // indexes past the placeholder array and crashes rendering of the whole
+    // channel page for everyone.
+    text = text.replace(/[\uE000\uE001]/g, '');
+
     text = text.replace(/\u2018|\u2019/g, "'").replace(/\u201C|\u201D/g, '"');
 
     text = text.replace(/\*\*\s+(.+?)\s+\*\*/g, '**$1**');

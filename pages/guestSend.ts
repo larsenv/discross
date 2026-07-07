@@ -80,7 +80,10 @@ exports.guestSend = async function guestSend(bot, req, res) {
             content: processedMessage,
             username: normalizeWeirdUnicode(guestName) + ' (guest)',
             avatarURL: avatarURL,
-            disableEveryone: true,
+            // Guests are unauthenticated, so block ALL pings (users, roles,
+            // @everyone/@here). (`disableEveryone` was the discord.js v11 option
+            // and is silently ignored by v14.)
+            allowedMentions: { parse: [] },
         };
         if (channel.isThread()) {
             sendOptions.threadId = channel.id;

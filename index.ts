@@ -324,6 +324,7 @@ async function handlePost(req, res) {
             let body = Buffer.concat(bodyChunks).toString();
             if (parsedurl === '/api/inbound/mail') {
                 try {
+                    req.rawBody = body;
                     req.body = JSON.parse(body);
                     await mail.handleInboundWebhook(req, res);
                 } catch (err) {

@@ -1362,6 +1362,28 @@ html.page-draw body {
     /* min-height: 100vh omitted — vh units not supported in IE8/Opera 9.x */
 }
 
+/* ================================================================
+   23. PAGE-SIMPLE: long content pages must scroll as one region
+   ================================================================ */
+
+/* The global reset gives body and #wrapper height:100% + overflow-x:hidden.
+   Per CSS, hidden on one axis forces the other axis's `visible` to `auto`,
+   so body AND #wrapper each become overflow-y:auto. Locked to the viewport
+   height (100%) with taller content, each renders its own vertical
+   scrollbar — the double scrollbar seen in the DSi/Opera browser. Letting
+   both grow with their content leaves a single scrollbar on the viewport. */
+html.page-simple,
+html.page-simple body,
+html.page-simple #wrapper {
+    height: auto;
+    min-height: 0;
+}
+
+/* Keep the body background filling short pages. */
+html.page-simple body {
+    min-height: 100%;
+}
+
 /* Override themes.css which sets #wrapper to #303338; keep it matching body */
 html.page-draw #wrapper {
     background: #1a1a1e;

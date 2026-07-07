@@ -6,6 +6,57 @@ const auth = require('./authentication');
 const bot = require('./bot');
 const Discord = require('discord');
 const escapeHtml = require('escape-html');
+const crypto = require('crypto');
+
+// Resend signs inbound webhooks with Svix. When a signing secret is configured
+// we verify the signature so that only Resend can trigger DMs to users; without
+// this, anyone who can POST to /api/inbound/mail could forge an email from any
+// sender to any registered prefix. Set RESEND_WEBHOOK_SECRET (the "whsec_..."
+// value from the Resend dashboard) to enable enforcement.
+const WEBHOOK_SECRET = process.env.RESEND_WEBHOOK_SECRET || '';
+if (!WEBHOOK_SECRET) {
+    console.warn(
+        'RESEND_WEBHOOK_SECRET is not set — inbound mail webhook signatures will NOT be verified.'
+    );
+}
+
+// Verify a Svix-signed webhook. Returns true if the signature is valid (or if
+// no secret is configured, in which case verification is skipped with a warning).
+function verifyWebhookSignature(req) {
+    if (!WEBHOOK_SECRET) return true; // enforcement disabled
+
+    const id = req.headers['svix-id'];
+    const timestamp = req.headers['svix-timestamp'];
+    const signatureHeader = req.headers['svix-signature'];
+    if (!id || !timestamp || !signatureHeader || typeof req.rawBody !== 'string') {
+        return false;
+    }
+
+    // Reject stale timestamps (>5 min skew) to limit replay.
+    const ts = Number(timestamp);
+    if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 5 * 60) {
+        return false;
+    }
+
+    const secretBytes = Buffer.from(WEBHOOK_SECRET.replace(/^whsec_/, ''), 'base64');
+    const signedContent = `${id}.${timestamp}.${req.rawBody}`;
+    const expected = crypto
+        .createHmac('sha256', secretBytes)
+        .update(signedContent)
+        .digest('base64');
+
+    // The header is a space-separated list of "v1,<signature>" entries.
+    const expectedBuf = Buffer.from(expected);
+    return signatureHeader.split(' ').some((part) => {
+        const sig = part.split(',')[1];
+        if (!sig) return false;
+        const sigBuf = Buffer.from(sig);
+        return (
+            sigBuf.length === expectedBuf.length &&
+            crypto.timingSafeEqual(sigBuf, expectedBuf)
+        );
+    });
+}
 
 let resend = null;
 if (process.env.RESEND_API_KEY) {
@@ -51,6 +102,12 @@ exports.sendVerificationEmail = async function (recipientEmail, code, displayNam
 
 // Process inbound webhooks from Resend
 exports.handleInboundWebhook = async function (req, res) {
+    if (!verifyWebhookSignature(req)) {
+        console.warn('Rejected inbound mail webhook: invalid or missing signature.');
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Invalid signature' }));
+    }
+
     const payload = req.body;
     if (!payload) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
