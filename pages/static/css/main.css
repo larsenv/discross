@@ -1370,13 +1370,27 @@ html.page-draw body {
    Per CSS, hidden on one axis forces the other axis's `visible` to `auto`,
    so body AND #wrapper each become overflow-y:auto. Locked to the viewport
    height (100%) with taller content, each renders its own vertical
-   scrollbar — the double scrollbar seen in the DSi/Opera browser. Letting
-   both grow with their content leaves a single scrollbar on the viewport. */
+   scrollbar — the double scrollbar seen in the DSi/Opera browser.
+
+   The fix: put the ONE scroll region on the root (html) and make body and
+   #wrapper plain, unclipped, auto-height boxes that spill their overflow up
+   to the root. The horizontal clip moves to html too, so wide buttons on a
+   256px DSi screen are still clipped without a horizontal scrollbar. This
+   avoids relying on how Opera 9.x resolves the overflow axis-forcing rule. */
 html.page-simple,
 html.page-simple body,
 html.page-simple #wrapper {
     height: auto;
     min-height: 0;
+}
+
+html.page-simple {
+    overflow-x: hidden; /* clip horizontal at the root; root scrolls vertically */
+}
+
+html.page-simple body,
+html.page-simple #wrapper {
+    overflow: visible; /* never an inner scroll container on either axis */
 }
 
 /* Keep the body background filling short pages. */
