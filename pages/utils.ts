@@ -7,6 +7,25 @@ const https = require('https');
 const fs = require('fs');
 
 /**
+ * Cache-busting token for the stylesheet, derived from main.css's mtime.
+ *
+ * Legacy console browsers (DSi/3DS Opera, PS3, etc.) cache /css/main.css very
+ * aggressively — max-age=3600 with no version param means they can serve a
+ * stale stylesheet for an hour or more and won't revalidate on reload. That
+ * makes CSS fixes appear not to take effect on the device. Appending ?v=<mtime>
+ * forces a re-fetch whenever the file changes, while unrelated deploys (which
+ * don't touch main.css) keep the same token and the cache stays warm.
+ */
+const CSS_VERSION = (function () {
+    try {
+        return String(Math.trunc(fs.statSync('pages/static/css/main.css').mtimeMs));
+    } catch (err) {
+        // If the file can't be stat'd, fall back to process start time.
+        return String(Date.now());
+    }
+})();
+
+/**
  * Loads a component template from the pages/templates folder.
  *
  * @param {string} name - The name of the template file (without .html).
@@ -17,9 +36,12 @@ function getTemplate(name, folder = 'channel') {
     const folderPath = folder ? `${folder}/` : '';
     const filePath = `pages/templates/${folderPath}${name}.html`;
     try {
-        const content = fs.readFileSync(filePath, 'utf-8');
+        let content = fs.readFileSync(filePath, 'utf-8');
         // Remove #end comments that might be present in some templates
-        return content.replace(/#end(?=["'])/g, '');
+        content = content.replace(/#end(?=["'])/g, '');
+        // Cache-bust the stylesheet so legacy browsers re-fetch it when it changes.
+        content = content.replace('/css/main.css', `/css/main.css?v=${CSS_VERSION}`);
+        return content;
     } catch (err) {
         console.error(`Failed to load template ${filePath}:`, err);
         return '';
@@ -266,6 +288,32 @@ const THEME_CONFIG = {
 const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389', '1f642'];
 
 /**
+ * Resolves the active theme index (0=dark, 1=light, 2=amoled) from a request,
+ * reading the `theme` URL param first and falling back to the `whiteThemeCookie`
+ * cookie. Unrecognized or absent values resolve to 0 (dark). Single source of
+ * truth shared by getPageThemeAttr() and resolveTheme().
+ *
+ * @param {object} req - Node.js IncomingMessage.
+ * @returns {number}
+ */
+function resolveThemeValue(req) {
+    const urlTheme = new URL(req.url, 'http://localhost').searchParams.get('theme');
+    if (urlTheme !== null) {
+        const n = parseInt(urlTheme, 10);
+        return Number.isNaN(n) ? 0 : n;
+    }
+    const cookieEntry = (req.headers.cookie || '')
+        .split(';')
+        .map((c) => c.trim())
+        .find((c) => c.startsWith('whiteThemeCookie='));
+    if (cookieEntry) {
+        const n = parseInt(cookieEntry.slice('whiteThemeCookie='.length), 10);
+        return Number.isNaN(n) ? 0 : n;
+    }
+    return 0;
+}
+
+/**
  * Resolves the HTML attribute value for the `{$WHITE_THEME_ENABLED}` template placeholder,
  * reading the `theme` URL param first, then the `whiteThemeCookie` cookie as fallback.
  * Returns `class="light-theme"` (1), `class="amoled-theme"` (2), or `bgcolor="303338"` (dark/default).
@@ -276,17 +324,7 @@ const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389',
  * @returns {string}
  */
 function getPageThemeAttr(req) {
-    const parsedurl = new URL(req.url, 'http://localhost');
-    const urlTheme = parsedurl.searchParams.get('theme');
-    const cookieHeader = req.headers.cookie || '';
-    const cookieTheme = cookieHeader.split('; ').find((c) => c.startsWith('whiteThemeCookie='));
-    const cookieVal = cookieTheme ? cookieTheme.split('=')[1] : undefined;
-    const theme =
-        urlTheme !== null
-            ? parseInt(urlTheme, 10)
-            : cookieVal !== undefined
-              ? parseInt(cookieVal, 10)
-              : 0;
+    const theme = resolveThemeValue(req);
     if (theme === 1) return 'class="light-theme"';
     if (theme === 2) return 'class="amoled-theme"';
     return 'bgcolor="#303338"';
@@ -303,18 +341,7 @@ function getPageThemeAttr(req) {
  * @returns {{ boxColor: string, authorText: string, replyText: string, themeClass: string }}
  */
 function resolveTheme(req) {
-    const parsedUrl = new URL(req.url, 'http://localhost');
-    const urlTheme = parsedUrl.searchParams.get('theme');
-    const cookieTheme = req.headers.cookie
-        ?.split('; ')
-        ?.find((c) => c.startsWith('whiteThemeCookie='))
-        ?.split('=')[1];
-    const themeValue =
-        urlTheme !== null
-            ? parseInt(urlTheme, 10)
-            : cookieTheme !== undefined
-              ? parseInt(cookieTheme, 10)
-              : 0;
+    const themeValue = resolveThemeValue(req);
     return { ...(THEME_CONFIG[themeValue] ?? THEME_CONFIG[0]), themeValue };
 }
 
@@ -441,21 +468,37 @@ function changeColor(change) {
 async function resolveMentions(text, guild) {
     const regex = /@([^#]{2,32}#\d{4})/g;
     let result = text;
-    // Collect matches upfront so we iterate the original match list even as `result` changes.
     const matches = [...result.matchAll(regex)];
-    for (const m of matches) {
-        const mentioneduser =
-            guild.members.cache.find((member) => member.user.tag === m[1]) ??
-            (await guild.members
-                .fetch()
-                .then((members) => members.find((member) => member.user.tag === m[1]))
-                .catch((err) => {
-                    console.error('Failed to fetch members for mention:', err);
-                    return null;
-                }));
-        if (mentioneduser) {
-            result = result.replaceAll(m[0], `<@${mentioneduser.id}>`);
+    if (matches.length === 0) return result;
+
+    // Deduplicate the tags to resolve, then satisfy as many as possible from the
+    // member cache. Only fall back to a (potentially expensive) full member fetch
+    // if some tags remain — and do it exactly once for the whole message rather
+    // than once per mention as the previous implementation did.
+    const tags = [...new Set(matches.map((m) => m[1]))];
+    const resolved = new Map(); // tag -> member id
+    const unresolved = [];
+    for (const tag of tags) {
+        const cached = guild.members.cache.find((member) => member.user.tag === tag);
+        if (cached) resolved.set(tag, cached.id);
+        else unresolved.push(tag);
+    }
+
+    if (unresolved.length > 0) {
+        try {
+            const members = await guild.members.fetch();
+            for (const tag of unresolved) {
+                const found = members.find((member) => member.user.tag === tag);
+                if (found) resolved.set(tag, found.id);
+            }
+        } catch (err) {
+            console.error('Failed to fetch members for mention:', err);
         }
+    }
+
+    // Unresolvable mentions are left untouched (graceful fallback).
+    for (const [tag, id] of resolved) {
+        result = result.replaceAll(`@${tag}`, `<@${id}>`);
     }
     return result;
 }
@@ -587,6 +630,7 @@ module.exports = {
     parseCookies,
     getPageThemeAttr,
     resolveTheme,
+    resolveThemeValue,
     THEME_CONFIG,
     RANDOM_EMOJIS,
     buildSessionParam,

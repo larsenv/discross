@@ -109,7 +109,7 @@ exports.DISCORD_CLIENT_ID = DISCORD_CLIENT_ID;
 exports.DISCORD_CLIENT_SECRET = DISCORD_CLIENT_SECRET;
 exports.DISCORD_REDIRECT_URL = DISCORD_REDIRECT_URL;
 
-const { isValidSnowflake, parseCookies, getTemplate } = require('./pages/utils');
+const { isValidSnowflake, getTemplate, resolveThemeValue } = require('./pages/utils');
 
 // create a server object:
 const server = http.createServer(options);
@@ -307,9 +307,27 @@ async function handlePost(req, res) {
         return;
     }
 
-    // For all other POST requests, read the body
+    // For all other POST requests, read the body. Cap the buffered size so a
+    // single large request can't exhaust memory — these endpoints only ever
+    // carry small form/JSON payloads (file uploads are handled above via a
+    // streaming parser and never reach here).
+    const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB
     let bodyChunks = [];
+    let bodyBytes = 0;
+    let bodyTooLarge = false;
     req.on('data', (chunk) => {
+        if (bodyTooLarge) return;
+        bodyBytes += chunk.length;
+        if (bodyBytes > MAX_BODY_BYTES) {
+            bodyTooLarge = true;
+            bodyChunks = [];
+            if (!res.headersSent) {
+                res.writeHead(413, { 'Content-Type': 'text/html' });
+                res.end(getTemplate('error-reading-data', 'misc'));
+            }
+            req.destroy();
+            return;
+        }
         bodyChunks.push(chunk);
     });
     req.on('error', (err) => {
@@ -320,6 +338,7 @@ async function handlePost(req, res) {
         }
     });
     req.on('end', async () => {
+        if (bodyTooLarge) return; // already responded with 413
         try {
             let body = Buffer.concat(bodyChunks).toString();
             if (parsedurl === '/api/inbound/mail') {
@@ -709,10 +728,9 @@ async function handleGet(req, res) {
             if (args[2] === 'server' && args[3] && args[4]) {
                 const discordID = await auth.checkAuth(req, res, true);
                 const iconHash = args[4].replace('.gif', '');
-                const urlTheme = discordID ? parsedurl.searchParams.get('theme') : null;
-                const { whiteThemeCookie } = discordID ? parseCookies(req) : {};
-                const themeValue = urlTheme ?? whiteThemeCookie ?? null;
-                const theme = themeValue === '1' ? 'light' : themeValue === '2' ? 'amoled' : 'dark';
+                // Theme only applies for authenticated requests; guests always get dark.
+                const themeValue = discordID ? resolveThemeValue(req) : 0;
+                const theme = themeValue === 1 ? 'light' : themeValue === 2 ? 'amoled' : 'dark';
                 await handleServerIcon(bot, res, args[3], iconHash, theme);
             }
             break;
