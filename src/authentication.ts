@@ -42,6 +42,9 @@ function consumePasskeyChallenge(challengeB64url) {
 // --- Configuration & Constants ---
 
 const saltRounds = 10;
+// A fixed bcrypt hash compared against on the "no such user" login path so that
+// login timing (and thus username existence) can't be trivially distinguished.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('discross-dummy-password', saltRounds);
 const expiryTime = 7 * 24 * 60 * 60; // For sessions - expires in 7 days
 const codeExpiryTime = 30 * 60; // For verification codes - expires in 30 minutes
 const pendingTotpExpiryTime = 10 * 60; // Pending TOTP setup expires in 10 minutes
@@ -172,6 +175,48 @@ const _stmtGetSessionWithUser = db.prepare(
 );
 let _lastSessionCleanup = 0;
 
+// --- Rate limiting for brute-forceable secrets -------------------------------
+// Login passwords/2FA and the short numeric verification codes (action codes,
+// mail codes) are otherwise guessable by repeated submission — a 6-digit code
+// is only 10^6 possibilities. We track consecutive *failures* per key in-memory
+// and block once a threshold is hit within a rolling window; a success clears
+// the counter. Keyed by account/action, not by IP, so it can't be bypassed by
+// rotating source addresses (and legacy consoles behind shared NAT aren't
+// collectively locked out by one bad actor).
+const _failBuckets = new Map(); // key -> { count, resetAt }
+
+function isRateLimited(key, maxFails) {
+    const bucket = _failBuckets.get(key);
+    return !!bucket && bucket.resetAt > Date.now() && bucket.count >= maxFails;
+}
+
+function registerFailure(key, windowMs) {
+    const now = Date.now();
+    const bucket = _failBuckets.get(key);
+    if (!bucket || bucket.resetAt <= now) {
+        _failBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    } else {
+        bucket.count += 1;
+    }
+}
+
+function clearFailures(key) {
+    _failBuckets.delete(key);
+}
+
+// Periodically drop expired buckets so the map can't grow unbounded.
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, bucket] of _failBuckets) {
+        if (bucket.resetAt <= now) _failBuckets.delete(key);
+    }
+}, 10 * 60 * 1000).unref();
+
+const LOGIN_MAX_FAILS = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const CODE_MAX_FAILS = 5;
+const CODE_WINDOW_MS = 10 * 60 * 1000;
+
 // --- Validation Helpers ---
 
 function validatePassword(password) {
@@ -240,20 +285,35 @@ exports.createUser = async function (discordID, username, password) {
 };
 
 exports.login = async function (username, password, totpToken) {
+    const rateKey = `login:${(username || '').toLowerCase()}`;
+    if (isRateLimited(rateKey, LOGIN_MAX_FAILS)) {
+        return {
+            status: 'error',
+            reason: 'Too many failed login attempts. Please wait a few minutes and try again.',
+        };
+    }
     const match = querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username]);
+    // Use one generic message for both "no such user" and "wrong password" so
+    // the response can't be used to enumerate which usernames exist. Still run
+    // a bcrypt compare against a dummy hash on the missing-user path to keep the
+    // timing roughly constant.
     if (!match) {
-        return { status: 'error', reason: "That account doesn't exist!" };
+        await bcrypt.compare(password || '', DUMMY_PASSWORD_HASH);
+        registerFailure(rateKey, LOGIN_WINDOW_MS);
+        return { status: 'error', reason: 'Incorrect username or password!' };
     }
 
     const correctPassword = await bcrypt.compare(password, match.hashedPassword);
     if (!correctPassword) {
-        return { status: 'error', reason: 'Incorrect password!' };
+        registerFailure(rateKey, LOGIN_WINDOW_MS);
+        return { status: 'error', reason: 'Incorrect username or password!' };
     }
 
     // Check 2FA if enabled
     if (match.totp_secret) {
         const code = (totpToken || '').trim();
         if (!code) {
+            registerFailure(rateKey, LOGIN_WINDOW_MS);
             return { status: 'error', reason: 'Invalid 2FA code!' };
         }
         // Try TOTP first (only if it looks like a 6-digit code), then fall back to backup code
@@ -262,10 +322,12 @@ exports.login = async function (username, password, totpToken) {
             : false;
         const codeAccepted = totpValid || (await verifyBackupCode(match.discordID, code));
         if (!codeAccepted) {
+            registerFailure(rateKey, LOGIN_WINDOW_MS);
             return { status: 'error', reason: 'Invalid 2FA code!' };
         }
     }
 
+    clearFailures(rateKey);
     const sessionID = uuidv4();
     const expiresAt = unixTime() + expiryTime;
     queryRun('INSERT INTO sessions VALUES (?,?,?)', [match.discordID, sessionID, expiresAt]);
@@ -354,14 +416,20 @@ exports.createActionCode = function (discordID, action) {
 };
 
 exports.verifyAndConsumeActionCode = function (discordID, action, code) {
+    const rateKey = `action:${discordID}:${action}`;
+    if (isRateLimited(rateKey, CODE_MAX_FAILS)) {
+        return false;
+    }
     const time = unixTime();
     const match = querySingle(
         'SELECT code FROM action_codes WHERE discordID=? AND action=? AND expires > ?',
         [discordID, action, time]
     );
     if (!match || match.code !== (code || '').trim()) {
+        registerFailure(rateKey, CODE_WINDOW_MS);
         return false;
     }
+    clearFailures(rateKey);
     queryRun('DELETE FROM action_codes WHERE discordID=? AND action=?', [discordID, action]);
     return true;
 };
@@ -892,6 +960,13 @@ exports.createMailVerificationCode = function (discordID, email_prefix, backup_e
 };
 
 exports.verifyMailCode = function (discordID, code) {
+    const rateKey = `mailcode:${discordID}`;
+    if (isRateLimited(rateKey, CODE_MAX_FAILS)) {
+        return {
+            success: false,
+            error: 'Too many incorrect attempts. Please wait a few minutes and try again.',
+        };
+    }
     const time = unixTime();
     const match = querySingle(
         'SELECT * FROM mail_verifications WHERE discordID=? AND expires > ?',
@@ -899,9 +974,11 @@ exports.verifyMailCode = function (discordID, code) {
     );
 
     if (!match || match.code !== (code || '').trim()) {
+        registerFailure(rateKey, CODE_WINDOW_MS);
         return { success: false, error: 'Invalid or expired verification code.' };
     }
 
+    clearFailures(rateKey);
     queryRun('DELETE FROM mail_verifications WHERE discordID=?', [discordID]);
     return { success: true, email_prefix: match.email_prefix };
 };

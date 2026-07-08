@@ -315,9 +315,6 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             console.error('Error uploading to x0.at:', uploadError);
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
-                                const safeMessage = JSON.stringify(
-                                    'Failed to upload file: ' + uploadError.message
-                                );
                                 res.end(
                                     render('misc/script-alert-back', {
                                         MESSAGE: 'Failed to upload file: ' + uploadError.message,

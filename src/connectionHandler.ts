@@ -5,6 +5,7 @@
  */
 const WebSocket = require('ws');
 const Redis = require('ioredis');
+const auth = require('./authentication');
 
 // Initialize Redis clients for session storage and pub/sub
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
@@ -22,7 +23,7 @@ sub.on('error', () => {});
  * @property {boolean} isAuthed
  * @property {string} listenChannel
  * @property {string} [sessionId]
- * @property {string} [discordToken]
+ * @property {string|false} [discordID]
  */
 
 // Use a Map to associate WebSocket instances with their subscription state.
@@ -74,6 +75,46 @@ sub.on('pmessage', (pattern, redisChannel, message) => {
 exports.sendToAll = sendToAll;
 
 /**
+ * Determines whether the authenticated user (or a guest, for guest-enabled
+ * channels) is allowed to receive the live message feed for a channel.
+ *
+ * This mirrors the permission checks the HTTP channel view performs, so the
+ * real-time socket can't be used to read messages from channels the caller
+ * has no access to. Without this, any client could `LISTEN` on an arbitrary
+ * channel snowflake and passively receive every message posted there.
+ *
+ * @param {string|false} discordID - Authenticated Discord user ID, or false for a guest.
+ * @param {string} channelID - The Discord channel snowflake to listen on.
+ * @returns {Promise<boolean>}
+ */
+async function canListenToChannel(discordID, channelID) {
+    if (!channelID) return false;
+
+    // Guest-enabled channels are viewable without an account (parity with the
+    // HTTP guest channel view).
+    if (!discordID) {
+        return auth.isGuestChannel(channelID);
+    }
+
+    // Lazy require to avoid a load-time circular dependency (bot.js requires
+    // this module). Node resolves the cached module fine at call time.
+    const bot = require('./bot');
+    const { canViewChannel } = require('../pages/utils');
+    if (!bot.client) return false;
+
+    const channel =
+        bot.client.channels.cache.get(channelID) ||
+        (await bot.client.channels.fetch(channelID).catch(() => null));
+    if (!channel || !channel.guild) return false;
+
+    const member = await channel.guild.members.fetch(discordID).catch(() => null);
+    if (!member) return false;
+    const botMember = channel.guild.members.me;
+
+    return canViewChannel(member, botMember, channel);
+}
+
+/**
  * Processes an incoming WebSocket message from a client.
  * @param {WebSocket} ws - The WebSocket client
  * @param {ClientState} state - The current state of the client
@@ -88,10 +129,14 @@ async function processMessage(ws, state, message) {
         const params = parts.slice(1).join(' ');
 
         if (action === 'AUTH') {
+            // The token is a Discross session ID. Validate it against the session
+            // store instead of trusting any string the client sends; only an
+            // authenticated socket may subscribe to non-guest channels.
             const token = params.trim();
-            if (token) {
+            const discordID = token ? await auth.checkSession(token) : false;
+            if (discordID) {
                 state.isAuthed = true;
-                state.discordToken = token;
+                state.discordID = discordID;
                 state.sessionId = `session:${token}`;
                 if (redis.status === 'ready') {
                     await redis.set(
@@ -99,29 +144,45 @@ async function processMessage(ws, state, message) {
                         JSON.stringify({
                             isAuthed: true,
                             listenChannel: state.listenChannel,
-                            discordToken: token,
+                            discordID,
                         }),
                         'EX',
                         86400
                     ); // Expire in 24 hours
                 }
+            } else {
+                state.isAuthed = false;
+                state.discordID = false;
+                ws.send(JSON.stringify({ error: 'Authentication failed' }));
             }
         } else if (action === 'LISTEN') {
-            // IMPORTANT TODO: Check channel permissions
-            state.listenChannel = params.trim();
-            if (state.sessionId && redis.status === 'ready') {
-                await redis.set(state.sessionId, JSON.stringify(state), 'EX', 86400);
+            const channelID = params.trim();
+            // Authorize before subscribing: the caller must be able to view this
+            // channel (or it must be a guest-enabled channel).
+            if (await canListenToChannel(state.discordID || false, channelID)) {
+                state.listenChannel = channelID;
+                if (state.sessionId && redis.status === 'ready') {
+                    await redis.set(state.sessionId, JSON.stringify(state), 'EX', 86400);
+                }
+            } else {
+                state.listenChannel = '';
+                ws.send(JSON.stringify({ error: 'Not authorized for that channel' }));
             }
         } else if (action === 'RECONNECT') {
             const token = params.trim();
-            if (redis.status === 'ready') {
+            // Re-validate the session on reconnect, then re-authorize the stored
+            // channel — a cached Redis entry must never grant access on its own.
+            const discordID = token ? await auth.checkSession(token) : false;
+            if (discordID && redis.status === 'ready') {
                 const sessionData = await redis.get(`session:${token}`);
                 if (sessionData) {
                     const parsed = JSON.parse(sessionData);
-                    state.isAuthed = parsed.isAuthed;
-                    state.listenChannel = parsed.listenChannel;
-                    state.discordToken = parsed.discordToken;
+                    state.isAuthed = true;
+                    state.discordID = discordID;
                     state.sessionId = `session:${token}`;
+                    state.listenChannel = (await canListenToChannel(discordID, parsed.listenChannel))
+                        ? parsed.listenChannel
+                        : '';
                 }
             }
         }
