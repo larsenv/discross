@@ -20,6 +20,7 @@ const {
     getTemplate,
     generateSEOMetadata,
 } = require('./utils');
+const { generateCaptcha, verifyCaptcha } = require('./guestCaptcha');
 
 const TEMPLATE_CHANNEL = loadAndRenderPageTemplate('channel', 'guest');
 const TEMPLATE_NAME = loadAndRenderPageTemplate('name', 'guest');
@@ -31,10 +32,18 @@ exports.processGuestName = async function processGuestName(req, res) {
     const channelId = parsedUrl.searchParams.get('channel');
     const rawName = parsedUrl.searchParams.get('name') || '';
     const name = sanitizeGuestName(rawName);
+    const captchaAnswer = parsedUrl.searchParams.get('captcha') || '';
+    const captchaToken = parsedUrl.searchParams.get('captcha_token') || '';
 
     if (!isValidSnowflake(channelId) || !auth.isGuestChannel(channelId)) {
         res.writeHead(403, { 'Content-Type': 'text/html' });
         res.end(getTemplate('guest-access-disabled', 'misc'));
+        return;
+    }
+
+    if (!verifyCaptcha(captchaAnswer, captchaToken)) {
+        res.writeHead(302, { Location: `/channels/${channelId}?guest_captcha_error=1` });
+        res.end();
         return;
     }
 
@@ -49,7 +58,10 @@ exports.processGuestName = async function processGuestName(req, res) {
 
     res.writeHead(302, {
         Location: `/channels/${channelId}`,
-        'Set-Cookie': `guest_name=${encodeURIComponent(name)}; path=/; expires=${expires}; HttpOnly; SameSite=Lax`,
+        'Set-Cookie': [
+            `guest_name=${encodeURIComponent(name)}; path=/; expires=${expires}; HttpOnly; SameSite=Lax`,
+            `guest_captcha=passed; path=/; expires=${expires}; HttpOnly; SameSite=Lax`,
+        ],
     });
     res.end();
 };
@@ -86,15 +98,27 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     const parsedUrl = new URL(req.url, 'http://localhost');
     const cookies = parseCookies(req);
     const guestName = cookies.guest_name;
+    const guestCaptcha = cookies.guest_captcha;
 
-    // Show name entry page if no guest name set
-    if (!guestName) {
-        const hasError = parsedUrl.searchParams.get('guest_name_error') === '1';
+    // Show name & CAPTCHA entry page if no guest name set or captcha not solved
+    if (!guestName || guestCaptcha !== 'passed') {
+        const hasNameError = parsedUrl.searchParams.get('guest_name_error') === '1';
+        const hasCaptchaError = parsedUrl.searchParams.get('guest_captcha_error') === '1';
+        let errorHtml = '';
+        if (hasCaptchaError) {
+            errorHtml = getTemplate('invalid-captcha-error', 'misc') + '<br />';
+        } else if (hasNameError) {
+            errorHtml = getTemplate('invalid-name-error', 'misc') + '<br />';
+        }
+        const captcha = generateCaptcha();
         const pageTitle = 'Guest Access - Discross';
         const page = renderTemplate(TEMPLATE_NAME, {
             WHITE_THEME_ENABLED: theme.themeClass,
             CHANNEL_ID: escape(channelId),
-            ERROR: hasError ? getTemplate('invalid-name-error', 'misc') : '',
+            GUEST_NAME: escape(guestName || ''),
+            CAPTCHA_QUESTION: escape(captcha.question),
+            CAPTCHA_TOKEN: escape(captcha.token),
+            ERROR: errorHtml,
             PAGE_TITLE: pageTitle,
             SEO_METADATA: generateSEOMetadata(req, {
                 title: pageTitle,

@@ -1711,7 +1711,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     // For legacy/low-memory devices, we limit the number of messages rendered.
     const uaClient = parseUserAgent(req.headers['user-agent']);
     const messageLimit = uaClient
-        ? (MESSAGE_LIMIT_OVERRIDES[uaClient.id] ?? (uaClient.isLegacy ? LEGACY_MESSAGE_LIMIT : null))
+        ? (MESSAGE_LIMIT_OVERRIDES[uaClient.id] ??
+          (uaClient.isLegacy ? LEGACY_MESSAGE_LIMIT : null))
         : null;
     if (messageLimit !== null) {
         messages = messages.slice(-messageLimit);

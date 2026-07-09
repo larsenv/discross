@@ -34,9 +34,14 @@
               <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
                 Enter your name to chat as a guest:
                 <br /><br />
-                <div style="padding: 16px; background: #222327; width: 25%; min-width: 200px"><input type="text" name="name" id="name" value="" style=" color: #dddddd; background: #222327; border: none; width: 100%; outline: none; " placeholder="Your name" maxlength="32" required /></div>
+                <div style="padding: 16px; background: #222327; width: 25%; min-width: 200px"><input type="text" name="name" id="name" value="{$GUEST_NAME}" style=" color: #dddddd; background: #222327; border: none; width: 100%; outline: none; " placeholder="Your name" maxlength="32" required /></div>
+                <br />
+                Anti-Spam Verification: {$CAPTCHA_QUESTION}
+                <br /><br />
+                <div style="padding: 16px; background: #222327; width: 25%; min-width: 200px"><input type="text" name="captcha" id="captcha" value="" style=" color: #dddddd; background: #222327; border: none; width: 100%; outline: none; " placeholder="Answer" maxlength="16" required /></div>
                 <br />
                 <input type="hidden" name="channel" value="{$CHANNEL_ID}" />
+                <input type="hidden" name="captcha_token" value="{$CAPTCHA_TOKEN}" />
                 {$ERROR}<br />
                 <input type="submit" style=" color: #ffffff; height: 44px; width: 150px; border: none; background: #5865f2; border-radius: 8px; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; " value="Enter" />
               </font>

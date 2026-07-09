@@ -1242,7 +1242,7 @@ body.amoled-theme,
     color: #dcdcdf;
 }
 .amoled-theme a {
-    color: #5865f2 !important;
+    color: #00aff4 !important;
 }
 .amoled-theme .menu-button {
     background: none !important;
@@ -1465,6 +1465,9 @@ html.page-simple .light-theme #wrapper .discross-button.secondary {
 html.page-simple .light-theme #wrapper .discross-button.secondary:hover {
     background: #5d6269 !important;
 }
+html.page-simple .light-theme #wrapper a:not(.discross-button) {
+    color: #0067e0 !important;
+}
 
 html.page-simple .amoled-theme {
     background: #09090a !important;
@@ -1504,6 +1507,9 @@ html.page-simple .amoled-theme #wrapper .discross-button.secondary {
 }
 html.page-simple .amoled-theme #wrapper .discross-button.secondary:hover {
     background: #5d6269 !important;
+}
+html.page-simple .amoled-theme #wrapper a:not(.discross-button) {
+    color: #00aff4 !important;
 }
 
 /* ================================================================
@@ -1572,7 +1578,7 @@ html.page-server .amoled-theme hr {
     border-color: #1e1e21 !important;
 }
 html.page-server .amoled-theme a {
-    color: #5865f2 !important;
+    color: #00aff4 !important;
 }
 html.page-server .amoled-theme button {
     background: #5865f2 !important;
