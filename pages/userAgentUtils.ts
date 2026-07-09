@@ -17,7 +17,7 @@ const CLIENTS = [
     {
         id: 'ps2',
         name: 'PlayStation 2',
-        keywords: ['Playstation2', 'PS2', 'EGBrowser'],
+        keywords: ['PlayStation2', 'Playstation2', 'PS2', 'EGBrowser'],
         isLegacy: true,
     },
     { id: 'ps3', name: 'PlayStation 3', keywords: ['PLAYSTATION 3'], isLegacy: true },
@@ -43,12 +43,37 @@ const CLIENTS = [
     { id: 'edgedev', name: 'Microsoft Edge Dev', keywords: ['EdgD/'] },
     { id: 'edge', name: 'Microsoft Edge', keywords: ['Edge/', 'Edg/', 'EdgA/', 'EdgiOS/'] },
     { id: 'edgecanary', name: 'Microsoft Edge Canary', keywords: ['Canary/'] },
+    // SeaMonkey, Pale Moon, Basilisk, and K-Meleon all embed a "Firefox/" token
+    // in their UA (they're Gecko/Goanna-based), so they must be checked before
+    // the generic 'firefox' entry below or they'd always be misidentified as
+    // plain Firefox.
+    { id: 'seamonkey', name: 'SeaMonkey', keywords: ['SeaMonkey/'] },
+    {
+        id: 'palemoon',
+        name: 'Pale Moon',
+        keywords: ['PaleMoon/', 'Pale Moon/'],
+        isLegacy: true,
+    },
+    { id: 'basilisk', name: 'Basilisk', keywords: ['Basilisk/'], isLegacy: true },
+    { id: 'kmeleon', name: 'K-Meleon', keywords: ['K-Meleon/'], isLegacy: true },
     { id: 'firefox', name: 'Firefox', keywords: ['Firefox/'] },
     { id: 'duckduckgo', name: 'DuckDuckGo', keywords: ['DuckDuckGo/'] },
     { id: 'icab', name: 'iCab', keywords: ['iCab/'] },
+    // AOL Explorer wraps Trident (IE) and would otherwise match 'ie' below.
+    { id: 'aol', name: 'AOL Explorer', keywords: ['AOL '], isLegacy: true },
     { id: 'ie', name: 'Internet Explorer', keywords: ['MSIE ', 'Trident/'], isLegacy: true },
     { id: 'kindle', name: 'Kindle', keywords: ['Kindle/', 'Silk/'], isLegacy: true },
     { id: 'librewolf', name: 'LibreWolf', keywords: ['LibreWolf/'] },
+    { id: 'konqueror', name: 'Konqueror', keywords: ['Konqueror/'] },
+    { id: 'maxthon', name: 'Maxthon', keywords: ['Maxthon'] },
+    { id: 'midori', name: 'Midori', keywords: ['Midori/'] },
+    { id: 'camino', name: 'Camino', keywords: ['Camino/'], isLegacy: true },
+    { id: 'netsurf', name: 'NetSurf', keywords: ['NetSurf/'], isLegacy: true },
+    // Netscape 6+ tags itself with "Netscape/"; earlier Netscape 2-4 identified
+    // purely as "Mozilla/x.x" and can't be distinguished from that string alone.
+    { id: 'netscape', name: 'Netscape Navigator', keywords: ['Netscape/'], isLegacy: true },
+    { id: 'mosaic', name: 'NCSA Mosaic', keywords: ['NCSA_Mosaic', 'Mosaic/'], isLegacy: true },
+    { id: 'links', name: 'Links', keywords: ['Links ', 'Links/'], isLegacy: true },
     { id: 'operagx', name: 'Opera GX', keywords: ['OPRGX/'] },
     { id: 'operamini', name: 'Opera Mini', keywords: ['Opera Mini/'], isLegacy: true },
     { id: 'operatouch', name: 'Opera Touch', keywords: ['OPT/'] },
@@ -94,6 +119,8 @@ const CHROME_OVERRIDES = new Set([
     'duckduckgo',
     'atlas',
     'supermium',
+    'maxthon',
+    'konqueror',
 ]);
 const SAFARI_OVERRIDES = new Set([
     ...CHROME_OVERRIDES,
@@ -102,6 +129,8 @@ const SAFARI_OVERRIDES = new Set([
     'switch',
     'psvita',
     'safaritech',
+    'midori',
+    'camino',
 ]);
 
 /**
@@ -121,6 +150,17 @@ function parseUserAgent(userAgent) {
         detectedClient = { id: 'xboxone', name: 'Xbox One', isLegacy: false };
     } else if (userAgent.includes('Xbox')) {
         detectedClient = { id: 'xbox360', name: 'Xbox 360', isLegacy: true };
+    } else if (userAgent.includes('Nintendo 3DS')) {
+        // New 3DS ("SKATER") units identify themselves via the 'NintendoBrowser'
+        // token rather than always including the literal "New Nintendo 3DS"
+        // string (see draw.ts), so a plain keyword match on "New Nintendo 3DS"
+        // misses real New 3DS hardware and leaves it wrongly classified as the
+        // legacy Old 3DS ("SPIDER").
+        const isNewHardware =
+            userAgent.includes('New Nintendo 3DS') || userAgent.includes('NintendoBrowser');
+        detectedClient = isNewHardware
+            ? { id: 'new3ds', name: 'New Nintendo 3DS', isLegacy: false }
+            : { id: '3ds', name: 'Nintendo 3DS', isLegacy: true };
     } else if (
         userAgent.includes('Firefox/') &&
         (userAgent.includes('0a1') || userAgent.includes('0a2'))
@@ -130,6 +170,7 @@ function parseUserAgent(userAgent) {
         // General keyword search
         for (const client of CLIENTS) {
             if (client.id === 'xboxone' || client.id === 'xbox360') continue; // Handled above
+            if (client.id === 'new3ds' || client.id === '3ds') continue; // Handled above
 
             const matches = client.keywords.some((keyword) => userAgent.includes(keyword));
             if (matches) {
