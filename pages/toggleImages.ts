@@ -22,8 +22,12 @@ exports.toggleImages = function toggleImages(req, res) {
                   : 1;
         const newValue = currentValue === 1 ? 0 : 1;
 
-        const referer = req.headers.referer || '/server/';
-        const refererUrl = new URL(referer, 'http://dummy.local');
+        const returnTarget =
+            parsedUrl.searchParams.get('return') ||
+            parsedUrl.searchParams.get('redirect') ||
+            req.headers.referer ||
+            '/';
+        const refererUrl = new URL(returnTarget, 'http://dummy.local');
         refererUrl.searchParams.set('images', newValue);
         const location = refererUrl.pathname + refererUrl.search;
 
@@ -37,7 +41,7 @@ exports.toggleImages = function toggleImages(req, res) {
         });
         res.end();
     } catch (error) {
-        res.writeHead(302, { Location: '/server/' });
+        res.writeHead(302, { Location: '/' });
         res.end();
     }
 };
