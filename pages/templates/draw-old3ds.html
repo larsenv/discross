@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>{$PAGE_TITLE}</title>
+    {$COMMON_HEAD}
     <style type="text/css">
         BODY {
             color: #fff;
@@ -11,9 +11,8 @@
             font-family: sans-serif;
             margin: 0px;
             padding: 0px;
-            overflow: hidden;
+            overflow-x: hidden;
             width: 320px;
-            height: 240px;
             position: relative;
         }
         FORM {
@@ -78,7 +77,8 @@
         }
     </style>
 </head>
-<body>
+<body {$WHITE_THEME_ENABLED}>
+    <div style="width: 320px; height: 240px; position: relative; overflow: hidden;">
     <form action="/senddrawing" method="post" id="sendform" onsubmit="return false;">
         <!-- Standard 16 Color Palette Toolbar -->
         <div id="c1" class="c-box" style="left: 280px; top: 0px; background:#000000;" onclick="return setColor('#000000', 'c1');"></div>
@@ -142,7 +142,31 @@
     <canvas id="canvas3" class="paint-canvas" width="240" height="200"></canvas>
     <canvas id="canvas4" class="paint-canvas" width="240" height="200"></canvas>
 
-    <div style="height: 14px; left: 2px; top: 202px; width: 236px; color: #fff; font-size: 9px; overflow: hidden;" id="status">Creating 3DS GUI...</div>
+    <div style="height: 14px; left: 2px; top: 202px; width: 236px; color: #fff; font-size: 9px; overflow: hidden;" id="status">3DS Paint (DSiPaint Engine)...</div>
+    </div>
+
+    <!-- Discross Toolbelt & DSiPaint Attribution -->
+    <div class="toolbelt-container" style="width: 320px; padding: 6px 4px; box-sizing: border-box; text-align: center; background: #18181b;">
+        <div style="margin-bottom: 6px;">
+            <a href="/upload/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f4e4.gif" alt="Upload" width="20" height="20" /></a>
+            <a href="/draw/{$CHANNEL_ID}{$MODE_TOGGLE_URL}" class="message-action-btn" title="Switch Mode"><img src="/resources/twemoji/1f58c-fe0f.gif" alt="Mode" width="20" height="20" /></a>
+            <a href="/pins/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f4cc.gif" alt="Pins" width="20" height="20" /></a>
+            <a href="/sports{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/26bd.gif" alt="Sports" width="20" height="20" /></a>
+            <a href="/food/{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f355.gif" alt="Pizza" width="20" height="20" /></a>
+            <a href="/news{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f4f0.gif" alt="News" width="20" height="20" /></a>
+            <a href="/weather{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/26c5.gif" alt="Weather" width="20" height="20" /></a>
+            <a href="/stocks{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f4c8.gif" alt="Stocks" width="20" height="20" /></a>
+            <a href="/currency{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f4b5.gif" alt="Currency" width="20" height="20" /></a>
+            <a href="/tv{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f4fa.gif" alt="TV Guide" width="20" height="20" /></a>
+            <a href="/movies{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f3ac.gif" alt="Movies" width="20" height="20" /></a>
+            <a href="/switchtheme{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f313.gif" alt="Theme" width="20" height="20" /></a>
+            <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/2b05.gif" alt="Back" width="20" height="20" /></a>
+            <a href="javascript:void(0)" onclick="location.reload()" class="message-action-btn"><img src="/resources/twemoji/1f501.gif" alt="Refresh" width="20" height="20" /></a>
+        </div>
+        <div style="color: #aaaaaa; font-size: 9px; margin-top: 4px;">
+            Legacy 3DS drawing app engine credited to <b>DSiPaint</b> (HullBreach).
+        </div>
+    </div>
 
     <script src="/js/draw-3ds.js"></script>
 </body>

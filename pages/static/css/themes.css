@@ -209,3 +209,9 @@ body.amoled-theme,
     background: #000000 !important;
     border-color: #333333 !important;
 }
+
+/* Links & Buttons */
+.amoled-theme a,
+.amoled-theme .message-link {
+    color: #00aff4 !important;
+}

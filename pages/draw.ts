@@ -64,7 +64,9 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             }
 
             const userAgentStr = req.headers['user-agent'] || '';
-            const is3DS = userAgentStr.indexOf('Nintendo 3DS') !== -1;
+            const is3DS =
+                userAgentStr.indexOf('Nintendo 3DS') !== -1 ||
+                userAgentStr.indexOf('Nintendo DSi') !== -1;
             const isNew3DS = is3DS && userAgentStr.indexOf('NintendoBrowser') !== -1;
             const isOld3DS = is3DS && !isNew3DS;
 
@@ -83,12 +85,14 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                     ? sessionParam + '&mode=standard'
                     : '?mode=standard';
                 const final3DSTemplate = renderTemplate(old3ds_template, {
+                    COMMON_HEAD: getTemplate('common-head', 'partials'),
+                    WHITE_THEME_ENABLED: themeClass,
                     SERVER_ID: chnl.guild.id,
                     CHANNEL_ID: chnl.id,
                     CHANNEL_NAME: channelName,
                     SESSION_ID: urlSessionID,
                     SESSION_PARAM: sessionParam,
-                    PAGE_TITLE: `3DS Paint in ${channelName} - Discross`,
+                    PAGE_TITLE: `3DS Paint (DSiPaint Engine) in ${channelName} - Discross`,
                     MODE_TOGGLE_URL: modeToggleUrl,
                 });
                 res.writeHead(200, { 'Content-Type': 'text/html' });

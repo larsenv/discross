@@ -38,8 +38,8 @@ exports.guestSend = async function guestSend(bot, req, res) {
         return;
     }
 
-    // Validate guest name
-    if (!guestName) {
+    // Validate guest name and anti-spam captcha cookie
+    if (!guestName || cookies.guest_captcha !== 'passed') {
         res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
         res.end();
         return;
