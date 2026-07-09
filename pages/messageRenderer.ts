@@ -36,7 +36,7 @@ const {
     generateSEOMetadata,
     canViewChannel,
 } = require('./utils');
-const { parseUserAgent, isLegacyClient } = require('./userAgentUtils');
+const { parseUserAgent } = require('./userAgentUtils');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -46,6 +46,26 @@ const FORWARDED_CONTENT_MAX_LENGTH = 4000;
 const REPLY_CONTENT_MAX_LENGTH = 25;
 const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
 const LEGACY_MESSAGE_LIMIT = 25;
+
+// Per-client overrides for how many cached messages to render. Falls back to
+// LEGACY_MESSAGE_LIMIT for any other client flagged isLegacy, or the full
+// cache (see bot.ts cachelength) for everything else.
+//
+// The mid-tier consoles below have enough usable RAM (roughly the Wii's ~88 MB
+// or more: old 3DS ~128 MB, PS3 ~256 MB, PS Vita / Xbox 360 ~512 MB) to hold a
+// larger page than the truly memory-starved devices, but their embedded/older
+// browser engines still bog down well before the full 100-message cache — so
+// they get half the buffer. This is a RAM-based argument, not a benchmark; the
+// remaining legacy devices (DS ~4 MB, DSi/Dreamcast ~16 MB, PS2/PSP ~32-64 MB,
+// Saturn ~2-4 MB) stay on the flat LEGACY_MESSAGE_LIMIT.
+const MESSAGE_LIMIT_OVERRIDES = {
+    wii: 50,
+    new3ds: 50,
+    '3ds': 50,
+    ps3: 50,
+    psvita: 50,
+    xbox360: 50,
+};
 
 const SYSTEM_MESSAGE_TEXT = {
     1: 'added a new member',
@@ -1688,9 +1708,13 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     // 2. Fetch messages (or use override).
     let messages = overrideMessages ?? (await bot.getHistoryCached(chnl));
 
-    // For legacy devices, we limit the number of messages to save memory.
-    if (isLegacyClient(req.headers['user-agent'])) {
-        messages = messages.slice(-LEGACY_MESSAGE_LIMIT);
+    // For legacy/low-memory devices, we limit the number of messages rendered.
+    const uaClient = parseUserAgent(req.headers['user-agent']);
+    const messageLimit = uaClient
+        ? (MESSAGE_LIMIT_OVERRIDES[uaClient.id] ?? (uaClient.isLegacy ? LEGACY_MESSAGE_LIMIT : null))
+        : null;
+    if (messageLimit !== null) {
+        messages = messages.slice(-messageLimit);
     }
 
     // memberCache is used to avoid redundant Discord API calls for avatars/names within this render pass.
