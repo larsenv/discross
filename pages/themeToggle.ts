@@ -24,8 +24,12 @@ exports.toggleTheme = function toggleTheme(req, res) {
         const NEXT_THEME = [1, 2, 0];
         const nextTheme = NEXT_THEME[currentTheme] ?? 0;
 
-        const referer = req.headers.referer || '/server/';
-        const refererUrl = new URL(referer, 'http://dummy.local');
+        const returnTarget =
+            parsedUrl.searchParams.get('return') ||
+            parsedUrl.searchParams.get('redirect') ||
+            req.headers.referer ||
+            '/';
+        const refererUrl = new URL(returnTarget, 'http://dummy.local');
         refererUrl.searchParams.set('theme', nextTheme);
         const location = refererUrl.pathname + refererUrl.search;
 
@@ -39,7 +43,7 @@ exports.toggleTheme = function toggleTheme(req, res) {
         });
         res.end();
     } catch (error) {
-        res.writeHead(302, { Location: '/server/' });
+        res.writeHead(302, { Location: '/' });
         res.end();
     }
 };
