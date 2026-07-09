@@ -256,7 +256,7 @@ pre code {
    ================================================================ */
 
 .message {
-    margin: 0;
+    margin: 4px 0 0 0;
 }
 .message:hover {
     background: rgba(4, 4, 5, 0.07);
@@ -1293,18 +1293,25 @@ body.amoled-theme,
    ================================================================ */
 
 html.page-channel,
+html.page-channel-reply,
 html.page-channel body,
-html.page-channel #wrapper {
+html.page-channel-reply body,
+html.page-channel #wrapper,
+html.page-channel-reply #wrapper {
     height: auto;
     min-height: 0;
 }
 
-html.page-channel {
-    overflow-y: hidden;
+html.page-channel,
+html.page-channel-reply {
+    overflow-x: hidden;
 }
 
-html.page-channel body {
-    overflow-y: auto;
+html.page-channel body,
+html.page-channel-reply body,
+html.page-channel #wrapper,
+html.page-channel-reply #wrapper {
+    overflow: visible;
 }
 
 /* Replying-to banner inside the fixed form bar */
