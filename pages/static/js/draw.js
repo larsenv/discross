@@ -143,38 +143,17 @@ function getScrollOffset() {
     return { x: sx, y: sy };
 }
 
-// Cache canvas bounding rect for Old 3DS — calling getBoundingClientRect()
-// inside every mousemove is expensive, so we refresh only on mousedown and
-// on resize. This is the recommended pattern for 3DS drawing apps.
-var _cachedRect = null;
-function refreshCanvasRect() {
-    if (canvas.getBoundingClientRect) {
-        _cachedRect = canvas.getBoundingClientRect();
-    }
-}
-refreshCanvasRect();
-
 function getPos(e) {
     e = e || window.event || {};
-    // Old 3DS (SPIDER/NetFront): e.offsetX is buggy. Use clientX with
-    // cached getBoundingClientRect, which is the most reliable method on
-    // this browser according to 3DS dev communities.
-    if (isOld3DS && _cachedRect) {
-        var cx = e.clientX !== undefined ? e.clientX : e.pageX || 0;
-        var cy = e.clientY !== undefined ? e.clientY : e.pageY || 0;
-        return {
-            x: (cx - _cachedRect.left) * (canvas.width / canvasDisplayW),
-            y: (cy - _cachedRect.top) * (canvas.height / canvasDisplayH),
-        };
-    }
-    // New 3DS and modern browsers: e.offsetX works correctly.
+    // e.offsetX/offsetY: element-relative CSS pixels. Available in Opera 9+ (Wii/DSi),
+    // Chrome, Safari, IE9+. Works correctly regardless of page scroll or element position.
     if (e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
             y: e.offsetY * (canvas.height / canvasDisplayH),
         };
     }
-    // Fallback: pageX/pageY + canvas page offset (DSi Opera, Firefox <39)
+    // Fallback: pageX/pageY + canvas page offset (Firefox <39 and other edge cases)
     var scroll = getScrollOffset();
     var pageX = e.pageX !== undefined ? e.pageX : e.clientX + scroll.x;
     var pageY = e.pageY !== undefined ? e.pageY : e.clientY + scroll.y;
@@ -203,70 +182,21 @@ function flushDrawQueue() {
     lastDrawnY = last.y;
     pointQueue = [];
 }
-// DSi and Wii: flush batched draw calls via interval to minimize expensive repaint calls.
-// All other browsers draw immediately in their mousemove/touchmove handlers.
-if (isDSi || isWii) {
-    setInterval(flushDrawQueue, 30);
-}
+// Flush batched draw calls at ~33fps via setInterval.
+// DSi/Wii Opera 9: each ctx.stroke() triggers a full canvas repaint, so we batch
+// many segments into one repaint. setInterval works on all legacy browsers (no rAF needed).
+setInterval(flushDrawQueue, 30);
 
-// --- DRAWING EVENTS ---
-// Use addEventListener with useCapture=true for reliable event handling on
-// legacy consoles (Old 3DS NetFront, Wii Opera). The working 3DSPaint
-// reference uses this exact pattern. DOM0 handlers (canvas.onmousedown)
-// are unreliable on some legacy WebKit/NetFront browsers.
-// isOld3DSDrawing: tracks whether the Old 3DS stylus is in an active stroke.
-var isOld3DSDrawing = false;
-
-// Draw a line between two points using fillRect interpolation.
-function drawLineViaFill(x0, y0, x1, y1, size) {
-    var dx = x1 - x0;
-    var dy = y1 - y0;
-    var dist = Math.sqrt(dx * dx + dy * dy);
-    var steps = Math.ceil(dist * 2) || 1;
-    for (var i = 0; i <= steps; i++) {
-        var t = i / steps;
-        var px = Math.round(x0 + dx * t);
-        var py = Math.round(y0 + dy * t);
-        ctx.fillRect(px - Math.floor(size / 2), py - Math.floor(size / 2), size, size);
-    }
-}
 
 function onCanvasMouseDown(e) {
     e = e || window.event;
-    // Stop Wii Drag, but don't preventDefault unconditionally as it can cause
-    // the Old 3DS to glitch into "cursor mode"
-    if (isWii && e && e.preventDefault) {
-        e.preventDefault();
-    }
-    // Refresh cached rect on every mousedown (cheap, and catches scrolls/resizes)
-    refreshCanvasRect();
+    if (e && e.preventDefault) e.preventDefault(); // Stop Wii drag-to-scroll
 
     var pos = getPos(e);
     if (currTool === 'fill') {
         saveHistory();
         floodFill(pos.x, pos.y);
-        return;
-    }
-
-    if (isOld3DS) {
-        var col = currTool === 'eraser' ? '#ffffff' : currColor;
-        ctx.fillStyle = col;
-        if (isOld3DSDrawing) {
-            drawLineViaFill(lastX, lastY, pos.x, pos.y, currSize);
-        } else {
-            saveHistory();
-            isOld3DSDrawing = true;
-            isDrawing = true;
-            ctx.fillRect(
-                pos.x - Math.floor(currSize / 2),
-                pos.y - Math.floor(currSize / 2),
-                currSize,
-                currSize
-            );
-        }
-        lastX = pos.x;
-        lastY = pos.y;
-        return;
+        return false;
     }
 
     saveHistory();
@@ -277,33 +207,26 @@ function onCanvasMouseDown(e) {
     lastDrawnY = pos.y;
     pointQueue = [];
 
+    // Draw a dot at click/tap position for immediate feedback
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-    ctx.fillRect(
-        lastX - Math.floor(currSize / 2),
-        lastY - Math.floor(currSize / 2),
-        currSize,
-        currSize
-    );
+    ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+    ctx.fill();
+    ctx.beginPath();
+
+    return false;
 }
 
 function onCanvasMouseMove(e) {
     if (!isDrawing) return;
     e = e || window.event;
-    if (isWii && e && e.preventDefault) {
-        e.preventDefault();
-    }
+    if (e && e.preventDefault) e.preventDefault();
 
     var pos = getPos(e);
-    if (isDSi || isWii) {
-        // DSi/Wii: batch to reduce repaint overhead (stroke() repaints entire canvas)
-        pointQueue.push({ x: pos.x, y: pos.y });
-    } else {
-        // All others (including Old 3DS): draw immediately
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-    }
+    // Always push to queue — flushed by setInterval at 33fps.
+    // This batching prevents Opera 9 (Wii/DSi) from repainting on every event.
+    pointQueue.push({ x: pos.x, y: pos.y });
     lastX = pos.x;
     lastY = pos.y;
 }
@@ -314,21 +237,19 @@ function onCanvasMouseUp(e) {
     isDrawing = false;
 }
 
-// Wii Opera (Opera 9.0/9.3) and DSi Opera (Opera 9.5): addEventListener with
-// useCapture=true is unreliable or broken on leaf/target elements in older Presto
-// engines. Use standard DOM0 event handlers (onmousedown, etc.) which work natively
-// and allow returning false to prevent default dragging/panning.
+// --- EVENT BINDING ---
+// Wii Opera 9.0/9.3 and DSi Opera 9.5: addEventListener with useCapture is unreliable
+// on target elements in older Presto engines. DOM0 handlers (canvas.onXxx) work
+// reliably and allow returning false to prevent the browser's native drag-scroll.
+// All other browsers use addEventListener.
 if (isWii || isDSi) {
     canvas.onmousedown = function (e) {
         e = e || window.event;
-        if (e && e.preventDefault) e.preventDefault();
-        onCanvasMouseDown(e);
-        return false;
+        return onCanvasMouseDown(e);
     };
     canvas.onmousemove = function (e) {
         if (!isDrawing) return false;
         e = e || window.event;
-        if (e && e.preventDefault) e.preventDefault();
         onCanvasMouseMove(e);
         return false;
     };
@@ -346,12 +267,7 @@ if (isWii || isDSi) {
     canvas.addEventListener('mousedown', onCanvasMouseDown, true);
     canvas.addEventListener('mouseup', onCanvasMouseUp, true);
     canvas.addEventListener('mouseout', onCanvasMouseUp, true);
-
-    // Old 3DS (SPIDER): mousemove may fire at the document level rather than on the
-    // canvas during stylus drag. Attach to document to catch all events. Also attach
-    // mouseup on document in case the stylus lifts off the canvas.
-    // New 3DS & others: keep listeners on canvas only (document-level would catch
-    // extraneous events from toolbar/scrollbar, hurting performance).
+    // Old 3DS (SPIDER): mousemove may fire at document level during stylus drag.
     if (isOld3DS) {
         document.addEventListener('mousemove', onCanvasMouseMove, true);
         document.addEventListener('mouseup', onCanvasMouseUp, true);
@@ -419,15 +335,8 @@ canvas.addEventListener(
         var pos = getTouchPos(e);
         if (!pos) return;
 
-        if (isDSi || isWii) {
-            pointQueue.push({ x: pos.x, y: pos.y });
-        } else {
-            // Draw immediately like 3DSPaint
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-        }
+        // Always push to queue — flushed by setInterval at 33fps for all devices.
+        pointQueue.push({ x: pos.x, y: pos.y });
         lastX = pos.x;
         lastY = pos.y;
     },
@@ -474,7 +383,6 @@ function setColor(col, id) {
 
 function setTool(tool) {
     currTool = tool;
-    isOld3DSDrawing = false;
     var drawBtn = document.getElementById('btn-draw');
     if (drawBtn) {
         drawBtn.style.outline = currTool === 'draw' ? '2px solid white' : '';
@@ -567,7 +475,6 @@ function wipe() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-    isOld3DSDrawing = false;
     isDrawing = false;
 }
 
