@@ -12,7 +12,7 @@ const CLIENTS = [
     { id: 'dsi', name: 'Nintendo DSi', keywords: ['Nintendo DSi'], isLegacy: true },
     { id: 'ds', name: 'Nintendo DS', keywords: ['Nitro'], isLegacy: true },
     { id: 'wiiu', name: 'Nintendo Wii U', keywords: ['Nintendo WiiU'] },
-    { id: 'wii', name: 'Nintendo Wii', keywords: ['Nintendo Wii'] },
+    { id: 'wii', name: 'Nintendo Wii', keywords: ['Nintendo Wii'], isLegacy: true },
     { id: 'switch', name: 'Nintendo Switch', keywords: ['Nintendo Switch'] },
     {
         id: 'ps2',

@@ -48,18 +48,22 @@ function init() {
                 e = e || window.event;
                 if (e && e.preventDefault) e.preventDefault();
                 mousemove(e);
+                return false;
             };
             topCanvas.onmouseup = function (e) {
                 e = e || window.event;
                 mouseup(e);
+                return false;
             };
             topCanvas.onmouseout = function (e) {
                 e = e || window.event;
                 mouseup(e);
+                return false;
             };
             topCanvas.onclick = function (e) {
                 e = e || window.event;
                 click(e);
+                return false;
             };
         } else {
             topCanvas.addEventListener('mousedown', mousedown, true);
