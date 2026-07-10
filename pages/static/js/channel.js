@@ -58,22 +58,20 @@ function scrollToBottom() {
         999999
     );
 
-    // 1. Universal window.scrollTo fallback (supported from early browsers to modern iOS/Android WebViews)
-    try {
-        window.scrollTo(0, scrollHeight);
-    } catch (e) {}
-    try {
-        if (typeof window.scroll === 'function') {
-            window.scroll(0, scrollHeight);
-        }
-    } catch (e) {}
+    // 1. window.scrollTo — widest browser support
+    try { window.scrollTo(0, scrollHeight); } catch (e) {}
+    try { if (typeof window.scroll === 'function') window.scroll(0, scrollHeight); } catch (e) {}
 
-    // 2. Element scrollIntoView if supported
+    // 2. Direct body/documentElement scrollTop — works in Opera 9 (Wii/DSi)
+    //    where window.scrollTo may be a no-op
+    try { if (document.body) document.body.scrollTop = scrollHeight; } catch (e) {}
+    try { if (document.documentElement) document.documentElement.scrollTop = scrollHeight; } catch (e) {}
+
+    // 3. scrollIntoView / hash anchor fallback
     if (endEl) {
         try {
             endEl.scrollIntoView(false);
         } catch (e) {
-            // Legacy anchor fallback
             try {
                 if (window.location.hash !== '#end' && window.location.hash !== 'end') {
                     window.location.hash = 'end';
@@ -88,10 +86,9 @@ function scrollToBottom() {
         } catch (e) {}
     }
 
-    // 3. Final scrollTo check to ensure complete scroll to absolute bottom
-    try {
-        window.scrollTo(0, scrollHeight);
-    } catch (e) {}
+    // 4. Final scrollTo to override any scrollIntoView undershoot
+    try { window.scrollTo(0, scrollHeight); } catch (e) {}
+    try { if (document.body) document.body.scrollTop = scrollHeight; } catch (e) {}
 }
 
 function scheduleScrollToBottom() {
@@ -100,7 +97,35 @@ function scheduleScrollToBottom() {
     setTimeout(scrollToBottom, 150);
     setTimeout(scrollToBottom, 350);
     setTimeout(scrollToBottom, 700);
+    // Extended delays for slow connections / many images (Wii Opera)
+    setTimeout(scrollToBottom, 1500);
+    setTimeout(scrollToBottom, 3000);
+    setTimeout(scrollToBottom, 5000);
 }
+
+// Re-scroll after each image finishes loading — each GIF that loads can push
+// the document taller, causing earlier scrollToBottom calls to land mid-page.
+// This is especially important on Wii/DSi where twemoji GIFs load one-by-one.
+(function () {
+    if (!document.addEventListener && !document.attachEvent) return;
+    function hookImages() {
+        var imgs = document.getElementsByTagName('img');
+        for (var i = 0; i < imgs.length; i++) {
+            if (!imgs[i]._scrollHooked) {
+                imgs[i]._scrollHooked = true;
+                imgs[i].onload = scrollToBottom;
+            }
+        }
+    }
+    // Hook images already in DOM, then re-hook on DOMContentLoaded in case
+    // more are inserted by JS after this runs.
+    hookImages();
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', hookImages, false);
+    } else if (document.attachEvent) {
+        document.attachEvent('onreadystatechange', hookImages);
+    }
+})();
 
 // Execute as soon as DOM is ready (instantaneous on mobile native app without waiting for images)
 if (document.readyState === 'interactive' || document.readyState === 'complete') {
