@@ -205,12 +205,15 @@ function clearFailures(key) {
 }
 
 // Periodically drop expired buckets so the map can't grow unbounded.
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, bucket] of _failBuckets) {
-        if (bucket.resetAt <= now) _failBuckets.delete(key);
-    }
-}, 10 * 60 * 1000).unref();
+setInterval(
+    () => {
+        const now = Date.now();
+        for (const [key, bucket] of _failBuckets) {
+            if (bucket.resetAt <= now) _failBuckets.delete(key);
+        }
+    },
+    10 * 60 * 1000
+).unref();
 
 const LOGIN_MAX_FAILS = 10;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;

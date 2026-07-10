@@ -9,8 +9,14 @@ const {
     getSkinToneSelectorHTML,
     getQuickEmojiHTML,
     getExpandedEmojiHTML,
+    processUnicodeEmojiInText,
 } = require('./emojiUtils');
 const notFound = require('./notFound');
+
+function formatAuthorName(name) {
+    if (!name) return '';
+    return processUnicodeEmojiInText(escape(name), 16, '1em');
+}
 const {
     renderTemplate,
     render,
@@ -300,7 +306,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
                 const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
                 const replyBar = renderTemplate(channel_reply_bar_template, {
-                    REPLY_MESSAGE_AUTHOR: escape(author),
+                    REPLY_MESSAGE_AUTHOR: formatAuthorName(author),
                     REPLY_MESSAGE_CONTENT: message_content,
                 });
                 const final = renderTemplate(afterWebhookCheck, {

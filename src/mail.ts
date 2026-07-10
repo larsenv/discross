@@ -51,10 +51,7 @@ function verifyWebhookSignature(req) {
         const sig = part.split(',')[1];
         if (!sig) return false;
         const sigBuf = Buffer.from(sig);
-        return (
-            sigBuf.length === expectedBuf.length &&
-            crypto.timingSafeEqual(sigBuf, expectedBuf)
-        );
+        return sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf);
     });
 }
 

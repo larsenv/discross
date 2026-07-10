@@ -15,13 +15,15 @@ var layer = 2,
     mouseY = 0,
     points = [];
 
-var isOld3DS = navigator.userAgent.indexOf('Nintendo 3DS') !== -1 && navigator.userAgent.indexOf('NintendoBrowser') === -1;
+var isOld3DS =
+    navigator.userAgent.indexOf('Nintendo 3DS') !== -1 &&
+    navigator.userAgent.indexOf('NintendoBrowser') === -1;
 
-window.onload = function() {
+function init() {
     for (var i = 0; i <= 4; i++) {
         canvas[i] = document.getElementById('canvas' + i);
     }
-    for (var i = 5; --i >= 0;) {
+    for (var i = 5; --i >= 0; ) {
         if (canvas[i]) {
             context[i] = canvas[i].getContext('2d');
             context[i].lineCap = 'round';
@@ -52,7 +54,13 @@ window.onload = function() {
     setColor('#000000', 'c1');
     set_layer(2);
     set_brush(6);
-};
+}
+
+if (document.getElementById('canvas0')) {
+    init();
+} else {
+    window.onload = init;
+}
 
 function setColor(hex, id) {
     if (hex && hex.charAt(0) === '#') hex = hex.slice(1);
@@ -83,16 +91,20 @@ function setColor(hex, id) {
 
 function getEventX(e) {
     if (e.targetTouches && e.targetTouches.length > 0) {
-        return (isOld3DS && e.targetTouches[0].screenX !== undefined) ? e.targetTouches[0].screenX : e.targetTouches[0].clientX;
+        return isOld3DS && e.targetTouches[0].screenX !== undefined
+            ? e.targetTouches[0].screenX
+            : e.targetTouches[0].clientX;
     }
-    return e.clientX !== undefined ? e.clientX : (e.pageX || 0);
+    return e.clientX !== undefined ? e.clientX : e.pageX || 0;
 }
 
 function getEventY(e) {
     if (e.targetTouches && e.targetTouches.length > 0) {
-        return (isOld3DS && e.targetTouches[0].screenY !== undefined) ? e.targetTouches[0].screenY : e.targetTouches[0].clientY;
+        return isOld3DS && e.targetTouches[0].screenY !== undefined
+            ? e.targetTouches[0].screenY
+            : e.targetTouches[0].clientY;
     }
-    return e.clientY !== undefined ? e.clientY : (e.pageY || 0);
+    return e.clientY !== undefined ? e.clientY : e.pageY || 0;
 }
 
 function touchmove(e) {
@@ -111,11 +123,13 @@ function touchdown(e) {
 
 function mousedown(e) {
     e = e || window.event;
-    var rect = canvas[4].getBoundingClientRect ? canvas[4].getBoundingClientRect() : { left: 0, top: 0 };
+    var rect = canvas[4].getBoundingClientRect
+        ? canvas[4].getBoundingClientRect()
+        : { left: 0, top: 0 };
     var cx = getEventX(e);
     var cy = getEventY(e);
-    mouseX = (cx - rect.left) - (block >> 2);
-    mouseY = (cy - rect.top) - (block >> 2);
+    mouseX = cx - rect.left - (block >> 2);
+    mouseY = cy - rect.top - (block >> 2);
     painting = true;
     if (statusdiv) statusdiv.style.display = 'none';
 
@@ -128,7 +142,14 @@ function mousedown(e) {
             context[layer].fillStyle = 'rgb(' + color.join(',') + ')';
         }
         context[layer].beginPath();
-        context[layer].arc(mouseX + (block >> 2), mouseY + (block >> 2), block / 2, 0, Math.PI * 2, false);
+        context[layer].arc(
+            mouseX + (block >> 2),
+            mouseY + (block >> 2),
+            block / 2,
+            0,
+            Math.PI * 2,
+            false
+        );
         context[layer].fill();
     }
 }
@@ -141,7 +162,9 @@ function mouseup(e) {
 function click(e) {
     e = e || window.event;
     if (dropping) {
-        var rect = canvas[4].getBoundingClientRect ? canvas[4].getBoundingClientRect() : { left: 0, top: 0 };
+        var rect = canvas[4].getBoundingClientRect
+            ? canvas[4].getBoundingClientRect()
+            : { left: 0, top: 0 };
         var cx = getEventX(e);
         var cy = getEventY(e);
         var x = Math.round(cx - rect.left);
@@ -154,7 +177,8 @@ function click(e) {
                 statusdiv.innerHTML = 'Color set to (' + color.join(',') + ')';
                 statusdiv.style.display = 'block';
             }
-            if (canvas[layer]) canvas[layer].style.borderColor = '#' + (toggle ^= 1) + toggle + toggle;
+            if (canvas[layer])
+                canvas[layer].style.borderColor = '#' + (toggle ^= 1) + toggle + toggle;
             var dropBtn = document.getElementById('i_dropper');
             if (dropBtn) dropBtn.style.background = '#fff';
             dropping = false;
@@ -173,11 +197,13 @@ function click(e) {
 function mousemove(e) {
     if (painting && !dropping) {
         e = e || window.event;
-        var rect = canvas[4].getBoundingClientRect ? canvas[4].getBoundingClientRect() : { left: 0, top: 0 };
+        var rect = canvas[4].getBoundingClientRect
+            ? canvas[4].getBoundingClientRect()
+            : { left: 0, top: 0 };
         var cx = getEventX(e);
         var cy = getEventY(e);
-        var newX = (cx - rect.left) - (block >> 2);
-        var newY = (cy - rect.top) - (block >> 2);
+        var newX = cx - rect.left - (block >> 2);
+        var newY = cy - rect.top - (block >> 2);
         if (context[layer]) {
             if (erasing) {
                 context[layer].globalCompositeOperation = 'destination-out';
@@ -189,9 +215,10 @@ function mousemove(e) {
             context[layer].lineWidth = block;
             context[layer].beginPath();
             context[layer].moveTo(mouseX, mouseY);
-            context[layer].lineTo(mouseX = newX, mouseY = newY);
+            context[layer].lineTo((mouseX = newX), (mouseY = newY));
             context[layer].stroke();
-            if (canvas[layer]) canvas[layer].style.borderColor = '#' + (toggle ^= 1) + toggle + toggle;
+            if (canvas[layer])
+                canvas[layer].style.borderColor = '#' + (toggle ^= 1) + toggle + toggle;
             points[points.length] = [color[0], color[1], color[2], block, mouseX, mouseY, layer];
         }
     }
@@ -200,7 +227,7 @@ function mousemove(e) {
 function set_layer(num) {
     layer = num;
     var layers = document.getElementsByClassName('layer-btn');
-    for (var i = layers.length; --i >= 0;) {
+    for (var i = layers.length; --i >= 0; ) {
         layers[i].style.background = '#fff';
     }
     var activeLayerBtn = document.getElementById('btn_layer_' + num);
@@ -216,7 +243,7 @@ function set_layer(num) {
 function set_brush(num) {
     block = num;
     var brushes = document.getElementsByClassName('brush-btn');
-    for (var i = brushes.length; --i >= 0;) {
+    for (var i = brushes.length; --i >= 0; ) {
         brushes[i].style.background = '#fff';
     }
     var activeBrushBtn = document.getElementById('btn_brush_' + num);

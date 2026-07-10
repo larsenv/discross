@@ -18,7 +18,12 @@ const { processEmbeds } = require('./embedUtils');
 const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
-const { unicodeToTwemojiCode, cacheCustomEmoji, getSkinToneSelectorHTML } = require('./emojiUtils');
+const {
+    unicodeToTwemojiCode,
+    cacheCustomEmoji,
+    getSkinToneSelectorHTML,
+    processUnicodeEmojiInText,
+} = require('./emojiUtils');
 const emojiRegex = require('./twemojiRegex').regex;
 const notFound = require('./notFound');
 const auth = require('../src/authentication');
@@ -37,6 +42,11 @@ const {
     canViewChannel,
 } = require('./utils');
 const { parseUserAgent } = require('./userAgentUtils');
+
+function formatAuthorName(name) {
+    if (!name) return '';
+    return processUnicodeEmojiInText(escape(name), 16, '1em');
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -808,7 +818,7 @@ function renderActivityBanner(item, context) {
     const isLight = themeValue === 1;
 
     return renderTemplate(templates.activityBanner, {
-        AUTHOR_NAME: escape(authorName),
+        AUTHOR_NAME: formatAuthorName(authorName),
         ACTIVITY_TEXT: escape(`Played ${gameName}`),
         ACTIVITY_ICON: escape(iconUrl),
         DURATION_AGO: escape(duration),
@@ -1340,7 +1350,7 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080', imagesC
         REPLY_TEXT_TOP_OFFSET: '-1',
         AUTHOR_COLOR: replyData.authorColor,
         AT_SIGN: replyData.mentionsPing ? '@' : '',
-        AUTHOR_NAME: escape(replyData.author),
+        AUTHOR_NAME: formatAuthorName(replyData.author),
         CONTENT_TD: contentTd,
     });
 
@@ -1389,7 +1399,7 @@ function buildInteractionIndicator(interactionData, textColor, barColor = '#8080
     const content = render('channel/interaction-indicator', {
         BAR_COLOR: barColor,
         AUTHOR_COLOR: interactionData.authorColor,
-        AUTHOR_NAME: escape(interactionData.author),
+        AUTHOR_NAME: formatAuthorName(interactionData.author),
         TEXT_COLOR: textColor,
         COMMAND_NAME: escape(interactionData.commandName),
     });
@@ -1504,7 +1514,7 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
     // Apply forwarded metadata to the template.
     const afterForwarded = state.isForwarded
         ? renderTemplate(baseHtml, {
-              '{$FORWARDED_AUTHOR}': escape(state.forwardData.author),
+              '{$FORWARDED_AUTHOR}': formatAuthorName(state.forwardData.author),
               '{$FORWARDED_CONTENT_BLOCK}': contentBlock,
               '{$FORWARDED_DATE}': state.forwardData.date,
               '{$FORWARDED_EMBEDS}': state.forwardData.embeds ?? '',
@@ -1524,7 +1534,8 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
 
     return renderTemplate(afterForwarded, {
         '{$MESSAGE_AUTHOR}':
-            escape(getDisplayName(state.lastmember, state.lastauthor)) + buildAuthorPills(state),
+            formatAuthorName(getDisplayName(state.lastmember, state.lastauthor)) +
+            buildAuthorPills(state),
         '{$AUTHOR_COLOR}': authorColor,
         '{$REPLY_INDICATOR}': replyIndicator,
         '{$PING_INDICATOR}': '', // Placeholder for future ping visual effects
@@ -1953,7 +1964,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         const messageHtml =
             isSystem && visibleText.length === 0
                 ? render('channel/system-message', {
-                      AUTHOR_NAME: escape(getDisplayName(currentMember, item.author)),
+                      AUTHOR_NAME: formatAuthorName(getDisplayName(currentMember, item.author)),
                       TEXT: SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action',
                   })
                 : withReactions;
