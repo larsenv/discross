@@ -26,6 +26,21 @@ const CSS_VERSION = (function () {
 })();
 
 /**
+ * Cache-busting token for draw.js, derived from its mtime.
+ *
+ * The Wii Internet Channel (Opera 9) caches /js/draw.js extremely aggressively.
+ * Without a version query string, the Wii won't re-fetch the script even after
+ * server-side fixes are deployed, making all JS changes invisible to the device.
+ */
+const DRAW_JS_VERSION = (function () {
+    try {
+        return String(Math.trunc(fs.statSync('pages/static/js/draw.js').mtimeMs));
+    } catch (err) {
+        return String(Date.now());
+    }
+})();
+
+/**
  * Loads a component template from the pages/templates folder.
  *
  * @param {string} name - The name of the template file (without .html).
@@ -41,6 +56,8 @@ function getTemplate(name, folder = 'channel') {
         content = content.replace(/#end(?=["'])/g, '');
         // Cache-bust the stylesheet so legacy browsers re-fetch it when it changes.
         content = content.replace('/css/main.css', `/css/main.css?v=${CSS_VERSION}`);
+        // Cache-bust draw.js for Wii Opera 9 which ignores max-age headers.
+        content = content.replace('/js/draw.js"', `/js/draw.js?v=${DRAW_JS_VERSION}"`);
         return content;
     } catch (err) {
         console.error(`Failed to load template ${filePath}:`, err);
