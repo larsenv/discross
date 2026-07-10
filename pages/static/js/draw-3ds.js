@@ -15,9 +15,11 @@ var layer = 2,
     mouseY = 0,
     points = [];
 
-var isOld3DS =
-    navigator.userAgent.indexOf('Nintendo 3DS') !== -1 &&
-    navigator.userAgent.indexOf('NintendoBrowser') === -1;
+var _ua = navigator.userAgent.toLowerCase();
+var isOld3DS = _ua.indexOf('nintendo 3ds') !== -1 && _ua.indexOf('nintendobrowser') === -1;
+var isWii =
+    (_ua.indexOf('nintendo wii') !== -1 || _ua.indexOf('wii') !== -1) && _ua.indexOf('wiiu') === -1;
+var isDSi = _ua.indexOf('nintendo dsi') !== -1 || _ua.indexOf('dsi') !== -1;
 
 function init() {
     for (var i = 0; i <= 4; i++) {
@@ -35,14 +37,40 @@ function init() {
 
     var topCanvas = canvas[4];
     if (topCanvas) {
-        topCanvas.addEventListener('mousedown', mousedown, true);
-        topCanvas.addEventListener('touchstart', touchdown, true);
-        topCanvas.addEventListener('mousemove', mousemove, true);
-        topCanvas.addEventListener('touchmove', touchmove, true);
-        topCanvas.addEventListener('mouseup', mouseup, true);
-        topCanvas.addEventListener('touchend', mouseup, true);
-        topCanvas.addEventListener('mouseout', mouseup, true);
-        topCanvas.addEventListener('click', click, true);
+        if (isWii || isDSi) {
+            topCanvas.onmousedown = function (e) {
+                e = e || window.event;
+                if (e && e.preventDefault) e.preventDefault();
+                mousedown(e);
+                return false;
+            };
+            topCanvas.onmousemove = function (e) {
+                e = e || window.event;
+                if (e && e.preventDefault) e.preventDefault();
+                mousemove(e);
+            };
+            topCanvas.onmouseup = function (e) {
+                e = e || window.event;
+                mouseup(e);
+            };
+            topCanvas.onmouseout = function (e) {
+                e = e || window.event;
+                mouseup(e);
+            };
+            topCanvas.onclick = function (e) {
+                e = e || window.event;
+                click(e);
+            };
+        } else {
+            topCanvas.addEventListener('mousedown', mousedown, true);
+            topCanvas.addEventListener('touchstart', touchdown, true);
+            topCanvas.addEventListener('mousemove', mousemove, true);
+            topCanvas.addEventListener('touchmove', touchmove, true);
+            topCanvas.addEventListener('mouseup', mouseup, true);
+            topCanvas.addEventListener('touchend', mouseup, true);
+            topCanvas.addEventListener('mouseout', mouseup, true);
+            topCanvas.addEventListener('click', click, true);
+        }
     }
 
     colordiv = document.getElementById('b_color');

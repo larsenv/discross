@@ -4,19 +4,16 @@ var ctx = canvas.getContext('2d');
 // Detect device capability tiers:
 // DSi (screen.width <= 256): very slow, needs batched rendering + small canvas
 // Old 3DS and similar (screen.width <= 320): needs small canvas + immediate draw
-var isDSi = screen.width && screen.width <= 256;
-var isSlowDevice = screen.width && screen.width <= 320;
-
-// Cache UA checks once — these are called on every mouse/touch event so
-// scanning the UA string inline would add measurable overhead on slow CPUs.
-var isWii = navigator.userAgent.indexOf('Nintendo Wii') !== -1;
-// Old 3DS ("SPIDER") UA: 'Mozilla/5.0 (Nintendo 3DS; ...) Version/...'
-//   — does NOT contain 'NintendoBrowser'
-// New 3DS ("SKATER") UA: '... (New Nintendo 3DS like iPhone) ... NintendoBrowser/...'
-//   — contains 'NintendoBrowser'
-var _ua = navigator.userAgent;
-var is3DS = _ua.indexOf('Nintendo 3DS') !== -1;
-var isNew3DS = is3DS && _ua.indexOf('NintendoBrowser') !== -1;
+var _ua = navigator.userAgent.toLowerCase();
+var isDSi =
+    (screen.width && screen.width <= 256) ||
+    _ua.indexOf('nintendo dsi') !== -1 ||
+    _ua.indexOf('dsi') !== -1;
+var isSlowDevice = (screen.width && screen.width <= 320) || isDSi;
+var isWii =
+    (_ua.indexOf('nintendo wii') !== -1 || _ua.indexOf('wii') !== -1) && _ua.indexOf('wiiu') === -1;
+var is3DS = _ua.indexOf('nintendo 3ds') !== -1;
+var isNew3DS = is3DS && _ua.indexOf('nintendobrowser') !== -1;
 var isOld3DS = is3DS && !isNew3DS;
 
 // On small screens, shrink the canvas backing buffer before any drawing.
@@ -329,11 +326,10 @@ if (isWii || isDSi) {
         return false;
     };
     canvas.onmousemove = function (e) {
-        if (!isDrawing) return false;
+        if (!isDrawing) return;
         e = e || window.event;
         if (e && e.preventDefault) e.preventDefault();
         onCanvasMouseMove(e);
-        return false;
     };
     canvas.onmouseup = function (e) {
         e = e || window.event;
