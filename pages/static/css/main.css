@@ -160,6 +160,9 @@ pre {
     max-height: 400px;
     font-family: Consolas, Monaco, monospace;
     font-size: 14px;
+    white-space: -pre-wrap;
+    white-space: -o-pre-wrap;
+    white-space: -moz-pre-wrap;
     white-space: pre-wrap;
     word-wrap: break-word;
 }
@@ -170,13 +173,21 @@ code {
     font-family: Consolas, Monaco, monospace;
     font-size: 14px;
     color: #dcddde;
+    white-space: -pre-wrap;
+    white-space: -o-pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: pre-wrap;
     word-wrap: break-word;
 }
 pre code {
     background: none;
     border: none;
     padding: 0;
-    word-wrap: normal;
+    white-space: -pre-wrap;
+    white-space: -o-pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 /* ================================================================
