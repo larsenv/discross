@@ -180,9 +180,9 @@ code {
     word-wrap: break-word;
 }
 pre code {
-    background: none;
-    border: none;
-    padding: 0;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
     white-space: -pre-wrap;
     white-space: -o-pre-wrap;
     white-space: -moz-pre-wrap;
@@ -1012,6 +1012,10 @@ body.light-theme,
     border-color: #e3e5e8;
     color: #323339;
 }
+.light-theme pre code {
+    background: transparent !important;
+    border: none !important;
+}
 .light-theme .embed-content {
     background: #ffffff;
     border-color: #e3e5e8;
@@ -1251,6 +1255,10 @@ body.amoled-theme,
     background: #0a0a0a;
     border-color: #222;
     color: #dcdcdf;
+}
+.amoled-theme pre code {
+    background: transparent !important;
+    border: none !important;
 }
 .amoled-theme a {
     color: #00aff4 !important;
