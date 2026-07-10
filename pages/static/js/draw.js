@@ -84,20 +84,20 @@ var canvasDisplayH = canvas.height;
 function resizeCanvasDisplay() {
     var wrapper = document.getElementById('canvas-wrapper');
     // Subtract 10px to account for the 5px padding on each side of #canvas-wrapper
-    var maxW = wrapper.offsetWidth - 10;
-    if (maxW > 0 && maxW < canvas.width) {
+    var maxW = wrapper ? wrapper.offsetWidth - 10 : 0;
+    if (maxW > 150 && maxW < canvas.width) {
         var ratio = maxW / canvas.width;
         canvasDisplayW = maxW;
         canvasDisplayH = Math.round(canvas.height * ratio);
         canvas.style.width = canvasDisplayW + 'px';
         canvas.style.height = canvasDisplayH + 'px';
-    } else if (maxW > 0) {
+    } else if (maxW > 150) {
         canvasDisplayW = canvas.width;
         canvasDisplayH = canvas.height;
         canvas.style.width = '';
         canvas.style.height = '';
     }
-    // If maxW <= 0 layout isn't ready yet; values stay at previous setting
+    // If maxW <= 150 layout isn't ready yet or collapsed; values stay at default
 }
 resizeCanvasDisplay();
 // Also run on load to catch any layout changes after inline execution
@@ -326,18 +326,21 @@ if (isWii || isDSi) {
         return false;
     };
     canvas.onmousemove = function (e) {
-        if (!isDrawing) return;
+        if (!isDrawing) return false;
         e = e || window.event;
         if (e && e.preventDefault) e.preventDefault();
         onCanvasMouseMove(e);
+        return false;
     };
     canvas.onmouseup = function (e) {
         e = e || window.event;
         onCanvasMouseUp(e);
+        return false;
     };
     canvas.onmouseout = function (e) {
         e = e || window.event;
         onCanvasMouseUp(e);
+        return false;
     };
 } else {
     canvas.addEventListener('mousedown', onCanvasMouseDown, true);
