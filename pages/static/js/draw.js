@@ -206,9 +206,9 @@ function flushDrawQueue() {
     lastDrawnY = last.y;
     pointQueue = [];
 }
-// DSi: flush batched draw calls via interval to minimize expensive repaint calls.
+// DSi and Wii: flush batched draw calls via interval to minimize expensive repaint calls.
 // All other browsers draw immediately in their mousemove/touchmove handlers.
-if (isDSi) {
+if (isDSi || isWii) {
     setInterval(flushDrawQueue, 30);
 }
 
@@ -297,8 +297,8 @@ function onCanvasMouseMove(e) {
     }
 
     var pos = getPos(e);
-    if (isDSi) {
-        // DSi: batch to reduce repaint overhead (stroke() repaints entire canvas)
+    if (isDSi || isWii) {
+        // DSi/Wii: batch to reduce repaint overhead (stroke() repaints entire canvas)
         pointQueue.push({ x: pos.x, y: pos.y });
     } else {
         // All others (including Old 3DS): draw immediately
@@ -420,7 +420,7 @@ canvas.addEventListener(
         var pos = getTouchPos(e);
         if (!pos) return;
 
-        if (isDSi) {
+        if (isDSi || isWii) {
             pointQueue.push({ x: pos.x, y: pos.y });
         } else {
             // Draw immediately like 3DSPaint

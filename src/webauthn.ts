@@ -207,7 +207,11 @@ function verifyAssertion(response, expected) {
     const clientDataHash = crypto.createHash('sha256').update(clientDataBuf).digest();
     const signedData = Buffer.concat([authDataBuf, clientDataHash]);
 
-    const keyObject = crypto.createPublicKey({ key: expected.publicKeyDer, format: 'der', type: 'spki' });
+    const keyObject = crypto.createPublicKey({
+        key: expected.publicKeyDer,
+        format: 'der',
+        type: 'spki',
+    });
     const signature = Buffer.from(response.signature, 'base64');
 
     // ECDSA signatures from authenticators are ASN.1 DER (Node's default);

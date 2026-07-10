@@ -180,7 +180,10 @@ async function processMessage(ws, state, message) {
                     state.isAuthed = true;
                     state.discordID = discordID;
                     state.sessionId = `session:${token}`;
-                    state.listenChannel = (await canListenToChannel(discordID, parsed.listenChannel))
+                    state.listenChannel = (await canListenToChannel(
+                        discordID,
+                        parsed.listenChannel
+                    ))
                         ? parsed.listenChannel
                         : '';
                 }

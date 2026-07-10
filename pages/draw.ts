@@ -85,7 +85,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                     ? sessionParam + '&mode=standard'
                     : '?mode=standard';
                 const final3DSTemplate = renderTemplate(old3ds_template, {
-                    COMMON_HEAD: getTemplate('common-head', 'partials'),
+                    COMMON_HEAD: getTemplate('head', 'partials'),
                     WHITE_THEME_ENABLED: themeClass,
                     SERVER_ID: chnl.guild.id,
                     CHANNEL_ID: chnl.id,
