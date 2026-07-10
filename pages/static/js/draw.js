@@ -277,7 +277,7 @@ if (isWii || isDSi) {
 }
 
 // --- TOUCH SUPPORT FOR MOBILE ---
-// Add touch event handlers for mobile devices (alongside mouse handlers for Wii compatibility)
+// Add touch event handlers for mobile devices (wrapped so legacy console browsers like Wii/DSi Opera don't throw)
 function getTouchPos(e) {
     if (!e.touches || e.touches.length === 0) return null;
     var touch = e.touches[0];
@@ -291,77 +291,79 @@ function getTouchPos(e) {
     };
 }
 
-canvas.addEventListener(
-    'touchstart',
-    function (e) {
-        // Prevent scrolling and default browser touch actions on the canvas
-        if (e.cancelable !== false && e.preventDefault) e.preventDefault();
+if ('ontouchstart' in window && canvas.addEventListener) {
+    canvas.addEventListener(
+        'touchstart',
+        function (e) {
+            // Prevent scrolling and default browser touch actions on the canvas
+            if (e.cancelable !== false && e.preventDefault) e.preventDefault();
 
-        var pos = getTouchPos(e);
-        if (!pos) return;
+            var pos = getTouchPos(e);
+            if (!pos) return;
 
-        // Reset coordinate tracking
-        lastX = pos.x;
-        lastY = pos.y;
-        lastDrawnX = pos.x;
-        lastDrawnY = pos.y;
-        pointQueue = [];
+            // Reset coordinate tracking
+            lastX = pos.x;
+            lastY = pos.y;
+            lastDrawnX = pos.x;
+            lastDrawnY = pos.y;
+            pointQueue = [];
 
-        if (currTool === 'fill') {
+            if (currTool === 'fill') {
+                saveHistory();
+                floodFill(pos.x, pos.y);
+                return;
+            }
+
             saveHistory();
-            floodFill(pos.x, pos.y);
-            return;
-        }
+            isDrawing = true;
 
-        saveHistory();
-        isDrawing = true;
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
+            ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+            ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+            ctx.fill();
+            ctx.beginPath();
+        },
+        false
+    );
 
-        ctx.beginPath();
-        ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
-        ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-        ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-        ctx.fill();
-        ctx.beginPath();
-    },
-    true
-);
+    canvas.addEventListener(
+        'touchmove',
+        function (e) {
+            if (!isDrawing) return;
+            if (e.cancelable !== false && e.preventDefault) e.preventDefault();
 
-canvas.addEventListener(
-    'touchmove',
-    function (e) {
-        if (!isDrawing) return;
-        if (e.cancelable !== false && e.preventDefault) e.preventDefault();
+            var pos = getTouchPos(e);
+            if (!pos) return;
 
-        var pos = getTouchPos(e);
-        if (!pos) return;
+            // Always push to queue — flushed by setInterval at 33fps for all devices.
+            pointQueue.push({ x: pos.x, y: pos.y });
+            lastX = pos.x;
+            lastY = pos.y;
+        },
+        false
+    );
 
-        // Always push to queue — flushed by setInterval at 33fps for all devices.
-        pointQueue.push({ x: pos.x, y: pos.y });
-        lastX = pos.x;
-        lastY = pos.y;
-    },
-    true
-);
+    canvas.addEventListener(
+        'touchend',
+        function (e) {
+            if (e.preventDefault) e.preventDefault();
+            flushDrawQueue();
+            isDrawing = false;
+        },
+        false
+    );
 
-canvas.addEventListener(
-    'touchend',
-    function (e) {
-        if (e.preventDefault) e.preventDefault();
-        flushDrawQueue();
-        isDrawing = false;
-    },
-    false
-);
-
-canvas.addEventListener(
-    'touchcancel',
-    function (e) {
-        if (e.preventDefault) e.preventDefault();
-        flushDrawQueue();
-        isDrawing = false;
-    },
-    false
-);
+    canvas.addEventListener(
+        'touchcancel',
+        function (e) {
+            if (e.preventDefault) e.preventDefault();
+            flushDrawQueue();
+            isDrawing = false;
+        },
+        false
+    );
+}
 
 // --- UI FUNCTIONS ---
 function setColor(col, id) {
