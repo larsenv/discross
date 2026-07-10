@@ -910,7 +910,7 @@ function renderKnownMentions(messagetext, item, discordID, member, templates) {
             if (!user) continue;
             const tmpl = user.id === discordID ? templates.mentionHighlighted : templates.mention;
             const pill = renderTemplate(tmpl, {
-                '{$USERNAME}': escape('@' + normalizeWeirdUnicode(user.displayName)),
+                '{$USERNAME}': formatAuthorName('@' + normalizeWeirdUnicode(user.displayName)),
             });
             result = result.split(`&lt;@${user.id}&gt;`).join(pill);
             result = result.split(`&lt;@!${user.id}&gt;`).join(pill);
@@ -963,7 +963,7 @@ async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_men
         const resolved = memberCache.get(userId) ?? chnl.guild.members.cache.get(userId);
         return resolved
             ? renderTemplate(tmpl_mention, {
-                  '{$USERNAME}': escape(
+                  '{$USERNAME}': formatAuthorName(
                       '@' + normalizeWeirdUnicode(getDisplayName(resolved, resolved.user))
                   ),
               })
