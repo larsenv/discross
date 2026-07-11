@@ -242,7 +242,60 @@ function onCanvasMouseUp(e) {
 // on target elements in older Presto engines. DOM0 handlers (canvas.onXxx) work
 // reliably and allow returning false to prevent the browser's native drag-scroll.
 // All other browsers use addEventListener.
-if (isWii || isDSi) {
+if (isWii) {
+    // Wii Opera 9: draw immediately per mousemove instead of batching.
+    // The Wii's Presto event loop does not interleave setInterval callbacks
+    // during mouse-drag sequences, so the batched pointQueue approach never
+    // flushes until mouseup. Drawing directly in each mousemove — matching
+    // the original working implementation — is the correct approach.
+    canvas.onmousedown = function (e) {
+        e = e || window.event;
+        if (e && e.preventDefault) e.preventDefault();
+        isDrawing = true;
+        var pos = getPos(e);
+
+        if (currTool === 'fill') {
+            saveHistory();
+            floodFill(pos.x, pos.y);
+            return false;
+        }
+
+        saveHistory();
+        lastX = pos.x;
+        lastY = pos.y;
+
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
+        ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+        ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+        ctx.fill();
+        ctx.beginPath();
+
+        return false;
+    };
+    canvas.onmousemove = function (e) {
+        if (!isDrawing) return;
+        e = e || window.event;
+        if (e && e.preventDefault) e.preventDefault();
+
+        var pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+
+        lastX = pos.x;
+        lastY = pos.y;
+    };
+    canvas.onmouseup = function () {
+        isDrawing = false;
+    };
+    canvas.onmouseout = function () {
+        isDrawing = false;
+    };
+} else if (isDSi) {
+    // DSi Opera 9.5: keep DOM0 handlers but use the batched queue approach
+    // since each ctx.stroke() triggers a full canvas repaint on this slower device.
     canvas.onmousedown = function (e) {
         e = e || window.event;
         return onCanvasMouseDown(e);
