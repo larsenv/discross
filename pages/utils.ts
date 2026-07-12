@@ -32,21 +32,21 @@ const CSS_VERSION = (function () {
  * Without a version query string, the Wii won't re-fetch the script even after
  * server-side fixes are deployed, making all JS changes invisible to the device.
  */
-const DRAW_JS_VERSION = (function () {
+function getDrawJsVersion() {
     try {
         return String(Math.trunc(fs.statSync('pages/static/js/draw.js').mtimeMs));
     } catch (err) {
         return String(Date.now());
     }
-})();
+}
 
-const CHANNEL_JS_VERSION = (function () {
+function getChannelJsVersion() {
     try {
         return String(Math.trunc(fs.statSync('pages/static/js/channel.js').mtimeMs));
     } catch (err) {
         return String(Date.now());
     }
-})();
+}
 
 /**
  * Loads a component template from the pages/templates folder.
@@ -64,9 +64,8 @@ function getTemplate(name, folder = 'channel') {
         content = content.replace(/#end(?=["'])/g, '');
         // Cache-bust the stylesheet so legacy browsers re-fetch it when it changes.
         content = content.replace('/css/main.css', `/css/main.css?v=${CSS_VERSION}`);
-        // Cache-bust JS files for Wii Opera 9 which ignores max-age headers.
-        content = content.replace('/js/draw.js"', `/js/draw.js?v=${DRAW_JS_VERSION}"`);
-        content = content.replace('/js/channel.js"', `/js/channel.js?v=${CHANNEL_JS_VERSION}"`);
+        content = content.replace('/js/draw.js"', `/js/draw.js?v=${getDrawJsVersion()}"`);
+        content = content.replace('/js/channel.js"', `/js/channel.js?v=${getChannelJsVersion()}"`);
         return content;
     } catch (err) {
         console.error(`Failed to load template ${filePath}:`, err);

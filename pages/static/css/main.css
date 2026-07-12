@@ -7,6 +7,8 @@
 /* Note: *::before and *::after omitted — the CSS3 double-colon syntax
    can trigger Opera 9.x (DSi) to attempt schema validation. */
 * {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
     box-sizing: border-box;
 }
 
@@ -1321,11 +1323,6 @@ html.page-channel-reply #wrapper {
     min-height: 0;
 }
 
-html.page-channel,
-html.page-channel-reply {
-    overflow-x: hidden;
-}
-
 html.page-channel body,
 html.page-channel-reply body,
 html.page-channel #wrapper,
@@ -1404,23 +1401,37 @@ html.page-draw body {
    256px DSi screen are still clipped without a horizontal scrollbar. This
    avoids relying on how Opera 9.x resolves the overflow axis-forcing rule. */
 html.page-simple,
+html.page-server,
+html.page-news,
+html.page-food,
 html.page-simple body,
-html.page-simple #wrapper {
+html.page-server body,
+html.page-news body,
+html.page-food body,
+html.page-simple #wrapper,
+html.page-server #wrapper,
+html.page-news #wrapper,
+html.page-food #wrapper {
     height: auto;
     min-height: 0;
 }
 
-html.page-simple {
-    overflow-x: hidden; /* clip horizontal at the root; root scrolls vertically */
-}
-
 html.page-simple body,
-html.page-simple #wrapper {
+html.page-server body,
+html.page-news body,
+html.page-food body,
+html.page-simple #wrapper,
+html.page-server #wrapper,
+html.page-news #wrapper,
+html.page-food #wrapper {
     overflow: visible; /* never an inner scroll container on either axis */
 }
 
 /* Keep the body background filling short pages. */
-html.page-simple body {
+html.page-simple body,
+html.page-server body,
+html.page-news body,
+html.page-food body {
     min-height: 100%;
 }
 
@@ -3069,5 +3080,49 @@ html.page-draw #wrapper {
 @media screen and (max-width: 380px) {
     #wrapper > table:first-child font[size='7'] {
         font-size: 18px !important;
+    }
+}
+
+/* Nintendo 3DS / New 3DS XL — safe width & scrolling rules.
+   NOTE: overflow-x: hidden on html/body kills vertical scrolling in NetFront NX.
+   Do NOT add it here. Width constraint is handled by the viewport meta tag. */
+@media screen and (max-width: 420px) {
+    #wrapper {
+        width: 320px !important;
+        max-width: 320px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    /* Maximize horizontal space usage */
+    .content-padding {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    #wrapper .content-padding > div {
+        padding: 8px 4px 8px 4px !important;
+    }
+
+    #msgcontainer table {
+        margin: 0 !important;
+        padding: 6px 0 !important;
+    }
+
+    #msgcontainer table.ping-row {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+    }
+
+    /* Minimal cell padding to keep text readable but maximize width */
+    #msgcontainer > table > tbody > tr > td,
+    #msgcontainer > table > tr > td {
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+
+    img {
+        max-width: 100% !important;
+        height: auto;
     }
 }

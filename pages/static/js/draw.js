@@ -82,6 +82,7 @@ var canvasDisplayH = canvas.height;
 // aspect ratio on small screens. CSS height:auto is unreliable on
 // <canvas> in older browsers (DSi/3DS NetFront/WebKit).
 function resizeCanvasDisplay() {
+    if (isWii) return; // Wii uses fixed 600x350 canvas without CSS resize
     var wrapper = document.getElementById('canvas-wrapper');
     // Subtract 10px to account for the 5px padding on each side of #canvas-wrapper
     var maxW = wrapper ? wrapper.offsetWidth - 10 : 0;
@@ -145,15 +146,24 @@ function getScrollOffset() {
 
 function getPos(e) {
     e = e || window.event || {};
-    // e.offsetX/offsetY: element-relative CSS pixels. Available in Opera 9+ (Wii/DSi),
-    // Chrome, Safari, IE9+. Works correctly regardless of page scroll or element position.
+    // Modern browsers, Wii Opera 9, & New 3DS: e.offsetX/offsetY
     if (e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
             y: e.offsetY * (canvas.height / canvasDisplayH),
         };
     }
-    // Fallback: pageX/pageY + canvas page offset (Firefox <39 and other edge cases)
+    // Wii Opera 9 and browsers without offsetX: use getBoundingClientRect if available
+    if (canvas.getBoundingClientRect && e.clientX !== undefined) {
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = rect.width ? canvas.width / rect.width : 1;
+        var scaleY = rect.height ? canvas.height / rect.height : 1;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY,
+        };
+    }
+    // Fallback: pageX/pageY + canvas page offset
     var scroll = getScrollOffset();
     var pageX = e.pageX !== undefined ? e.pageX : e.clientX + scroll.x;
     var pageY = e.pageY !== undefined ? e.pageY : e.clientY + scroll.y;
@@ -242,12 +252,27 @@ function onCanvasMouseUp(e) {
 // on target elements in older Presto engines. DOM0 handlers (canvas.onXxx) work
 // reliably and allow returning false to prevent the browser's native drag-scroll.
 // All other browsers use addEventListener.
+function drawInterpolatedLine(x0, y0, x1, y1) {
+    var dx = x1 - x0;
+    var dy = y1 - y0;
+    var distance = Math.sqrt(dx * dx + dy * dy);
+    var steps = Math.max(1, Math.floor(distance / 2));
+    var col = currTool === 'eraser' ? '#ffffff' : currColor;
+    ctx.fillStyle = col;
+    for (var i = 0; i <= steps; i++) {
+        var t = i / steps;
+        var x = x0 + dx * t;
+        var y = y0 + dy * t;
+        ctx.beginPath();
+        ctx.arc(x, y, currSize / 2, 0, Math.PI * 2, false);
+        ctx.fill();
+    }
+    ctx.beginPath();
+}
+
 if (isWii) {
-    // Wii Opera 9: draw immediately per mousemove instead of batching.
-    // The Wii's Presto event loop does not interleave setInterval callbacks
-    // during mouse-drag sequences, so the batched pointQueue approach never
-    // flushes until mouseup. Drawing directly in each mousemove — matching
-    // the original working implementation — is the correct approach.
+    // Wii Opera 9: draw immediately per mousemove using moveTo/lineTo/stroke
+    // matching commit ed4d3a1b65fce4c8caec0a44da9738470c84c932
     canvas.onmousedown = function (e) {
         e = e || window.event;
         if (e && e.preventDefault) e.preventDefault();
@@ -267,7 +292,6 @@ if (isWii) {
         ctx.beginPath();
         ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
         ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-        ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
         ctx.fill();
         ctx.beginPath();
 
@@ -282,6 +306,7 @@ if (isWii) {
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(pos.x, pos.y);
+        ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
         ctx.stroke();
 
         lastX = pos.x;
@@ -344,78 +369,82 @@ function getTouchPos(e) {
     };
 }
 
-if ('ontouchstart' in window && canvas.addEventListener) {
-    canvas.addEventListener(
-        'touchstart',
-        function (e) {
-            // Prevent scrolling and default browser touch actions on the canvas
-            if (e.cancelable !== false && e.preventDefault) e.preventDefault();
+if (!isWii && !isDSi) {
+    try {
+        if ('ontouchstart' in window && canvas.addEventListener) {
+            canvas.addEventListener(
+                'touchstart',
+                function (e) {
+                    // Prevent scrolling and default browser touch actions on the canvas
+                    if (e.cancelable !== false && e.preventDefault) e.preventDefault();
 
-            var pos = getTouchPos(e);
-            if (!pos) return;
+                    var pos = getTouchPos(e);
+                    if (!pos) return;
 
-            // Reset coordinate tracking
-            lastX = pos.x;
-            lastY = pos.y;
-            lastDrawnX = pos.x;
-            lastDrawnY = pos.y;
-            pointQueue = [];
+                    // Reset coordinate tracking
+                    lastX = pos.x;
+                    lastY = pos.y;
+                    lastDrawnX = pos.x;
+                    lastDrawnY = pos.y;
+                    pointQueue = [];
 
-            if (currTool === 'fill') {
-                saveHistory();
-                floodFill(pos.x, pos.y);
-                return;
-            }
+                    if (currTool === 'fill') {
+                        saveHistory();
+                        floodFill(pos.x, pos.y);
+                        return;
+                    }
 
-            saveHistory();
-            isDrawing = true;
+                    saveHistory();
+                    isDrawing = true;
 
-            ctx.beginPath();
-            ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
-            ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-            ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-            ctx.fill();
-            ctx.beginPath();
-        },
-        false
-    );
+                    ctx.beginPath();
+                    ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
+                    ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+                    ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+                    ctx.fill();
+                    ctx.beginPath();
+                },
+                false
+            );
 
-    canvas.addEventListener(
-        'touchmove',
-        function (e) {
-            if (!isDrawing) return;
-            if (e.cancelable !== false && e.preventDefault) e.preventDefault();
+            canvas.addEventListener(
+                'touchmove',
+                function (e) {
+                    if (!isDrawing) return;
+                    if (e.cancelable !== false && e.preventDefault) e.preventDefault();
 
-            var pos = getTouchPos(e);
-            if (!pos) return;
+                    var pos = getTouchPos(e);
+                    if (!pos) return;
 
-            // Always push to queue — flushed by setInterval at 33fps for all devices.
-            pointQueue.push({ x: pos.x, y: pos.y });
-            lastX = pos.x;
-            lastY = pos.y;
-        },
-        false
-    );
+                    // Always push to queue — flushed by setInterval at 33fps for all devices.
+                    pointQueue.push({ x: pos.x, y: pos.y });
+                    lastX = pos.x;
+                    lastY = pos.y;
+                },
+                false
+            );
 
-    canvas.addEventListener(
-        'touchend',
-        function (e) {
-            if (e.preventDefault) e.preventDefault();
-            flushDrawQueue();
-            isDrawing = false;
-        },
-        false
-    );
+            canvas.addEventListener(
+                'touchend',
+                function (e) {
+                    if (e.preventDefault) e.preventDefault();
+                    flushDrawQueue();
+                    isDrawing = false;
+                },
+                false
+            );
 
-    canvas.addEventListener(
-        'touchcancel',
-        function (e) {
-            if (e.preventDefault) e.preventDefault();
-            flushDrawQueue();
-            isDrawing = false;
-        },
-        false
-    );
+            canvas.addEventListener(
+                'touchcancel',
+                function (e) {
+                    if (e.preventDefault) e.preventDefault();
+                    flushDrawQueue();
+                    isDrawing = false;
+                },
+                false
+            );
+        }
+    } catch (ex) {}
 }
 
 // --- UI FUNCTIONS ---
@@ -430,25 +459,44 @@ function setColor(col, id) {
     // Reset borders
     for (var i = 1; i <= 16; i++) {
         var el = document.getElementById('c' + i);
-        if (el) el.style.border = '2px solid #555';
+        if (el) {
+            el.style.border = '2px solid #555555';
+            el.style.borderColor = '#555555';
+        }
     }
     var target = document.getElementById(id);
-    if (target) target.style.border = '2px solid white';
+    if (target) {
+        target.style.border = '2px solid #ffffff';
+        target.style.borderColor = '#ffffff';
+    }
 }
 
 function setTool(tool) {
     currTool = tool;
     var drawBtn = document.getElementById('btn-draw');
+    var fillBtn = document.getElementById('btn-fill');
+    var eraserBtn = document.getElementById('btn-eraser');
+
     if (drawBtn) {
         drawBtn.style.outline = currTool === 'draw' ? '2px solid white' : '';
+        drawBtn.style.border = currTool === 'draw' ? '2px solid #ffffff' : '';
+        drawBtn.style.borderColor = currTool === 'draw' ? '#ffffff' : '';
+        drawBtn.style.background = currTool === 'draw' ? '#5865f2' : '';
+        drawBtn.style.color = currTool === 'draw' ? '#ffffff' : '';
     }
-    var fillBtn = document.getElementById('btn-fill');
     if (fillBtn) {
         fillBtn.style.outline = currTool === 'fill' ? '2px solid white' : '';
+        fillBtn.style.border = currTool === 'fill' ? '2px solid #ffffff' : '';
+        fillBtn.style.borderColor = currTool === 'fill' ? '#ffffff' : '';
+        fillBtn.style.background = currTool === 'fill' ? '#5865f2' : '';
+        fillBtn.style.color = currTool === 'fill' ? '#ffffff' : '';
     }
-    var eraserBtn = document.getElementById('btn-eraser');
     if (eraserBtn) {
         eraserBtn.style.outline = currTool === 'eraser' ? '2px solid white' : '';
+        eraserBtn.style.border = currTool === 'eraser' ? '2px solid #ffffff' : '';
+        eraserBtn.style.borderColor = currTool === 'eraser' ? '#ffffff' : '';
+        eraserBtn.style.background = currTool === 'eraser' ? '#5865f2' : '';
+        eraserBtn.style.color = currTool === 'eraser' ? '#ffffff' : '';
     }
 
     if (currTool === 'eraser') {
@@ -519,10 +567,18 @@ function setSize(s, id) {
 
     for (var i = 1; i <= 4; i++) {
         var el = document.getElementById('s' + i);
-        if (el) el.style.border = '2px solid #000';
+        if (el) {
+            el.style.border = '2px solid #000000';
+            el.style.borderColor = '#000000';
+            el.style.background = '#b9bbbe';
+        }
     }
     var target = document.getElementById(id);
-    if (target) target.style.border = '2px solid blue';
+    if (target) {
+        target.style.border = '2px solid blue';
+        target.style.borderColor = 'blue';
+        target.style.background = '#00b0f4';
+    }
 }
 
 function wipe() {

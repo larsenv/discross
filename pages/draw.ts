@@ -1,4 +1,5 @@
 'use strict';
+const fs = require('fs');
 const { PermissionFlagsBits } = require('discord');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound');
@@ -17,6 +18,7 @@ const {
 } = require('./utils');
 const channel_template = loadAndRenderPageTemplate('draw');
 const old3ds_template = loadAndRenderPageTemplate('draw-old3ds');
+const wii_template = loadAndRenderPageTemplate('draw-wii');
 
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
     const parsedUrl = new URL(req.url, 'http://localhost');
@@ -70,6 +72,11 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             const isNew3DS = is3DS && userAgentStr.indexOf('NintendoBrowser') !== -1;
             const isOld3DS = is3DS && !isNew3DS;
 
+            const isWii =
+                (userAgentStr.toLowerCase().indexOf('nintendo wii') !== -1 ||
+                    userAgentStr.toLowerCase().indexOf('wii') !== -1) &&
+                userAgentStr.toLowerCase().indexOf('wiiu') === -1;
+
             const urlMode = parsedUrl.searchParams.get('mode') || '';
             const urlOld3DS = parsedUrl.searchParams.get('old3ds') || '';
             const useOld3DSMode =
@@ -79,6 +86,22 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
 
             const channelName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
             const pageTitle = `Draw in ${channelName} - Discross`;
+
+            // Wii: serve the exact working draw page from commit ed4d3a1b65 (simple inline script, no complex draw.js)
+            if (isWii) {
+                const wiiTemplate = renderTemplate(wii_template, {
+                    SERVER_ID: chnl.guild.id,
+                    CHANNEL_ID: chnl.id,
+                    CHANNEL_NAME: channelName,
+                    SESSION_ID: urlSessionID,
+                    SESSION_PARAM: sessionParam,
+                    COMMON_HEAD: getTemplate('head', 'partials'),
+                    WHITE_THEME_ENABLED: themeClass,
+                });
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.end(wiiTemplate);
+                return;
+            }
 
             if (useOld3DSMode) {
                 const modeToggleUrl = sessionParam
@@ -147,7 +170,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             const seoDescription = `Draw and send sketches to ${channelName} on Discross, the universal Discord client.`;
 
             const modeToggleUrl = sessionParam ? sessionParam + '&mode=old3ds' : '?mode=old3ds';
-            const finalTemplate = renderTemplate(baseTemplate, {
+            let finalTemplate = renderTemplate(baseTemplate, {
                 SERVER_ID: chnl.guild.id,
                 CHANNEL_ID: chnl.id,
                 CHANNEL_NAME: channelName,
@@ -164,6 +187,15 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                     description: seoDescription,
                 }),
             });
+            // Inline draw.js so Wii Opera 9 executes it after DOM is parsed (matching ed4d3a1b65).
+            // External <script src> on Wii Opera 9 can fire before DOM elements exist, breaking getElementById.
+            try {
+                const drawJs = fs.readFileSync('pages/static/js/draw.js', 'utf-8');
+                finalTemplate = finalTemplate.replace(
+                    /<script src="\/js\/draw\.js[^"]*"><\/script>/,
+                    '<script>\n' + drawJs + '\n</script>'
+                );
+            } catch (ex) {}
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(finalTemplate);
         } else {

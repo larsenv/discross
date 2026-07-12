@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en" class="page-draw">
+<head>
+    {$COMMON_HEAD}
+    <title>Draw in #{$CHANNEL_NAME} - Discross</title>
+    <style>
+        /* Force block layout on Wii (Opera 9 does not support flexbox) */
+        html, html.page-draw,
+        body, html.page-draw body,
+        #wrapper, html.page-draw #wrapper {
+            display: block !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            flex: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        #toolbar-container {
+            background-color: #2f3136 !important;
+            padding: 5px !important;
+            border-bottom: 1px solid #202225 !important;
+            display: table !important;
+            margin: 0 auto 5px auto !important;
+            border-radius: 8px !important;
+            text-align: left !important;
+            position: relative !important;
+            transform: none !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            top: auto !important;
+            width: auto !important;
+            max-width: none !important;
+            z-index: 10 !important;
+        }
+
+        .c-box {
+            width: 24px !important;
+            height: 24px !important;
+            border: 2px solid #555 !important;
+            display: inline-block !important;
+            margin: 1px !important;
+            cursor: pointer !important;
+            vertical-align: middle !important;
+        }
+
+        .s-btn {
+            background: #b9bbbe !important;
+            border: 2px solid #000 !important;
+            display: inline-block !important;
+            margin: 0 3px !important;
+            cursor: pointer !important;
+            vertical-align: middle !important;
+            padding: 2px !important;
+        }
+
+        .s-inner { background: black !important; font-size: 1px !important; }
+
+        #canvas-wrapper {
+            margin: 0 auto 20px auto !important;
+            display: block !important;
+            background: #2f3136 !important;
+            padding: 5px !important;
+            width: 610px !important;
+            max-width: 100% !important;
+            position: relative !important;
+            z-index: 10 !important;
+            box-sizing: border-box !important;
+        }
+
+        canvas {
+            background: #ffffff !important;
+            cursor: crosshair !important;
+            display: block !important;
+            border: 1px solid #202225 !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+        }
+
+        /* Wii button styling */
+        #toolbar-container input[type="button"], .clear-button {
+            padding: 4px 8px !important;
+            margin: 2px !important;
+            cursor: pointer !important;
+            vertical-align: middle !important;
+            font-size: 14px !important;
+            border-radius: 4px !important;
+        }
+
+        .content-padding {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 120px !important;
+            display: block !important;
+            background: transparent !important;
+        }
+
+        .message-form-container {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            background: #36393f !important;
+            border-top: 1px solid #202225 !important;
+            padding: 8px !important;
+            box-sizing: border-box !important;
+            z-index: 50 !important;
+        }
+
+        /* Override menu button from main.css on Wii */
+        .menu-button {
+            position: fixed !important;
+            top: 12px !important;
+            bottom: auto !important;
+            left: 12px !important;
+            right: auto !important;
+            z-index: 100 !important;
+            background: #2f3136 !important;
+            border: 1px solid #202225 !important;
+            border-radius: 6px !important;
+            padding: 6px !important;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
+            text-decoration: none !important;
+        }
+        .menu-icon { width: 24px !important; height: 24px !important; display: block !important; }
+    </style>
+</head>
+
+<body {$WHITE_THEME_ENABLED}>
+    <div id="wrapper">
+        <div id="toolbar-container">
+            <div id="c1" class="c-box" style="background:#000000;" onclick="setColor('#000000', 'c1')"></div><!--
+            --><div id="c2" class="c-box" style="background:#555555;" onclick="setColor('#555555', 'c2')"></div><!--
+            --><div id="c3" class="c-box" style="background:#aaaaaa;" onclick="setColor('#aaaaaa', 'c3')"></div><!--
+            --><div id="c4" class="c-box" style="background:#ffffff;" onclick="setColor('#ffffff', 'c4')"></div><!--
+            --><div id="c5" class="c-box" style="background:#800000;" onclick="setColor('#800000', 'c5')"></div><!--
+            --><div id="c6" class="c-box" style="background:#ff0000;" onclick="setColor('#ff0000', 'c6')"></div><!--
+            --><div id="c7" class="c-box" style="background:#ff9900;" onclick="setColor('#ff9900', 'c7')"></div><!--
+            --><div id="c8" class="c-box" style="background:#ffff00;" onclick="setColor('#ffff00', 'c8')"></div><!--
+            --><div id="c9" class="c-box" style="background:#800080;" onclick="setColor('#800080', 'c9')"></div><!--
+            --><div id="c10" class="c-box" style="background:#004d00;" onclick="setColor('#004d00', 'c10')"></div><!--
+            --><div id="c11" class="c-box" style="background:#00ff00;" onclick="setColor('#00ff00', 'c11')"></div><!--
+            --><div id="c12" class="c-box" style="background:#000080;" onclick="setColor('#000080', 'c12')"></div><!--
+            --><div id="c13" class="c-box" style="background:#00ffff;" onclick="setColor('#00ffff', 'c13')"></div><!--
+            --><div id="c14" class="c-box" style="background:#ff69b4;" onclick="setColor('#ff69b4', 'c14')"></div><!--
+            --><div id="c15" class="c-box" style="background:#ff00ff;" onclick="setColor('#ff00ff', 'c15')"></div><!--
+            --><div id="c16" class="c-box" style="background:#8b4513;" onclick="setColor('#8b4513', 'c16')"></div><!--
+            --><div id="s1" class="s-btn" onclick="setSize(2, 's1')"><div class="s-inner" style="width:2px; height:2px;"></div></div><!--
+            --><div id="s2" class="s-btn" onclick="setSize(5, 's2')"><div class="s-inner" style="width:5px; height:5px;"></div></div><!--
+            --><div id="s3" class="s-btn" onclick="setSize(10, 's3')"><div class="s-inner" style="width:10px; height:10px;"></div></div><!--
+            --><div id="s4" class="s-btn" onclick="setSize(20, 's4')"><div class="s-inner" style="width:20px; height:20px;"></div></div><!--
+            --><input type="button" id="btn-draw" onclick="setTool('draw')" value="Draw"><!--
+            --><input type="button" id="btn-fill" onclick="setTool('fill')" value="Fill"><!--
+            --><input type="button" id="btn-undo" onclick="undo()" value="Undo"><!--
+            --><input type="button" id="btn-eraser" onclick="setTool('eraser')" value="Erase"><!--
+            --><input type="button" id="btn-clear" class="clear-button" onclick="wipe()" value="Clear">
+        </div>
+
+        <div id="canvas-wrapper">
+            <canvas id="sketchpad" width="600" height="350"></canvas>
+            <div style="margin-top: 6px; text-align: center;">
+                <font size="2" face="'rodin', Arial, Helvetica, sans-serif" color="#72767d">
+                    Using an older device or console? Switch to the <a href="/draw/{$CHANNEL_ID}{$MODE_TOGGLE_URL}" style="color: #00b0f4; text-decoration: underline;">retro drawing tool</a>.
+                </font>
+            </div>
+        </div>
+
+        <div class="content-padding">
+            <div class="message-form-container">
+                {$EMOJI_PICKER}
+                <form action="../senddrawing" method="post" id="sendform" onsubmit="prepareAndSend()" style="position: relative">
+                    <div>
+                        {$EMOJI_BUTTON}
+                        <a href="/upload/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/1f4e4.gif" alt="Upload file" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/draw/{$CHANNEL_ID}{$MODE_TOGGLE_URL}" class="message-action-btn" title="Switch to Old 3DS / Lite Drawing Mode">
+                            <img src="/resources/twemoji/1f58c-fe0f.gif" alt="3DS Mode" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/pins/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/1f4cc.gif" alt="Pins" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/sports{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/26bd.gif" alt="Sports" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/food/{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/1f355.gif" alt="Order Pizza" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/news{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/1f4f0.gif" alt="News" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/weather{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/26c5.gif" alt="Weather" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/stocks{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/1f4c8.gif" alt="Stocks" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/currency{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/1f4b5.gif" alt="Currency" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/tv{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/1f4fa.gif" alt="TV Guide" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/movies{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/1f3ac.gif" alt="Movies &amp; TV" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/switchtheme{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/1f313.gif" alt="Switch theme" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="javascript:void(0)" onclick="var f=document.getElementById('sendform'); if(f){ f.action='/signmessage/{$CHANNEL_ID}{$SESSION_PARAM}'; f.method='GET'; f.submit(); }" class="message-action-btn" title="Sign Your Message">
+                            <img src="/resources/twemoji/1f310.gif" alt="Sign Your Message" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
+                            <img src="/resources/twemoji/2b05.gif" alt="Back" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                        <a href="javascript:void(0)" onclick="location.reload()" class="message-action-btn">
+                            <img src="/resources/twemoji/1f501.gif" alt="Refresh" width="24" height="24" style="width: 24px; height: 24px;">
+                        </a>
+                    </div>
+
+                    <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}">
+                    <input type="hidden" name="sessionID" value="{$SESSION_ID}">
+                    <input type="hidden" id="drawinginput" name="drawinginput" value="">
+                    <input type="hidden" id="lite" name="lite" value="False">
+
+                    <div class="message-input-bar-wrapper">
+                        <table>
+                            <tr>
+                                <td style="width: 100%; padding: 0;">
+                                    <textarea name="message" id="message" class="message-input-field" placeholder="Message {$CHANNEL_NAME}" onkeydown="return handleMessageKeydown(event);" oninput="autoResize(this)" rows="1" style="box-sizing: border-box; width: 100%; color: #dcddde; background: transparent; border: none; outline: none; height: 44px; padding: 11px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px;"></textarea>
+                                </td>
+                                <td style="padding: 0 4px 0 0;">
+                                    <input type="submit" class="send-button-input" value="Send" style="background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 44px; white-space: nowrap; margin-right: 8px; display: block; width: 82px;">
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        var canvas = document.getElementById('sketchpad');
+        var ctx = canvas.getContext('2d');
+
+        var isDrawing = false;
+        var lastX = 0;
+        var lastY = 0;
+        var currColor = '#000000';
+        var currSize = 5;
+        var currTool = 'draw';
+
+        // History for undo
+        var historyStack = [];
+        var maxHistory = 20;
+
+        function saveHistory() {
+            try {
+                if (historyStack.length >= maxHistory) {
+                    historyStack.shift();
+                }
+                historyStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            } catch (ex) {}
+        }
+
+        function undo() {
+            if (historyStack.length > 0) {
+                ctx.putImageData(historyStack.pop(), 0, 0);
+            }
+        }
+
+        // Defaults
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = currSize;
+        ctx.strokeStyle = currColor;
+        // Fill canvas with white immediately
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = currColor;
+
+        // --- COORDINATE SYSTEM ---
+        function getPos(e) {
+            if (e.offsetX !== undefined) {
+                return { x: e.offsetX, y: e.offsetY };
+            } else if (e.layerX !== undefined) {
+                return { x: e.layerX, y: e.layerY };
+            } else {
+                var rect = canvas.getBoundingClientRect();
+                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            }
+        }
+
+        // --- DRAWING EVENTS ---
+        canvas.onmousedown = function(e) {
+            e = e || window.event;
+            if (e && e.preventDefault) e.preventDefault(); // Stop Wii Drag
+            isDrawing = true;
+            var pos = getPos(e);
+
+            if (currTool === 'fill') {
+                saveHistory();
+                floodFill(pos.x, pos.y);
+                return false;
+            }
+
+            saveHistory();
+            lastX = pos.x;
+            lastY = pos.y;
+
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, currSize/2, 0, Math.PI*2, false);
+            ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+            ctx.fill();
+            ctx.beginPath();
+
+            return false;
+        };
+
+        canvas.onmousemove = function(e) {
+            if (!isDrawing) return;
+            e = e || window.event;
+            if (e && e.preventDefault) e.preventDefault();
+
+            var pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+            ctx.stroke();
+
+            lastX = pos.x;
+            lastY = pos.y;
+        };
+
+        canvas.onmouseup = function() { isDrawing = false; };
+        canvas.onmouseout = function() { isDrawing = false; };
+
+        // --- UI FUNCTIONS ---
+        function setColor(col, id) {
+            currColor = col;
+            if (currTool === 'eraser') {
+                setTool('draw'); // Switch back to draw mode when a color is picked
+            }
+            ctx.strokeStyle = currColor;
+            ctx.fillStyle = currColor;
+
+            for(var i=1; i<=16; i++) {
+                var el = document.getElementById('c'+i);
+                if(el) {
+                    el.style.border = "2px solid #555";
+                    el.style.borderColor = "#555";
+                }
+            }
+            var target = document.getElementById(id);
+            if (target) {
+                target.style.border = "2px solid white";
+                target.style.borderColor = "white";
+            }
+        }
+
+        function setTool(tool) {
+            currTool = tool;
+            var drawBtn = document.getElementById('btn-draw');
+            var fillBtn = document.getElementById('btn-fill');
+            var eraserBtn = document.getElementById('btn-eraser');
+
+            if (drawBtn) {
+                drawBtn.style.border = currTool === 'draw' ? '2px solid #ffffff' : '1px solid #555';
+                drawBtn.style.borderColor = currTool === 'draw' ? '#ffffff' : '#555';
+                drawBtn.style.background = currTool === 'draw' ? '#5865f2' : '';
+                drawBtn.style.color = currTool === 'draw' ? '#ffffff' : '';
+            }
+            if (fillBtn) {
+                fillBtn.style.border = currTool === 'fill' ? '2px solid #ffffff' : '1px solid #555';
+                fillBtn.style.borderColor = currTool === 'fill' ? '#ffffff' : '#555';
+                fillBtn.style.background = currTool === 'fill' ? '#5865f2' : '';
+                fillBtn.style.color = currTool === 'fill' ? '#ffffff' : '';
+            }
+            if (eraserBtn) {
+                eraserBtn.style.border = currTool === 'eraser' ? '2px solid #ffffff' : '1px solid #555';
+                eraserBtn.style.borderColor = currTool === 'eraser' ? '#ffffff' : '#555';
+                eraserBtn.style.background = currTool === 'eraser' ? '#5865f2' : '';
+                eraserBtn.style.color = currTool === 'eraser' ? '#ffffff' : '';
+            }
+
+            if (currTool === 'eraser') {
+                ctx.strokeStyle = '#ffffff';
+                ctx.fillStyle = '#ffffff';
+            } else {
+                ctx.strokeStyle = currColor;
+                ctx.fillStyle = currColor;
+            }
+        }
+
+        function floodFill(startX, startY) {
+            startX = Math.round(startX);
+            startY = Math.round(startY);
+            if (startX < 0 || startX >= canvas.width || startY < 0 || startY >= canvas.height) return;
+
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var data = imageData.data;
+            var w = canvas.width;
+            var h = canvas.height;
+
+            var fillR = parseInt(currColor.slice(1, 3), 16);
+            var fillG = parseInt(currColor.slice(3, 5), 16);
+            var fillB = parseInt(currColor.slice(5, 7), 16);
+
+            var idx = (startY * w + startX) * 4;
+            var targetR = data[idx];
+            var targetG = data[idx + 1];
+            var targetB = data[idx + 2];
+            var targetA = data[idx + 3];
+
+            if (targetR === fillR && targetG === fillG && targetB === fillB && targetA === 255) return;
+
+            var tolSq = 130000;
+            var visited = [];
+            var stack = [startX + startY * w];
+            while (stack.length > 0) {
+                var pos = stack.pop();
+                if (visited[pos]) continue;
+                visited[pos] = 1;
+                var x = pos % w;
+                var y = (pos - x) / w;
+                var i = pos * 4;
+                var dr = data[i] - targetR;
+                var dg = data[i + 1] - targetG;
+                var db = data[i + 2] - targetB;
+                var da = data[i + 3] - targetA;
+                if (dr * dr + dg * dg + db * db + da * da > tolSq) continue;
+                data[i] = fillR;
+                data[i + 1] = fillG;
+                data[i + 2] = fillB;
+                data[i + 3] = 255;
+                if (x > 0) stack.push(pos - 1);
+                if (x < w - 1) stack.push(pos + 1);
+                if (y > 0) stack.push(pos - w);
+                if (y < h - 1) stack.push(pos + w);
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function setSize(s, id) {
+            currSize = s;
+            ctx.lineWidth = currSize;
+
+            for(var i=1; i<=4; i++) {
+                var el = document.getElementById('s'+i);
+                if(el) {
+                    el.style.border = "2px solid #000";
+                    el.style.borderColor = "#000";
+                    el.style.background = "#b9bbbe";
+                }
+            }
+            var target = document.getElementById(id);
+            if (target) {
+                target.style.border = "2px solid blue";
+                target.style.borderColor = "blue";
+                target.style.background = "#00b0f4";
+            }
+        }
+
+        function wipe() {
+            saveHistory();
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = currColor;
+        }
+
+        // --- SEND LOGIC ---
+        // Wii support: do not use toDataURL synchronously in submission if performance bottleneck.
+        function prepareAndSend() {
+            var inputField = document.getElementById('drawinginput');
+            var form = document.getElementById('sendform');
+            var data = canvas.toDataURL("image/png");
+            inputField.value = data;
+            form.submit();
+        }
+
+        function handleMessageKeydown(event) {
+            var keyCode = event.keyCode || event.which;
+            if (keyCode === 13 && !event.shiftKey) {
+                event.preventDefault();
+                prepareAndSend();
+                return false;
+            }
+        }
+
+        function autoResize(el) {
+            if (!el) return;
+            var currentLen = el.value.length;
+            var lastLen = parseInt(el.getAttribute('data-last-len') || '0');
+            el.setAttribute('data-last-len', currentLen);
+            if (currentLen > lastLen) {
+                if (el.scrollHeight > el.offsetHeight && el.offsetHeight < 200) {
+                    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+                }
+            } else {
+                el.style.height = 'auto';
+                var newHeight = el.scrollHeight;
+                if (newHeight < 40) newHeight = 40;
+                if (newHeight > 200) newHeight = 200;
+                el.style.height = newHeight + 'px';
+            }
+        }
+
+        // Initialize UI
+        setColor('#000000', 'c1');
+        setSize(5, 's2');
+        setTool('draw');
+    </script>
+</body>
+</html>
