@@ -48,109 +48,16 @@ function generateNonce() {
     return Math.random().toString(36).substring(2) + new Date().getTime().toString(36);
 }
 
-// Page Load & Scroll Handlers
-// ===========================
+// Page Scroll Helper (for manual actions like showing emoji)
+// ==========================================================
 function scrollToBottom() {
-    var endEl = document.getElementById('end');
     var scrollHeight = Math.max(
         document.body ? document.body.scrollHeight : 0,
         document.documentElement ? document.documentElement.scrollHeight : 0,
         999999
     );
-
-    // 1. window.scrollTo — widest browser support
     try { window.scrollTo(0, scrollHeight); } catch (e) {}
-    try { if (typeof window.scroll === 'function') window.scroll(0, scrollHeight); } catch (e) {}
-
-    // 2. Direct body/documentElement scrollTop — works in Opera 9 (Wii/DSi)
-    //    where window.scrollTo may be a no-op
-    try { if (document.body) document.body.scrollTop = scrollHeight; } catch (e) {}
-    try { if (document.documentElement) document.documentElement.scrollTop = scrollHeight; } catch (e) {}
-
-    // 3. scrollIntoView / hash anchor fallback
-    if (endEl) {
-        try {
-            endEl.scrollIntoView(false);
-        } catch (e) {
-            try {
-                if (window.location.hash !== '#end' && window.location.hash !== 'end') {
-                    window.location.hash = 'end';
-                }
-            } catch (e2) {}
-        }
-    } else {
-        try {
-            if (window.location.hash !== '#end' && window.location.hash !== 'end') {
-                window.location.hash = 'end';
-            }
-        } catch (e) {}
-    }
-
-    // 4. Final scrollTo to override any scrollIntoView undershoot
-    try { window.scrollTo(0, scrollHeight); } catch (e) {}
-    try { if (document.body) document.body.scrollTop = scrollHeight; } catch (e) {}
 }
-
-function scheduleScrollToBottom() {
-    scrollToBottom();
-    setTimeout(scrollToBottom, 50);
-    setTimeout(scrollToBottom, 150);
-    setTimeout(scrollToBottom, 350);
-    setTimeout(scrollToBottom, 700);
-    // Extended delays for slow connections / many images (Wii Opera)
-    setTimeout(scrollToBottom, 1500);
-    setTimeout(scrollToBottom, 3000);
-    setTimeout(scrollToBottom, 5000);
-}
-
-// Re-scroll after each image finishes loading — each GIF that loads can push
-// the document taller, causing earlier scrollToBottom calls to land mid-page.
-// This is especially important on Wii/DSi where twemoji GIFs load one-by-one.
-(function () {
-    if (!document.addEventListener && !document.attachEvent) return;
-    function hookImages() {
-        var imgs = document.getElementsByTagName('img');
-        for (var i = 0; i < imgs.length; i++) {
-            if (!imgs[i]._scrollHooked) {
-                imgs[i]._scrollHooked = true;
-                imgs[i].onload = scrollToBottom;
-            }
-        }
-    }
-    // Hook images already in DOM, then re-hook on DOMContentLoaded in case
-    // more are inserted by JS after this runs.
-    hookImages();
-    if (document.addEventListener) {
-        document.addEventListener('DOMContentLoaded', hookImages, false);
-    } else if (document.attachEvent) {
-        document.attachEvent('onreadystatechange', hookImages);
-    }
-})();
-
-// Execute as soon as DOM is ready (instantaneous on mobile native app without waiting for images)
-if (document.readyState === 'interactive' || document.readyState === 'complete') {
-    scheduleScrollToBottom();
-} else if (document.addEventListener) {
-    document.addEventListener('DOMContentLoaded', scheduleScrollToBottom, false);
-} else if (document.attachEvent) {
-    document.attachEvent('onreadystatechange', function () {
-        if (document.readyState === 'interactive' || document.readyState === 'complete') {
-            scheduleScrollToBottom();
-        }
-    });
-}
-
-// Execute on window.onload (when all network resources/images finish loading) without the 1000ms delay
-var oldOnload = window.onload;
-window.onload = function () {
-    if (typeof oldOnload === 'function') {
-        oldOnload();
-    }
-    scrollToBottom();
-    setTimeout(scrollToBottom, 100);
-    setTimeout(scrollToBottom, 300);
-    setTimeout(scrollToBottom, 600);
-};
 
 // Emoji System
 // ==========
