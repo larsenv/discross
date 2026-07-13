@@ -2,16 +2,14 @@
   <tr>
     <td style="padding-left: 8px">
       {$REPLY_INDICATOR}
-      <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 4px">
+      <table cellpadding="0" cellspacing="0" width="100%" class="message-header-table" style="margin-bottom: 4px">
         <tr>
-          <td nowrap style="white-space: nowrap">
+          <td class="message-author-cell">
             <font onclick="document.getElementById('message').value += { $TAG }" style="font-weight:600;color:{$AUTHOR_COLOR};cursor:pointer;margin-right:8px" face="rodin,sans-serif">{$MESSAGE_AUTHOR}</font>
           </td>
-          <td nowrap style="white-space: nowrap">
-            <font style="font-size: 12px" face="rodin,sans-serif" class="message-date-font">{$MESSAGE_DATE}</font>
-          </td>
-          <td align="right" width="100%" style="padding-left: 12px">
-            <font style="font-size: 12px" face="rodin,sans-serif" class="message-reply-link-font"><a href="{$MESSAGE_REPLY_LINK}" class="message-link" style="color: #00b0f4">Reply</a></font>
+          <td align="right" class="message-meta-cell" style="white-space: nowrap; text-align: right;">
+            <font style="font-size: 12px; vertical-align: middle;" face="rodin,sans-serif" class="message-date-font">{$MESSAGE_DATE}</font>
+            <a href="{$MESSAGE_REPLY_LINK}" class="message-link message-reply-link" style="color: #00b0f4; margin-left: 6px; display: inline-block; vertical-align: middle;"><img src="/resources/twemoji/21a9.gif" class="message-reply-emoji" style="width: 14px; height: 14px; vertical-align: middle;" alt="Reply" /></a>
           </td>
         </tr>
       </table>

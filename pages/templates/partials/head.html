@@ -4,6 +4,16 @@
 <title>{$PAGE_TITLE}</title>
 {$SEO_METADATA}
 
+<script>
+  (function() {
+    var ua = navigator.userAgent;
+    if (ua.indexOf('Nintendo 3DS') !== -1) {
+      var isNew3DS = ua.indexOf('New Nintendo 3DS') !== -1 || ua.indexOf('NintendoBrowser') !== -1;
+      document.documentElement.className += isNew3DS ? ' client-new3ds' : ' client-3ds';
+    }
+  })();
+</script>
+
 <!-- Mobile & Legacy Compatibility -->
 <meta name="HandheldFriendly" content="true" />
 <meta name="MobileOptimized" content="320" />
