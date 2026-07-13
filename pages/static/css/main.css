@@ -501,6 +501,10 @@ pre code {
 .date-sep-text {
     color: #abacb2;
 }
+/* Hide the HR lines on the very first date separator at the top of the page */
+#msgcontainer > :first-child > .date-separator:first-child .date-sep-line {
+    border-top: none;
+}
 
 /* Reply indicator arrow */
 .reply-arrow {
