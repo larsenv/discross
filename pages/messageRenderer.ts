@@ -69,9 +69,9 @@ const LEGACY_MESSAGE_LIMIT = 25;
 // remaining legacy devices (DS ~4 MB, DSi/Dreamcast ~16 MB, PS2/PSP ~32-64 MB,
 // Saturn ~2-4 MB) stay on the flat LEGACY_MESSAGE_LIMIT.
 const MESSAGE_LIMIT_OVERRIDES = {
-    wii: 50,
+    '3ds': 25,
+    wii: 25,
     new3ds: 50,
-    '3ds': 50,
     ps3: 50,
     psvita: 50,
     xbox360: 50,
