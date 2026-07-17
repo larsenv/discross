@@ -65,6 +65,19 @@ function init() {
                 click(e);
                 return false;
             };
+        } else if (isOld3DS) {
+            // Old 3DS ("SPIDER" NetFront): the stylus press fires mousedown on the canvas,
+            // but the subsequent mousemove/mouseup fire at the DOCUMENT level, not on the
+            // canvas (same quirk handled in draw.js). Binding move/up on the canvas — as we
+            // do for New 3DS/desktop — paints only the initial dot and never tracks the
+            // stroke. Bind mousemove/mouseup on document so drawing actually works.
+            topCanvas.addEventListener('mousedown', mousedown, true);
+            topCanvas.addEventListener('touchstart', touchdown, true);
+            topCanvas.addEventListener('touchmove', touchmove, true);
+            topCanvas.addEventListener('touchend', mouseup, true);
+            topCanvas.addEventListener('click', click, true);
+            document.addEventListener('mousemove', mousemove, true);
+            document.addEventListener('mouseup', mouseup, true);
         } else {
             topCanvas.addEventListener('mousedown', mousedown, true);
             topCanvas.addEventListener('touchstart', touchdown, true);
@@ -102,14 +115,14 @@ function setColor(hex, id) {
     color = [r, g, b];
     erasing = false;
     var ersBtn = document.getElementById('b_erase');
-    if (ersBtn) ersBtn.style.background = '#fff';
+    if (ersBtn) ersBtn.style.background = '#b9bbbe';
 
     for (var i = 1; i <= 16; i++) {
         var el = document.getElementById('c' + i);
-        if (el) el.style.border = '1px outset #888';
+        if (el) el.style.border = '1px solid #202225';
     }
     var target = document.getElementById(id);
-    if (target) target.style.border = '2px solid white';
+    if (target) target.style.border = '2px solid #ffffff';
 
     if (statusdiv) {
         statusdiv.innerHTML = 'Color set to (' + color.join(',') + ')';
@@ -212,15 +225,15 @@ function click(e) {
             if (canvas[layer])
                 canvas[layer].style.borderColor = '#' + (toggle ^= 1) + toggle + toggle;
             var dropBtn = document.getElementById('i_dropper');
-            if (dropBtn) dropBtn.style.background = '#fff';
+            if (dropBtn) dropBtn.style.background = '#b9bbbe';
             dropping = false;
             erasing = false;
             var ersBtn = document.getElementById('b_erase');
-            if (ersBtn) ersBtn.style.background = '#fff';
+            if (ersBtn) ersBtn.style.background = '#b9bbbe';
 
             for (var i = 1; i <= 16; i++) {
                 var el = document.getElementById('c' + i);
-                if (el) el.style.border = '1px outset #888';
+                if (el) el.style.border = '1px solid #202225';
             }
         }
     }
@@ -260,10 +273,10 @@ function set_layer(num) {
     layer = num;
     var layers = document.getElementsByClassName('layer-btn');
     for (var i = layers.length; --i >= 0; ) {
-        layers[i].style.background = '#fff';
+        layers[i].style.background = '#b9bbbe';
     }
     var activeLayerBtn = document.getElementById('btn_layer_' + num);
-    if (activeLayerBtn) activeLayerBtn.style.background = '#ff0';
+    if (activeLayerBtn) activeLayerBtn.style.background = '#00b0f4';
 
     if (statusdiv) {
         statusdiv.innerHTML = 'Layer set to ' + num;
@@ -276,10 +289,10 @@ function set_brush(num) {
     block = num;
     var brushes = document.getElementsByClassName('brush-btn');
     for (var i = brushes.length; --i >= 0; ) {
-        brushes[i].style.background = '#fff';
+        brushes[i].style.background = '#b9bbbe';
     }
     var activeBrushBtn = document.getElementById('btn_brush_' + num);
-    if (activeBrushBtn) activeBrushBtn.style.background = '#ff0';
+    if (activeBrushBtn) activeBrushBtn.style.background = '#00b0f4';
 
     if (statusdiv) {
         statusdiv.innerHTML = 'Brush set to ' + num + 'px';
@@ -291,7 +304,7 @@ function set_brush(num) {
 function set_dropper() {
     dropping = !dropping;
     var dropBtn = document.getElementById('i_dropper');
-    if (dropBtn) dropBtn.style.background = dropping ? '#ff0' : '#fff';
+    if (dropBtn) dropBtn.style.background = dropping ? '#00b0f4' : '#b9bbbe';
     if (statusdiv) {
         statusdiv.innerHTML = dropping ? 'Dropper active (click canvas)' : 'Dropper deactivated';
         statusdiv.style.display = 'block';
@@ -303,9 +316,9 @@ function toggle_erase() {
     erasing = !erasing;
     dropping = false;
     var dropBtn = document.getElementById('i_dropper');
-    if (dropBtn) dropBtn.style.background = '#fff';
+    if (dropBtn) dropBtn.style.background = '#b9bbbe';
     var ersBtn = document.getElementById('b_erase');
-    if (ersBtn) ersBtn.style.background = erasing ? '#ff0' : '#fff';
+    if (ersBtn) ersBtn.style.background = erasing ? '#00b0f4' : '#b9bbbe';
     if (statusdiv) {
         statusdiv.innerHTML = erasing ? 'Eraser active' : 'Drawing active';
         statusdiv.style.display = 'block';
@@ -328,7 +341,7 @@ function save() {
     if (!saving) {
         saving = true;
         var saveBtn = document.getElementById('b_save');
-        if (saveBtn) saveBtn.style.background = '#888';
+        if (saveBtn) saveBtn.style.background = '#4752c4';
         if (statusdiv) {
             statusdiv.innerHTML = 'Combining layers and sending...';
             statusdiv.style.display = 'block';
@@ -356,12 +369,12 @@ function save() {
                 form.submit();
             } else {
                 saving = false;
-                if (saveBtn) saveBtn.style.background = '#00f';
+                if (saveBtn) saveBtn.style.background = '#5865f2';
                 if (statusdiv) statusdiv.innerHTML = 'Error: form not found';
             }
         } catch (err) {
             saving = false;
-            if (saveBtn) saveBtn.style.background = '#00f';
+            if (saveBtn) saveBtn.style.background = '#5865f2';
             if (statusdiv) statusdiv.innerHTML = 'Error: ' + (err.message || err);
         }
     }

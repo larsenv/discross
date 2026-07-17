@@ -1657,8 +1657,9 @@ html.page-server font[color='#dcddde'] {
 /* DSi Opera 9.5 (256px screen) */
 @media (max-width: 256px) {
     #toolbar-container {
-        white-space: nowrap;
+        white-space: normal;
         width: auto;
+        max-width: 100%;
     }
     .c-box {
         width: 10px;
@@ -2898,6 +2899,32 @@ html.page-draw #wrapper {
     /* text-align: center centers the inline-block canvas on browsers
        that don't support flexbox (Old 3DS NetFront / Opera 9.5 DSi) */
     text-align: center;
+}
+
+/* Console clients (DSi/3DS): the 100vh flex-column draw layout collapses
+   #canvas-wrapper to ~0 because the toolbar + message form already exceed
+   the tiny viewport, so the canvas overflows and the message form paints on
+   top of it — stealing every tap and making drawing impossible. Fall back to
+   natural block flow so the whole page scrolls, the canvas keeps its real
+   height, and the form sits below the canvas instead of over it. */
+html.client-3ds.page-draw body,
+html.client-new3ds.page-draw body {
+    height: auto;
+    display: block;
+    overflow: visible;
+}
+html.client-3ds.page-draw #wrapper,
+html.client-new3ds.page-draw #wrapper {
+    flex: none;
+    display: block;
+    height: auto;
+    overflow: visible;
+}
+html.client-3ds #canvas-wrapper,
+html.client-new3ds #canvas-wrapper {
+    flex: none;
+    height: auto;
+    overflow: visible;
 }
 
 /* ================================================================

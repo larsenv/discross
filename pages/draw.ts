@@ -20,6 +20,17 @@ const channel_template = loadAndRenderPageTemplate('draw');
 const old3ds_template = loadAndRenderPageTemplate('draw-old3ds');
 const wii_template = loadAndRenderPageTemplate('draw-wii');
 
+// Wii/DSi Opera 9 caches HTML pages extremely aggressively and heuristically,
+// so it keeps re-serving a stale copy of the draw page no matter how many times
+// the tool is edited. Force a full revalidation on every load. Pragma/Expires are
+// included for the HTTP/1.0 semantics these legacy browsers actually honor.
+const NO_CACHE_HTML_HEADERS = {
+    'Content-Type': 'text/html',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+    Pragma: 'no-cache',
+    Expires: '0',
+};
+
 exports.processDraw = async function processDraw(bot, req, res, args, discordID) {
     const parsedUrl = new URL(req.url, 'http://localhost');
     const urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
@@ -51,6 +62,21 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
         WHITE_THEME_ENABLED: themeClass,
         COLOR: boxColor,
     });
+
+    // Inline draw.js into a template so Wii/DSi Opera 9 executes it AFTER the DOM is
+    // parsed. An external <script src> on Wii Opera 9 can fire before the canvas and
+    // toolbar elements exist, breaking getElementById and leaving the tool dead.
+    const inlineDrawJs = (html) => {
+        try {
+            const drawJs = fs.readFileSync('pages/static/js/draw.js', 'utf-8');
+            return html.replace(
+                /<script src="\/js\/draw\.js[^"]*"><\/script>/,
+                '<script>\n' + drawJs + '\n</script>'
+            );
+        } catch (ex) {
+            return html;
+        }
+    };
     try {
         const chnl = await bot.client.channels.fetch(args[2]).catch(() => undefined);
 
@@ -87,7 +113,10 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             const channelName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
             const pageTitle = `Draw in ${channelName} - Discross`;
 
-            // Wii: serve the exact working draw page from commit ed4d3a1b65 (simple inline script, no complex draw.js)
+            // Wii: use the Wii-specific layout/CSS but drive it with the shared, proven
+            // draw.js engine (the "January logic"). draw.js detects isWii and disables the
+            // expensive getImageData history that freezes Wii Opera; the previous inline
+            // reimplementation re-enabled it on every mousedown, which broke drawing.
             if (isWii) {
                 const wiiTemplate = renderTemplate(wii_template, {
                     SERVER_ID: chnl.guild.id,
@@ -97,9 +126,13 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                     SESSION_PARAM: sessionParam,
                     COMMON_HEAD: getTemplate('head', 'partials'),
                     WHITE_THEME_ENABLED: themeClass,
+                    // The Wii layout has no emoji picker; clear the tokens so they
+                    // don't render as literal "{$EMOJI_PICKER}" text on the page.
+                    EMOJI_PICKER: '',
+                    EMOJI_BUTTON: '',
                 });
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.end(wiiTemplate);
+                res.writeHead(200, NO_CACHE_HTML_HEADERS);
+                res.end(inlineDrawJs(wiiTemplate));
                 return;
             }
 
@@ -118,7 +151,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                     PAGE_TITLE: `3DS Paint (DSiPaint Engine) in ${channelName} - Discross`,
                     MODE_TOGGLE_URL: modeToggleUrl,
                 });
-                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.writeHead(200, NO_CACHE_HTML_HEADERS);
                 res.end(final3DSTemplate);
                 return;
             }
@@ -187,16 +220,9 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                     description: seoDescription,
                 }),
             });
-            // Inline draw.js so Wii Opera 9 executes it after DOM is parsed (matching ed4d3a1b65).
-            // External <script src> on Wii Opera 9 can fire before DOM elements exist, breaking getElementById.
-            try {
-                const drawJs = fs.readFileSync('pages/static/js/draw.js', 'utf-8');
-                finalTemplate = finalTemplate.replace(
-                    /<script src="\/js\/draw\.js[^"]*"><\/script>/,
-                    '<script>\n' + drawJs + '\n</script>'
-                );
-            } catch (ex) {}
-            res.writeHead(200, { 'Content-Type': 'text/html' });
+            // Inline draw.js so the script runs after the DOM is parsed (see inlineDrawJs).
+            finalTemplate = inlineDrawJs(finalTemplate);
+            res.writeHead(200, NO_CACHE_HTML_HEADERS);
             res.end(finalTemplate);
         } else {
             return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');

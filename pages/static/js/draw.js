@@ -280,8 +280,11 @@ if (isWii) {
         var pos = getPos(e);
 
         if (currTool === 'fill') {
-            saveHistory();
-            floodFill(pos.x, pos.y);
+            // floodFill needs getImageData/putImageData, which older Wii Opera builds
+            // may not support — guard so a failed Fill doesn't throw out of the handler.
+            try {
+                floodFill(pos.x, pos.y);
+            } catch (ex) {}
             return false;
         }
 

@@ -7,7 +7,7 @@
 <script>
   (function() {
     var ua = navigator.userAgent;
-    if (ua.indexOf('Nintendo 3DS') !== -1) {
+    if (ua.indexOf('Nintendo 3DS') !== -1 || ua.indexOf('Nintendo DSi') !== -1) {
       var isNew3DS = ua.indexOf('New Nintendo 3DS') !== -1 || ua.indexOf('NintendoBrowser') !== -1;
       document.documentElement.className += isNew3DS ? ' client-new3ds' : ' client-3ds';
     }
