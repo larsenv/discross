@@ -4,11 +4,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     {$COMMON_HEAD}
     <style type="text/css">
+        /* Retro DSiPaint engine re-skinned with the Discross dark palette.
+           Pixel geometry (positions/sizes) is preserved — the engine maps to it. */
         BODY {
-            color: #fff;
-            background: #111;
+            color: #dcddde;
+            background: #36393f;
             font-size: 8px;
-            font-family: sans-serif;
+            font-family: 'rodin', sans-serif;
             margin: 0px;
             padding: 0px;
             overflow-x: hidden;
@@ -21,15 +23,15 @@
         }
         INPUT, BUTTON {
             position: absolute;
-            border: 1px outset #888;
-            font-family: sans-serif;
+            border: 1px solid #202225;
+            font-family: 'rodin', sans-serif;
             box-sizing: border-box;
             color: #000;
         }
         .button {
-            background: #00f;
-            border: 1px outset #00f;
-            color: #fff;
+            background: #5865f2;
+            border: 1px solid #4752c4;
+            color: #ffffff;
             font-size: 8px;
             height: 15px;
             text-align: center;
@@ -38,7 +40,7 @@
             padding: 0;
         }
         .layer-btn {
-            background: #fff;
+            background: #b9bbbe;
             left: 244px;
             width: 34px;
             height: 19px;
@@ -49,7 +51,7 @@
             text-align: center;
         }
         .brush-btn {
-            background: #fff;
+            background: #b9bbbe;
             left: 244px;
             width: 34px;
             height: 13px;
@@ -62,7 +64,7 @@
             position: absolute;
             width: 19px;
             height: 15px;
-            border: 1px outset #888;
+            border: 1px solid #202225;
             cursor: pointer;
             box-sizing: border-box;
         }
@@ -70,7 +72,7 @@
             position: absolute;
         }
         CANVAS.paint-canvas {
-            border: 1px inset #888;
+            border: 1px solid #202225;
             left: 0px;
             position: absolute;
             top: 0px;
@@ -102,31 +104,31 @@
         <div id="c16" class="c-box" style="left: 300px; top: 105px; background:#8b4513;" onclick="return setColor('#8b4513', 'c16');"></div>
 
         <!-- Eyedropper & Color Display -->
-        <input type="button" id="i_dropper" style="background: #fff; left: 280px; top: 124px; width: 19px; height: 18px; font-size: 8px; padding: 0;" onclick="return set_dropper();" value="Drp" title="Eyedropper" />
-        <input type="button" id="b_color" style="background: rgb(0,0,0); left: 300px; top: 124px; width: 19px; height: 18px; border: 1px inset #888;" disabled="disabled" />
+        <input type="button" id="i_dropper" style="background: #b9bbbe; left: 280px; top: 124px; width: 19px; height: 18px; font-size: 8px; padding: 0;" onclick="return set_dropper();" value="Drp" title="Eyedropper" />
+        <input type="button" id="b_color" style="background: rgb(0,0,0); left: 300px; top: 124px; width: 19px; height: 18px; border: 1px solid #202225;" disabled="disabled" />
 
         <!-- Layer Selection Buttons -->
         <input type="button" id="btn_layer_4" class="layer-btn" style="top: 0px;" onclick="return set_layer(4);" value="L4 (Top)" />
         <input type="button" id="btn_layer_3" class="layer-btn" style="top: 21px;" onclick="return set_layer(3);" value="L3" />
-        <input type="button" id="btn_layer_2" class="layer-btn" style="background: #ff0; top: 42px;" onclick="return set_layer(2);" value="L2" />
+        <input type="button" id="btn_layer_2" class="layer-btn" style="background: #00b0f4; top: 42px;" onclick="return set_layer(2);" value="L2" />
         <input type="button" id="btn_layer_1" class="layer-btn" style="top: 63px;" onclick="return set_layer(1);" value="L1" />
         <input type="button" id="btn_layer_0" class="layer-btn" style="top: 84px;" onclick="return set_layer(0);" value="L0 (Bg)" />
 
         <!-- Eraser & Clear Buttons -->
-        <input type="button" id="b_erase" style="left: 244px; top: 106px; width: 16px; height: 19px; font-size: 8px; background: #fff; padding: 0;" onclick="return toggle_erase();" value="Ers" title="Toggle Eraser" />
-        <input type="button" id="b_clear" style="left: 262px; top: 106px; width: 16px; height: 19px; font-size: 8px; background: #fff; padding: 0;" onclick="return clear_layer();" value="Clr" title="Clear Layer" />
+        <input type="button" id="b_erase" style="left: 244px; top: 106px; width: 16px; height: 19px; font-size: 8px; background: #b9bbbe; padding: 0;" onclick="return toggle_erase();" value="Ers" title="Toggle Eraser" />
+        <input type="button" id="b_clear" style="left: 262px; top: 106px; width: 16px; height: 19px; font-size: 8px; background: #b9bbbe; padding: 0;" onclick="return clear_layer();" value="Clr" title="Clear Layer" />
 
         <!-- Brush Size Buttons -->
         <input type="button" id="btn_brush_2" class="brush-btn" style="top: 128px;" onclick="return set_brush(2);" value="2px" />
         <input type="button" id="btn_brush_4" class="brush-btn" style="top: 142px;" onclick="return set_brush(4);" value="4px" />
-        <input type="button" id="btn_brush_6" class="brush-btn" style="background: #ff0; top: 156px;" onclick="return set_brush(6);" value="6px" />
+        <input type="button" id="btn_brush_6" class="brush-btn" style="background: #00b0f4; top: 156px;" onclick="return set_brush(6);" value="6px" />
         <input type="button" id="btn_brush_8" class="brush-btn" style="top: 170px;" onclick="return set_brush(8);" value="8px" />
         <input type="button" id="btn_brush_10" class="brush-btn" style="top: 184px;" onclick="return set_brush(10);" value="10px" />
 
         <!-- Action Buttons -->
-        <input type="submit" class="button" style="left: 280px; top: 146px; width: 39px; height: 16px; background: #00f;" id="b_save" onclick="return save();" value="Send" />
-        <input type="button" class="button" style="left: 280px; top: 165px; width: 39px; height: 16px; background: #444;" value="Back" onclick="location.href='/channels/{$CHANNEL_ID}{$SESSION_PARAM}';" />
-        <input type="button" class="button" style="left: 280px; top: 184px; width: 39px; height: 16px; background: #282; font-size: 7px;" value="Mode" title="Switch to Standard Mode" onclick="location.href='/draw/{$CHANNEL_ID}{$MODE_TOGGLE_URL}';" />
+        <input type="submit" class="button" style="left: 280px; top: 146px; width: 39px; height: 16px; background: #5865f2;" id="b_save" onclick="return save();" value="Send" />
+        <input type="button" class="button" style="left: 280px; top: 165px; width: 39px; height: 16px; background: #4f545c; border-color: #202225;" value="Back" onclick="location.href='/channels/{$CHANNEL_ID}{$SESSION_PARAM}';" />
+        <input type="button" class="button" style="left: 280px; top: 184px; width: 39px; height: 16px; background: #3ba55d; border-color: #2d7d46; font-size: 7px;" value="Mode" title="Switch to Standard Mode" onclick="location.href='/draw/{$CHANNEL_ID}{$MODE_TOGGLE_URL}';" />
 
         <!-- Form Hidden Data -->
         <input type="hidden" id="channel" name="channel" value="{$CHANNEL_ID}" />
@@ -135,7 +137,7 @@
         <input type="hidden" id="lite" name="lite" value="True" />
 
         <!-- Optional Message Input -->
-        <input type="text" name="message" id="message" placeholder="Message {$CHANNEL_NAME} (optional)..." style="left: 2px; top: 218px; width: 236px; height: 18px; border: 1px inset #888; background: #fff; color: #000; font-size: 9px; padding: 2px;" />
+        <input type="text" name="message" id="message" placeholder="Message {$CHANNEL_NAME} (optional)..." style="left: 2px; top: 218px; width: 236px; height: 18px; border: 1px solid #202225; background: #40444b; color: #dcddde; font-size: 9px; padding: 2px;" />
     </form>
 
     <!-- 5 Canvas Layers -->
@@ -145,11 +147,11 @@
     <canvas id="canvas3" class="paint-canvas" width="240" height="200"></canvas>
     <canvas id="canvas4" class="paint-canvas" width="240" height="200"></canvas>
 
-    <div style="height: 14px; left: 2px; top: 202px; width: 236px; color: #fff; font-size: 9px; overflow: hidden;" id="status">3DS Paint (DSiPaint Engine)...</div>
+    <div style="height: 14px; left: 2px; top: 202px; width: 236px; color: #dcddde; font-size: 9px; overflow: hidden;" id="status">3DS Paint (DSiPaint Engine)...</div>
     </div>
 
     <!-- Discross Toolbelt & DSiPaint Attribution -->
-    <div class="toolbelt-container" style="width: 320px; padding: 6px 4px; box-sizing: border-box; text-align: center; background: #18181b;">
+    <div class="toolbelt-container" style="width: 320px; padding: 6px 4px; box-sizing: border-box; text-align: center; background: #2f3136; border-top: 1px solid #202225;">
         <div style="margin-bottom: 6px;">
             <a href="/upload/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f4e4.gif" alt="Upload" width="20" height="20" /></a>
             <a href="/draw/{$CHANNEL_ID}{$MODE_TOGGLE_URL}" class="message-action-btn" title="Switch Mode"><img src="/resources/twemoji/1f58c-fe0f.gif" alt="Mode" width="20" height="20" /></a>
@@ -166,7 +168,7 @@
             <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/2b05.gif" alt="Back" width="20" height="20" /></a>
             <a href="javascript:void(0)" onclick="location.reload()" class="message-action-btn"><img src="/resources/twemoji/1f501.gif" alt="Refresh" width="20" height="20" /></a>
         </div>
-        <div style="color: #aaaaaa; font-size: 9px; margin-top: 4px;">
+        <div style="color: #72767d; font-size: 9px; margin-top: 4px;">
             Legacy 3DS drawing app engine credited to <b>DSiPaint</b> (HullBreach).
         </div>
     </div>
