@@ -70,7 +70,7 @@ const LEGACY_MESSAGE_LIMIT = 25;
 // Saturn ~2-4 MB) stay on the flat LEGACY_MESSAGE_LIMIT.
 const MESSAGE_LIMIT_OVERRIDES = {
     '3ds': 25,
-    wii: 25,
+    wii: 100,
     new3ds: 50,
     ps3: 50,
     psvita: 50,
