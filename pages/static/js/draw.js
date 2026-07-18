@@ -270,6 +270,43 @@ function drawInterpolatedLine(x0, y0, x1, y1) {
     ctx.beginPath();
 }
 
+// --- WII COORDINATE SYSTEM ---
+// The Wii Internet Channel runs Opera 9 (Presto), which does NOT implement
+// event.offsetX/offsetY and whose getBoundingClientRect is unreliable/absent.
+// It DOES expose the Netscape/Presto-era event.layerX/layerY, relative to the
+// nearest positioned ancestor (#canvas-wrapper). This restores the exact
+// coordinate-resolution chain that drew correctly on the Wii in January
+// (offsetX -> layerX -> getBoundingClientRect -> page-offset walk); the shared
+// getPos() had layerX removed in the Mar 1 "canvas scale factor" rewrite, which
+// silently broke Wii drawing because none of its remaining branches produce
+// usable coordinates on Opera 9. Kept separate from getPos() so 3DS/DSi/desktop
+// paths are untouched. No CSS scale factor: the Wii shows the canvas at its
+// native 600x350 (resizeCanvasDisplay() no-ops for Wii).
+function getWiiPos(e) {
+    e = e || window.event || {};
+    // Use offsetX only when truthy — Opera 9 leaves it undefined, and a bogus 0
+    // should fall through rather than pin every stroke to the top-left.
+    if (e.offsetX) {
+        return { x: e.offsetX, y: e.offsetY };
+    }
+    // Opera 9 / old Gecko: layerX/layerY relative to the positioned wrapper.
+    if (e.layerX !== undefined && e.layerX !== null) {
+        return { x: e.layerX, y: e.layerY };
+    }
+    // Newer Presto builds that gained getBoundingClientRect — guard the call so
+    // an absent implementation can't throw out of the drawing handler.
+    if (canvas.getBoundingClientRect && e.clientX !== undefined) {
+        var rect = canvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+    // Last resort: document-relative pointer coords minus the canvas's page offset.
+    var scroll = getScrollOffset();
+    var pageX = e.pageX !== undefined ? e.pageX : e.clientX + scroll.x;
+    var pageY = e.pageY !== undefined ? e.pageY : e.clientY + scroll.y;
+    var cp = getCanvasPagePos();
+    return { x: pageX - cp.left, y: pageY - cp.top };
+}
+
 if (isWii) {
     // Wii Opera 9: draw immediately per mousemove using moveTo/lineTo/stroke
     // matching commit ed4d3a1b65fce4c8caec0a44da9738470c84c932
@@ -277,7 +314,7 @@ if (isWii) {
         e = e || window.event;
         if (e && e.preventDefault) e.preventDefault();
         isDrawing = true;
-        var pos = getPos(e);
+        var pos = getWiiPos(e);
 
         if (currTool === 'fill') {
             // floodFill needs getImageData/putImageData, which older Wii Opera builds
@@ -305,7 +342,7 @@ if (isWii) {
         e = e || window.event;
         if (e && e.preventDefault) e.preventDefault();
 
-        var pos = getPos(e);
+        var pos = getWiiPos(e);
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(pos.x, pos.y);
