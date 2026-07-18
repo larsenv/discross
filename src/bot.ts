@@ -599,7 +599,40 @@ exports.addToCache = function (msg) {
     }
 };
 
-exports.getHistoryCached = async function (chnl) {
+// Fetches any messages older than what's currently cached for a channel, up
+// to cachelength total, without blocking the caller. Used to top up a cache
+// that was seeded with a smaller-than-cachelength initial fetch (see
+// getHistoryCached) so later requests for that channel still see full history.
+async function backfillHistory(chnl, alreadyFetched) {
+    if (alreadyFetched >= cachelength) return;
+
+    const collection = msghistory.get(chnl.id);
+    if (!collection || collection.size === 0) return;
+    const oldestId = collection.first().id;
+
+    try {
+        const older = await chnl.messages.fetch({
+            limit: cachelength - alreadyFetched,
+            before: oldestId,
+        });
+
+        // The channel may have been evicted from the cache while this fetch was in flight.
+        const current = msghistory.get(chnl.id);
+        if (!current) return;
+
+        for (const [id, msg] of older) {
+            if (!current.has(id)) current.set(id, msg);
+        }
+        msghistory.set(
+            chnl.id,
+            current.sort((messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp)
+        );
+    } catch (err) {
+        console.error(`Failed to backfill messages for channel ${chnl.id}:`, err);
+    }
+}
+
+exports.getHistoryCached = async function (chnl, desiredLimit) {
     if (typeof chnl === 'string') {
         chnl =
             client.channels.cache.get(chnl) ||
@@ -615,14 +648,26 @@ exports.getHistoryCached = async function (chnl) {
                 msghistory.delete(msghistory.keys().next().value);
             }
 
-            // Fetch messages - Discord.js will try to populate member data automatically if available in cache
-            const messagearray = await chnl.messages.fetch({ limit: cachelength });
+            // Only fetch as many messages as this request actually needs so we
+            // don't hold up the response fetching messages a legacy client is
+            // just going to slice off anyway. Discord.js will try to populate
+            // member data automatically if available in cache.
+            const initialLimit =
+                desiredLimit != null ? Math.min(desiredLimit, cachelength) : cachelength;
+            const messagearray = await chnl.messages.fetch({ limit: initialLimit });
             msghistory.set(
                 chnl.id,
                 messagearray.sort(
                     (messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp
                 )
             );
+
+            // Top up the rest of the shared cache in the background so a
+            // later, non-legacy request to this channel isn't stuck with only
+            // the smaller slice a previous legacy client asked for.
+            if (initialLimit < cachelength) {
+                backfillHistory(chnl, initialLimit);
+            }
         } catch (err) {
             console.error(`Failed to fetch messages for channel ${chnl.id}:`, err);
             return [];
