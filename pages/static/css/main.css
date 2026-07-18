@@ -3269,6 +3269,14 @@ html.client-new3ds .message-author-cell {
     vertical-align: top !important;
 }
 
+/* DSi (Opera 9.5) collapses a table cell with max-width:0 to zero width,
+   hiding the username entirely. Let the author cell size to its content while
+   the meta cell stays pinned at width:1%. */
+html.client-dsi .message-author-cell {
+    max-width: none !important;
+    overflow: visible !important;
+}
+
 html.client-3ds .message-meta-cell,
 html.client-new3ds .message-meta-cell {
     white-space: nowrap !important;
