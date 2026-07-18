@@ -31,7 +31,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                 const sessionID = parsedurl.searchParams.get('sessionID') || '';
                 const sessionPart = sessionID ? `?sessionID=${encodeURIComponent(sessionID)}` : '';
                 req_res.writeHead(302, {
-                    Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}`,
+                    Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}#end`,
                 });
                 req_res.end();
                 return;
@@ -154,7 +154,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
         const sessionID = parsedurl.searchParams.get('sessionID') || '';
         const sessionPart = sessionID ? `?sessionID=${encodeURIComponent(sessionID)}` : '';
         req_res.writeHead(302, {
-            Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}`,
+            Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}#end`,
         });
         req_res.end();
     } catch (err) {

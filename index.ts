@@ -251,8 +251,6 @@ function setupFileWatchers() {
 setupFileWatchers();
 
 async function senddrawingAsync(req, res, body) {
-    const discordID = await auth.checkAuth(req, res);
-
     // Validate body is not empty
     if (!body || body.trim() === '') {
         console.log('Error: senddrawingAsync received empty body');
@@ -271,9 +269,22 @@ async function senddrawingAsync(req, res, body) {
         return;
     }
 
-    if (discordID) {
-        await senddrawing.sendDrawing(bot, req, res, [], discordID, urlQuery);
+    // Cookie/URL auth first; fall back to the sessionID posted in the form body.
+    // Legacy consoles (Wii Internet Channel with cleared save data) have no
+    // cookies, and the draw form carries the session only as a hidden input.
+    let discordID = await auth.checkAuth(req, res, true);
+    if (!discordID && urlQuery.sessionID) {
+        discordID = await auth.checkSession(urlQuery.sessionID);
     }
+    if (!discordID) {
+        res.writeHead(303, {
+            Location: `/login.html?redirect=${encodeURIComponent(req.url)}`,
+        });
+        res.end();
+        return;
+    }
+
+    await senddrawing.sendDrawing(bot, req, res, [], discordID, urlQuery);
 }
 
 async function handlePost(req, res) {

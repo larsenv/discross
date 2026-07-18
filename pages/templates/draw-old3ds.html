@@ -84,7 +84,7 @@
 </head>
 <body {$WHITE_THEME_ENABLED}>
     <div style="width: 320px; height: 240px; position: relative; overflow: hidden;">
-    <form action="/senddrawing" method="post" id="sendform" onsubmit="return false;">
+    <form action="/senddrawing{$SESSION_PARAM}" method="post" id="sendform" onsubmit="return false;">
         <!-- Standard 16 Color Palette Toolbar -->
         <div id="c1" class="c-box" style="left: 280px; top: 0px; background:#000000;" onclick="return setColor('#000000', 'c1');"></div>
         <div id="c2" class="c-box" style="left: 300px; top: 0px; background:#555555;" onclick="return setColor('#555555', 'c2');"></div>
@@ -127,7 +127,7 @@
 
         <!-- Action Buttons -->
         <input type="submit" class="button" style="left: 280px; top: 146px; width: 39px; height: 16px; background: #5865f2;" id="b_save" onclick="return save();" value="Send" />
-        <input type="button" class="button" style="left: 280px; top: 165px; width: 39px; height: 16px; background: #4f545c; border-color: #202225;" value="Back" onclick="location.href='/channels/{$CHANNEL_ID}{$SESSION_PARAM}';" />
+        <input type="button" class="button" style="left: 280px; top: 165px; width: 39px; height: 16px; background: #4f545c; border-color: #202225;" value="Back" onclick="location.href='/channels/{$CHANNEL_ID}{$SESSION_PARAM}#end';" />
         <input type="button" class="button" style="left: 280px; top: 184px; width: 39px; height: 16px; background: #3ba55d; border-color: #2d7d46; font-size: 7px;" value="Mode" title="Switch to Standard Mode" onclick="location.href='/draw/{$CHANNEL_ID}{$MODE_TOGGLE_URL}';" />
 
         <!-- Form Hidden Data -->
@@ -165,7 +165,7 @@
             <a href="/tv{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f4fa.gif" alt="TV Guide" width="20" height="20" /></a>
             <a href="/movies{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f3ac.gif" alt="Movies" width="20" height="20" /></a>
             <a href="/switchtheme{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/1f313.gif" alt="Theme" width="20" height="20" /></a>
-            <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn"><img src="/resources/twemoji/2b05.gif" alt="Back" width="20" height="20" /></a>
+            <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}#end" class="message-action-btn"><img src="/resources/twemoji/2b05.gif" alt="Back" width="20" height="20" /></a>
             <a href="javascript:void(0)" onclick="location.reload()" class="message-action-btn"><img src="/resources/twemoji/1f501.gif" alt="Refresh" width="20" height="20" /></a>
         </div>
         <div style="color: #72767d; font-size: 9px; margin-top: 4px;">

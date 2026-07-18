@@ -169,7 +169,7 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
         });
 
         const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
-        const refreshUrl = `${channelId}?random=${Math.random()}`;
+        const refreshUrl = `${channelId}?random=${Math.random()}#end`;
 
         const serverName = chnl.guild.name;
         const normalizedServerName = normalizeWeirdUnicode(serverName);

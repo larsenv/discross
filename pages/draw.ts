@@ -119,6 +119,7 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             // reimplementation re-enabled it on every mousedown, which broke drawing.
             if (isWii) {
                 const wiiTemplate = renderTemplate(wii_template, {
+                    MODE_TOGGLE_URL: sessionParam ? sessionParam + '&mode=old3ds' : '?mode=old3ds',
                     SERVER_ID: chnl.guild.id,
                     CHANNEL_ID: chnl.id,
                     CHANNEL_NAME: channelName,

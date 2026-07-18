@@ -209,7 +209,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             chnl.id +
             '?random=' +
             Math.random() +
-            (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
+            (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '') +
+            '#end';
 
         const final = renderTemplate(baseTemplate, {
             REFRESH_URL: refreshUrl,

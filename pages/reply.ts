@@ -116,7 +116,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             bot.addToCache(message);
         }
 
-        res.writeHead(302, { Location: `/channels/${parsedurl.searchParams.get('channel')}` });
+        res.writeHead(302, { Location: `/channels/${parsedurl.searchParams.get('channel')}#end` });
         res.end();
     } catch (err) {
         console.error('Error sending message:', err);

@@ -275,7 +275,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
                     chnl.id +
                     '?random=' +
                     Math.random() +
-                    (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : ''),
+                    (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '') +
+                    '#end',
             });
             const noWebhooks = !botMember
                 .permissionsIn(chnl)

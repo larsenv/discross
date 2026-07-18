@@ -60,8 +60,6 @@ function getTemplate(name, folder = 'channel') {
     const filePath = `pages/templates/${folderPath}${name}.html`;
     try {
         let content = fs.readFileSync(filePath, 'utf-8');
-        // Remove #end comments that might be present in some templates
-        content = content.replace(/#end(?=["'])/g, '');
         // Cache-bust the stylesheet so legacy browsers re-fetch it when it changes.
         content = content.replace('/css/main.css', `/css/main.css?v=${CSS_VERSION}`);
         content = content.replace('/js/draw.js"', `/js/draw.js?v=${getDrawJsVersion()}"`);

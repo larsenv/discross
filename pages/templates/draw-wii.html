@@ -174,7 +174,7 @@
         <div class="content-padding">
             <div class="message-form-container">
                 {$EMOJI_PICKER}
-                <form action="../senddrawing" method="post" id="sendform" onsubmit="prepareAndSend()" style="position: relative">
+                <form action="../senddrawing{$SESSION_PARAM}" method="post" id="sendform" onsubmit="return prepareDrawing()" style="position: relative">
                     <div>
                         {$EMOJI_BUTTON}
                         <a href="/upload/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
@@ -216,7 +216,7 @@
                         <a href="javascript:void(0)" onclick="var f=document.getElementById('sendform'); if(f){ f.action='/signmessage/{$CHANNEL_ID}{$SESSION_PARAM}'; f.method='GET'; f.submit(); }" class="message-action-btn" title="Sign Your Message">
                             <img src="/resources/twemoji/1f310.gif" alt="Sign Your Message" width="24" height="24" style="width: 24px; height: 24px;">
                         </a>
-                        <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}" class="message-action-btn">
+                        <a href="/channels/{$CHANNEL_ID}{$SESSION_PARAM}#end" class="message-action-btn">
                             <img src="/resources/twemoji/2b05.gif" alt="Back" width="24" height="24" style="width: 24px; height: 24px;">
                         </a>
                         <a href="javascript:void(0)" onclick="location.reload()" class="message-action-btn">
