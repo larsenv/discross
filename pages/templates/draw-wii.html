@@ -36,10 +36,14 @@
             z-index: 10 !important;
         }
 
+        /* border/background are NOT !important here — setColor()/setSize() in
+           draw.js toggle these inline to show the selected swatch/size, and an
+           !important class rule would always beat a plain inline style, which
+           silently made color/size selection un-highlightable on Wii. */
         .c-box {
             width: 24px !important;
             height: 24px !important;
-            border: 2px solid #555 !important;
+            border: 2px solid #555;
             display: inline-block !important;
             margin: 1px !important;
             cursor: pointer !important;
@@ -47,8 +51,8 @@
         }
 
         .s-btn {
-            background: #b9bbbe !important;
-            border: 2px solid #000 !important;
+            background: #b9bbbe;
+            border: 2px solid #000;
             display: inline-block !important;
             margin: 0 3px !important;
             cursor: pointer !important;
@@ -79,8 +83,18 @@
             margin: 0 auto !important;
         }
 
-        /* Wii button styling */
+        /* Wii button styling.
+           appearance:none stops Opera 9 painting its native OS-chrome button
+           (which ignores background-color), so the purple "selected" look
+           setTool() applies via inline style in draw.js actually renders
+           instead of only the browser's transient :focus border ring. */
         #toolbar-container input[type="button"], .clear-button {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background: #4f545c;
+            color: #dcddde;
+            border: 1px solid #202225;
             padding: 4px 8px !important;
             margin: 2px !important;
             cursor: pointer !important;
