@@ -1716,15 +1716,19 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         activityBanner: getTemplate('activity-banner', 'channel'),
     };
 
-    // 2. Fetch messages (or use override).
-    let messages = overrideMessages ?? (await bot.getHistoryCached(chnl));
-
     // For legacy/low-memory devices, we limit the number of messages rendered.
     const uaClient = parseUserAgent(req.headers['user-agent']);
     const messageLimit = uaClient
         ? (MESSAGE_LIMIT_OVERRIDES[uaClient.id] ??
           (uaClient.isLegacy ? LEGACY_MESSAGE_LIMIT : null))
         : null;
+
+    // 2. Fetch messages (or use override). On a cold cache, only fetch as many
+    // messages as this client is actually going to render, so the response
+    // isn't held up fetching messages that will just get sliced off below;
+    // the rest of the shared cache backfills in the background.
+    let messages = overrideMessages ?? (await bot.getHistoryCached(chnl, messageLimit));
+
     if (messageLimit !== null) {
         messages = messages.slice(-messageLimit);
     }
