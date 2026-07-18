@@ -32,6 +32,120 @@ var currColor = '#000000';
 var currSize = 5;
 var currTool = 'draw';
 
+// --- ON-DEVICE DIAGNOSTIC ---
+// Gated on "?debug" (or "&debug") in the URL — which also gives the page a
+// unique query string, forcing Opera 9 to bypass its aggressive page cache.
+// Renders a live text readout so we can see exactly what the Wii's browser
+// reports (event props, which handler path runs, whether an element covers
+// the canvas) instead of guessing. Remove once the Wii tool is confirmed.
+var DRAW_DEBUG = (function () {
+    try {
+        return (
+            !!window.location &&
+            !!window.location.search &&
+            ('' + window.location.search).toLowerCase().indexOf('debug') !== -1
+        );
+    } catch (e) {
+        return false;
+    }
+})();
+var _dbgCounts = { down: 0, move: 0, up: 0, out: 0 };
+var _dbgBox = null;
+var _dbgLastDown = '(none)';
+var _dbgLastMove = '(none)';
+var _dbgErr = '';
+var _dbgOver = '(not checked)';
+if (DRAW_DEBUG) {
+    try {
+        window.onerror = function (m, u, l) {
+            _dbgErr = m + ' @' + l;
+            dbgRender();
+            return false;
+        };
+    } catch (e) {}
+}
+
+function dbgInit() {
+    if (!DRAW_DEBUG) return;
+    try {
+        _dbgBox = document.createElement('div');
+        _dbgBox.style.position = 'fixed';
+        _dbgBox.style.top = '0';
+        _dbgBox.style.right = '0';
+        _dbgBox.style.zIndex = '99999';
+        _dbgBox.style.background = '#000000';
+        _dbgBox.style.color = '#00ff00';
+        _dbgBox.style.font = '14px monospace';
+        _dbgBox.style.padding = '6px';
+        _dbgBox.style.border = '2px solid #00ff00';
+        _dbgBox.style.whiteSpace = 'pre';
+        _dbgBox.style.textAlign = 'left';
+        document.body.appendChild(_dbgBox);
+        _dbgOver = dbgTopElement();
+        dbgRender();
+    } catch (e) {}
+}
+
+// What element actually sits over the middle of the canvas? If it isn't the
+// canvas, a covering element is eating the pointer and no stroke can start.
+function dbgTopElement() {
+    try {
+        if (!document.elementFromPoint || !canvas.getBoundingClientRect) return 'n/a';
+        var r = canvas.getBoundingClientRect();
+        var el = document.elementFromPoint(
+            r.left + (r.width || 300) / 2,
+            r.top + (r.height || 175) / 2
+        );
+        if (!el) return 'null';
+        return (el.tagName || '?') + (el.id ? '#' + el.id : '') + (el === canvas ? ' (CANVAS-OK)' : ' (COVERING!)');
+    } catch (e) {
+        return 'err:' + e;
+    }
+}
+
+function dbgRender() {
+    if (!DRAW_DEBUG || !_dbgBox) return;
+    try {
+        _dbgBox.innerHTML =
+            'isWii=' + isWii + ' slow=' + isSlowDevice + '\n' +
+            'screen=' + screen.width + 'x' + screen.height + '\n' +
+            'canvas=' + canvas.width + 'x' + canvas.height + '\n' +
+            'gBCR=' + !!canvas.getBoundingClientRect + '\n' +
+            'down=' + _dbgCounts.down + ' move=' + _dbgCounts.move + ' up=' + _dbgCounts.up + '\n' +
+            'over=' + _dbgOver + '\n' +
+            'DOWN ' + _dbgLastDown + '\n' +
+            'MOVE ' + _dbgLastMove + '\n' +
+            'err=' + (_dbgErr || 'none');
+    } catch (e) {}
+}
+
+function dbgFmt(e, pos) {
+    e = e || {};
+    return (
+        'off=' + e.offsetX + ',' + e.offsetY +
+        ' lay=' + e.layerX + ',' + e.layerY +
+        ' cli=' + e.clientX + ',' + e.clientY +
+        ' pg=' + e.pageX + ',' + e.pageY +
+        (pos ? ' -> ' + Math.round(pos.x) + ',' + Math.round(pos.y) : '')
+    );
+}
+
+function dbgEvent(kind, e, pos) {
+    if (!DRAW_DEBUG) return;
+    try {
+        if (_dbgCounts[kind] !== undefined) _dbgCounts[kind]++;
+        if (kind === 'down') {
+            // elementFromPoint is relatively costly; only re-check on press, not
+            // on every continuous Wii-pointer move.
+            _dbgOver = dbgTopElement();
+            _dbgLastDown = dbgFmt(e, pos);
+        } else if (kind === 'move') {
+            _dbgLastMove = dbgFmt(e, pos);
+        }
+        dbgRender();
+    } catch (ex) {}
+}
+
 // History for undo
 var historyStack = [];
 var maxHistory = 20;
@@ -315,6 +429,7 @@ if (isWii) {
         if (e && e.preventDefault) e.preventDefault();
         isDrawing = true;
         var pos = getWiiPos(e);
+        dbgEvent('down', e, pos);
 
         if (currTool === 'fill') {
             // floodFill needs getImageData/putImageData, which older Wii Opera builds
@@ -338,8 +453,9 @@ if (isWii) {
         return false;
     };
     canvas.onmousemove = function (e) {
-        if (!isDrawing) return;
         e = e || window.event;
+        if (DRAW_DEBUG) dbgEvent('move', e, null); // count moves even when not drawing
+        if (!isDrawing) return;
         if (e && e.preventDefault) e.preventDefault();
 
         var pos = getWiiPos(e);
@@ -354,6 +470,7 @@ if (isWii) {
     };
     canvas.onmouseup = function () {
         isDrawing = false;
+        if (DRAW_DEBUG) dbgEvent('up', null, null);
     };
     canvas.onmouseout = function () {
         isDrawing = false;
@@ -689,3 +806,6 @@ function autoResize(el) {
 setColor('#000000', 'c1');
 setSize(5, 's2');
 setTool('draw');
+
+// On-device diagnostic overlay (only when the URL contains ?debug)
+dbgInit();
