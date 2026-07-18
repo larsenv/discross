@@ -57,6 +57,19 @@ const REPLY_CONTENT_MAX_LENGTH = 25;
 const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
 const LEGACY_MESSAGE_LIMIT = 25;
 
+// Per-client overrides for how many cached messages to render.
+// Mid-tier consoles (Wii, 3DS, PS3, PSVita, Xbox360) have enough RAM to load
+// more than truly memory-starved devices, but their browser engines bog down
+// well before the full cache. All use 50 for consistency.
+const MESSAGE_LIMIT_OVERRIDES = {
+    '3ds': 50,
+    wii: 50,
+    new3ds: 50,
+    ps3: 50,
+    psvita: 50,
+    xbox360: 50,
+};
+
 const SYSTEM_MESSAGE_TEXT = {
     1: 'added a new member',
     2: 'left',
@@ -1698,7 +1711,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
     // For legacy/low-memory devices, we limit the number of messages rendered.
     const uaClient = parseUserAgent(req.headers['user-agent']);
-    const messageLimit = uaClient?.isLegacy ? LEGACY_MESSAGE_LIMIT : null;
+    const messageLimit = uaClient
+        ? (MESSAGE_LIMIT_OVERRIDES[uaClient.id] ??
+          (uaClient.isLegacy ? LEGACY_MESSAGE_LIMIT : null))
+        : null;
 
     // 2. Fetch messages (or use override). On a cold cache, only fetch as many
     // messages as this client is actually going to render, so the response
