@@ -362,8 +362,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         if (isTraditionalSubmission) {
                             // Redirect back to the channel for traditional submissions
                             const redirectPath = sessionId
-                                ? `/channels/${channelId}?sessionID=${encodeURIComponent(sessionId)}`
-                                : `/channels/${channelId}`;
+                                ? `/channels/${channelId}?sessionID=${encodeURIComponent(sessionId)}#end`
+                                : `/channels/${channelId}#end`;
                             res.writeHead(302, { Location: redirectPath });
                             res.end();
                         } else {

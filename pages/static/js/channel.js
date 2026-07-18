@@ -59,6 +59,36 @@ function scrollToBottom() {
     try { window.scrollTo(0, scrollHeight); } catch (e) {}
 }
 
+// Universal scroll-to-bottom on page load
+// =======================================
+// The #end anchor alone is unreliable: some legacy browsers drop URL fragments
+// on redirects, and images that finish loading after the anchor jump push the
+// page back up. Scroll as soon as the DOM is parsed (inline script at the end
+// of the channel templates calls discrossScrollInit) and again on window.onload
+// once images have settled. Skipped when the URL targets a specific message.
+function shouldAutoScroll() {
+    try {
+        var h = window.location.hash;
+        return !h || h === '#' || h === '#end';
+    } catch (e) {
+        return true;
+    }
+}
+
+function discrossScrollInit() {
+    if (shouldAutoScroll()) scrollToBottom();
+}
+
+(function () {
+    var prevOnload = window.onload;
+    window.onload = function () {
+        if (prevOnload) {
+            try { prevOnload(); } catch (e) {}
+        }
+        discrossScrollInit();
+    };
+})();
+
 // Emoji System
 // ==========
 var emojiShowing = false;

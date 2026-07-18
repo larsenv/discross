@@ -89,7 +89,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
         const sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
 
         res.writeHead(302, {
-            Location: `/channels/${channelId}${sessionParam}`,
+            Location: `/channels/${channelId}${sessionParam}#end`,
         });
         res.end();
     } catch (err) {

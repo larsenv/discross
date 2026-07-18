@@ -165,7 +165,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                 ) {
                     channelList += render('channellist/announcement-channel', {
                         CHANNEL_NAME: escapedName,
-                        CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                        CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
                     });
                 } else if (item.type === ChannelType.GuildVoice) {
                     const canSendMessages = member
@@ -174,18 +174,18 @@ async function processServerChannels(server, member, response, sessionParam) {
                     if (!canSendMessages) {
                         channelList += render('channellist/locked-channel', {
                             CHANNEL_NAME: escapedName,
-                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
                         });
                     } else {
                         channelList += render('channellist/voice-channel', {
                             CHANNEL_NAME: escapedName,
-                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
                         });
                     }
                 } else if (item.type === ChannelType.GuildStageVoice) {
                     channelList += render('channellist/voice-channel', {
                         CHANNEL_NAME: escapedName,
-                        CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                        CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
                     });
                 } else if (!isThread && item.isTextBased()) {
                     const canSendMessages = member
@@ -197,17 +197,17 @@ async function processServerChannels(server, member, response, sessionParam) {
                     if (isRulesChannel) {
                         channelList += render('channellist/rules-channel', {
                             CHANNEL_NAME: escapedName,
-                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
                         });
                     } else if (!canSendMessages) {
                         channelList += render('channellist/locked-channel', {
                             CHANNEL_NAME: escapedName,
-                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
                         });
                     } else {
                         channelList += render('channellist/text-channel', {
                             CHANNEL_NAME: escapedName,
-                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}`,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
                         });
                     }
                 }
@@ -227,7 +227,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                             const threadEscapedName = escape(normalizeWeirdUnicode(thread.name));
                             channelList += render('channellist/thread-channel', {
                                 CHANNEL_NAME: threadEscapedName,
-                                CHANNEL_LINK: `../channels/${thread.id}${sessionParam}`,
+                                CHANNEL_LINK: `../channels/${thread.id}${sessionParam}#end`,
                             });
                         });
                         channelList += getTemplate('div-close', 'misc');

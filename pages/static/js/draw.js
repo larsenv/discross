@@ -593,12 +593,24 @@ function wipe() {
 }
 
 // --- SEND LOGIC ---
-function prepareAndSend() {
+// Called from the form's onsubmit: fill in the drawing data and return true so
+// the browser's own submit proceeds (calling form.submit() from inside onsubmit
+// double-submits on some legacy browsers).
+function prepareDrawing() {
     var inputField = document.getElementById('drawinginput');
-    var form = document.getElementById('sendform');
-    var data = canvas.toDataURL('image/png');
-    inputField.value = data;
-    form.submit();
+    try {
+        inputField.value = canvas.toDataURL('image/png');
+    } catch (ex) {
+        alert('Could not export the drawing on this browser.');
+        return false;
+    }
+    return true;
+}
+
+function prepareAndSend() {
+    if (prepareDrawing()) {
+        document.getElementById('sendform').submit();
+    }
 }
 
 function handleMessageKeydown(event) {
