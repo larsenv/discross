@@ -625,7 +625,9 @@ async function backfillHistory(chnl, alreadyFetched) {
         }
         msghistory.set(
             chnl.id,
-            current.sort((messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp)
+            current.sort(
+                (messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp
+            )
         );
     } catch (err) {
         console.error(`Failed to backfill messages for channel ${chnl.id}:`, err);
