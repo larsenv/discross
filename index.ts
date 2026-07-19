@@ -969,6 +969,7 @@ bot.startBot().catch((err) => {
     console.error('Discord bot failed to start:', err.message);
 });
 
-server.listen(4000, () => {
-    console.log('Discross running on port 4000');
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => {
+    console.log(`Discross running on port ${PORT}`);
 });

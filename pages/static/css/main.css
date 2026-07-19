@@ -3118,7 +3118,8 @@ html.client-new3ds #canvas-wrapper {
    NOTE: overflow-x: hidden on html/body kills vertical scrolling in NetFront NX.
    Do NOT add it here. Width constraint is handled by the viewport meta tag. */
 html.client-3ds #wrapper,
-html.client-new3ds #wrapper {
+html.client-new3ds #wrapper,
+html.client-psp #wrapper {
     width: 100% !important;
     max-width: 100% !important;
     margin-left: auto !important;
@@ -3127,24 +3128,28 @@ html.client-new3ds #wrapper {
 
 /* Maximize horizontal space usage */
 html.client-3ds .content-padding,
-html.client-new3ds .content-padding {
+html.client-new3ds .content-padding,
+html.client-psp .content-padding {
     padding-left: 0 !important;
     padding-right: 0 !important;
 }
 
 html.client-3ds #wrapper .content-padding > div,
-html.client-new3ds #wrapper .content-padding > div {
+html.client-new3ds #wrapper .content-padding > div,
+html.client-psp #wrapper .content-padding > div {
     padding: 8px 4px 8px 4px !important;
 }
 
 html.client-3ds #msgcontainer table,
-html.client-new3ds #msgcontainer table {
+html.client-new3ds #msgcontainer table,
+html.client-psp #msgcontainer table {
     margin: 0 !important;
     padding: 6px 0 !important;
 }
 
 html.client-3ds #msgcontainer table.ping-row,
-html.client-new3ds #msgcontainer table.ping-row {
+html.client-new3ds #msgcontainer table.ping-row,
+html.client-psp #msgcontainer table.ping-row {
     margin-left: 0 !important;
     padding-left: 0 !important;
 }
@@ -3153,13 +3158,16 @@ html.client-new3ds #msgcontainer table.ping-row {
 html.client-3ds #msgcontainer > table > tbody > tr > td,
 html.client-3ds #msgcontainer > table > tr > td,
 html.client-new3ds #msgcontainer > table > tbody > tr > td,
-html.client-new3ds #msgcontainer > table > tr > td {
+html.client-new3ds #msgcontainer > table > tr > td,
+html.client-psp #msgcontainer > table > tbody > tr > td,
+html.client-psp #msgcontainer > table > tr > td {
     padding-left: 4px !important;
     padding-right: 4px !important;
 }
 
 html.client-3ds img,
-html.client-new3ds img {
+html.client-new3ds img,
+html.client-psp img {
     max-width: 100% !important;
     height: auto;
 }
@@ -3228,20 +3236,23 @@ html.client-new3ds img {
 }
 
 html.client-3ds #msgcontainer > table,
-html.client-new3ds #msgcontainer > table {
+html.client-new3ds #msgcontainer > table,
+html.client-psp #msgcontainer > table {
     table-layout: fixed !important;
     width: 100% !important;
 }
 
 html.client-3ds #msgcontainer td,
-html.client-new3ds #msgcontainer td {
+html.client-new3ds #msgcontainer td,
+html.client-psp #msgcontainer td {
     word-wrap: break-word !important;
     word-break: break-word !important;
     overflow-wrap: break-word !important;
 }
 
 html.client-3ds #msgcontainer a,
-html.client-new3ds #msgcontainer a {
+html.client-new3ds #msgcontainer a,
+html.client-psp #msgcontainer a {
     word-wrap: break-word !important;
     word-break: break-all !important;
     overflow-wrap: break-word !important;
@@ -3251,9 +3262,13 @@ html.client-3ds .reply-content-cell,
 html.client-new3ds .reply-content-cell {
     max-width: 130px !important; /* Extra constrained for 3DS bottom screen */
 }
+html.client-psp .reply-content-cell {
+    max-width: 200px !important;
+}
 
 html.client-3ds .message-header-table,
-html.client-new3ds .message-header-table {
+html.client-new3ds .message-header-table,
+html.client-psp .message-header-table {
     width: 100% !important;
     table-layout: auto !important;
 }
@@ -3269,16 +3284,18 @@ html.client-new3ds .message-author-cell {
     vertical-align: top !important;
 }
 
-/* DSi (Opera 9.5) collapses a table cell with max-width:0 to zero width,
+/* DSi (Opera 9.5) and PSP (NetFront 3.x) collapse a table cell with max-width:0 to zero width,
    hiding the username entirely. Let the author cell size to its content while
    the meta cell stays pinned at width:1%. */
-html.client-dsi .message-author-cell {
+html.client-dsi .message-author-cell,
+html.client-psp .message-author-cell {
     max-width: none !important;
     overflow: visible !important;
 }
 
 html.client-3ds .message-meta-cell,
-html.client-new3ds .message-meta-cell {
+html.client-new3ds .message-meta-cell,
+html.client-psp .message-meta-cell {
     white-space: nowrap !important;
     text-align: right !important;
     width: 1% !important;
@@ -3287,18 +3304,77 @@ html.client-new3ds .message-meta-cell {
 
 /* Legacy — kept for any remaining 3-cell templates */
 html.client-3ds .message-date-cell,
-html.client-new3ds .message-date-cell {
+html.client-new3ds .message-date-cell,
+html.client-psp .message-date-cell {
     white-space: nowrap !important;
     text-align: right !important;
     width: 1% !important;
 }
 
 html.client-3ds .message-reply-cell,
-html.client-new3ds .message-reply-cell {
+html.client-new3ds .message-reply-cell,
+html.client-psp .message-reply-cell {
     white-space: nowrap !important;
     width: 1% !important;
 }
 
 .date-separator {
     table-layout: auto !important;
+}
+
+/* ================================================================
+   18. PLAYSTATION PORTABLE (PSP) OVERRIDES
+   ================================================================ */
+
+/* NetFront 3.x on PSP does not support display: inline-block.
+   Buttons and inputs overlap if rendered inline with padding and <br /> tags.
+   Convert them to display: block with clean margins. */
+html.client-psp .discross-button,
+html.client-psp a.discross-button,
+html.client-psp button.discross-button,
+html.client-psp input[type="submit"],
+html.client-psp input[type="button"],
+html.client-psp .warning-box .discross-button,
+html.client-psp form a[href*="resend"],
+html.client-psp form a[href*="send"] {
+    display: block !important;
+    width: 100% !important;
+    max-width: 280px !important;
+    box-sizing: border-box !important;
+    margin: 10px auto !important;
+    padding: 10px 16px !important;
+    height: auto !important;
+    line-height: 1.4 !important;
+    text-align: center !important;
+    float: none !important;
+    clear: both !important;
+}
+
+/* Hide extraneous <br /> tags around block buttons on server/auth pages */
+html.client-psp.page-server #wrapper br,
+html.client-psp.page-simple form br + br {
+    display: none !important;
+}
+
+/* Ensure body text renders cleanly and visibly on PSP's NetFront 3.x engine */
+html.client-psp .messagecontent,
+html.client-psp .messagecontent-font,
+html.client-psp .firstmessage,
+html.client-psp .message,
+html.client-psp .message-body-cell {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+    word-wrap: break-word !important;
+    font-size: 15px !important;
+    line-height: 19px !important;
+    color: #dcdcdf !important;
+}
+html.client-psp .light-theme .messagecontent,
+html.client-psp .light-theme .messagecontent-font,
+html.client-psp .light-theme .firstmessage,
+html.client-psp .light-theme .message,
+html.client-psp .light-theme .message-body-cell {
+    color: #2e3338 !important;
 }

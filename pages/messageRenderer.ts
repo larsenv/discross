@@ -68,6 +68,7 @@ const MESSAGE_LIMIT_OVERRIDES = {
     ps3: 50,
     psvita: 50,
     xbox360: 50,
+    psp: 50,
 };
 
 const SYSTEM_MESSAGE_TEXT = {
