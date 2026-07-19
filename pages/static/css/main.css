@@ -3357,10 +3357,9 @@ html.client-psp.page-simple form br + br {
 }
 
 /* Ensure body text renders cleanly and visibly on PSP's NetFront 3.x engine */
-html.client-psp .messagecontent,
-html.client-psp .messagecontent-font,
 html.client-psp .firstmessage,
 html.client-psp .message,
+html.client-psp .messagecontent,
 html.client-psp .message-body-cell {
     display: block !important;
     width: 100% !important;
@@ -3371,10 +3370,22 @@ html.client-psp .message-body-cell {
     line-height: 19px !important;
     color: #dcdcdf !important;
 }
+html.client-psp .messagecontent-font,
+html.client-psp font.messagecontent-font,
+html.client-psp .messagecontent font {
+    display: inline !important;
+    max-width: none !important;
+    overflow: visible !important;
+    font-size: 15px !important;
+    line-height: 19px !important;
+    color: #dcdcdf !important;
+}
 html.client-psp .light-theme .messagecontent,
-html.client-psp .light-theme .messagecontent-font,
 html.client-psp .light-theme .firstmessage,
 html.client-psp .light-theme .message,
-html.client-psp .light-theme .message-body-cell {
+html.client-psp .light-theme .message-body-cell,
+html.client-psp .light-theme .messagecontent-font,
+html.client-psp .light-theme font.messagecontent-font,
+html.client-psp .light-theme .messagecontent font {
     color: #2e3338 !important;
 }
