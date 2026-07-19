@@ -8,9 +8,10 @@
   (function() {
     var ua = navigator.userAgent;
     var isDSi = ua.indexOf('Nintendo DSi') !== -1;
-    if (ua.indexOf('Nintendo 3DS') !== -1 || isDSi) {
+    var isPSP = ua.indexOf('PSP (PlayStation Portable)') !== -1 || ua.indexOf('PlayStation Portable') !== -1;
+    if (ua.indexOf('Nintendo 3DS') !== -1 || isDSi || isPSP) {
       var isNew3DS = ua.indexOf('New Nintendo 3DS') !== -1 || ua.indexOf('NintendoBrowser') !== -1;
-      document.documentElement.className += isNew3DS ? ' client-new3ds' : ' client-3ds';
+      document.documentElement.className += isNew3DS ? ' client-new3ds' : (isPSP ? ' client-psp' : ' client-3ds');
       // The DSi (Opera 9.5) shares the client-3ds message layout but needs a few
       // overrides where that layout relies on rendering the real 3DS does but
       // the DSi does not — tagged with client-dsi.
