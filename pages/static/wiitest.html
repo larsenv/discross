@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>WIITEST-HTML-LOADED</title>
+<script type="text/javascript">
+/* Earliest possible error catcher. If the page has ANY script error, this
+   surfaces it to the title bar and the #err line. Installed in <head> so it
+   catches errors in the body script below too. ES3-only, no modern syntax. */
+window.__wiierr = '';
+window.onerror = function (m, u, l) {
+    window.__wiierr = m + ' @' + l;
+    try { document.title = 'WIITEST-ERROR'; } catch (e) {}
+    try {
+        var d = document.getElementById('err');
+        if (d) d.innerHTML = 'SCRIPT ERROR: ' + m + ' @line ' + l;
+    } catch (e2) {}
+    return true;
+};
+</script>
+</head>
+<body>
+<div style="font-family: monospace; font-size: 18px; color: #000000; background: #ffffff; padding: 10px; line-height: 1.5;">
+<div id="err" style="color: #cc0000; font-weight: bold;">(no error yet)</div>
+<hr>
+<div id="l0">STEP 0 (static HTML): you can read this =&gt; the page itself loaded over the network.</div>
+<div id="l1">STEP 1 (JavaScript runs): pending... if this still says "pending", JS did NOT run.</div>
+<div id="l2">STEP 2 (canvas 2d): pending...</div>
+<div id="l3">STEP 3 (mouse events): press/hold A and drag ON THE GRAY BOX below.</div>
+<div id="l4">STEP 4 (event coords): pending... (updates when you drag the box)</div>
+<hr>
+<canvas id="cv" width="320" height="140" style="border: 3px solid #000000; background: #dddddd; display: block;"></canvas>
+<div style="margin-top:8px;">Title bar should read "WIITEST-JS-RAN" once step 1 passes.</div>
+</div>
+
+<script type="text/javascript">
+/* This runs at the end of <body>, exactly like draw.js does. It updates each
+   line as capabilities are proven, so whatever the LAST updated line is tells
+   us how far the Wii's browser got. */
+function wiiSet(id, txt) {
+    var d = document.getElementById(id);
+    if (d) { d.innerHTML = txt; }
+}
+
+/* STEP 1: prove JS executes at all */
+try { document.title = 'WIITEST-JS-RAN'; } catch (e) {}
+wiiSet('l1', 'STEP 1 (JavaScript runs): OK -- body script executed.');
+
+/* STEP 2: prove canvas 2d context + drawing works */
+var cv = null;
+try {
+    cv = document.getElementById('cv');
+    var cx = cv.getContext('2d');
+    cx.fillStyle = '#009900';
+    cx.fillRect(10, 10, 120, 60);
+    var hasBCR = !!cv.getBoundingClientRect;
+    wiiSet('l2', 'STEP 2 (canvas 2d): OK -- green box drawn. getBoundingClientRect=' + hasBCR);
+} catch (e) {
+    wiiSet('l2', 'STEP 2 (canvas 2d): FAILED -- ' + e);
+}
+
+/* STEP 3 + 4: prove mouse events fire and show which coordinate props exist */
+var downs = 0, moves = 0;
+function wiiReport(kind, e) {
+    e = e || window.event || {};
+    wiiSet('l3', 'STEP 3 (mouse events): DOWN=' + downs + '  MOVE=' + moves + '  (last: ' + kind + ')');
+    wiiSet(
+        'l4',
+        'STEP 4 (event coords): off=' + e.offsetX + ',' + e.offsetY +
+        '  lay=' + e.layerX + ',' + e.layerY +
+        '  cli=' + e.clientX + ',' + e.clientY +
+        '  pg=' + e.pageX + ',' + e.pageY
+    );
+}
+try {
+    if (cv) {
+        cv.onmousedown = function (e) {
+            downs++;
+            wiiReport('down', e);
+            if (e && e.preventDefault) e.preventDefault();
+            return false;
+        };
+        cv.onmousemove = function (e) {
+            moves++;
+            wiiReport('move', e);
+        };
+    }
+} catch (e) {
+    wiiSet('l3', 'STEP 3 (mouse events): FAILED to attach -- ' + e);
+}
+</script>
+</body>
+</html>
