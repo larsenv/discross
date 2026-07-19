@@ -386,7 +386,12 @@ async function handlePost(req, res) {
                 }
             } else if (parsedurl === '/senddrawing') {
                 await senddrawingAsync(req, res, body);
-            } else if (parsedurl === '/changepassword') {
+            } else if (
+                parsedurl === '/changepassword' ||
+                parsedurl === '/changepassword.html' ||
+                parsedurl === '/change-password' ||
+                parsedurl === '/change-password.html'
+            ) {
                 const discordID = await auth.checkAuth(req, res, true);
                 if (discordID) {
                     await changepasswordpage.handleChangePassword(bot, req, res, body, discordID);
@@ -394,7 +399,12 @@ async function handlePost(req, res) {
                     res.writeHead(302, { Location: '/login.html' });
                     res.end();
                 }
-            } else if (parsedurl === '/setup2fa') {
+            } else if (
+                parsedurl === '/setup2fa' ||
+                parsedurl === '/setup2fa.html' ||
+                parsedurl === '/setup-2fa' ||
+                parsedurl === '/setup-2fa.html'
+            ) {
                 const discordID = await auth.checkAuth(req, res, true);
                 if (discordID) {
                     await setup2fapage.handleSetup2FA(bot, req, res, body, discordID);
@@ -402,7 +412,12 @@ async function handlePost(req, res) {
                     res.writeHead(302, { Location: '/login.html' });
                     res.end();
                 }
-            } else if (parsedurl === '/disable2fa') {
+            } else if (
+                parsedurl === '/disable2fa' ||
+                parsedurl === '/disable2fa.html' ||
+                parsedurl === '/disable-2fa' ||
+                parsedurl === '/disable-2fa.html'
+            ) {
                 const discordID = await auth.checkAuth(req, res, true);
                 if (discordID) {
                     await setup2fapage.handleDisable2FA(bot, req, res, body, discordID);
@@ -650,27 +665,43 @@ async function handleGet(req, res) {
             break;
         }
         case 'login.html':
+        case 'login':
             await loginpage.processLogin(bot, req, res, args);
             break;
         case 'register.html':
+        case 'register':
             await registerpage.processRegister(bot, req, res, args);
             break;
         case 'forgot.html':
+        case 'forgot':
             await forgotpage.processForgot(bot, req, res, args);
             break;
         case 'change-password.html':
+        case 'changepassword.html':
+        case 'change-password':
+        case 'changepassword':
             await changepasswordpage.processChangePassword(bot, req, res, args);
             break;
         case 'setup-2fa.html':
+        case 'setup2fa.html':
+        case 'setup-2fa':
+        case 'setup2fa':
+        case 'disable-2fa.html':
+        case 'disable2fa.html':
+        case 'disable-2fa':
+        case 'disable2fa':
             await setup2fapage.processSetup2FA(bot, req, res, args);
             break;
         case 'index.html':
+        case 'index':
             await indexpage.processIndex(bot, req, res, args);
             break;
         case 'privacy.html':
+        case 'privacy':
             await privacypage.processPrivacy(bot, req, res, args);
             break;
         case 'terms.html':
+        case 'terms':
             await termspage.processTerms(bot, req, res, args);
             break;
         case 'credits.html':
