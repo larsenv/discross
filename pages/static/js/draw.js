@@ -348,9 +348,20 @@ function onCanvasMouseMove(e) {
     if (e && e.preventDefault) e.preventDefault();
 
     var pos = getPos(e);
-    // Always push to queue — flushed by setInterval at 33fps.
-    // This batching prevents Opera 9 (Wii/DSi) from repainting on every event.
-    pointQueue.push({ x: pos.x, y: pos.y });
+    if (isDSi) {
+        // DSi Opera 9.5 only: each ctx.stroke() forces a full-canvas repaint, so
+        // batch segments into the queue and let setInterval(flushDrawQueue) paint
+        // them ~33fps. Faster engines (New 3DS, Wii U, desktop) must NOT go through
+        // the queue — their setInterval is clamped under drawing load and flushes
+        // only ~1-2x/sec, which is the "responds every half second" lag. They draw
+        // immediately here instead, matching the pre-July-10 fast path.
+        pointQueue.push({ x: pos.x, y: pos.y });
+    } else {
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
     lastX = pos.x;
     lastY = pos.y;
 }
