@@ -1,12 +1,13 @@
 // ============================================================================
 // ON-DEVICE DIAGNOSTIC — must be the FIRST thing that runs.
-// Gated on "?debug" in the URL (which also busts Opera 9's page cache).
-// A previous version created the readout box at the BOTTOM of the script, so an
-// early abort (which is exactly what we're chasing) killed it before it drew
-// anything — showing nothing on the Wii. This version creates the box eagerly,
-// arms window.onerror immediately, and drops cp() checkpoints through the code
-// so the box shows HOW FAR execution got: whatever the last "CP=" value is, the
-// error happened right after it. Remove once the Wii tool is confirmed.
+// Gated on any "debug" in the query string. IMPORTANT: Opera 9 on the Wii
+// caches pages so hard it will re-serve a stale copy of the SAME url, so each
+// test must use a UNIQUE query (?debug=1, ?debug=2, ?debug=3 …) to force a
+// fresh load. Reports via two sinks: document.title (most reliable on the Wii)
+// and an in-flow box at the top of <body>. Drops cp() checkpoints through the
+// top-level code so the readout shows HOW FAR execution got — whatever the last
+// "CP=" value is, the abort happened right after it; "err=" shows the Opera 9
+// exception + line. Remove once the Wii tool is confirmed.
 // ============================================================================
 var DRAW_DEBUG = (function () {
     try {
@@ -31,18 +32,22 @@ function _dbgEnsureBox() {
     try {
         if (!document.body) return;
         var b = document.createElement('div');
-        b.style.position = 'fixed';
-        b.style.top = '0';
-        b.style.right = '0';
-        b.style.zIndex = '99999';
+        // position:static (normal flow), inserted as the FIRST child of <body>.
+        // Opera 9 on the Wii barely supports position:fixed — a fixed box can
+        // render off the visible TV area. In-flow at the top of the page always
+        // shows if the script runs at all.
         b.style.background = '#000000';
         b.style.color = '#00ff00';
-        b.style.font = '13px monospace';
-        b.style.padding = '6px';
-        b.style.border = '2px solid #00ff00';
+        b.style.font = '18px monospace';
+        b.style.padding = '8px';
+        b.style.border = '3px solid #00ff00';
         b.style.whiteSpace = 'pre';
         b.style.textAlign = 'left';
-        document.body.appendChild(b);
+        if (document.body.firstChild) {
+            document.body.insertBefore(b, document.body.firstChild);
+        } else {
+            document.body.appendChild(b);
+        }
         _dbgBox = b;
     } catch (e) {}
 }
@@ -64,6 +69,12 @@ function dbgTopElement() {
 }
 function dbgRender() {
     if (!DRAW_DEBUG) return;
+    // document.title is the most reliable sink on the Wii Internet Channel — it
+    // shows in the browser chrome and needs no element rendering. If the visible
+    // box ever fails to paint, the title bar still reports the last checkpoint.
+    try {
+        document.title = 'CP=' + _dbgCP + (_dbgErr ? ' ERR:' + _dbgErr : '');
+    } catch (e) {}
     _dbgEnsureBox();
     if (!_dbgBox) return;
     try {
