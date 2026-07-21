@@ -8,7 +8,7 @@
         'joy',
         'fire',
         'white_check_mark',
-        'eyes',
+        'eyes'
     ];
 
     function getSkinToneIndex(hex) {
@@ -17,7 +17,7 @@
             '1f3fc': '2',
             '1f3fd': '3',
             '1f3fe': '4',
-            '1f3ff': '5',
+            '1f3ff': '5'
         };
         return mapping[hex] || '';
     }

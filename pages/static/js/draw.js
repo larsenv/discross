@@ -56,7 +56,10 @@ function dbgTopElement() {
         if (typeof canvas === 'undefined' || !canvas) return 'no-canvas';
         if (!document.elementFromPoint || !canvas.getBoundingClientRect) return 'n/a';
         var r = canvas.getBoundingClientRect();
-        var el = document.elementFromPoint(r.left + (r.width || 300) / 2, r.top + (r.height || 175) / 2);
+        var el = document.elementFromPoint(
+            r.left + (r.width || 300) / 2,
+            r.top + (r.height || 175) / 2
+        );
         if (!el) return 'null';
         return (
             (el.tagName || '?') +
@@ -80,19 +83,45 @@ function dbgRender() {
     try {
         var w = typeof isWii !== 'undefined' ? isWii : '?';
         var s = typeof isSlowDevice !== 'undefined' ? isSlowDevice : '?';
-        var cw =
-            typeof canvas !== 'undefined' && canvas ? canvas.width + 'x' + canvas.height : '?';
+        var cw = typeof canvas !== 'undefined' && canvas ? canvas.width + 'x' + canvas.height : '?';
         var g = typeof canvas !== 'undefined' && canvas ? !!canvas.getBoundingClientRect : '?';
         _dbgBox.innerHTML =
-            'CP=' + _dbgCP + '\n' +
-            'err=' + (_dbgErr || 'none') + '\n' +
-            'isWii=' + w + ' slow=' + s + '\n' +
-            'screen=' + screen.width + 'x' + screen.height + ' gBCR=' + g + '\n' +
-            'canvas=' + cw + '\n' +
-            'down=' + _dbgCounts.down + ' move=' + _dbgCounts.move + ' up=' + _dbgCounts.up + '\n' +
-            'over=' + _dbgOver + '\n' +
-            'DOWN ' + _dbgLastDown + '\n' +
-            'MOVE ' + _dbgLastMove;
+            'CP=' +
+            _dbgCP +
+            '\n' +
+            'err=' +
+            (_dbgErr || 'none') +
+            '\n' +
+            'isWii=' +
+            w +
+            ' slow=' +
+            s +
+            '\n' +
+            'screen=' +
+            screen.width +
+            'x' +
+            screen.height +
+            ' gBCR=' +
+            g +
+            '\n' +
+            'canvas=' +
+            cw +
+            '\n' +
+            'down=' +
+            _dbgCounts.down +
+            ' move=' +
+            _dbgCounts.move +
+            ' up=' +
+            _dbgCounts.up +
+            '\n' +
+            'over=' +
+            _dbgOver +
+            '\n' +
+            'DOWN ' +
+            _dbgLastDown +
+            '\n' +
+            'MOVE ' +
+            _dbgLastMove;
     } catch (e) {}
 }
 function cp(label) {
@@ -103,10 +132,22 @@ function cp(label) {
 function dbgFmt(e, pos) {
     e = e || {};
     return (
-        'off=' + e.offsetX + ',' + e.offsetY +
-        ' lay=' + e.layerX + ',' + e.layerY +
-        ' cli=' + e.clientX + ',' + e.clientY +
-        ' pg=' + e.pageX + ',' + e.pageY +
+        'off=' +
+        e.offsetX +
+        ',' +
+        e.offsetY +
+        ' lay=' +
+        e.layerX +
+        ',' +
+        e.layerY +
+        ' cli=' +
+        e.clientX +
+        ',' +
+        e.clientY +
+        ' pg=' +
+        e.pageX +
+        ',' +
+        e.pageY +
         (pos ? ' -> ' + Math.round(pos.x) + ',' + Math.round(pos.y) : '')
     );
 }
@@ -290,7 +331,7 @@ function getPos(e) {
     if (e.offsetX !== undefined) {
         return {
             x: e.offsetX * (canvas.width / canvasDisplayW),
-            y: e.offsetY * (canvas.height / canvasDisplayH),
+            y: e.offsetY * (canvas.height / canvasDisplayH)
         };
     }
     // Wii Opera 9 and browsers without offsetX: use getBoundingClientRect if available
@@ -300,7 +341,7 @@ function getPos(e) {
         var scaleY = rect.height ? canvas.height / rect.height : 1;
         return {
             x: (e.clientX - rect.left) * scaleX,
-            y: (e.clientY - rect.top) * scaleY,
+            y: (e.clientY - rect.top) * scaleY
         };
     }
     // Fallback: pageX/pageY + canvas page offset
@@ -310,7 +351,7 @@ function getPos(e) {
     var cp = getCanvasPagePos();
     return {
         x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
-        y: (pageY - cp.top) * (canvas.height / canvasDisplayH),
+        y: (pageY - cp.top) * (canvas.height / canvasDisplayH)
     };
 }
 
@@ -337,7 +378,6 @@ function flushDrawQueue() {
 // many segments into one repaint. setInterval works on all legacy browsers (no rAF needed).
 setInterval(flushDrawQueue, 30);
 cp('5: setInterval set');
-
 
 function onCanvasMouseDown(e) {
     e = e || window.event;
@@ -563,7 +603,7 @@ function getTouchPos(e) {
     var cp = getCanvasPagePos();
     return {
         x: (pageX - cp.left) * (canvas.width / canvasDisplayW),
-        y: (pageY - cp.top) * (canvas.height / canvasDisplayH),
+        y: (pageY - cp.top) * (canvas.height / canvasDisplayH)
     };
 }
 
