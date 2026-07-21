@@ -1,0 +1,141 @@
+<style>
+        /* Force block layout on Wii (Opera 9 does not support flexbox) */
+        html, html.page-draw,
+        body, html.page-draw body,
+        #wrapper, html.page-draw #wrapper {
+            display: block !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            flex: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        #toolbar-container {
+            background-color: #2f3136 !important;
+            padding: 5px !important;
+            border-bottom: 1px solid #202225 !important;
+            display: table !important;
+            margin: 0 auto 5px auto !important;
+            border-radius: 8px !important;
+            text-align: left !important;
+            position: relative !important;
+            transform: none !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            top: auto !important;
+            width: auto !important;
+            max-width: none !important;
+            z-index: 10 !important;
+        }
+
+        /* border/background are NOT !important here — setColor()/setSize() in
+           draw.js toggle these inline to show the selected swatch/size, and an
+           !important class rule would always beat a plain inline style, which
+           silently made color/size selection un-highlightable on Wii. */
+        .c-box {
+            width: 24px !important;
+            height: 24px !important;
+            border: 2px solid #555;
+            display: inline-block !important;
+            margin: 1px !important;
+            cursor: pointer !important;
+            vertical-align: middle !important;
+        }
+
+        .s-btn {
+            background: #b9bbbe;
+            border: 2px solid #000;
+            display: inline-block !important;
+            margin: 0 3px !important;
+            cursor: pointer !important;
+            vertical-align: middle !important;
+            padding: 2px !important;
+        }
+
+        .s-inner { background: black !important; font-size: 1px !important; }
+
+        #canvas-wrapper {
+            margin: 0 auto 20px auto !important;
+            display: block !important;
+            background: #2f3136 !important;
+            padding: 5px !important;
+            width: 610px !important;
+            max-width: 100% !important;
+            position: relative !important;
+            z-index: 10 !important;
+            box-sizing: border-box !important;
+        }
+
+        canvas {
+            background: #ffffff !important;
+            cursor: crosshair !important;
+            display: block !important;
+            border: 1px solid #202225 !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+        }
+
+        /* Wii button styling.
+           appearance:none stops Opera 9 painting its native OS-chrome button
+           (which ignores background-color), so the purple "selected" look
+           setTool() applies via inline style in draw.js actually renders
+           instead of only the browser's transient :focus border ring. */
+        #toolbar-container input[type="button"], .clear-button {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background: #4f545c;
+            color: #dcddde;
+            border: 1px solid #202225;
+            padding: 4px 8px !important;
+            margin: 2px !important;
+            cursor: pointer !important;
+            vertical-align: middle !important;
+            font-size: 14px !important;
+            border-radius: 4px !important;
+        }
+
+        .content-padding {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 120px !important;
+            display: block !important;
+            background: transparent !important;
+        }
+
+        .message-form-container {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            background: #36393f !important;
+            border-top: 1px solid #202225 !important;
+            padding: 8px !important;
+            box-sizing: border-box !important;
+            z-index: 50 !important;
+        }
+
+        /* Override menu button from main.css on Wii */
+        .menu-button {
+            position: fixed !important;
+            top: 12px !important;
+            bottom: auto !important;
+            left: 12px !important;
+            right: auto !important;
+            z-index: 100 !important;
+            background: #2f3136 !important;
+            border: 1px solid #202225 !important;
+            border-radius: 6px !important;
+            padding: 6px !important;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
+            text-decoration: none !important;
+        }
+        .menu-icon { width: 24px !important; height: 24px !important; display: block !important; }
+    </style>

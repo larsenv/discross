@@ -2,7 +2,7 @@
 <html lang="en" class="page-draw">
 <head>
     {$COMMON_HEAD}
-    
+    {$EXTRA_HEAD}
 </head>
 
 <body {$WHITE_THEME_ENABLED}>
@@ -44,6 +44,7 @@
             </div>
         </div>
 
+        {$FORM_WRAPPER_OPEN}
         <div class="message-form-container">
             {$EMOJI_PICKER}
             <form action="../senddrawing{$SESSION_PARAM}" method="post" id="sendform" onsubmit="return prepareDrawing()" style="position: relative">
@@ -105,16 +106,17 @@
                     <table>
                         <tr>
                             <td style="width: 100%; padding: 0;">
-                                <textarea name="message" id="message" class="message-input-field" placeholder="Message {$CHANNEL_NAME}" onkeydown="return handleMessageKeydown(event);" oninput="autoResize(this)" rows="1"></textarea>
+                                <textarea name="message" id="message" class="message-input-field" placeholder="Message {$CHANNEL_NAME}" onkeydown="return handleMessageKeydown(event);" oninput="autoResize(this)" rows="1"{$MSG_INPUT_STYLE_ATTR}></textarea>
                             </td>
                             <td style="padding: 0 4px 0 0;">
-                                <input type="submit" class="send-button-input" value="Send">
+                                <input type="submit" class="send-button-input" value="Send"{$SEND_BTN_STYLE_ATTR}>
                             </td>
                         </tr>
                     </table>
                 </div>
             </form>
         </div>
+        {$FORM_WRAPPER_CLOSE}
     </div>
     <script src="/js/draw.js"></script>
 </body>
