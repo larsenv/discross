@@ -56,7 +56,9 @@ function scrollToBottom() {
         document.documentElement ? document.documentElement.scrollHeight : 0,
         999999
     );
-    try { window.scrollTo(0, scrollHeight); } catch (e) {}
+    try {
+        window.scrollTo(0, scrollHeight);
+    } catch (e) {}
 }
 
 // Universal scroll-to-bottom on page load
@@ -83,7 +85,9 @@ function discrossScrollInit() {
     var prevOnload = window.onload;
     window.onload = function () {
         if (prevOnload) {
-            try { prevOnload(); } catch (e) {}
+            try {
+                prevOnload();
+            } catch (e) {}
         }
         discrossScrollInit();
     };

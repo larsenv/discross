@@ -4,5 +4,14 @@
     "trailingComma": "es5",
     "printWidth": 100,
     "bracketSpacing": true,
-    "tabWidth": 4
+    "tabWidth": 4,
+    "overrides": [
+        {
+            "comment": "Client-side scripts in pages/static/js run on legacy pre-ES5 engines (e.g. the Wii Internet Channel's Opera 9 / Presto 2.1), which throw a SyntaxError on ES5 trailing commas and abort the ENTIRE script. Keep these files ES3-safe by disabling trailing commas.",
+            "files": "pages/static/js/**/*.js",
+            "options": {
+                "trailingComma": "none"
+            }
+        }
+    ]
 }

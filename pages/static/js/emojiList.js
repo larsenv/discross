@@ -159,7 +159,7 @@ window.EMOJI_CATEGORIES = {
         { code: '1fae8.gif', name: 'shaking_face' },
         { code: '2764-fe0f-200d-1f525.gif', name: 'heart_on_fire' },
         { code: '2764-fe0f-200d-1fa79.gif', name: 'mending_heart' },
-        { code: '2764-fe0f.gif', name: 'heart' },
+        { code: '2764-fe0f.gif', name: 'heart' }
     ],
     'People & Body': [
         { code: '1f385.gif', name: 'santa', sk: true },
@@ -244,12 +244,12 @@ window.EMOJI_CATEGORIES = {
         {
             code: '1f468-200d-2764-fe0f-200d-1f468.gif',
             name: 'couple_with_heart_man_man',
-            sk: true,
+            sk: true
         },
         {
             code: '1f468-200d-2764-fe0f-200d-1f48b-200d-1f468.gif',
             name: 'couplekiss_man_man',
-            sk: true,
+            sk: true
         },
         { code: '1f468.gif', name: 'man', sk: true },
         { code: '1f469-200d-1f33e.gif', name: 'woman_farmer' },
@@ -270,7 +270,7 @@ window.EMOJI_CATEGORIES = {
         { code: '1f469-200d-1f469-200d-1f467-200d-1f466.gif', name: 'family_woman_woman_girl_boy' },
         {
             code: '1f469-200d-1f469-200d-1f467-200d-1f467.gif',
-            name: 'family_woman_woman_girl_girl',
+            name: 'family_woman_woman_girl_girl'
         },
         { code: '1f469-200d-1f469-200d-1f467.gif', name: 'family_woman_woman_girl' },
         { code: '1f469-200d-1f4bb.gif', name: 'woman_technologist' },
@@ -292,22 +292,22 @@ window.EMOJI_CATEGORIES = {
         {
             code: '1f469-200d-2764-fe0f-200d-1f468.gif',
             name: 'couple_with_heart_woman_man',
-            sk: true,
+            sk: true
         },
         {
             code: '1f469-200d-2764-fe0f-200d-1f469.gif',
             name: 'couple_with_heart_woman_woman',
-            sk: true,
+            sk: true
         },
         {
             code: '1f469-200d-2764-fe0f-200d-1f48b-200d-1f468.gif',
             name: 'couplekiss_man_woman',
-            sk: true,
+            sk: true
         },
         {
             code: '1f469-200d-2764-fe0f-200d-1f48b-200d-1f469.gif',
             name: 'couplekiss_woman_woman',
-            sk: true,
+            sk: true
         },
         { code: '1f469.gif', name: 'woman', sk: true },
         { code: '1f46a.gif', name: 'family' },
@@ -483,7 +483,7 @@ window.EMOJI_CATEGORIES = {
         { code: '1f9d1-200d-1f91d-200d-1f9d1.gif', name: 'people_holding_hands', sk: true },
         {
             code: '1f9d1-200d-1f9af-200d-27a1-fe0f.gif',
-            name: 'person_with_probing_cane_facing_right',
+            name: 'person_with_probing_cane_facing_right'
         },
         { code: '1f9d1-200d-1f9af.gif', name: 'person_with_probing_cane' },
         { code: '1f9d1-200d-1f9b0.gif', name: 'person_red_hair' },
@@ -492,17 +492,17 @@ window.EMOJI_CATEGORIES = {
         { code: '1f9d1-200d-1f9b3.gif', name: 'person_white_hair' },
         {
             code: '1f9d1-200d-1f9bc-200d-27a1-fe0f.gif',
-            name: 'person_in_manual_wheelchair_facing_right',
+            name: 'person_in_manual_wheelchair_facing_right'
         },
         { code: '1f9d1-200d-1f9bc.gif', name: 'person_in_motorized_wheelchair' },
         {
             code: '1f9d1-200d-1f9bd-200d-27a1-fe0f.gif',
-            name: 'person_in_motorized_wheelchair_facing_right',
+            name: 'person_in_motorized_wheelchair_facing_right'
         },
         { code: '1f9d1-200d-1f9bd.gif', name: 'person_in_manual_wheelchair' },
         {
             code: '1f9d1-200d-1f9d1-200d-1f9d2-200d-1f9d2.gif',
-            name: 'family_adult_adult_child_child',
+            name: 'family_adult_adult_child_child'
         },
         { code: '1f9d1-200d-1f9d1-200d-1f9d2.gif', name: 'family_adult_adult_child' },
         { code: '1f9d1-200d-1f9d2-200d-1f9d2.gif', name: 'family_adult_child_child' },
@@ -567,7 +567,7 @@ window.EMOJI_CATEGORIES = {
         { code: '26f9-fe0f-200d-2640-fe0f.gif', name: 'bouncing_ball_woman' },
         { code: '26f9-fe0f-200d-2642-fe0f.gif', name: 'bouncing_ball_man' },
         { code: '270a.gif', name: 'fist_raised', sk: true },
-        { code: '270b.gif', name: 'hand', sk: true },
+        { code: '270b.gif', name: 'hand', sk: true }
     ],
     'Animals & Nature': [
         { code: '1f331.gif', name: 'seedling' },
@@ -716,7 +716,7 @@ window.EMOJI_CATEGORIES = {
         { code: '1fabd.gif', name: 'wing' },
         { code: '1fabf.gif', name: 'goose' },
         { code: '1face.gif', name: 'moose' },
-        { code: '1facf.gif', name: 'donkey' },
+        { code: '1facf.gif', name: 'donkey' }
     ],
     'Food & Drink': [
         { code: '1f32d.gif', name: 'hotdog' },
@@ -850,7 +850,7 @@ window.EMOJI_CATEGORIES = {
         { code: '1fad9.gif', name: 'jar' },
         { code: '1fada.gif', name: 'ginger_root' },
         { code: '1fadb.gif', name: 'pea_pod' },
-        { code: '2615.gif', name: 'coffee' },
+        { code: '2615.gif', name: 'coffee' }
     ],
     'Travel & Places': [
         { code: '1f300.gif', name: 'cyclone' },
@@ -1021,7 +1021,7 @@ window.EMOJI_CATEGORIES = {
         { code: '26f5.gif', name: 'boat' },
         { code: '26fa.gif', name: 'tent' },
         { code: '26fd.gif', name: 'fuelpump' },
-        { code: '2b50.gif', name: 'star' },
+        { code: '2b50.gif', name: 'star' }
     ],
     Activities: [
         { code: '1f004.gif', name: 'mahjong' },
@@ -1097,7 +1097,7 @@ window.EMOJI_CATEGORIES = {
         { code: '26bd.gif', name: 'soccer' },
         { code: '26be.gif', name: 'baseball' },
         { code: '26f3.gif', name: 'golf' },
-        { code: '2728.gif', name: 'sparkles' },
+        { code: '2728.gif', name: 'sparkles' }
     ],
     Objects: [
         { code: '1f170.gif', name: '1f170' },
@@ -1588,7 +1588,7 @@ window.EMOJI_CATEGORIES = {
         { code: '39-20e3.gif', name: '39-20e3' },
         { code: 'a9.gif', name: 'a9' },
         { code: 'ae.gif', name: 'ae' },
-        { code: 'e50a.gif', name: 'e50a' },
+        { code: 'e50a.gif', name: 'e50a' }
     ],
     Symbols: [
         { code: '1f18e.gif', name: 'ab' },
@@ -1732,7 +1732,7 @@ window.EMOJI_CATEGORIES = {
         { code: '27bf.gif', name: 'loop' },
         { code: '2b1b.gif', name: 'black_large_square' },
         { code: '2b1c.gif', name: 'white_large_square' },
-        { code: '2b55.gif', name: 'o' },
+        { code: '2b55.gif', name: 'o' }
     ],
     Flags: [
         { code: '1f1e6-1f1e8.gif', name: 'ascension_island' },
@@ -2002,6 +2002,6 @@ window.EMOJI_CATEGORIES = {
         { code: '1f3f4-e0067-e0062-e0073-e0063-e0074-e007f.gif', name: 'scotland' },
         { code: '1f3f4-e0067-e0062-e0077-e006c-e0073-e007f.gif', name: 'wales' },
         { code: '1f3f4.gif', name: 'black_flag' },
-        { code: '1f6a9.gif', name: 'triangular_flag_on_post' },
-    ],
+        { code: '1f6a9.gif', name: 'triangular_flag_on_post' }
+    ]
 };
