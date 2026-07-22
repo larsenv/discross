@@ -111,12 +111,14 @@
     <form action="/drawtest" method="post" id="sendform" onsubmit="return false;">
         <input type="hidden" id="drawinginput" name="drawinginput" value="" />
 
-        <input type="button" class="tool-btn" id="btn-draw"   style="left: 2px;   top: 144px;" value="Draw"   onclick="setTool('draw');" />
-        <input type="button" class="tool-btn" id="btn-fill"   style="left: 52px;  top: 144px;" value="Fill"   onclick="setTool('fill');" />
-        <input type="button" class="tool-btn" id="btn-eraser" style="left: 102px; top: 144px;" value="Eraser" onclick="setTool('eraser');" />
-        <input type="button" class="tool-btn"                 style="left: 152px; top: 144px;" value="Undo"   onclick="undo();" />
-        <input type="button" class="tool-btn"                 style="left: 202px; top: 144px;" value="Clear"  onclick="wipe();" />
-        <input type="button" class="tool-btn" style="left: 252px; top: 144px; background: #5865f2; color: #fff;" value="Export" onclick="testExport();" />
+        <input type="button" class="tool-btn" id="btn-draw"   style="left: 2px;   top: 144px; width: 44px;" value="Draw"   onclick="setTool('draw');" />
+        <input type="button" class="tool-btn" id="btn-fill"   style="left: 48px;  top: 144px; width: 44px;" value="Fill"   onclick="setTool('fill');" />
+        <input type="button" class="tool-btn" id="btn-eraser" style="left: 94px;  top: 144px; width: 44px;" value="Eraser" onclick="setTool('eraser');" />
+        <input type="button" class="tool-btn"                 style="left: 140px; top: 144px; width: 44px;" value="Undo"   onclick="undo();" />
+        <input type="button" class="tool-btn"                 style="left: 186px; top: 144px; width: 44px;" value="Clear"  onclick="wipe();" />
+        <!-- Runs the canvas primitive battery and prints the scores on the top line. -->
+        <input type="button" class="tool-btn" style="left: 232px; top: 144px; width: 44px; background: #ed4245; color: #fff;" value="PROBE" onclick="probeCanvas();" />
+        <input type="button" class="tool-btn" style="left: 278px; top: 144px; width: 40px; background: #5865f2; color: #fff;" value="Export" onclick="testExport();" />
 
         <input type="button" class="size-btn" id="s1" style="left: 2px;   top: 165px;" value="2px"  onclick="setSize(2,'s1');" />
         <input type="button" class="size-btn" id="s2" style="left: 34px;  top: 165px;" value="5px"  onclick="setSize(5,'s2');" />
@@ -213,6 +215,7 @@
         // cancelling the default is what makes SPIDER close the press immediately,
         // that difference alone would explain why DSiPaint drags and this does not.
         var pdEnabled = true;
+        var probeInfo = '';
 
         var ua = navigator.userAgent;
         var uaShort = ua.length > 52 ? ua.substring(0, 52) : ua;
@@ -229,7 +232,7 @@
         function render() {
             var canvas = document.getElementById('sketchpad');
             diag.innerHTML =
-                uaShort + '<br />' +
+                (probeInfo || uaShort) + '<br />' +
                 'scr ' + screen.width + 'x' + screen.height +
                 ' buf ' + canvas.width + 'x' + canvas.height +
                 ' css ' + (canvas.style.width || 'native') +
@@ -461,6 +464,127 @@
             if (btn) btn.value = pdEnabled ? 'pd: ON' : 'pd: OFF';
             render();
         };
+
+        // Canvas primitive probe. Input is now ruled out — the engine runs, isDrawing
+        // is true, coordinates travel — yet the mousedown dot (arc+fill) appears and
+        // the move segments (moveTo/lineTo/stroke) do not. So the question is which
+        // canvas operations actually put ink on the screen on this device.
+        //
+        // Each case runs on a freshly cleared canvas and is scored by counting
+        // non-white pixels, so "did it paint" is measured, not eyeballed. The cases
+        // are ordered to isolate one variable at a time:
+        //   arc    - the dot that already works, as a control
+        //   strk   - exactly what onCanvasMouseMove does: stroke relying on
+        //            strokeStyle/lineWidth set earlier, in an EARLIER event
+        //   strk+s - the same stroke with strokeStyle/lineWidth set immediately
+        //            before it, which is what draw-3ds.js does on every move
+        //   strk+c - as above plus lineCap/lineJoin, which draw-3ds.js sets at init
+        //            and draw.js never sets at all
+        //   frect  - fillRect, a fill that is not a path
+        //   srect  - strokeRect, a stroke that is not a built path
+        //   dots   - the drawInterpolatedLine approach: arc+fill repeated along the
+        //            segment, i.e. a line built only from the primitive known to work
+        //
+        // strk 0 with strk+s > 0 means the context does not carry state across
+        // events here and the fix is to set it per move. strk+s 0 with dots > 0
+        // means stroke() is unusable and lines must be drawn as interpolated fills.
+        function probeCanvas() {
+            var ctx2 = canvas.getContext('2d');
+            var w = canvas.width;
+            var h = canvas.height;
+            var results = [];
+
+            function clear() {
+                // Preserve fillStyle: the arc and strk cases deliberately rely on
+                // state set earlier, and clearing must not be what supplies it.
+                var prevFill = ctx2.fillStyle;
+                ctx2.fillStyle = '#ffffff';
+                ctx2.fillRect(0, 0, w, h);
+                ctx2.fillStyle = prevFill;
+            }
+            function ink() {
+                try {
+                    var d = ctx2.getImageData(0, 0, w, h).data;
+                    var n = 0;
+                    for (var i = 0; i < d.length; i += 4) {
+                        if (d[i] < 128 || d[i + 1] < 128 || d[i + 2] < 128) n++;
+                    }
+                    return n;
+                } catch (ex) {
+                    return -1; // getImageData unavailable: score is unknown, not zero
+                }
+            }
+            function run(label, fn) {
+                clear();
+                try {
+                    fn();
+                    results.push(label + ' ' + ink());
+                } catch (ex) {
+                    results.push(label + ' ERR');
+                }
+            }
+
+            // Restore the state the engine would normally be in, then leave it alone
+            // for the "strk" case so it is tested exactly as the drag leaves it.
+            ctx2.fillStyle = '#000000';
+            ctx2.strokeStyle = '#000000';
+            ctx2.lineWidth = 5;
+
+            run('arc', function () {
+                ctx2.beginPath();
+                ctx2.arc(60, 70, 5, 0, Math.PI * 2, false);
+                ctx2.fill();
+            });
+            run('strk', function () {
+                ctx2.beginPath();
+                ctx2.moveTo(20, 20);
+                ctx2.lineTo(200, 20);
+                ctx2.stroke();
+            });
+            run('strk+s', function () {
+                ctx2.strokeStyle = '#000000';
+                ctx2.lineWidth = 5;
+                ctx2.beginPath();
+                ctx2.moveTo(20, 30);
+                ctx2.lineTo(200, 30);
+                ctx2.stroke();
+            });
+            run('strk+c', function () {
+                ctx2.strokeStyle = '#000000';
+                ctx2.lineWidth = 5;
+                ctx2.lineCap = 'round';
+                ctx2.lineJoin = 'round';
+                ctx2.beginPath();
+                ctx2.moveTo(20, 40);
+                ctx2.lineTo(200, 40);
+                ctx2.stroke();
+            });
+            run('frect', function () {
+                ctx2.fillStyle = '#000000';
+                ctx2.fillRect(20, 50, 60, 10);
+            });
+            run('srect', function () {
+                ctx2.strokeStyle = '#000000';
+                ctx2.lineWidth = 5;
+                ctx2.strokeRect(20, 70, 60, 10);
+            });
+            run('dots', function () {
+                ctx2.fillStyle = '#000000';
+                for (var i = 0; i <= 60; i++) {
+                    ctx2.beginPath();
+                    ctx2.arc(20 + i * 3, 90, 2.5, 0, Math.PI * 2, false);
+                    ctx2.fill();
+                }
+            });
+
+            clear();
+            probeInfo = 'PROBE ' + results.join(' | ');
+            // Put the engine's own state back so drawing still works afterwards.
+            if (typeof setColor === 'function') setColor(currColor, 'c1');
+            if (typeof setSize === 'function') setSize(currSize, 's2');
+            render();
+        }
+        window.probeCanvas = probeCanvas;
 
         window.resetLog = function () {
             for (var k in counts) counts[k] = 0;
