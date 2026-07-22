@@ -193,9 +193,13 @@ function flushDrawQueue() {
     pointQueue = [];
 }
 // Flush batched draw calls at ~33fps via setInterval.
-// DSi/Wii Opera 9: each ctx.stroke() triggers a full canvas repaint, so we batch
-// many segments into one repaint. setInterval works on all legacy browsers (no rAF needed).
-setInterval(flushDrawQueue, 30);
+// Only the DSi mouse path and the touch path ever fill pointQueue; the Wii draws
+// each segment immediately and never uses it. Running a 33x/sec timer on the Wii's
+// slow CPU just to call a function that returns immediately steals cycles from the
+// mousemove handler, so only start the timer where the queue is actually used.
+if (!isWii) {
+    setInterval(flushDrawQueue, 30);
+}
 
 function onCanvasMouseDown(e) {
     e = e || window.event;
@@ -339,26 +343,31 @@ if (isWii) {
         lastX = pos.x;
         lastY = pos.y;
 
+        // Set the stroke colour once per stroke rather than on every mousemove —
+        // colour/tool can't change mid-drag, and a property write per move is
+        // wasted work on the Wii's CPU.
+        ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
+        ctx.fillStyle = ctx.strokeStyle;
+
         ctx.beginPath();
         ctx.arc(lastX, lastY, currSize / 2, 0, Math.PI * 2, false);
-        ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
         ctx.fill();
         ctx.beginPath();
 
         return false;
     };
     canvas.onmousemove = function (e) {
-        e = e || window.event;
+        // The Wii pointer fires mousemove constantly, even when A isn't held, so
+        // bail before doing any work when we're not mid-stroke.
         if (!isDrawing) return;
+        e = e || window.event;
         if (e && e.preventDefault) e.preventDefault();
 
         var pos = getWiiPos(e);
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(pos.x, pos.y);
-        ctx.strokeStyle = currTool === 'eraser' ? '#ffffff' : currColor;
-        ctx.stroke();
-
+        ctx.stroke(); // strokeStyle already set on mousedown
         lastX = pos.x;
         lastY = pos.y;
     };
