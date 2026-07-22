@@ -1803,13 +1803,16 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
          * - More than 7 minutes have passed.
          * - It's a reply, forwarded message, or interaction.
          * - The Discross client (User-Agent) changed.
+         *
+         * Note that a *previous* message being a reply does not split the group:
+         * like Discord, the reply indicator sits above the group and following
+         * messages from the same author merge underneath it.
          */
         const shouldStartNewGroup = (item) =>
             !state.lastauthor ||
             !isSameAuthor(state.lastmember, state.lastauthor, null, item.author) ||
             item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
             !!item.reference ||
-            state.lastReply ||
             state.lastInteraction ||
             state.lastForwarded ||
             (currentIsDiscross && currentUserAgent !== state.lastUserAgent) ||
@@ -1904,7 +1907,6 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
             isReply ||
             isInteraction ||
-            state.lastReply ||
             (currentIsDiscross && currentUserAgent !== state.lastUserAgent) ||
             (!currentIsDiscross && state.lastIsDiscross);
 
@@ -1975,11 +1977,16 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         state.isForwarded = isForwarded;
         state.forwardData = forwardData;
         state.lastMentioned = isMentioned;
-        state.lastReply = isReply;
-        state.lastReplyData = replyData;
+        // The reply/interaction indicator belongs to the message that opened the
+        // group, so only record it there. Messages merged underneath must not
+        // clear it, or the indicator would vanish when the group is flushed.
+        if (startsNewGroup) {
+            state.lastReply = isReply;
+            state.lastReplyData = replyData;
+            state.lastInteraction = isInteraction;
+            state.lastInteractionData = interactionData;
+        }
         state.lastForwarded = isForwarded;
-        state.lastInteraction = isInteraction;
-        state.lastInteractionData = interactionData;
         state.currentmessage += messageHtml;
         state.lastIsBot = !!item.author.bot;
         state.lastIsVerified = !!(
