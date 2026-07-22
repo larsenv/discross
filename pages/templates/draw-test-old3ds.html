@@ -123,9 +123,12 @@
         <input type="button" class="size-btn" id="s3" style="left: 66px;  top: 165px;" value="10px" onclick="setSize(10,'s3');" />
         <input type="button" class="size-btn" id="s4" style="left: 98px;  top: 165px;" value="20px" onclick="setSize(20,'s4');" />
 
-        <input type="button" class="tool-btn" style="left: 132px; top: 165px; width: 60px; height: 16px;" value="Reset log" onclick="resetLog();" />
-        <input type="button" class="tool-btn" style="left: 196px; top: 165px; width: 56px; height: 16px;" value="5-layer" onclick="location.href='/draw/{$CHANNEL_ID}?mode=old3ds';" />
-        <input type="button" class="tool-btn" style="left: 256px; top: 165px; width: 62px; height: 16px;" value="Standard" onclick="location.href='/draw/{$CHANNEL_ID}?mode=standard';" />
+        <!-- "Out: ON/OFF" unbinds draw.js's canvas mouseout->onCanvasMouseUp listener
+             at runtime; flip it and try to draw a squiggle to A/B the stroke-kill bug. -->
+        <input type="button" class="tool-btn" id="btn-mouseout" style="left: 132px; top: 165px; width: 46px; height: 16px; background: #faa61a;" value="Out: ON" onclick="toggleMouseOut();" />
+        <input type="button" class="tool-btn" style="left: 180px; top: 165px; width: 46px; height: 16px;" value="Reset" onclick="resetLog();" />
+        <input type="button" class="tool-btn" style="left: 228px; top: 165px; width: 44px; height: 16px;" value="5-layer" onclick="location.href='/draw/{$CHANNEL_ID}?mode=old3ds';" />
+        <input type="button" class="tool-btn" style="left: 274px; top: 165px; width: 44px; height: 16px;" value="Std" onclick="location.href='/draw/{$CHANNEL_ID}?mode=standard';" />
     </form>
 
     <div id="diag">starting…</div>
@@ -145,15 +148,21 @@
             mousedown: 0, click: 0,
             'mousemove@canvas': 0, 'mousemove@doc': 0,
             'mouseup@canvas': 0, 'mouseup@doc': 0,
+            mouseout: 0,
             touchstart: 0, touchmove: 0, touchend: 0
         };
+        // Set when a mouseout lands between a mousedown and the next mousemove —
+        // i.e. when the stroke was killed before it could ever draw a segment.
+        var outKilledStroke = 0;
         var lastEvt = '-';
         var lastCoords = '-';
         var strokeStart = 0;
         var lastStrokeMs = 0;
         var lastStrokeMoves = 0;
         var movesThisStroke = 0;
+        var strokeActive = 0;
         var exportInfo = '-';
+        var mouseoutBound = true;
 
         var ua = navigator.userAgent;
         var uaShort = ua.length > 60 ? ua.substring(0, 60) : ua;
@@ -173,12 +182,14 @@
                 'UA: ' + uaShort + '<br />' +
                 'screen ' + screen.width + 'x' + screen.height +
                 ' | buffer ' + canvas.width + 'x' + canvas.height +
-                ' | css ' + (canvas.style.width || 'native') + '<br />' +
+                ' | css ' + (canvas.style.width || 'native') +
+                ' | touch ' + counts.touchstart + '/' + counts.touchmove + '/' + counts.touchend + '<br />' +
                 'md ' + counts.mousedown + ' cl ' + counts.click +
                 ' | mm cv ' + counts['mousemove@canvas'] + ' doc ' + counts['mousemove@doc'] +
                 ' | mu cv ' + counts['mouseup@canvas'] + ' doc ' + counts['mouseup@doc'] + '<br />' +
-                'touch: ts ' + counts.touchstart + ' tm ' + counts.touchmove + ' te ' + counts.touchend +
-                ' | ' +
+                'out ' + counts.mouseout + ' (killed ' + outKilledStroke + ')' +
+                ' | isDrawing ' + (typeof isDrawing !== 'undefined' ? (isDrawing ? 'Y' : 'N') : '?') +
+                ' | mouseout bind ' + (mouseoutBound ? 'ON' : 'OFF') + '<br />' +
                 'last: ' + lastEvt + ' @ ' + lastCoords + '<br />' +
                 'stroke: ' + lastStrokeMoves + ' moves in ' + lastStrokeMs + 'ms' +
                 ' | export: ' + exportInfo;
@@ -208,11 +219,18 @@
                     if (name === 'mousedown' || name === 'touchstart') {
                         strokeStart = new Date().getTime();
                         movesThisStroke = 0;
+                        strokeActive = 1;
+                    } else if (name === 'mouseout') {
+                        // The smoking gun: draw.js binds mouseout -> onCanvasMouseUp,
+                        // which clears isDrawing. A stylus has no hover, so if this
+                        // lands mid-stroke every later mousemove is discarded.
+                        if (strokeActive && movesThisStroke === 0) outKilledStroke++;
                     } else if (name === 'mousemove' || name === 'touchmove') {
                         movesThisStroke++;
                     } else if (name === 'mouseup' || name === 'touchend') {
                         lastStrokeMs = new Date().getTime() - strokeStart;
                         lastStrokeMoves = movesThisStroke;
+                        strokeActive = 0;
                     }
                 }
                 render();
@@ -238,6 +256,32 @@
         bind(document, 'mousemove', false);
         bind(document, 'mouseup', false);
         bind(canvas, 'mousemove', true);
+        bind(canvas, 'mouseout', true);
+
+        // A/B switch for the mouseout hypothesis. draw.js binds
+        //   canvas.addEventListener('mouseout', onCanvasMouseUp, true)
+        // for every non-Wii/non-DSi client, Old 3DS included, and onCanvasMouseUp
+        // sets isDrawing = false. draw-3ds.js never binds mouseout on its Old 3DS
+        // path — which is exactly why the DSiPaint engine tracks strokes here and
+        // this one only leaves dots. Because onCanvasMouseUp is a global, the
+        // listener can be removed at runtime and put back, so the console can test
+        // both behaviours on one page load with draw.js still unmodified.
+        window.toggleMouseOut = function () {
+            var btn = document.getElementById('btn-mouseout');
+            if (!canvas.removeEventListener) {
+                if (btn) btn.value = 'no removeEL';
+                return;
+            }
+            if (mouseoutBound) {
+                canvas.removeEventListener('mouseout', onCanvasMouseUp, true);
+                mouseoutBound = false;
+            } else {
+                canvas.addEventListener('mouseout', onCanvasMouseUp, true);
+                mouseoutBound = true;
+            }
+            if (btn) btn.value = mouseoutBound ? 'Out: ON' : 'Out: OFF';
+            render();
+        };
 
         window.testExport = function () {
             var t = new Date().getTime();
@@ -257,6 +301,7 @@
             lastCoords = '-';
             lastStrokeMs = 0;
             lastStrokeMoves = 0;
+            outKilledStroke = 0;
             exportInfo = '-';
             render();
         };
