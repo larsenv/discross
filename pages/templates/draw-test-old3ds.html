@@ -125,10 +125,11 @@
 
         <!-- "Out: ON/OFF" unbinds draw.js's canvas mouseout->onCanvasMouseUp listener
              at runtime; flip it and try to draw a squiggle to A/B the stroke-kill bug. -->
-        <input type="button" class="tool-btn" id="btn-mouseout" style="left: 132px; top: 165px; width: 46px; height: 16px; background: #faa61a;" value="Out: ON" onclick="toggleMouseOut();" />
-        <input type="button" class="tool-btn" style="left: 180px; top: 165px; width: 46px; height: 16px;" value="Reset" onclick="resetLog();" />
-        <input type="button" class="tool-btn" style="left: 228px; top: 165px; width: 44px; height: 16px;" value="5-layer" onclick="location.href='/draw/{$CHANNEL_ID}?mode=old3ds';" />
-        <input type="button" class="tool-btn" style="left: 274px; top: 165px; width: 44px; height: 16px;" value="Std" onclick="location.href='/draw/{$CHANNEL_ID}?mode=standard';" />
+        <input type="button" class="tool-btn" id="btn-mouseout" style="left: 132px; top: 165px; width: 42px; height: 16px; background: #faa61a;" value="Out: ON" onclick="toggleMouseOut();" />
+        <input type="button" class="tool-btn" id="btn-pd" style="left: 176px; top: 165px; width: 40px; height: 16px; background: #faa61a;" value="pd: ON" onclick="togglePreventDefault();" />
+        <input type="button" class="tool-btn" style="left: 218px; top: 165px; width: 34px; height: 16px;" value="Reset" onclick="resetLog();" />
+        <input type="button" class="tool-btn" style="left: 254px; top: 165px; width: 32px; height: 16px;" value="5lyr" onclick="location.href='/draw/{$CHANNEL_ID}?mode=old3ds';" />
+        <input type="button" class="tool-btn" style="left: 288px; top: 165px; width: 30px; height: 16px;" value="Std" onclick="location.href='/draw/{$CHANNEL_ID}?mode=standard';" />
     </form>
 
     <div id="diag">starting…</div>
@@ -182,6 +183,37 @@
         var cliPrev = null;
         var posPrev = null;
 
+        // Rolling trace of the last events in the order they actually arrived. The
+        // counters say what fired; only the order says whether the moves land inside
+        // the press (md ... mm mm mm ... mu) or after the browser has already closed
+        // it out (md mu cl mm mm mm), which no amount of counting can distinguish.
+        var seq = [];
+        var seqMax = 16;
+        function trace(tok) {
+            // Collapse runs of the same token so a burst of moves can't push the
+            // interesting md/mu/cl/out markers off the end of the line.
+            var last = seq[seq.length - 1];
+            if (last && last.tok === tok) {
+                last.n++;
+            } else {
+                seq.push({ tok: tok, n: 1 });
+                if (seq.length > seqMax) seq.shift();
+            }
+        }
+        function seqText() {
+            var parts = [];
+            for (var i = 0; i < seq.length; i++) {
+                parts.push(seq[i].n > 1 ? seq[i].tok + 'x' + seq[i].n : seq[i].tok);
+            }
+            return parts.length ? parts.join(' ') : '(nothing yet)';
+        }
+
+        // preventDefault A/B. draw.js calls e.preventDefault() in onCanvasMouseDown;
+        // draw-3ds.js does NOT on its Old 3DS path (only on the Wii/DSi one). If
+        // cancelling the default is what makes SPIDER close the press immediately,
+        // that difference alone would explain why DSiPaint drags and this does not.
+        var pdEnabled = true;
+
         var ua = navigator.userAgent;
         var uaShort = ua.length > 52 ? ua.substring(0, 52) : ua;
 
@@ -209,8 +241,9 @@
                 'isDrawing ' + (typeof isDrawing !== 'undefined' ? (isDrawing ? 'Y' : 'N') : '?') +
                 ' | bind ' + (mouseoutBound ? 'ON' : 'OFF') +
                 ' | eng mm ' + engCalls + ' live ' + engLive + '<br />' +
-                'TRAVEL off ' + offTravel + ' cli ' + cliTravel + ' pos ' + posTravel + '<br />' +
-                lastMoveSample + '<br />' +
+                'TRAVEL off ' + offTravel + ' cli ' + cliTravel + ' pos ' + posTravel +
+                ' | pd ' + (pdEnabled ? 'ON' : 'OFF') + '<br />' +
+                'SEQ ' + seqText() + '<br />' +
                 'stroke ' + lastStrokeMoves + ' in ' + lastStrokeMs + 'ms | exp ' + exportInfo;
         }
 
@@ -221,11 +254,22 @@
             var key = name === 'mousemove' || name === 'mouseup'
                 ? name + (onCanvas ? '@canvas' : '@doc')
                 : name;
+            var token = {
+                mousedown: 'md',
+                mousemove: 'mm',
+                mouseup: 'mu',
+                mouseout: 'out',
+                click: 'cl',
+                touchstart: 'ts',
+                touchmove: 'tm',
+                touchend: 'te'
+            }[name];
             return function (e) {
                 e = e || window.event;
                 counts[key] = (counts[key] || 0) + 1;
                 var duplicate = e.__diagSeen;
                 e.__diagSeen = 1;
+                if (!duplicate) trace(token);
                 var x = e.offsetX !== undefined ? e.offsetX : (e.layerX !== undefined ? e.layerX : e.clientX);
                 var y = e.offsetY !== undefined ? e.offsetY : (e.layerY !== undefined ? e.layerY : e.clientY);
                 if (e.touches && e.touches.length) {
@@ -379,6 +423,45 @@
         }
         wrapEngineMove();
 
+        // Wrap draw.js's mousedown so its preventDefault() call can be neutralised
+        // without editing draw.js. When pd is OFF the handler receives a stand-in
+        // carrying the same coordinate fields but a no-op preventDefault, so the
+        // engine behaves identically except that the browser's default press
+        // handling is left alone — matching what draw-3ds.js does on Old 3DS.
+        function wrapEngineDown() {
+            if (typeof onCanvasMouseDown !== 'function' || !canvas.addEventListener) return;
+            var real = onCanvasMouseDown;
+            if (canvas.removeEventListener) canvas.removeEventListener('mousedown', real, true);
+            canvas.addEventListener(
+                'mousedown',
+                function (e) {
+                    e = e || window.event;
+                    if (pdEnabled) return real(e);
+                    var shim = {
+                        offsetX: e.offsetX,
+                        offsetY: e.offsetY,
+                        layerX: e.layerX,
+                        layerY: e.layerY,
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        pageX: e.pageX,
+                        pageY: e.pageY,
+                        preventDefault: function () {}
+                    };
+                    return real(shim);
+                },
+                true
+            );
+        }
+        wrapEngineDown();
+
+        window.togglePreventDefault = function () {
+            pdEnabled = !pdEnabled;
+            var btn = document.getElementById('btn-pd');
+            if (btn) btn.value = pdEnabled ? 'pd: ON' : 'pd: OFF';
+            render();
+        };
+
         window.resetLog = function () {
             for (var k in counts) counts[k] = 0;
             lastEvt = '-';
@@ -392,6 +475,7 @@
             lastMoveSample = '(no move yet)';
             offTravel = cliTravel = posTravel = 0;
             offPrev = cliPrev = posPrev = null;
+            seq = [];
             exportInfo = '-';
             render();
         };
