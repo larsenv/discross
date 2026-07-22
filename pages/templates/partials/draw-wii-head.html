@@ -98,27 +98,14 @@
             border-radius: 4px !important;
         }
 
-        .content-padding {
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-            padding-top: 0 !important;
-            padding-bottom: 120px !important;
-            display: block !important;
-            background: transparent !important;
-        }
-
-        .message-form-container {
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100% !important;
-            background: #36393f !important;
-            border-top: 1px solid #202225 !important;
-            padding: 8px !important;
-            box-sizing: border-box !important;
-            z-index: 50 !important;
-        }
+        /* The message form deliberately does NOT get position:fixed here.
+           Pinning it to the bottom cost a permanent ~120px strip (plus the
+           matching .content-padding reserve) out of the Wii's 800x472 screen —
+           about a quarter of the display — which is why the send bar looked far
+           taller on the draw page than on the channel page. The channel page
+           leaves this container in normal flow (main.css, padding:12px) and
+           looks right, so the draw page now does the same: the bar sits below
+           the canvas and scrolls with the page instead of overlaying it. */
 
         /* Override menu button from main.css on Wii */
         .menu-button {
