@@ -21,21 +21,23 @@ const old3ds_template = loadAndRenderPageTemplate('draw-old3ds');
 
 // The Wii uses the SAME draw template as everyone else; the only differences are
 // injected via tokens (see the isWii branch below): an extra <style> block of
-// Opera-9 layout overrides, a fixed-form wrapper, no emoji picker, and inline
-// styles on the message/Send inputs. Keeping one template avoids the two files
-// silently drifting apart. draw-wii-head.html holds the Wii-only <style> block.
+// Opera-9 layout overrides, no emoji picker, and inline styles on the
+// message/Send inputs. Keeping one template avoids the two files silently
+// drifting apart. draw-wii-head.html holds the Wii-only <style> block.
 const WII_EXTRA_HEAD = getTemplate('draw-wii-head', 'partials');
-const WII_FORM_WRAPPER_OPEN = '<div class="content-padding">';
-const WII_FORM_WRAPPER_CLOSE = '</div>';
 const WII_MSG_INPUT_STYLE_ATTR =
     ' style="box-sizing: border-box; width: 100%; color: #dcddde; background: transparent; border: none; outline: none; height: 40px; padding: 9px 16px; font-family: \'rodin\', Whitney, \'Helvetica Neue\', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px;"';
 const WII_SEND_BTN_STYLE_ATTR =
     ' style="-webkit-appearance: none; -moz-appearance: none; appearance: none; box-sizing: border-box; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: \'rodin\', Whitney, \'Helvetica Neue\', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 40px; line-height: 40px; white-space: nowrap; margin-right: 8px; display: block; width: 82px;"';
 
-// Wii/DSi Opera 9 caches HTML pages extremely aggressively and heuristically,
-// so it keeps re-serving a stale copy of the draw page no matter how many times
-// the tool is edited. Force a full revalidation on every load. Pragma/Expires are
-// included for the HTTP/1.0 semantics these legacy browsers actually honor.
+// Standard no-store headers for a page that must always reflect the current
+// draw.js/template. Pragma/Expires are included for the HTTP/1.0 semantics these
+// legacy browsers honor. NOTE: this file used to claim Wii/DSi Opera 9 caches
+// "extremely aggressively" and re-serves stale draw pages. That claim was never
+// substantiated and actively misled a long debugging session — the real cause of
+// the tool appearing stale/dead on Wii was an ES5 trailing comma making draw.js
+// unparseable on Opera 9 (pre-ES5), which killed the whole script. Don't reach
+// for "it's the cache" here without evidence.
 const NO_CACHE_HTML_HEADERS = {
     'Content-Type': 'text/html',
     'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
@@ -126,10 +128,10 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             const pageTitle = `Draw in ${channelName} - Discross`;
 
             // Wii: same shared draw template as everyone else, but with the Wii-only
-            // tokens filled — the Opera-9 <style> overrides in the head, the fixed-form
-            // wrapper, no emoji picker, and inline styles on the message/Send inputs.
-            // draw.js detects the Wii UA and uses immediate strokes while skipping the
-            // getImageData undo history that freezes Wii Opera.
+            // tokens filled — the Opera-9 <style> overrides in the head, no emoji
+            // picker, and inline styles on the message/Send inputs. draw.js detects
+            // the Wii UA and uses immediate strokes while skipping the getImageData
+            // undo history that freezes Wii Opera.
             if (isWii) {
                 const wiiTemplate = renderTemplate(baseTemplate, {
                     MODE_TOGGLE_URL: sessionParam ? sessionParam + '&mode=old3ds' : '?mode=old3ds',
@@ -139,8 +141,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                     SESSION_PARAM: sessionParam,
                     // Wii-only tokens (empty for every other client).
                     EXTRA_HEAD: WII_EXTRA_HEAD,
-                    FORM_WRAPPER_OPEN: WII_FORM_WRAPPER_OPEN,
-                    FORM_WRAPPER_CLOSE: WII_FORM_WRAPPER_CLOSE,
                     MSG_INPUT_STYLE_ATTR: WII_MSG_INPUT_STYLE_ATTR,
                     SEND_BTN_STYLE_ATTR: WII_SEND_BTN_STYLE_ATTR,
                     // The Wii layout has no emoji picker; clear the tokens so they
@@ -238,8 +238,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                 }),
                 // Wii-only tokens — empty for the standard layout.
                 EXTRA_HEAD: '',
-                FORM_WRAPPER_OPEN: '',
-                FORM_WRAPPER_CLOSE: '',
                 MSG_INPUT_STYLE_ATTR: '',
                 SEND_BTN_STYLE_ATTR: '',
             });
