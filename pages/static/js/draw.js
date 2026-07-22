@@ -193,11 +193,12 @@ function flushDrawQueue() {
     pointQueue = [];
 }
 // Flush batched draw calls at ~33fps via setInterval.
-// Only the DSi mouse path and the touch path ever fill pointQueue; the Wii draws
-// each segment immediately and never uses it. Running a 33x/sec timer on the Wii's
-// slow CPU just to call a function that returns immediately steals cycles from the
-// mousemove handler, so only start the timer where the queue is actually used.
-if (!isWii) {
+// The DSi mouse path is now the ONLY thing that fills pointQueue — every other
+// path (Wii, New 3DS, Old 3DS, desktop, touch) draws each segment immediately.
+// A 33x/sec timer that only ever calls a function returning on its first line is
+// pure overhead on these slow CPUs and steals cycles from the move handler, so
+// only start it where the queue is actually used.
+if (isDSi) {
     setInterval(flushDrawQueue, 30);
 }
 
@@ -475,8 +476,19 @@ if (!isWii && !isDSi) {
                     var pos = getTouchPos(e);
                     if (!pos) return;
 
-                    // Always push to queue — flushed by setInterval at 33fps for all devices.
-                    pointQueue.push({ x: pos.x, y: pos.y });
+                    // Draw immediately, exactly like onCanvasMouseMove does for
+                    // everything except the DSi. This path previously always went
+                    // through pointQueue, which meant stylus/finger input waited on
+                    // the 30ms flush timer — and that timer gets clamped under
+                    // drawing load, producing the "responds every half second" lag
+                    // the mouse path was already fixed to avoid. Batching also
+                    // couldn't help the one device it was meant for: these touch
+                    // handlers only bind when (!isWii && !isDSi), so the DSi never
+                    // reaches them.
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(pos.x, pos.y);
+                    ctx.stroke();
                     lastX = pos.x;
                     lastY = pos.y;
                 },
