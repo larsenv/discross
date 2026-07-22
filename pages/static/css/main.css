@@ -3356,15 +3356,25 @@ html.client-psp.page-simple form br + br {
     display: none !important;
 }
 
-/* Ensure body text renders cleanly and visibly on PSP's NetFront 3.x engine */
+/* Ensure body text renders cleanly and visibly on PSP's NetFront 3.x engine.
+   NOTE: .message-body-cell is a <td>. Forcing display:block/width:100% on a
+   table cell makes NetFront 3.x drop the cell's contents entirely (the same
+   class of bug as the author cell collapsing under max-width:0), which is why
+   message body text never rendered on PSP. Leave the cell as a table cell and
+   only style the text inside it. */
 html.client-psp .firstmessage,
 html.client-psp .message,
-html.client-psp .messagecontent,
-html.client-psp .message-body-cell {
+html.client-psp .messagecontent {
     display: block !important;
     width: 100% !important;
     max-width: none !important;
     overflow: visible !important;
+    word-wrap: break-word !important;
+    font-size: 15px !important;
+    line-height: 19px !important;
+    color: #dcdcdf !important;
+}
+html.client-psp .message-body-cell {
     word-wrap: break-word !important;
     font-size: 15px !important;
     line-height: 19px !important;
