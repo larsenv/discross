@@ -547,34 +547,94 @@ function canMentionEveryoneIn(member, channel) {
 }
 
 /**
- * Resolves @RoleName mention tags in a message to proper <@&id> role mentions.
+ * Resolves plain @Name mention tags — both members and roles — into real
+ * <@id> / <@&id> mention syntax.
  *
- * Only roles the member is actually allowed to ping are converted: a role is
- * pingable if it's marked mentionable, or if the member has Mention Everyone in
- * the channel (which lets Discord ping any role). Longest names are matched
- * first so "@Mod Team" doesn't get partially eaten by a "@Mod" role, and a
- * match must end on a word boundary so "@Mod" doesn't chop up "@Moderators".
+ * This is what makes clicking an author's name work: the message box is a plain
+ * textarea, so the click inserts the human-readable "@Display Name" the user
+ * sees rather than raw "<@123>" markup, and the name is turned back into a real
+ * mention here.
  *
- * @param {string} text - Message text (after user-mention resolution).
- * @param {import('discord.js').Guild} guild - Guild whose roles to resolve.
- * @param {boolean} canMentionEveryone - Whether the member has Mention Everyone here.
- * @returns {string} Text with pingable @RoleName patterns replaced by <@&id>.
+ * Members match on their displayed name (nickname > global name > username) or
+ * their raw username. Roles are only converted when the sender may actually
+ * ping them: mentionable, or any role if they hold Mention Everyone.
+ *
+ * Candidates are tried longest-name-first so "@Mod Team" isn't partially eaten
+ * by a "@Mod" role, and a match must end on a word boundary so "@Mod" doesn't
+ * chop up "@Moderators". Everything is cache-only — unresolvable names are left
+ * as-is, which is exactly how they'd render anyway.
+ *
+ * @param {string} text - Message text (after @User#1234 resolution).
+ * @param {import('discord.js').Guild} guild - Guild whose members/roles to resolve.
+ * @param {boolean} canMentionEveryone - Whether the sender has Mention Everyone here.
+ * @returns {string} Text with @Name patterns replaced by mention syntax.
  */
-function resolveRoleMentions(text, guild, canMentionEveryone) {
-    if (!text || !text.includes('@') || !guild?.roles?.cache) return text;
+function resolveNameMentions(text, guild, canMentionEveryone) {
+    if (!text || !text.includes('@') || !guild) return text;
 
-    const roles = [...guild.roles.cache.values()]
-        .filter((role) => role.name !== '@everyone')
-        .filter((role) => canMentionEveryone || role.mentionable)
-        .sort((a, b) => b.name.length - a.name.length);
+    const { getDisplayName } = require('./memberUtils');
+
+    // name -> mention markup. A single map keeps members and roles in one
+    // longest-first ordering, so neither can shadow a longer name in the other.
+    const candidates = new Map();
+    const add = (name, markup) => {
+        if (name && !candidates.has(name)) candidates.set(name, markup);
+    };
+
+    for (const member of guild.members?.cache?.values() ?? []) {
+        // The displayed name is what the click inserts; the raw username is
+        // accepted too since that's what a user is most likely to type.
+        add(getDisplayName(member, member.user), `<@${member.id}>`);
+        add(member.user?.username, `<@${member.id}>`);
+    }
+
+    for (const role of guild.roles?.cache?.values() ?? []) {
+        if (role.name === '@everyone') continue;
+        if (!canMentionEveryone && !role.mentionable) continue;
+        add(role.name, `<@&${role.id}>`);
+    }
 
     let result = text;
-    for (const role of roles) {
-        if (!result.includes(`@${role.name}`)) continue;
-        const escaped = role.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        result = result.replace(new RegExp(`@${escaped}(?![\\w-])`, 'g'), `<@&${role.id}>`);
+    for (const [name, markup] of [...candidates].sort((a, b) => b[0].length - a[0].length)) {
+        if (!result.includes(`@${name}`)) continue;
+        const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        result = result.replace(new RegExp(`@${escaped}(?![\\w-])`, 'g'), markup);
     }
     return result;
+}
+
+/**
+ * Turns raw mention markup into readable @Name / #channel text.
+ *
+ * Used for the quoted line of a reply, where "<@123>" would otherwise either
+ * show up as literal markup or get truncated into garbage mid-tag. Names are
+ * resolved from cache; anything unresolvable falls back to a generic label so
+ * the quote never leaks raw IDs.
+ *
+ * The result is plain text, so it never pings on its own.
+ *
+ * @param {string} text - Message content containing mention markup.
+ * @param {import('discord.js').Guild} guild - Guild to resolve names against.
+ * @returns {string} Text with mentions replaced by readable names.
+ */
+function mentionsToReadableText(text, guild) {
+    if (!text) return text;
+
+    const { getDisplayName } = require('./memberUtils');
+
+    return String(text)
+        .replace(/<@!?(\d+)>/g, (match, id) => {
+            const member = guild?.members?.cache?.get(id);
+            return member ? `@${getDisplayName(member, member.user)}` : '@user';
+        })
+        .replace(/<@&(\d+)>/g, (match, id) => {
+            const role = guild?.roles?.cache?.get(id);
+            return role ? `@${role.name}` : '@role';
+        })
+        .replace(/<#(\d+)>/g, (match, id) => {
+            const channel = guild?.channels?.cache?.get(id);
+            return channel ? `#${channel.name}` : '#channel';
+        });
 }
 
 /**
@@ -747,7 +807,8 @@ module.exports = {
     buildEmojiExpandUrl,
     sanitizeGuestName,
     resolveMentions,
-    resolveRoleMentions,
+    resolveNameMentions,
+    mentionsToReadableText,
     buildAllowedMentions,
     canMentionEveryoneIn,
     httpsGet,

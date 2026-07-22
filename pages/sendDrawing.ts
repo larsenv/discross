@@ -5,7 +5,7 @@ const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
 const {
     resolveMentions,
-    resolveRoleMentions,
+    resolveNameMentions,
     buildAllowedMentions,
     canMentionEveryoneIn,
     getTemplate,
@@ -55,7 +55,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         // Process mentions only if there's a message
         const canPingEveryone = canMentionEveryoneIn(member, channel);
         const processedmessage = rawMsg
-            ? resolveRoleMentions(
+            ? resolveNameMentions(
                   await resolveMentions(rawMsg, channel.guild),
                   channel.guild,
                   canPingEveryone

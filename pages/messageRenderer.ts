@@ -1534,8 +1534,14 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
         '{$REPLY_INDICATOR}': replyIndicator,
         '{$PING_INDICATOR}': '', // Placeholder for future ping visual effects
         '{$MESSAGE_DATE}': formatDateWithTimezone(state.lastdate, state.clientTimezone),
-        // The tag is used by the frontend for mention/reply logic.
-        '{$TAG}': he.encode(JSON.stringify(`<@${state.lastauthor.id}>`)),
+        // Clicking the author's name appends this to the message box. The box is
+        // a plain textarea, so it gets the readable "@Display Name" the user
+        // already sees rather than raw "<@id>" markup; the send handler turns it
+        // back into a real mention. It also works for messages sent through
+        // Discross, where lastauthor is the webhook rather than the member.
+        '{$TAG}': he.encode(
+            JSON.stringify(`@${getDisplayName(state.lastmember, state.lastauthor)}`)
+        ),
     });
 }
 

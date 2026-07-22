@@ -9,7 +9,8 @@ const {
     isBotReady,
     getBaseUrl,
     resolveMentions,
-    resolveRoleMentions,
+    resolveNameMentions,
+    mentionsToReadableText,
     buildAllowedMentions,
     canMentionEveryoneIn,
     renderTemplate,
@@ -90,7 +91,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
             const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
             const canPingEveryone = canMentionEveryoneIn(member, channel);
-            const resolvedMsg = resolveRoleMentions(
+            const resolvedMsg = resolveNameMentions(
                 await resolveMentions(convertEmoji(query.message || ''), channel.guild),
                 channel.guild,
                 canPingEveryone
@@ -107,10 +108,17 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                               if (reply_message.channelId !== channel.id) {
                                   throw new Error('Reply message does not belong to this channel');
                               }
+                              // Resolve mentions to readable names before
+                              // truncating — otherwise the quote either shows raw
+                              // "<@123>" markup or gets cut mid-tag.
+                              const rawReplyContent = mentionsToReadableText(
+                                  reply_message.content,
+                                  channel.guild
+                              );
                               const reply_message_content =
-                                  reply_message.content.length > 30
-                                      ? `${reply_message.content.substring(0, 30)}...`
-                                      : reply_message.content;
+                                  rawReplyContent.length > 30
+                                      ? `${rawReplyContent.substring(0, 30)}...`
+                                      : rawReplyContent;
                               const author_id = reply_message.author.id;
                               const author_mention =
                                   author_id === discordID

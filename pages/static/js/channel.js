@@ -93,18 +93,23 @@ function discrossScrollInit() {
     };
 })();
 
-// Emoji System
-// ==========
-var emojiShowing = false;
+// Message Box Insertion
+// =====================
 
-function insertEmoji(code) {
+/**
+ * Appends a token to the message box, keeping it separated by exactly one space
+ * on each side: a leading space is added only when there's existing text that
+ * doesn't already end in one, and a trailing space is always left behind so the
+ * user can keep typing straight away.
+ */
+function appendToMessage(token) {
     var input = document.getElementById('message');
-    if (!input) return;
+    if (!input || !token) return;
 
-    if (input.value === '') {
-        input.value = code;
+    if (input.value === '' || input.value.charAt(input.value.length - 1) === ' ') {
+        input.value += token + ' ';
     } else {
-        input.value += ' ' + code;
+        input.value += ' ' + token + ' ';
     }
 
     if (typeof autoResize === 'function') {
@@ -112,28 +117,23 @@ function insertEmoji(code) {
     }
 }
 
+// Emoji System
+// ==========
+var emojiShowing = false;
+
+function insertEmoji(code) {
+    appendToMessage(code);
+}
+
 // Mentions
 // ========
 
 /**
- * Appends a mention tag (e.g. "<@123>") to the message box. Called when an
+ * Appends a mention (e.g. "@Some User") to the message box. Called when an
  * author's name is clicked in the message list.
  */
 function insertMention(tag) {
-    var input = document.getElementById('message');
-    if (!input || !tag) return;
-
-    // Same append behaviour as insertEmoji, except the separating space is
-    // skipped when the box is empty or already ends in one.
-    if (input.value === '' || input.value.charAt(input.value.length - 1) === ' ') {
-        input.value += tag;
-    } else {
-        input.value += ' ' + tag;
-    }
-
-    if (typeof autoResize === 'function') {
-        autoResize(input);
-    }
+    appendToMessage(tag);
 }
 
 function showEmoji() {

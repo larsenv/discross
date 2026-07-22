@@ -6,7 +6,8 @@ const { getOrCreateWebhook } = require('./webhookCache');
 const {
     isBotReady,
     resolveMentions,
-    resolveRoleMentions,
+    resolveNameMentions,
+    mentionsToReadableText,
     buildAllowedMentions,
     canMentionEveryoneIn,
     getTemplate,
@@ -63,7 +64,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
             const canPingEveryone = canMentionEveryoneIn(member, channel);
-            const resolvedMsg = resolveRoleMentions(
+            const resolvedMsg = resolveNameMentions(
                 await resolveMentions(
                     convertEmoji(parsedurl.searchParams.get('message') || ''),
                     channel.guild
@@ -85,10 +86,9 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
                 );
                 return;
             }
-            const rawReplyContent = reply_message.content
-                .replace(/<@!?(\d+)>/g, '@user')
-                .replace(/<@&(\d+)>/g, '@role')
-                .replace(/<#(\d+)>/g, '#channel');
+            // Resolve mentions to readable names (falling back to generic
+            // labels) so the quote never shows raw markup or a half-cut tag.
+            const rawReplyContent = mentionsToReadableText(reply_message.content, channel.guild);
             // #38: Escape mentions in reply content to prevent ping issues
             const reply_message_content =
                 rawReplyContent.length > 30
