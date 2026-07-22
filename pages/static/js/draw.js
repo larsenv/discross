@@ -1,183 +1,5 @@
-// ============================================================================
-// ON-DEVICE DIAGNOSTIC — must be the FIRST thing that runs.
-// Gated on any "debug" in the query string. IMPORTANT: Opera 9 on the Wii
-// caches pages so hard it will re-serve a stale copy of the SAME url, so each
-// test must use a UNIQUE query (?debug=1, ?debug=2, ?debug=3 …) to force a
-// fresh load. Reports via two sinks: document.title (most reliable on the Wii)
-// and an in-flow box at the top of <body>. Drops cp() checkpoints through the
-// top-level code so the readout shows HOW FAR execution got — whatever the last
-// "CP=" value is, the abort happened right after it; "err=" shows the Opera 9
-// exception + line. Remove once the Wii tool is confirmed.
-// ============================================================================
-var DRAW_DEBUG = (function () {
-    try {
-        return !!(
-            window.location &&
-            window.location.search &&
-            ('' + window.location.search).toLowerCase().indexOf('debug') !== -1
-        );
-    } catch (e) {
-        return false;
-    }
-})();
-var _dbgBox = null;
-var _dbgCP = 'start';
-var _dbgErr = '';
-var _dbgCounts = { down: 0, move: 0, up: 0, out: 0 };
-var _dbgLastDown = '(none)';
-var _dbgLastMove = '(none)';
-var _dbgOver = '(not checked)';
-function _dbgEnsureBox() {
-    if (_dbgBox || !DRAW_DEBUG) return;
-    try {
-        if (!document.body) return;
-        var b = document.createElement('div');
-        // position:static (normal flow), inserted as the FIRST child of <body>.
-        // Opera 9 on the Wii barely supports position:fixed — a fixed box can
-        // render off the visible TV area. In-flow at the top of the page always
-        // shows if the script runs at all.
-        b.style.background = '#000000';
-        b.style.color = '#00ff00';
-        b.style.font = '18px monospace';
-        b.style.padding = '8px';
-        b.style.border = '3px solid #00ff00';
-        b.style.whiteSpace = 'pre';
-        b.style.textAlign = 'left';
-        if (document.body.firstChild) {
-            document.body.insertBefore(b, document.body.firstChild);
-        } else {
-            document.body.appendChild(b);
-        }
-        _dbgBox = b;
-    } catch (e) {}
-}
-function dbgTopElement() {
-    try {
-        if (typeof canvas === 'undefined' || !canvas) return 'no-canvas';
-        if (!document.elementFromPoint || !canvas.getBoundingClientRect) return 'n/a';
-        var r = canvas.getBoundingClientRect();
-        var el = document.elementFromPoint(
-            r.left + (r.width || 300) / 2,
-            r.top + (r.height || 175) / 2
-        );
-        if (!el) return 'null';
-        return (
-            (el.tagName || '?') +
-            (el.id ? '#' + el.id : '') +
-            (el === canvas ? ' (CANVAS-OK)' : ' (COVERING!)')
-        );
-    } catch (e) {
-        return 'err';
-    }
-}
-function dbgRender() {
-    if (!DRAW_DEBUG) return;
-    // document.title is the most reliable sink on the Wii Internet Channel — it
-    // shows in the browser chrome and needs no element rendering. If the visible
-    // box ever fails to paint, the title bar still reports the last checkpoint.
-    try {
-        document.title = 'CP=' + _dbgCP + (_dbgErr ? ' ERR:' + _dbgErr : '');
-    } catch (e) {}
-    _dbgEnsureBox();
-    if (!_dbgBox) return;
-    try {
-        var w = typeof isWii !== 'undefined' ? isWii : '?';
-        var s = typeof isSlowDevice !== 'undefined' ? isSlowDevice : '?';
-        var cw = typeof canvas !== 'undefined' && canvas ? canvas.width + 'x' + canvas.height : '?';
-        var g = typeof canvas !== 'undefined' && canvas ? !!canvas.getBoundingClientRect : '?';
-        _dbgBox.innerHTML =
-            'CP=' +
-            _dbgCP +
-            '\n' +
-            'err=' +
-            (_dbgErr || 'none') +
-            '\n' +
-            'isWii=' +
-            w +
-            ' slow=' +
-            s +
-            '\n' +
-            'screen=' +
-            screen.width +
-            'x' +
-            screen.height +
-            ' gBCR=' +
-            g +
-            '\n' +
-            'canvas=' +
-            cw +
-            '\n' +
-            'down=' +
-            _dbgCounts.down +
-            ' move=' +
-            _dbgCounts.move +
-            ' up=' +
-            _dbgCounts.up +
-            '\n' +
-            'over=' +
-            _dbgOver +
-            '\n' +
-            'DOWN ' +
-            _dbgLastDown +
-            '\n' +
-            'MOVE ' +
-            _dbgLastMove;
-    } catch (e) {}
-}
-function cp(label) {
-    if (!DRAW_DEBUG) return;
-    _dbgCP = label;
-    dbgRender();
-}
-function dbgFmt(e, pos) {
-    e = e || {};
-    return (
-        'off=' +
-        e.offsetX +
-        ',' +
-        e.offsetY +
-        ' lay=' +
-        e.layerX +
-        ',' +
-        e.layerY +
-        ' cli=' +
-        e.clientX +
-        ',' +
-        e.clientY +
-        ' pg=' +
-        e.pageX +
-        ',' +
-        e.pageY +
-        (pos ? ' -> ' + Math.round(pos.x) + ',' + Math.round(pos.y) : '')
-    );
-}
-function dbgEvent(kind, e, pos) {
-    if (!DRAW_DEBUG) return;
-    try {
-        if (_dbgCounts[kind] !== undefined) _dbgCounts[kind]++;
-        if (kind === 'down') {
-            _dbgOver = dbgTopElement();
-            _dbgLastDown = dbgFmt(e, pos);
-        } else if (kind === 'move') {
-            _dbgLastMove = dbgFmt(e, pos);
-        }
-        dbgRender();
-    } catch (ex) {}
-}
-if (DRAW_DEBUG) {
-    try {
-        window.onerror = function (m, u, l) {
-            _dbgErr = m + ' @' + l;
-            dbgRender();
-            return false;
-        };
-    } catch (e) {}
-    cp('0: script top');
-}
-
 var canvas = document.getElementById('sketchpad');
 var ctx = canvas.getContext('2d');
-cp('1: got canvas+ctx');
 
 // Detect device capability tiers:
 // DSi (screen.width <= 256): very slow, needs batched rendering + small canvas
@@ -209,7 +31,6 @@ var lastY = 0;
 var currColor = '#000000';
 var currSize = 5;
 var currTool = 'draw';
-cp('2: device vars set');
 
 // History for undo
 var historyStack = [];
@@ -248,7 +69,6 @@ ctx.strokeStyle = currColor;
 ctx.fillStyle = '#ffffff';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 ctx.fillStyle = currColor;
-cp('3: ctx defaults set');
 
 // Canvas display dimensions (CSS pixels). Stored explicitly so coordinate
 // calculations don't rely on canvas.offsetWidth, which on older Opera (DSi)
@@ -281,7 +101,6 @@ function resizeCanvasDisplay() {
     // If maxW <= 150 layout isn't ready yet or collapsed; values stay at default
 }
 resizeCanvasDisplay();
-cp('4: resizeCanvasDisplay ok');
 // Also run on load to catch any layout changes after inline execution
 if (window.addEventListener) {
     window.addEventListener('load', resizeCanvasDisplay, false);
@@ -377,7 +196,6 @@ function flushDrawQueue() {
 // DSi/Wii Opera 9: each ctx.stroke() triggers a full canvas repaint, so we batch
 // many segments into one repaint. setInterval works on all legacy browsers (no rAF needed).
 setInterval(flushDrawQueue, 30);
-cp('5: setInterval set');
 
 function onCanvasMouseDown(e) {
     e = e || window.event;
@@ -499,9 +317,7 @@ function getWiiPos(e) {
     return { x: pageX - cp.left, y: pageY - cp.top };
 }
 
-cp('6: reached event binding');
 if (isWii) {
-    cp('6w: in Wii branch');
     // Wii Opera 9: draw immediately per mousemove using moveTo/lineTo/stroke
     // matching commit ed4d3a1b65fce4c8caec0a44da9738470c84c932
     canvas.onmousedown = function (e) {
@@ -509,7 +325,6 @@ if (isWii) {
         if (e && e.preventDefault) e.preventDefault();
         isDrawing = true;
         var pos = getWiiPos(e);
-        dbgEvent('down', e, pos);
 
         if (currTool === 'fill') {
             // floodFill needs getImageData/putImageData, which older Wii Opera builds
@@ -534,7 +349,6 @@ if (isWii) {
     };
     canvas.onmousemove = function (e) {
         e = e || window.event;
-        if (DRAW_DEBUG) dbgEvent('move', e, null); // count moves even when not drawing
         if (!isDrawing) return;
         if (e && e.preventDefault) e.preventDefault();
 
@@ -550,7 +364,6 @@ if (isWii) {
     };
     canvas.onmouseup = function () {
         isDrawing = false;
-        if (DRAW_DEBUG) dbgEvent('up', null, null);
     };
     canvas.onmouseout = function () {
         isDrawing = false;
@@ -590,7 +403,6 @@ if (isWii) {
         canvas.addEventListener('mousemove', onCanvasMouseMove, true);
     }
 }
-cp('7: events bound');
 
 // --- TOUCH SUPPORT FOR MOBILE ---
 // Add touch event handlers for mobile devices (wrapped so legacy console browsers like Wii/DSi Opera don't throw)
@@ -684,7 +496,6 @@ if (!isWii && !isDSi) {
         }
     } catch (ex) {}
 }
-cp('8: touch section done');
 
 // --- UI FUNCTIONS ---
 function setColor(col, id) {
@@ -885,12 +696,6 @@ function autoResize(el) {
 }
 
 // Initialize UI
-cp('9: before setColor');
 setColor('#000000', 'c1');
-cp('10: before setSize');
 setSize(5, 's2');
-cp('11: before setTool');
 setTool('draw');
-cp('12: DONE (all init ran)');
-// If the box shows CP=12 the whole script executed; anything lower pinpoints
-// the last line that ran before the Opera 9 abort.
