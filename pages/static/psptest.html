@@ -1,0 +1,89 @@
+<html>
+<head>
+<title>PSP body text probe</title>
+<style type="text/css">
+.cls-color { color: #dcdcdf; }
+.cls-red { color: #ff4444; }
+.td-block { display: block; width: 100%; }
+</style>
+</head>
+<body bgcolor="#36393f" text="#dcdcdf">
+
+<font style="color:#ffcc00" face="rodin,sans-serif">PSP BODY TEXT PROBE v1</font>
+<br />
+<font style="color:#ffcc00" face="rodin,sans-serif">If you can read a PASS line, that variant renders. Missing line = that variant is the bug.</font>
+<br /><br />
+
+<table cellpadding="0" cellspacing="0" width="100%">
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">01 bare text in td:</font></td></tr>
+<tr><td>PASS 01 bare text in td</td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">02 div no style:</font></td></tr>
+<tr><td><div>PASS 02 div no style</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">03 div inline color:</font></td></tr>
+<tr><td><div style="color: #dcdcdf;">PASS 03 div inline color</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">04 div class color (does class CSS apply at all?):</font></td></tr>
+<tr><td><div class="cls-color">PASS 04 div class color</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">05 does embedded style block work? next line should be RED:</font></td></tr>
+<tr><td><div class="cls-red">PASS 05 this text is red if class CSS applies</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">06 font color attribute:</font></td></tr>
+<tr><td><font color="#dcdcdf">PASS 06 font color attr</font></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">07 font inline style color:</font></td></tr>
+<tr><td><font style="color:#dcdcdf">PASS 07 font inline style color</font></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">08 QUOTES in font-family (suspect):</font></td></tr>
+<tr><td><div style="color: #dcdcdf; font-family: rodin, Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;">PASS 08 quoted font-family</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">09 same but NO quotes in font-family:</font></td></tr>
+<tr><td><div style="color: #dcdcdf; font-family: rodin, Whitney, Helvetica, Arial, sans-serif;">PASS 09 unquoted font-family</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">10 color AFTER quoted font-family:</font></td></tr>
+<tr><td><div style="font-family: rodin, 'Helvetica Neue', Arial, sans-serif; color: #dcdcdf;">PASS 10 color after quotes</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">11 word-wrap present (unknown prop poisoning?):</font></td></tr>
+<tr><td><div style="color: #dcdcdf; word-wrap: break-word; margin: 0;">PASS 11 word-wrap present</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">12 leading space in style attr:</font></td></tr>
+<tr><td><div style=" color: #dcdcdf; font-size: 17px; ">PASS 12 leading space in style</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">13 td forced display:block inline (suspect):</font></td></tr>
+<tr><td style="display: block; width: 100%;">PASS 13 td display block inline</td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">14 td forced display:block via class (suspect):</font></td></tr>
+<tr><td class="td-block">PASS 14 td display block via class</td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">15 nested table depth (like real message markup):</font></td></tr>
+<tr><td>
+  <table cellpadding="0" cellspacing="0" width="100%">
+    <tr><td><div style="color: #dcdcdf;">PASS 15 nested table div</div></td></tr>
+  </table>
+</td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">16 EXACT current template markup:</font></td></tr>
+<tr><td>
+  <table cellpadding="0" cellspacing="0" width="100%" style="margin: 0; padding: 8px 0; padding-left: 12px">
+    <tr><td class="message-body-cell">
+      <div class="firstmessage messagecontent" style=" color: #dcdcdf; font-size: 17px; line-height: 24px; font-family: rodin, Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; word-wrap: break-word; margin: 0; ">PASS 16 exact template markup</div>
+    </td></tr>
+  </table>
+</td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">17 markdown-style inline children (a/em/strong):</font></td></tr>
+<tr><td><div style="color: #dcdcdf;">PASS 17 <em>em</em> <strong>strong</strong> <a href="#">link</a> tail</div></td></tr>
+
+<tr><td><font style="color:#ffcc00" face="rodin,sans-serif">18 p inside div (multi-paragraph message):</font></td></tr>
+<tr><td><div style="color: #dcdcdf;"><p>PASS 18 p inside div</p></div></td></tr>
+
+</table>
+
+<br />
+<font style="color:#ffcc00" face="rodin,sans-serif">END OF PROBE — if you see this, the whole page parsed.</font>
+
+</body>
+</html>
