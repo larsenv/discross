@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    {$COMMON_HEAD}
+    <style type="text/css">
+        /* Old 3DS single-canvas experiment.
+           Same 320x240 pixel budget as the DSiPaint-derived draw-old3ds page, but
+           with ONE <canvas id="sketchpad"> driven by the shared draw.js engine
+           instead of the 5 stacked layer canvases of draw-3ds.js. The element IDs
+           below (c1..c16, s1..s4, btn-draw/btn-fill/btn-eraser, sendform,
+           drawinginput) are exactly the ones draw.js binds to, so draw.js runs
+           here completely unmodified — that is the whole point of the test. */
+        BODY {
+            color: #dcddde;
+            background: #36393f;
+            font-size: 8px;
+            font-family: 'rodin', sans-serif;
+            margin: 0px;
+            padding: 0px;
+            overflow-x: hidden;
+            width: 320px;
+        }
+        FORM { margin: 0px; padding: 0px; }
+        INPUT, BUTTON {
+            position: absolute;
+            border: 1px solid #202225;
+            font-family: 'rodin', sans-serif;
+            font-size: 8px;
+            box-sizing: border-box;
+            padding: 0;
+            color: #000;
+        }
+        .tool-btn {
+            background: #b9bbbe;
+            height: 18px;
+            width: 48px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .size-btn {
+            background: #b9bbbe;
+            height: 16px;
+            width: 30px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .c-box {
+            position: absolute;
+            width: 32px;
+            height: 17px;
+            border: 2px solid #555555;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        DIV { position: absolute; }
+        /* draw.js measures #canvas-wrapper and only scales the canvas down when the
+           wrapper's inner width is smaller than the backing buffer. 250px keeps the
+           240px buffer at 1:1, so screen coordinates map straight through and any
+           offset we see is a real browser quirk, not our own scale factor. */
+        #canvas-wrapper {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            width: 250px;
+            height: 142px;
+            padding: 0px;
+        }
+        #sketchpad {
+            border: 1px solid #202225;
+            background: #ffffff;
+            position: absolute;
+            left: 0px;
+            top: 0px;
+        }
+        #diag {
+            left: 2px;
+            top: 186px;
+            width: 316px;
+            height: 52px;
+            overflow: hidden;
+            color: #b9bbbe;
+            font-size: 8px;
+            line-height: 9px;
+        }
+    </style>
+</head>
+<body {$WHITE_THEME_ENABLED}>
+    <div style="width: 320px; height: 240px; position: relative; overflow: hidden;">
+
+    <div id="canvas-wrapper"><canvas id="sketchpad" width="600" height="350"></canvas></div>
+
+    <!-- 16 color palette, stacked in the 68px strip to the right of the canvas -->
+    <div id="c1"  class="c-box" style="left: 252px; top: 0px;   background:#000000;" onclick="setColor('#000000','c1');"></div>
+    <div id="c2"  class="c-box" style="left: 285px; top: 0px;   background:#555555;" onclick="setColor('#555555','c2');"></div>
+    <div id="c3"  class="c-box" style="left: 252px; top: 17px;  background:#aaaaaa;" onclick="setColor('#aaaaaa','c3');"></div>
+    <div id="c4"  class="c-box" style="left: 285px; top: 17px;  background:#ffffff;" onclick="setColor('#ffffff','c4');"></div>
+    <div id="c5"  class="c-box" style="left: 252px; top: 34px;  background:#800000;" onclick="setColor('#800000','c5');"></div>
+    <div id="c6"  class="c-box" style="left: 285px; top: 34px;  background:#ff0000;" onclick="setColor('#ff0000','c6');"></div>
+    <div id="c7"  class="c-box" style="left: 252px; top: 51px;  background:#ff9900;" onclick="setColor('#ff9900','c7');"></div>
+    <div id="c8"  class="c-box" style="left: 285px; top: 51px;  background:#ffff00;" onclick="setColor('#ffff00','c8');"></div>
+    <div id="c9"  class="c-box" style="left: 252px; top: 68px;  background:#800080;" onclick="setColor('#800080','c9');"></div>
+    <div id="c10" class="c-box" style="left: 285px; top: 68px;  background:#004d00;" onclick="setColor('#004d00','c10');"></div>
+    <div id="c11" class="c-box" style="left: 252px; top: 85px;  background:#00ff00;" onclick="setColor('#00ff00','c11');"></div>
+    <div id="c12" class="c-box" style="left: 285px; top: 85px;  background:#000080;" onclick="setColor('#000080','c12');"></div>
+    <div id="c13" class="c-box" style="left: 252px; top: 102px; background:#00ffff;" onclick="setColor('#00ffff','c13');"></div>
+    <div id="c14" class="c-box" style="left: 285px; top: 102px; background:#ff69b4;" onclick="setColor('#ff69b4','c14');"></div>
+    <div id="c15" class="c-box" style="left: 252px; top: 119px; background:#ff00ff;" onclick="setColor('#ff00ff','c15');"></div>
+    <div id="c16" class="c-box" style="left: 285px; top: 119px; background:#8b4513;" onclick="setColor('#8b4513','c16');"></div>
+
+    <form action="/drawtest" method="post" id="sendform" onsubmit="return false;">
+        <input type="hidden" id="drawinginput" name="drawinginput" value="" />
+
+        <input type="button" class="tool-btn" id="btn-draw"   style="left: 2px;   top: 144px;" value="Draw"   onclick="setTool('draw');" />
+        <input type="button" class="tool-btn" id="btn-fill"   style="left: 52px;  top: 144px;" value="Fill"   onclick="setTool('fill');" />
+        <input type="button" class="tool-btn" id="btn-eraser" style="left: 102px; top: 144px;" value="Eraser" onclick="setTool('eraser');" />
+        <input type="button" class="tool-btn"                 style="left: 152px; top: 144px;" value="Undo"   onclick="undo();" />
+        <input type="button" class="tool-btn"                 style="left: 202px; top: 144px;" value="Clear"  onclick="wipe();" />
+        <input type="button" class="tool-btn" style="left: 252px; top: 144px; background: #5865f2; color: #fff;" value="Export" onclick="testExport();" />
+
+        <input type="button" class="size-btn" id="s1" style="left: 2px;   top: 165px;" value="2px"  onclick="setSize(2,'s1');" />
+        <input type="button" class="size-btn" id="s2" style="left: 34px;  top: 165px;" value="5px"  onclick="setSize(5,'s2');" />
+        <input type="button" class="size-btn" id="s3" style="left: 66px;  top: 165px;" value="10px" onclick="setSize(10,'s3');" />
+        <input type="button" class="size-btn" id="s4" style="left: 98px;  top: 165px;" value="20px" onclick="setSize(20,'s4');" />
+
+        <input type="button" class="tool-btn" style="left: 132px; top: 165px; width: 60px; height: 16px;" value="Reset log" onclick="resetLog();" />
+        <input type="button" class="tool-btn" style="left: 196px; top: 165px; width: 56px; height: 16px;" value="5-layer" onclick="location.href='/draw/{$CHANNEL_ID}?mode=old3ds';" />
+        <input type="button" class="tool-btn" style="left: 256px; top: 165px; width: 62px; height: 16px;" value="Standard" onclick="location.href='/draw/{$CHANNEL_ID}?mode=standard';" />
+    </form>
+
+    <div id="diag">starting…</div>
+    </div>
+
+    <script src="/js/draw.js"></script>
+    <script type="text/javascript">
+    /* Diagnostics only — deliberately kept OUT of draw.js so the engine under test
+       runs byte-for-byte identical to the one the standard page ships. Everything
+       here is passive: extra listeners that observe, never draw. */
+    (function () {
+        var diag = document.getElementById('diag');
+        // mousemove/mouseup are counted separately per target: on Old 3DS SPIDER the
+        // drag fires them on document while the canvas sees none, and telling the two
+        // apart is exactly what decides whether one shared engine can serve both.
+        var counts = {
+            mousedown: 0, click: 0,
+            'mousemove@canvas': 0, 'mousemove@doc': 0,
+            'mouseup@canvas': 0, 'mouseup@doc': 0,
+            touchstart: 0, touchmove: 0, touchend: 0
+        };
+        var lastEvt = '-';
+        var lastCoords = '-';
+        var strokeStart = 0;
+        var lastStrokeMs = 0;
+        var lastStrokeMoves = 0;
+        var movesThisStroke = 0;
+        var exportInfo = '-';
+
+        var ua = navigator.userAgent;
+        var uaShort = ua.length > 60 ? ua.substring(0, 60) : ua;
+
+        function fields(e) {
+            var f = [];
+            if (e.offsetX !== undefined) f.push('off');
+            if (e.layerX !== undefined) f.push('layer');
+            if (e.clientX !== undefined) f.push('client');
+            if (e.pageX !== undefined) f.push('page');
+            return f.length ? f.join('/') : 'none';
+        }
+
+        function render() {
+            var canvas = document.getElementById('sketchpad');
+            diag.innerHTML =
+                'UA: ' + uaShort + '<br />' +
+                'screen ' + screen.width + 'x' + screen.height +
+                ' | buffer ' + canvas.width + 'x' + canvas.height +
+                ' | css ' + (canvas.style.width || 'native') + '<br />' +
+                'md ' + counts.mousedown + ' cl ' + counts.click +
+                ' | mm cv ' + counts['mousemove@canvas'] + ' doc ' + counts['mousemove@doc'] +
+                ' | mu cv ' + counts['mouseup@canvas'] + ' doc ' + counts['mouseup@doc'] + '<br />' +
+                'touch: ts ' + counts.touchstart + ' tm ' + counts.touchmove + ' te ' + counts.touchend +
+                ' | ' +
+                'last: ' + lastEvt + ' @ ' + lastCoords + '<br />' +
+                'stroke: ' + lastStrokeMoves + ' moves in ' + lastStrokeMs + 'ms' +
+                ' | export: ' + exportInfo;
+        }
+
+        function note(name, onCanvas) {
+            // mousemove/mouseup are observed on both the canvas and document, so a
+            // single bubbling event reaches this twice on browsers where both fire.
+            // Per-target counters stay honest; the stroke stats only take the first.
+            var key = name === 'mousemove' || name === 'mouseup'
+                ? name + (onCanvas ? '@canvas' : '@doc')
+                : name;
+            return function (e) {
+                e = e || window.event;
+                counts[key] = (counts[key] || 0) + 1;
+                var duplicate = e.__diagSeen;
+                e.__diagSeen = 1;
+                var x = e.offsetX !== undefined ? e.offsetX : (e.layerX !== undefined ? e.layerX : e.clientX);
+                var y = e.offsetY !== undefined ? e.offsetY : (e.layerY !== undefined ? e.layerY : e.clientY);
+                if (e.touches && e.touches.length) {
+                    x = e.touches[0].clientX;
+                    y = e.touches[0].clientY;
+                }
+                lastEvt = name + (onCanvas ? '@canvas' : '@doc') + ' [' + fields(e) + ']';
+                lastCoords = x + ',' + y;
+                if (!duplicate) {
+                    if (name === 'mousedown' || name === 'touchstart') {
+                        strokeStart = new Date().getTime();
+                        movesThisStroke = 0;
+                    } else if (name === 'mousemove' || name === 'touchmove') {
+                        movesThisStroke++;
+                    } else if (name === 'mouseup' || name === 'touchend') {
+                        lastStrokeMs = new Date().getTime() - strokeStart;
+                        lastStrokeMoves = movesThisStroke;
+                    }
+                }
+                render();
+            };
+        }
+
+        function bind(target, name, onCanvas) {
+            var h = note(name, onCanvas);
+            if (target.addEventListener) {
+                target.addEventListener(name, h, false); // bubble phase: never competes with draw.js
+            }
+        }
+
+        var canvas = document.getElementById('sketchpad');
+        bind(canvas, 'mousedown', true);
+        bind(canvas, 'mouseup', true);
+        bind(canvas, 'click', true);
+        bind(canvas, 'touchstart', true);
+        bind(canvas, 'touchmove', true);
+        bind(canvas, 'touchend', true);
+        // Old 3DS SPIDER fires the drag's mousemove/mouseup on document, not on the
+        // canvas — counting both tells us which path the console actually takes.
+        bind(document, 'mousemove', false);
+        bind(document, 'mouseup', false);
+        bind(canvas, 'mousemove', true);
+
+        window.testExport = function () {
+            var t = new Date().getTime();
+            try {
+                var data = document.getElementById('sketchpad').toDataURL('image/png');
+                document.getElementById('drawinginput').value = data;
+                exportInfo = data.length + 'b in ' + (new Date().getTime() - t) + 'ms';
+            } catch (ex) {
+                exportInfo = 'FAILED (' + (ex.message || ex) + ')';
+            }
+            render();
+        };
+
+        window.resetLog = function () {
+            for (var k in counts) counts[k] = 0;
+            lastEvt = '-';
+            lastCoords = '-';
+            lastStrokeMs = 0;
+            lastStrokeMoves = 0;
+            exportInfo = '-';
+            render();
+        };
+
+        render();
+    })();
+    </script>
+</body>
+</html>

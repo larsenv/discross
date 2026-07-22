@@ -68,6 +68,7 @@ const uploadpage = require('./pages/upload');
 const channelreplypage = require('./pages/channelReply');
 const replypage = require('./pages/reply');
 const drawpage = require('./pages/draw');
+const drawtestpage = require('./pages/drawTest');
 const pinspage = require('./pages/pins');
 const changepasswordpage = require('./pages/changePassword');
 const setup2fapage = require('./pages/setup2FA');
@@ -624,6 +625,13 @@ async function handleGet(req, res) {
         case 'draw': {
             const discordID = await auth.checkAuth(req, res);
             if (discordID) await drawpage.processDraw(bot, req, res, args, discordID);
+            break;
+        }
+        // Unauthenticated harness for the Old 3DS single-canvas experiment. It cannot
+        // send anything — it only renders draw.js against one <canvas> plus an event
+        // readout, so it can be opened straight on the console for testing.
+        case 'drawtest': {
+            drawtestpage.processDrawTest(req, res);
             break;
         }
         case 'sendactioncode': {
