@@ -3,7 +3,16 @@ const discord = require('discord');
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { isBotReady, resolveMentions, getTemplate, renderTemplate, render } = require('./utils');
+const {
+    isBotReady,
+    resolveMentions,
+    resolveRoleMentions,
+    buildAllowedMentions,
+    canMentionEveryoneIn,
+    getTemplate,
+    renderTemplate,
+    render,
+} = require('./utils');
 
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
     try {
@@ -53,9 +62,14 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
             const webhook = await getOrCreateWebhook(channel, channel.guild.id);
 
-            const resolvedMsg = await resolveMentions(
-                convertEmoji(parsedurl.searchParams.get('message') || ''),
-                channel.guild
+            const canPingEveryone = canMentionEveryoneIn(member, channel);
+            const resolvedMsg = resolveRoleMentions(
+                await resolveMentions(
+                    convertEmoji(parsedurl.searchParams.get('message') || ''),
+                    channel.guild
+                ),
+                channel.guild,
+                canPingEveryone
             );
 
             const reply_message = await channel.messages.fetch(
@@ -93,10 +107,11 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
                 content: processedmessage,
                 username: member.displayName || member.user.tag,
                 avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-                // Webhooks bypass the member's own mention permissions, so without
-                // this any user could ping @everyone/@here. (`disableEveryone` was
-                // the discord.js v11 option and is silently ignored by v14.)
-                allowedMentions: { parse: ['users', 'roles'] },
+                // Webhooks bypass the member's own mention permissions, so every
+                // ping is re-checked against what this member could do natively.
+                // (`disableEveryone` was the discord.js v11 option and is
+                // silently ignored by v14.)
+                allowedMentions: buildAllowedMentions(processedmessage, member, channel),
             };
 
             if (channel.isThread()) {

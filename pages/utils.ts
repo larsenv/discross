@@ -527,6 +527,92 @@ async function resolveMentions(text, guild) {
 }
 
 /**
+ * Whether a member holds the Mention Everyone permission in a channel.
+ *
+ * That single permission is what Discord checks for @everyone, @here and for
+ * pinging roles that aren't marked mentionable.
+ *
+ * @param {import('discord.js').GuildMember} member - The member to check.
+ * @param {object} channel - The channel the message is going to.
+ * @returns {boolean} True if the member may ping everyone/here and any role.
+ */
+function canMentionEveryoneIn(member, channel) {
+    const { PermissionFlagsBits } = require('discord');
+    try {
+        return member.permissionsIn(channel).has(PermissionFlagsBits.MentionEveryone);
+    } catch (err) {
+        console.error('Failed to check MentionEveryone permission:', err);
+        return false;
+    }
+}
+
+/**
+ * Resolves @RoleName mention tags in a message to proper <@&id> role mentions.
+ *
+ * Only roles the member is actually allowed to ping are converted: a role is
+ * pingable if it's marked mentionable, or if the member has Mention Everyone in
+ * the channel (which lets Discord ping any role). Longest names are matched
+ * first so "@Mod Team" doesn't get partially eaten by a "@Mod" role, and a
+ * match must end on a word boundary so "@Mod" doesn't chop up "@Moderators".
+ *
+ * @param {string} text - Message text (after user-mention resolution).
+ * @param {import('discord.js').Guild} guild - Guild whose roles to resolve.
+ * @param {boolean} canMentionEveryone - Whether the member has Mention Everyone here.
+ * @returns {string} Text with pingable @RoleName patterns replaced by <@&id>.
+ */
+function resolveRoleMentions(text, guild, canMentionEveryone) {
+    if (!text || !text.includes('@') || !guild?.roles?.cache) return text;
+
+    const roles = [...guild.roles.cache.values()]
+        .filter((role) => role.name !== '@everyone')
+        .filter((role) => canMentionEveryone || role.mentionable)
+        .sort((a, b) => b.name.length - a.name.length);
+
+    let result = text;
+    for (const role of roles) {
+        if (!result.includes(`@${role.name}`)) continue;
+        const escaped = role.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        result = result.replace(new RegExp(`@${escaped}(?![\\w-])`, 'g'), `<@&${role.id}>`);
+    }
+    return result;
+}
+
+/**
+ * Builds the `allowedMentions` payload for a webhook send.
+ *
+ * Webhooks bypass the sending member's own permissions, so every ping a message
+ * contains has to be re-checked here against what the member could do natively:
+ *
+ * - user mentions: always allowed (same as Discord).
+ * - @everyone / @here: only with the Mention Everyone permission in the channel.
+ * - role mentions: mentionable roles are always allowed; non-mentionable ones
+ *   only with Mention Everyone. Roles are listed explicitly rather than using
+ *   `parse: ['roles']`, which would ping every role in the message.
+ *
+ * @param {string} content - The final message content being sent.
+ * @param {import('discord.js').GuildMember} member - The member sending it.
+ * @param {object} channel - The channel the message is going to.
+ * @returns {object} An allowedMentions object for webhook.send().
+ */
+function buildAllowedMentions(content, member, channel) {
+    const canMentionEveryone = canMentionEveryoneIn(member, channel);
+
+    if (canMentionEveryone) {
+        return { parse: ['users', 'roles', 'everyone'] };
+    }
+
+    // Without the permission, allow only the mentionable roles actually named in
+    // the message — and no @everyone/@here.
+    const guild = channel.guild;
+    const mentionedRoles = [...String(content).matchAll(/<@&(\d+)>/g)].map((m) => m[1]);
+    const roles = [...new Set(mentionedRoles)].filter(
+        (id) => guild?.roles?.cache?.get(id)?.mentionable
+    );
+
+    return { parse: ['users'], roles };
+}
+
+/**
  * Make an HTTPS GET request following up to `maxRedirects` redirects.
  * Resolves with `{ statusCode, body }` on success; rejects on network errors.
  *
@@ -661,6 +747,9 @@ module.exports = {
     buildEmojiExpandUrl,
     sanitizeGuestName,
     resolveMentions,
+    resolveRoleMentions,
+    buildAllowedMentions,
+    canMentionEveryoneIn,
     httpsGet,
     formatChangePct,
     changeColor,

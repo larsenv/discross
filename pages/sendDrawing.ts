@@ -3,7 +3,15 @@ const discord = require('discord');
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
-const { resolveMentions, getTemplate, renderTemplate, render } = require('./utils');
+const {
+    resolveMentions,
+    resolveRoleMentions,
+    buildAllowedMentions,
+    canMentionEveryoneIn,
+    getTemplate,
+    renderTemplate,
+    render,
+} = require('./utils');
 
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
     try {
@@ -45,7 +53,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         const rawMsg = convertEmoji(parsedurl.message || '');
 
         // Process mentions only if there's a message
-        const processedmessage = rawMsg ? await resolveMentions(rawMsg, channel.guild) : rawMsg;
+        const canPingEveryone = canMentionEveryoneIn(member, channel);
+        const processedmessage = rawMsg
+            ? resolveRoleMentions(
+                  await resolveMentions(rawMsg, channel.guild),
+                  channel.guild,
+                  canPingEveryone
+              )
+            : rawMsg;
 
         const base64Data = parsedurl.drawinginput;
 
@@ -99,9 +114,9 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         const webhookOptions = {
             username: member.displayName || member.user.tag,
             avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
-            // Webhooks bypass the member's own mention permissions — block
-            // @everyone/@here in the optional caption.
-            allowedMentions: { parse: ['users', 'roles'] },
+            // Webhooks bypass the member's own mention permissions, so the pings
+            // in the optional caption are re-checked against this member's own.
+            allowedMentions: buildAllowedMentions(processedmessage, member, channel),
             files: [
                 {
                     attachment: imageBuffer,

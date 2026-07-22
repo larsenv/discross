@@ -112,6 +112,30 @@ function insertEmoji(code) {
     }
 }
 
+// Mentions
+// ========
+
+/**
+ * Appends a mention tag (e.g. "<@123>") to the message box. Called when an
+ * author's name is clicked in the message list.
+ */
+function insertMention(tag) {
+    var input = document.getElementById('message');
+    if (!input || !tag) return;
+
+    // Same append behaviour as insertEmoji, except the separating space is
+    // skipped when the box is empty or already ends in one.
+    if (input.value === '' || input.value.charAt(input.value.length - 1) === ' ') {
+        input.value += tag;
+    } else {
+        input.value += ' ' + tag;
+    }
+
+    if (typeof autoResize === 'function') {
+        autoResize(input);
+    }
+}
+
 function showEmoji() {
     var emojiDiv = document.getElementById('emoji');
     if (!emojiDiv) return;

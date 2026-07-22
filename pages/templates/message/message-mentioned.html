@@ -5,7 +5,7 @@
       <table cellpadding="0" cellspacing="0" width="100%" class="message-header-table" style="margin-bottom: 4px">
         <tr>
           <td class="message-author-cell">
-            <font onclick="document.getElementById('message').value += { $TAG }" style="font-weight:600;color:{$AUTHOR_COLOR} !important;cursor:pointer;margin-right:8px" face="rodin,sans-serif" class="message-author-font">{$MESSAGE_AUTHOR}</font>
+            <font onclick="insertMention({$TAG})" style="font-weight:600;color:{$AUTHOR_COLOR} !important;cursor:pointer;margin-right:8px;text-decoration:none" face="rodin,sans-serif" class="message-author-font">{$MESSAGE_AUTHOR}</font>
           </td>
           <td align="right" class="message-meta-cell" style="white-space: nowrap; text-align: right;">
             <font style="font-size: 12px; vertical-align: middle;" face="rodin,sans-serif" class="message-date-font">{$MESSAGE_DATE}</font>
