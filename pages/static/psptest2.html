@@ -1,0 +1,145 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PSP body text probe 2</title>
+
+<!-- The REAL class-detection snippet from partials/head.html, verbatim. -->
+<script>
+  (function() {
+    var ua = navigator.userAgent;
+    var isDSi = ua.indexOf('Nintendo DSi') !== -1;
+    var isPSP = ua.indexOf('PSP (PlayStation Portable)') !== -1 || ua.indexOf('PlayStation Portable') !== -1;
+    if (ua.indexOf('Nintendo 3DS') !== -1 || isDSi || isPSP) {
+      var isNew3DS = ua.indexOf('New Nintendo 3DS') !== -1 || ua.indexOf('NintendoBrowser') !== -1;
+      document.documentElement.className += isNew3DS ? ' client-new3ds' : (isPSP ? ' client-psp' : ' client-3ds');
+      if (isDSi) document.documentElement.className += ' client-dsi';
+    }
+  })();
+</script>
+
+<!-- The REAL stylesheet. This is the only thing probe 1 was missing. -->
+<link rel="stylesheet" href="/css/main.css" />
+
+<style type="text/css">
+/* Neutralisers used by the bisect rows below. Loaded after main.css. */
+.fix-td-noblock { display: table-cell !important; width: auto !important; }
+.fix-div-noblock { display: inline !important; }
+.fix-nofixed { table-layout: auto !important; }
+</style>
+</head>
+<body bgcolor="#36393f" text="#dcdcdf">
+
+<font style="color:#ffcc00" face="rodin,sans-serif">PSP BODY TEXT PROBE v2 (with real main.css)</font>
+<br />
+
+<font style="color:#ffcc00" face="rodin,sans-serif">STEP A - is the client-psp class applied? html.className is:</font>
+<br />
+<script>
+  document.write('<font style="color:#00ff00">JS RAN. className = [' + document.documentElement.className + ']</font>');
+</script>
+<noscript><font style="color:#ff4444">NO SCRIPT - class never applied</font></noscript>
+<br />
+<font style="color:#ffcc00" face="rodin,sans-serif">(If the green line is missing, NetFront ran no JS, so NO html.client-psp rule in main.css ever applies.)</font>
+<br /><br />
+
+<font style="color:#ffcc00" face="rodin,sans-serif">21 bare div.messagecontent, no table:</font>
+<div class="messagecontent">PASS 21 bare div.messagecontent</div>
+
+<font style="color:#ffcc00" face="rodin,sans-serif">22 div.messagecontent in a plain td:</font>
+<table cellpadding="0" cellspacing="0" width="100%"><tr><td>
+  <div class="messagecontent">PASS 22 messagecontent in plain td</div>
+</td></tr></table>
+
+<font style="color:#ffcc00" face="rodin,sans-serif">23 the real pair - td.message-body-cell + div.messagecontent:</font>
+<table cellpadding="0" cellspacing="0" width="100%"><tr><td class="message-body-cell">
+  <div class="messagecontent">PASS 23 real class pair</div>
+</td></tr></table>
+
+<font style="color:#ffcc00" face="rodin,sans-serif">24 same, but td class removed:</font>
+<table cellpadding="0" cellspacing="0" width="100%"><tr><td>
+  <div class="firstmessage messagecontent">PASS 24 td class removed</div>
+</td></tr></table>
+
+<font style="color:#ffcc00" face="rodin,sans-serif">25 same, but div class removed:</font>
+<table cellpadding="0" cellspacing="0" width="100%"><tr><td class="message-body-cell">
+  <div>PASS 25 div class removed</div>
+</td></tr></table>
+
+<font style="color:#ffcc00" face="rodin,sans-serif">26 real pair, td forced back to table-cell:</font>
+<table cellpadding="0" cellspacing="0" width="100%"><tr><td class="message-body-cell fix-td-noblock">
+  <div class="firstmessage messagecontent">PASS 26 td forced table-cell</div>
+</td></tr></table>
+
+<font style="color:#ffcc00" face="rodin,sans-serif">27 inside #msgcontainer (adds table-layout:fixed):</font>
+<div id="msgcontainer">
+  <table cellpadding="0" cellspacing="0" width="100%"><tr><td class="message-body-cell">
+    <div class="firstmessage messagecontent">PASS 27 inside msgcontainer</div>
+  </td></tr></table>
+</div>
+
+<font style="color:#ffcc00" face="rodin,sans-serif">28 inside #msgcontainer, table-layout forced auto:</font>
+<div id="msgcontainer">
+  <table cellpadding="0" cellspacing="0" width="100%" class="fix-nofixed"><tr><td class="message-body-cell">
+    <div class="firstmessage messagecontent">PASS 28 msgcontainer, layout auto</div>
+  </td></tr></table>
+</div>
+
+<font style="color:#ffcc00" face="rodin,sans-serif">29 FULL real chain - wrapper + content-padding + msgcontainer + real message.html:</font>
+<div id="wrapper"><div class="content-padding"><div>
+<div id="msgcontainer">
+  <table cellpadding="0" cellspacing="0" width="100%" style="margin: 0; padding: 8px 0; padding-left: 12px">
+    <tr>
+      <td>
+        <table cellpadding="0" cellspacing="0" width="100%" class="message-header-table" style="margin-bottom: 4px">
+          <tr>
+            <td class="message-author-cell">
+              <font style="font-weight:600;color:#5865f2;margin-right:8px" face="rodin,sans-serif">TestUser</font>
+            </td>
+            <td align="right" class="message-meta-cell" style="white-space: nowrap; text-align: right;">
+              <font style="font-size: 12px; vertical-align: middle;" face="rodin,sans-serif" class="message-date-font">4:27 PM</font>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="message-body-cell">
+        <div class="firstmessage messagecontent" style=" font-size: 17px; line-height: 24px; font-family: rodin, Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; word-wrap: break-word; margin: 0; "><font class="messagecontent-font" color="#dcdcdf" face="rodin, sans-serif">PASS 29 full real chain</font></div>
+      </td>
+    </tr>
+  </table>
+</div>
+</div></div></div>
+
+<font style="color:#ffcc00" face="rodin,sans-serif">30 same full chain, but body cell forced back to table-cell:</font>
+<div id="wrapper"><div class="content-padding"><div>
+<div id="msgcontainer">
+  <table cellpadding="0" cellspacing="0" width="100%" style="margin: 0; padding: 8px 0; padding-left: 12px">
+    <tr>
+      <td>
+        <table cellpadding="0" cellspacing="0" width="100%" class="message-header-table" style="margin-bottom: 4px">
+          <tr>
+            <td class="message-author-cell">
+              <font style="font-weight:600;color:#5865f2;margin-right:8px" face="rodin,sans-serif">TestUser</font>
+            </td>
+            <td align="right" class="message-meta-cell" style="white-space: nowrap; text-align: right;">
+              <font style="font-size: 12px; vertical-align: middle;" face="rodin,sans-serif" class="message-date-font">4:27 PM</font>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="message-body-cell fix-td-noblock">
+        <div class="firstmessage messagecontent" style=" font-size: 17px; line-height: 24px; font-family: rodin, Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; word-wrap: break-word; margin: 0; "><font class="messagecontent-font" color="#dcdcdf" face="rodin, sans-serif">PASS 30 full chain, cell fixed</font></div>
+      </td>
+    </tr>
+  </table>
+</div>
+</div></div></div>
+
+<br />
+<font style="color:#ffcc00" face="rodin,sans-serif">END OF PROBE 2 - if you see this the whole page parsed.</font>
+
+</body>
+</html>
