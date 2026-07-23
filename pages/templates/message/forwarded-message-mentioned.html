@@ -17,8 +17,16 @@
   </tr>
   <tr>
     <td class="message-body-cell" style="padding-left: 8px">
-      <font class="forwarded-label" style="font-size: 12px; display: block; margin-bottom: 4px" face="rodin,sans-serif">→ Forwarded</font>
-      {$FORWARDED_CONTENT_BLOCK} {$FORWARDED_EMBEDS} {$FORWARDED_ORIGIN} {$MESSAGE_CONTENT}
+      <table cellpadding="0" cellspacing="0" width="100%" class="forwarded-block" style="margin-bottom: 4px">
+        <tr>
+          <td class="forwarded-block-cell">
+            <img src="/resources/twemoji/27a1.gif" class="message-reply-emoji" style="vertical-align: middle; margin-right: 4px; width: 14px; height: 14px;" alt="Forwarded" />
+            <span class="forwarded-label" style="vertical-align: middle; font-size: 12px; font-size: var(--msg-meta-font-size, 12px); font-family: rodin, sans-serif;">Forwarded</span>
+            {$FORWARDED_CONTENT_BLOCK} {$FORWARDED_EMBEDS} {$FORWARDED_ORIGIN}
+          </td>
+        </tr>
+      </table>
+      {$MESSAGE_CONTENT}
     </td>
   </tr>
 </table>

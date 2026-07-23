@@ -486,12 +486,21 @@ pre code {
    10. FORWARDED MESSAGES
    ================================================================ */
 
+/*
+   Forwarded messages follow Discord's treatment: a single vertical bar down the
+   left of the whole quoted block — the "Forwarded" label, the quoted text and
+   the origin line — rather than a filled box around the text alone. The
+   replying user's own message sits outside the bar, below it.
+*/
+.forwarded-block-cell {
+    border-left: 4px solid #4e5058;
+    padding-left: 10px;
+}
 .forwarded-content-wrapper {
-    padding: 8px;
-    background: #2e3033; /* solid fallback for IE8 which doesn't support rgba() */
-    background: rgba(47, 49, 54, 0.6);
-    border-radius: 4px;
-    margin-bottom: 8px;
+    margin: 2px 0 4px 0;
+}
+.forwarded-content-font {
+    color: #c5c7cb;
 }
 
 /* Date separator */
@@ -1026,9 +1035,11 @@ body.light-theme,
     background: #ffffff;
     border-color: #e3e5e8;
 }
-.light-theme .forwarded-content-wrapper {
-    background: #c5c6ca;
-    border-color: #e3e5e8;
+.light-theme .forwarded-block-cell {
+    border-left-color: #c4c9ce;
+}
+.light-theme .forwarded-content-font {
+    color: #4e5058;
 }
 .light-theme .date-sep-line {
     border-top-color: #e0e0e1;
@@ -1221,9 +1232,11 @@ body.amoled-theme,
     background: #141416;
     border-color: #222;
 }
-.amoled-theme .forwarded-content-wrapper {
-    background: #3b3c43;
-    border-color: #222;
+.amoled-theme .forwarded-block-cell {
+    border-left-color: #3b3c43;
+}
+.amoled-theme .forwarded-content-font {
+    color: #b5b7bb;
 }
 .amoled-theme .date-sep-line {
     border-top-color: #2a2a2d;
