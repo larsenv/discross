@@ -692,7 +692,13 @@ function wipe() {
 // Called from the form's onsubmit: fill in the drawing data and return true so
 // the browser's own submit proceeds (calling form.submit() from inside onsubmit
 // double-submits on some legacy browsers).
+// Guards against a double submission — a fast double-click on Send, or Enter
+// landing while the first POST is still in flight, would otherwise send the
+// drawing twice.
+var drawingSubmitted = false;
+
 function prepareDrawing() {
+    if (drawingSubmitted) return false;
     var inputField = document.getElementById('drawinginput');
     try {
         inputField.value = canvas.toDataURL('image/png');
@@ -700,6 +706,9 @@ function prepareDrawing() {
         alert('Could not export the drawing on this browser.');
         return false;
     }
+    drawingSubmitted = true;
+    var btn = document.getElementById('send-button');
+    if (btn) btn.disabled = true;
     return true;
 }
 
