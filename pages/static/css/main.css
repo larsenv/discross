@@ -1,6 +1,56 @@
 /* main.css - Unified stylesheet for all Discross pages */
 
 /* ================================================================
+   0. MESSAGE TYPE SCALE
+   ================================================================ */
+
+/*
+   Message text is sized through these variables so the desktop scale can be
+   raised without touching consoles. Every place that consumes one declares the
+   old fixed px value first and the var() second:
+
+       font-size: 17px;
+       font-size: var(--msg-font-size, 17px);
+
+   Legacy engines (Wii Opera 9, PS3 NetFront, DSi, 3DS, PSP) don't understand
+   var(), so they drop the second declaration and keep the exact size they
+   render today. Modern browsers apply the variable. The bump is also gated
+   behind a min-width query, so phones keep the compact scale and only real
+   desktop windows get the larger text.
+*/
+:root {
+    --msg-font-size: 17px;
+    --msg-line-height: 24px;
+    --msg-author-font-size: 16px;
+    --msg-meta-font-size: 12px;
+    /*
+       Vertical gap above a new author's message group, on top of the 8px of
+       padding each group already carries top and bottom.
+
+       Sized against Discord: there, the distance from a group's last line of
+       text to the next author's name is about 1.95x the line height (43px at a
+       22px line height — 17px of group margin plus the message's own padding).
+       8px of padding + 6px here + a 24px line height lands on the same ratio.
+    */
+    --msg-group-gap: 6px;
+}
+
+@media screen and (min-width: 1000px) {
+    :root {
+        --msg-font-size: 19px;
+        --msg-line-height: 27px;
+        --msg-author-font-size: 18px;
+        --msg-meta-font-size: 13px;
+        --msg-group-gap: 10px;
+    }
+}
+
+/* The first group in the list sits against the container's own padding. */
+#msgcontainer > table:first-child {
+    margin-top: 0 !important;
+}
+
+/* ================================================================
    1. GLOBAL RESET
    ================================================================ */
 
@@ -303,12 +353,15 @@ pre code {
 .messagecontent-font {
     color: #dcdcdf;
     font-size: 17px;
+    font-size: var(--msg-font-size, 17px);
     line-height: 24px;
+    line-height: var(--msg-line-height, 24px);
     word-wrap: break-word;
     max-width: 100%;
 }
 .messagecontent p {
     font-size: 17px;
+    font-size: var(--msg-font-size, 17px);
     margin: 0 0 8px 0;
     max-width: 100%;
 }
@@ -3332,11 +3385,11 @@ html.client-psp .message-reply-cell {
 html.client-psp .discross-button,
 html.client-psp a.discross-button,
 html.client-psp button.discross-button,
-html.client-psp input[type="submit"],
-html.client-psp input[type="button"],
+html.client-psp input[type='submit'],
+html.client-psp input[type='button'],
 html.client-psp .warning-box .discross-button,
-html.client-psp form a[href*="resend"],
-html.client-psp form a[href*="send"] {
+html.client-psp form a[href*='resend'],
+html.client-psp form a[href*='send'] {
     display: block !important;
     width: 100% !important;
     max-width: 280px !important;
