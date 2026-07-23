@@ -4,13 +4,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     {$COMMON_HEAD}
     <style type="text/css">
-        /* Old 3DS single-canvas experiment.
-           Same 320x240 pixel budget as the DSiPaint-derived draw-old3ds page, but
-           with ONE <canvas id="sketchpad"> driven by the shared draw.js engine
-           instead of the 5 stacked layer canvases of draw-3ds.js. The element IDs
-           below (c1..c16, s1..s4, btn-draw/btn-fill/btn-eraser, sendform,
-           drawinginput) are exactly the ones draw.js binds to, so draw.js runs
-           here completely unmodified — that is the whole point of the test. */
+        /* Old 3DS single-canvas harness.
+           Same 320x240 pixel budget the retired DSiPaint-derived page used, but with
+           ONE <canvas id="sketchpad"> driven by the shared draw.js engine instead of
+           that page's 5 stacked layer canvases. The element IDs below (c1..c16,
+           s1..s4, btn-draw/btn-fill/btn-eraser, sendform, drawinginput) are exactly
+           the ones draw.js binds to, so draw.js runs here unmodified.
+
+           This answered its question: the engine works on Old 3DS once the canvas is
+           nudged into repainting, so draw-old3ds.html and draw-3ds.js were removed
+           and draw.js now carries the nudge itself. Kept as the diagnostic rig for
+           the next legacy-browser drawing bug — several comments below refer to
+           draw-3ds.js, which lives on in git history. */
         BODY {
             color: #dcddde;
             background: #36393f;
@@ -133,7 +138,7 @@
         <input type="button" class="tool-btn" id="btn-mouseout" style="left: 178px; top: 165px; width: 34px; height: 16px; background: #faa61a;" value="Out:ON" onclick="toggleMouseOut();" />
         <input type="button" class="tool-btn" id="btn-pd" style="left: 214px; top: 165px; width: 30px; height: 16px; background: #faa61a;" value="pd:ON" onclick="togglePreventDefault();" />
         <input type="button" class="tool-btn" style="left: 246px; top: 165px; width: 28px; height: 16px;" value="Rst" onclick="resetLog();" />
-        <input type="button" class="tool-btn" style="left: 276px; top: 165px; width: 42px; height: 16px;" value="5layer" onclick="location.href='/draw/{$CHANNEL_ID}?mode=old3ds';" />
+        <input type="button" class="tool-btn" style="left: 276px; top: 165px; width: 42px; height: 16px;" value="Real" onclick="location.href='/draw/{$CHANNEL_ID}';" />
     </form>
 
     <div id="diag">starting…</div>
@@ -219,11 +224,13 @@
         var pdEnabled = true;
         var probeInfo = '';
 
-        // Repaint nudge. draw-3ds.js flips the canvas border between #000 and #111
-        // on every mousemove (draw-3ds.js:266) — a hack to force the browser to
-        // recomposite the canvas. draw.js has no equivalent, which would explain ink
-        // landing in the backing store (PROBE says every primitive paints) while the
-        // screen keeps showing only the mousedown dot.
+        // Repaint nudge. The retired draw-3ds.js flipped the canvas border between
+        // #000 and #111 on every mousemove — a hack to force the browser to
+        // recomposite the canvas. That was the whole difference: ink reached the
+        // backing store (PROBE shows every primitive painting) while the screen kept
+        // showing only the mousedown dot. draw.js now does this itself via
+        // nudgeRepaint(), so this toggle only adds a second, redundant flip; it is
+        // kept so the effect can still be demonstrated in isolation.
         var repaintNudge = false;
         var nudgeToggle = 0;
 

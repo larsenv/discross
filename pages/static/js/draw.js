@@ -16,6 +16,30 @@ var is3DS = _ua.indexOf('nintendo 3ds') !== -1;
 var isNew3DS = is3DS && _ua.indexOf('nintendobrowser') !== -1;
 var isOld3DS = is3DS && !isNew3DS;
 
+// --- OLD 3DS REPAINT NUDGE ---
+// On the Old 3DS browser (SPIDER) canvas writes reach the backing store but the
+// screen is not recomposited on their own. During a stylus drag every segment is
+// drawn correctly — getImageData proves the ink is there — yet the display keeps
+// showing only the dot painted on mousedown, so the tool appears to draw dots and
+// nothing else. Changing a rendered style property on the canvas forces the
+// repaint; flipping the border between #000 and #111 is the trick the retired
+// DSiPaint-derived engine (draw-3ds.js) ran on every mousemove, which is why that
+// engine drew strokes here while this one appeared to manage only dots.
+//
+// Confirmed on hardware through the /drawtest harness: with the nudge the strokes
+// appear as they are drawn, without it they do not. Old 3DS only — every other
+// client repaints on its own and must not pay for this.
+//
+// Cosmetic note: this overrides the canvas's 1px #202225 border (main.css) with
+// #000/#111 on the Old 3DS. The difference is imperceptible on that screen and
+// the alternative is a tool that cannot draw a line.
+var repaintToggle = 0;
+function nudgeRepaint() {
+    if (!isOld3DS) return;
+    repaintToggle ^= 1;
+    canvas.style.borderColor = '#' + repaintToggle + repaintToggle + repaintToggle;
+}
+
 // On small screens, shrink the canvas backing buffer before any drawing.
 // 240×140 has the same 12:7 aspect ratio as 600×350 but only ~33,600 pixels
 // vs 210,000 — roughly 6× fewer, making drawing usable on legacy hardware.
@@ -49,6 +73,7 @@ function saveHistory() {
 function undo() {
     if (historyStack.length > 0) {
         ctx.putImageData(historyStack.pop(), 0, 0);
+        nudgeRepaint();
     }
 }
 
@@ -251,6 +276,7 @@ function onCanvasMouseMove(e) {
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
+        nudgeRepaint(); // Old 3DS: without this the segment never reaches the screen
     }
     lastX = pos.x;
     lastY = pos.y;
@@ -630,6 +656,7 @@ function floodFill(startX, startY) {
         if (y < h - 1) stack.push(pos + w);
     }
     ctx.putImageData(imageData, 0, 0);
+    nudgeRepaint();
 }
 
 function setSize(s, id) {
@@ -658,6 +685,7 @@ function wipe() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = currTool === 'eraser' ? '#ffffff' : currColor;
     isDrawing = false;
+    nudgeRepaint();
 }
 
 // --- SEND LOGIC ---
