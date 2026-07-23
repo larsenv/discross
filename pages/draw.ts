@@ -17,7 +17,6 @@ const {
     buildEmojiExpandUrl,
 } = require('./utils');
 const channel_template = loadAndRenderPageTemplate('draw');
-const old3ds_template = loadAndRenderPageTemplate('draw-old3ds');
 
 // The Wii uses the SAME draw template as everyone else; the only differences are
 // injected via tokens (see the isWii branch below): an extra <style> block of
@@ -26,9 +25,9 @@ const old3ds_template = loadAndRenderPageTemplate('draw-old3ds');
 // drifting apart. draw-wii-head.html holds the Wii-only <style> block.
 const WII_EXTRA_HEAD = getTemplate('draw-wii-head', 'partials');
 const WII_MSG_INPUT_STYLE_ATTR =
-    ' style="box-sizing: border-box; width: 100%; color: #dcddde; background: transparent; border: none; outline: none; height: 40px; padding: 9px 16px; font-family: \'rodin\', Whitney, \'Helvetica Neue\', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px;"';
+    " style=\"box-sizing: border-box; width: 100%; color: #dcddde; background: transparent; border: none; outline: none; height: 40px; padding: 9px 16px; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px;\"";
 const WII_SEND_BTN_STYLE_ATTR =
-    ' style="-webkit-appearance: none; -moz-appearance: none; appearance: none; box-sizing: border-box; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: \'rodin\', Whitney, \'Helvetica Neue\', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 40px; line-height: 40px; white-space: nowrap; margin-right: 8px; display: block; width: 82px;"';
+    " style=\"-webkit-appearance: none; -moz-appearance: none; appearance: none; box-sizing: border-box; background: #5865f2; border: none; border-radius: 4px; color: white; padding: 0 16px; cursor: pointer; font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; height: 40px; line-height: 40px; white-space: nowrap; margin-right: 8px; display: block; width: 82px;\"";
 
 // Standard no-store headers for a page that must always reflect the current
 // draw.js/template. Pragma/Expires are included for the HTTP/1.0 semantics these
@@ -106,23 +105,10 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             }
 
             const userAgentStr = req.headers['user-agent'] || '';
-            const is3DS =
-                userAgentStr.indexOf('Nintendo 3DS') !== -1 ||
-                userAgentStr.indexOf('Nintendo DSi') !== -1;
-            const isNew3DS = is3DS && userAgentStr.indexOf('NintendoBrowser') !== -1;
-            const isOld3DS = is3DS && !isNew3DS;
-
             const isWii =
                 (userAgentStr.toLowerCase().indexOf('nintendo wii') !== -1 ||
                     userAgentStr.toLowerCase().indexOf('wii') !== -1) &&
                 userAgentStr.toLowerCase().indexOf('wiiu') === -1;
-
-            const urlMode = parsedUrl.searchParams.get('mode') || '';
-            const urlOld3DS = parsedUrl.searchParams.get('old3ds') || '';
-            const useOld3DSMode =
-                (isOld3DS || urlMode === 'old3ds' || urlMode === 'lite' || urlOld3DS === '1') &&
-                urlMode !== 'standard' &&
-                urlOld3DS !== '0';
 
             const channelName = (chnl.isThread() ? '' : '#') + normalizeWeirdUnicode(chnl.name);
             const pageTitle = `Draw in ${channelName} - Discross`;
@@ -134,7 +120,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             // undo history that freezes Wii Opera.
             if (isWii) {
                 const wiiTemplate = renderTemplate(baseTemplate, {
-                    MODE_TOGGLE_URL: sessionParam ? sessionParam + '&mode=old3ds' : '?mode=old3ds',
                     CHANNEL_ID: chnl.id,
                     CHANNEL_NAME: channelName,
                     SESSION_ID: urlSessionID,
@@ -150,26 +135,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                 });
                 res.writeHead(200, NO_CACHE_HTML_HEADERS);
                 res.end(inlineDrawJs(wiiTemplate));
-                return;
-            }
-
-            if (useOld3DSMode) {
-                const modeToggleUrl = sessionParam
-                    ? sessionParam + '&mode=standard'
-                    : '?mode=standard';
-                const final3DSTemplate = renderTemplate(old3ds_template, {
-                    COMMON_HEAD: getTemplate('head', 'partials'),
-                    WHITE_THEME_ENABLED: themeClass,
-                    SERVER_ID: chnl.guild.id,
-                    CHANNEL_ID: chnl.id,
-                    CHANNEL_NAME: channelName,
-                    SESSION_ID: urlSessionID,
-                    SESSION_PARAM: sessionParam,
-                    PAGE_TITLE: `3DS Paint (DSiPaint Engine) in ${channelName} - Discross`,
-                    MODE_TOGGLE_URL: modeToggleUrl,
-                });
-                res.writeHead(200, NO_CACHE_HTML_HEADERS);
-                res.end(final3DSTemplate);
                 return;
             }
 
@@ -219,7 +184,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
 
             const seoDescription = `Draw and send sketches to ${channelName} on Discross, the universal Discord client.`;
 
-            const modeToggleUrl = sessionParam ? sessionParam + '&mode=old3ds' : '?mode=old3ds';
             let finalTemplate = renderTemplate(baseTemplate, {
                 SERVER_ID: chnl.guild.id,
                 CHANNEL_ID: chnl.id,
@@ -230,7 +194,6 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
                 EMOJI_BUTTON: getTemplate('emoji-picker-button', 'partials'),
                 RANDOM_EMOJI: RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)],
                 EMOJI_TOGGLE_URL: buildEmojiToggleUrl(chnl.id, urlEmoji === '1', sessionParam),
-                MODE_TOGGLE_URL: modeToggleUrl,
                 PAGE_TITLE: pageTitle,
                 SEO_METADATA: generateSEOMetadata(req, {
                     title: pageTitle,

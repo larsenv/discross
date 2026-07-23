@@ -4,10 +4,12 @@ const { renderTemplate, resolveTheme, getTemplate, loadAndRenderPageTemplate } =
 
 // Standalone harness for the "one canvas instead of five" experiment on the Old 3DS.
 // It serves the shared single-canvas draw.js engine inside the same 320x240 layout
-// budget the DSiPaint-derived draw-old3ds page uses, plus a live event/coordinate
-// readout, so the two engines can be compared on real hardware. Intentionally
-// unauthenticated and channel-less — nothing here can send a message; the Export
-// button only measures toDataURL(). Remove once the experiment is settled.
+// budget the retired DSiPaint-derived page used, plus a live event/coordinate
+// readout, so the two engines could be compared on real hardware. The experiment
+// settled yes — the five-canvas page is gone and draw.js repaints itself — and this
+// is kept as the diagnostic rig for legacy-browser drawing bugs. Intentionally
+// unauthenticated and channel-less: nothing here can send a message, and the Export
+// button only measures toDataURL().
 const test_template = loadAndRenderPageTemplate('draw-test-old3ds');
 
 const NO_CACHE_HTML_HEADERS = {
