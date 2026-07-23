@@ -151,6 +151,51 @@ function truncateText(text, maxLength) {
     return chars.length > maxLength ? chars.slice(0, maxLength).join('') + '...' : text;
 }
 
+// Truncates HTML to `maxVisible` visible characters without ever splitting a
+// tag or an entity, and never mid-mention: the cut is only taken when no <span>
+// is open, so a mention pill is always kept whole. Used for reply previews,
+// which contain .mention pills but must still be length-capped.
+function truncateHtmlVisible(html, maxVisible) {
+    let visible = 0;
+    let out = '';
+    let openSpans = 0;
+    let i = 0;
+    while (i < html.length) {
+        const ch = html[i];
+        if (ch === '<') {
+            const end = html.indexOf('>', i);
+            if (end === -1) {
+                out += html.slice(i);
+                break;
+            }
+            const tag = html.slice(i, end + 1);
+            if (/^<span\b/i.test(tag)) openSpans++;
+            else if (/^<\/span/i.test(tag)) openSpans = Math.max(0, openSpans - 1);
+            out += tag;
+            i = end + 1;
+            continue;
+        }
+        if (visible >= maxVisible && openSpans === 0) {
+            out += '...';
+            break;
+        }
+        if (ch === '&') {
+            const semi = html.indexOf(';', i);
+            if (semi !== -1 && semi - i <= 10) {
+                out += html.slice(i, semi + 1);
+                i = semi + 1;
+                visible++;
+                continue;
+            }
+        }
+        out += ch;
+        i++;
+        visible++;
+    }
+    while (openSpans-- > 0) out += '</span>';
+    return out;
+}
+
 /**
  * Flattens Discord markup that only makes sense when fully rendered into plain
  * text suitable for a one-line preview.
@@ -1328,7 +1373,8 @@ async function resolveReplyData(
     imagesCookie,
     animationsCookie,
     barColor,
-    authorText
+    authorText,
+    context
 ) {
     try {
         const replyMessage = await item.fetchReference().catch(() => null);
@@ -1356,18 +1402,47 @@ async function resolveReplyData(
 
         const replyContent = replyMessage?.content
             ? await (async () => {
-                  const resolvedFlat = await resolveRawMentionsForPreview(
-                      replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim(),
-                      replyMessage,
-                      memberCache,
-                      chnl,
-                      bot
+                  // Render the preview through the same mention pipeline a normal
+                  // message uses, so @user / @role / #channel / @everyone show the
+                  // same .mention pills instead of flat "@Name" text. Flatten the
+                  // rest of the markup (links, custom emoji, spoilers) first, then
+                  // HTML-escape so the mention tokens become the &lt;@id&gt; form
+                  // the pipeline expects.
+                  const { discordID, member, templates } = context ?? {};
+                  const flat = flattenPreviewMarkup(
+                      replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim()
                   );
 
-                  return truncateText(
-                      flattenPreviewMarkup(resolvedFlat).trim(),
-                      REPLY_CONTENT_MAX_LENGTH
+                  if (!templates) {
+                      // No render context (e.g. a caller that didn't pass one):
+                      // fall back to resolved plain-text names.
+                      const resolvedFlat = await resolveRawMentionsForPreview(
+                          flat,
+                          replyMessage,
+                          memberCache,
+                          chnl,
+                          bot
+                      );
+                      return truncateText(resolvedFlat.trim(), REPLY_CONTENT_MAX_LENGTH);
+                  }
+
+                  let html = he.encode(flat.trim(), { useNamedReferences: true });
+                  html = renderKnownMentions(html, replyMessage, discordID, member, templates);
+                  html = await resolveRemainingMentions(
+                      html,
+                      chnl,
+                      memberCache,
+                      templates.mention
                   );
+                  html = await resolveChannelMentions(html, bot, chnl);
+                  html = renderEveryoneMentions(html, replyMessage, templates);
+                  // Channel mentions wrap their pill in a link to the channel.
+                  // The preview as a whole is already an <a> that jumps to the
+                  // quoted message, and nested anchors are invalid HTML (browsers
+                  // split them, which breaks the jump), so drop the inner tags and
+                  // keep just their contents — the pill still looks the same.
+                  html = html.replace(/<\/?a\b[^>]*>/gi, '');
+                  return truncateHtmlVisible(html, REPLY_CONTENT_MAX_LENGTH);
               })()
             : '';
 
@@ -1380,6 +1455,9 @@ async function resolveReplyData(
                 item.mentions?.repliedUser !== undefined &&
                 item.author?.id !== replyUser?.id,
             content: replyContent,
+            // Whether `content` is already safe HTML (mention pills rendered) or
+            // plain text the indicator still needs to escape.
+            contentIsHtml: !!context?.templates,
             hasAttachment: hasNonTextContent(replyMessage),
             // ID of the quoted message so the indicator can jump to it, like
             // Discord. Falls back to the reference's messageId when the message
@@ -1399,6 +1477,9 @@ function buildReplyIndicator(
     imagesCookie = 0,
     channelId = ''
 ) {
+    // `content` arrives as ready HTML (mention pills already rendered by the same
+    // pipeline a normal message uses), so only collapse whitespace *between*
+    // tags — never touch the tags themselves, and never re-encode it.
     const normalizedReplyContent = (replyData.content || '')
         .replace(/<br[^>]*>/gi, ' ')
         .replace(/\r?\n/g, ' ')
@@ -1411,8 +1492,12 @@ function buildReplyIndicator(
         ? render('channel/reply-attachment-icon', { CODE: REPLY_ATTACHMENT_ICON_CODE })
         : '';
 
+    const previewBody = replyData.contentIsHtml
+        ? normalizedReplyContent
+        : he.encode(normalizedReplyContent, { useNamedReferences: true });
+
     const rawPreview = normalizedReplyContent
-        ? he.encode(normalizedReplyContent, { useNamedReferences: true }) + attachmentIcon
+        ? previewBody + attachmentIcon
         : replyData.hasAttachment
           ? getTemplate('reply-attachment-only', 'channel') + attachmentIcon
           : '';
@@ -1984,7 +2069,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
                       imagesCookie,
                       animationsCookie,
                       barColor,
-                      authorText
+                      authorText,
+                      context
                   )
                 : null;
 
