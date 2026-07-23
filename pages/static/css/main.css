@@ -3371,6 +3371,21 @@ html.client-psp .message-reply-cell {
     width: 1% !important;
 }
 
+/* The date separator is emitted as a direct child table of #msgcontainer, so the
+   narrow-screen rule (max-width: 480px) and the legacy-console rules that force
+   `table-layout: fixed` on `#msgcontainer > table` catch it as well. Under fixed
+   layout its 4% centre cell collapses — 13px at a 320px viewport — while the date
+   inside is `white-space: nowrap` and ~111px wide, so the text overflows the cell by
+   ~98px and paints straight across the rules on either side.
+
+   A bare `.date-separator` selector (0,0,1,0) loses the specificity fight with
+   `#msgcontainer > table` (0,1,0,1), which is why the plain rule that used to live
+   here had no effect at any width below 480px. These selectors outrank every rule
+   that forces fixed layout, including the per-console ones. */
+#msgcontainer > table.date-separator,
+html.client-3ds #msgcontainer > table.date-separator,
+html.client-new3ds #msgcontainer > table.date-separator,
+html.client-psp #msgcontainer > table.date-separator,
 .date-separator {
     table-layout: auto !important;
 }
