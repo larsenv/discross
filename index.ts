@@ -646,8 +646,17 @@ async function handleGet(req, res) {
                     disable2fa: '/setup-2fa.html',
                 };
                 const actionParam = parsedurl.searchParams.get('action');
-                if (!returnPages[actionParam]) {
-                    res.writeHead(302, { Location: '/server/' });
+                // The DM only goes out for a link this session was served. The
+                // cookie is SameSite=Lax, so without this a cross-site link or a
+                // prefetch could make the logged-in user's account DM them a
+                // verification code they never asked for.
+                const tokenOk = auth.verifyActionToken(
+                    auth.getRequestSessionID(req),
+                    actionParam,
+                    parsedurl.searchParams.get('token')
+                );
+                if (!returnPages[actionParam] || !tokenOk) {
+                    res.writeHead(302, { Location: returnPages[actionParam] || '/server/' });
                     res.end();
                 } else {
                     const sessionParam = parsedurl.searchParams.get('sessionID')

@@ -400,6 +400,47 @@ exports.checkVerificationCode = async function (code) {
     return match ? match.discordID : false;
 };
 
+/*
+   Sending a verification code DM is a side effect an outsider must not be able
+   to trigger. The session cookie is SameSite=Lax, which browsers still send on
+   a top-level cross-site GET, so any link, redirect or prefetch pointing at
+   /sendactioncode would otherwise DM the logged-in user a code they never asked
+   for. These tokens bind that link to the session it was rendered for: an
+   attacker cannot compute one without already holding the session.
+
+   The key lives for the life of the process. A restart invalidates outstanding
+   links, which only means the page has to be reloaded to get a fresh one.
+*/
+const ACTION_TOKEN_KEY = crypto.randomBytes(32);
+
+/** The session id backing this request, from the cookie or the URL fallback. */
+exports.getRequestSessionID = function (req) {
+    const cookies = req.headers?.cookie || '';
+    for (const part of cookies.split(';')) {
+        const [k, ...rest] = part.trim().split('=');
+        if (k === 'sessionID' && rest.length) return rest.join('=');
+    }
+    try {
+        return new URL(req.url, 'http://localhost').searchParams.get('sessionID') || '';
+    } catch (e) {
+        return '';
+    }
+};
+
+exports.createActionToken = function (sessionID, action) {
+    return crypto
+        .createHmac('sha256', ACTION_TOKEN_KEY)
+        .update(`${sessionID || ''}|${action || ''}`)
+        .digest('base64url');
+};
+
+exports.verifyActionToken = function (sessionID, action, token) {
+    if (!token) return false;
+    const expected = Buffer.from(exports.createActionToken(sessionID, action));
+    const given = Buffer.from(String(token));
+    return expected.length === given.length && crypto.timingSafeEqual(expected, given);
+};
+
 exports.createActionCode = function (discordID, action) {
     const time = unixTime();
     queryRun('DELETE FROM action_codes WHERE NOT expires > ?', [time]);

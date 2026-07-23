@@ -22,27 +22,17 @@ exports.processChangePassword = async function (bot, req, res, args) {
 
     const username = await auth.getUsername(discordID);
 
-    // Send 6-digit action code via Discord DM (only on fresh page load, not on error/success/codesent redirects)
-    const dmErrorText =
-        !parsedUrl.searchParams.get('errortext') &&
-        !parsedUrl.searchParams.get('success') &&
-        !parsedUrl.searchParams.get('codesent')
-            ? await (async () => {
-                  const code = auth.createActionCode(discordID, 'changepassword');
-                  const dmResult = await bot.sendDM(
-                      discordID,
-                      'Your Discross verification code to change your password: **' +
-                          code +
-                          '**\nThis code expires in 10 minutes.'
-                  );
-                  return dmResult.success
-                      ? ''
-                      : 'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.';
-              })()
-            : '';
+    // Loading this page no longer sends a DM — see setup2FA.ts. The code is only
+    // sent when the user clicks the token-bound link below.
+    // A failed send still reports through the errortext parameter that
+    // /sendactioncode redirects back with.
+    const dmErrorText = '';
 
     const sendCodeUrl =
-        '/sendactioncode?action=changepassword' +
+        '/sendactioncode?action=changepassword&token=' +
+        encodeURIComponent(
+            auth.createActionToken(auth.getRequestSessionID(req), 'changepassword')
+        ) +
         (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
 
     const errortext = parsedUrl.searchParams.get('errortext');
