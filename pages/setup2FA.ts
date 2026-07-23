@@ -44,28 +44,19 @@ exports.processSetup2FA = async function (bot, req, res, args) {
 
     const action = totpEnabled ? 'disable2fa' : 'setup2fa';
 
-    // Send 6-digit action code via Discord DM on fresh page load (not on error/codesent redirects)
-    const dmErrorText = await (async () => {
-        if (parsedUrl.searchParams.get('errortext') || parsedUrl.searchParams.get('codesent')) {
-            return '';
-        }
-        const code = auth.createActionCode(discordID, action);
-        const dmResult = await bot.sendDM(
-            discordID,
-            'Your Discross verification code to ' +
-                (totpEnabled ? 'disable' : 'set up') +
-                ' two-factor authentication: **' +
-                code +
-                '**\nThis code expires in 10 minutes.'
-        );
-        return dmResult.success
-            ? ''
-            : 'Could not send a verification code to your Discord DMs. Make sure you allow DMs from server members, then try again.';
-    })();
+    // No DM is sent just because this page was loaded: a cross-site link or a
+    // prefetch would then be enough to make someone's account send them a code
+    // they never asked for. The code goes out only when the user asks for it,
+    // through the token-bound link below.
+    // A failed send still reports through the errortext parameter that
+    // /sendactioncode redirects back with.
+    const dmErrorText = '';
 
     const sendCodeUrl =
         '/sendactioncode?action=' +
         action +
+        '&token=' +
+        encodeURIComponent(auth.createActionToken(auth.getRequestSessionID(req), action)) +
         (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
 
     const baseTemplate = await (async () => {
