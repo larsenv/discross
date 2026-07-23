@@ -291,6 +291,24 @@ function classifyToppings(toppingDict, codeSet) {
     return { sauces, toppings };
 }
 
+// Domino's store-locator takes a street line in `s` and the city/region/postal
+// in `c`. Build the `c` half from whichever parts we have.
+function buildRegionQuery(city, region, postalCode) {
+    const locality = [city, region].filter(Boolean).join(', ');
+    return [locality, postalCode].filter(Boolean).join(' ').trim();
+}
+
+// Split a free-text address for the locator: a leading house number means the
+// user typed a street address, so everything up to the first comma is the street
+// line and the remainder is the city/region/postal. A bare ZIP or city name has
+// no street part and goes in `c` on its own.
+function splitAddressQuery(address) {
+    const trimmed = (address || '').trim();
+    if (!/^\d+\s+\S/.test(trimmed)) return { street: '', region: trimmed };
+    const [first, ...rest] = trimmed.split(',');
+    return { street: first.trim(), region: rest.join(',').trim() };
+}
+
 // Helper: parse cart options into {code: amount} map
 function parseOptions(params) {
     const defaultsMap = (() => {
@@ -303,24 +321,28 @@ function parseOptions(params) {
         }
     })();
 
+    // Start from the menu's own defaults. Domino's treats the Options we send as
+    // the complete topping list for the product, so anything left out is left off
+    // the pizza — and the customize form only renders rows for sauces and
+    // toppings, not for defaults like cheese. Building up from the defaults (the
+    // same way Domino's own clients do) keeps those on the order; the form fields
+    // below then override the ones the user actually chose.
     const options = {};
-    const hasFormFields = Object.keys(params).some(
-        (k) => k.startsWith('topping_') || k.startsWith('sauce_')
-    );
+    for (const [code, amount] of Object.entries(defaultsMap)) {
+        if (parseFloat(amount) > 0) options[code] = { '1/1': String(amount) };
+    }
 
     for (const [key, amount] of Object.entries(params)) {
         if (key.startsWith('topping_') || key.startsWith('sauce_')) {
             const code = key.split('_').slice(1).join('_');
             if (amount !== '0') options[code] = { '1/1': amount };
+            // "None" on something the product ships with has to be sent
+            // explicitly as 0 to remove it; on anything else, just omit it.
             else if (code in defaultsMap) options[code] = { '1/1': '0' };
+            else delete options[code];
         }
     }
 
-    if (!hasFormFields) {
-        for (const [code, amount] of Object.entries(defaultsMap)) {
-            if (parseFloat(amount) > 0) options[code] = { '1/1': String(amount) };
-        }
-    }
     return options;
 }
 
@@ -419,12 +441,16 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
         const storesHtml = await (async () => {
             try {
+                // A street address has to be split across `s` and `c`; a bare ZIP
+                // or city goes in `c` alone. Sending everything in `c` returns no
+                // stores at all once a street line is involved.
+                const { street, region } = splitAddressQuery(address);
                 const trySearch = async (hostname) => {
                     const r = await dominosRequest({
                         hostname,
                         // Use type=Carryout for initial search as it's less "specific" than Delivery
                         // and works better for zip codes or city names.
-                        path: `/power/store-locator?type=Carryout&c=${encodeURIComponent(address)}&s=&a=`,
+                        path: `/power/store-locator?type=Carryout&s=${encodeURIComponent(street)}&c=${encodeURIComponent(region)}`,
                         method: 'GET',
                     });
                     return r.status >= 200 && r.status < 300 && r.data?.Stores ? r.data.Stores : [];
@@ -1416,7 +1442,11 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
         try {
             const addrResult = await dominosRequest({
                 hostname: dominosHost,
-                path: `/power/store-locator?type=Delivery&c=${encodeURIComponent(`${street}, ${city}, ${region} ${postalCode}`)}&s=&a=`,
+                // The street line goes in `s` and the city/region/postal in `c`.
+                // Putting the whole address in `c` (with an empty `s`) makes the
+                // API return zero stores and an Address with an empty Street and
+                // City, which is what broke delivery lookup.
+                path: `/power/store-locator?type=Delivery&s=${encodeURIComponent(street)}&c=${encodeURIComponent(buildRegionQuery(city, region, postalCode))}`,
                 method: 'GET',
             });
             const addrObj = addrResult?.data?.Address;
