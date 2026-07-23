@@ -739,9 +739,22 @@ textarea:focus {
 .server-main {
     vertical-align: top;
 }
+/* Server rail avatars, and the Home logo above them. The fixed px pair is the
+   legacy fallback (and matches each img's width/height attributes); the calc()
+   pair scales them with the same --ui-scale the surrounding UI text uses, so the
+   rail grows on wide screens instead of staying stuck next to larger channel
+   names. Legacy engines drop the calc() declaration and keep the px value. */
 .server-icon {
     height: 48px;
     width: 48px;
+    height: calc(48px * var(--ui-scale, 1));
+    width: calc(48px * var(--ui-scale, 1));
+}
+.home-icon {
+    height: 64px;
+    width: 64px;
+    height: calc(64px * var(--ui-scale, 1));
+    width: calc(64px * var(--ui-scale, 1));
 }
 .server-br {
     display: none;
@@ -777,6 +790,10 @@ textarea:focus {
 .category-arrow {
     display: inline-block;
     vertical-align: middle;
+    /* 10px against the 16px channel-list baseline. Sized in em so it tracks
+       --ui-font-size; the width/height attributes keep legacy engines at 10px. */
+    width: 0.625em;
+    height: 0.625em;
 }
 .thread-channels {
     display: block;
@@ -787,6 +804,9 @@ textarea:focus {
 .thread-arrow {
     display: inline-block;
     vertical-align: middle;
+    /* 10px against the 13px thread-group baseline (--ui-subitem-font-size). */
+    width: 0.77em;
+    height: 0.77em;
 }
 
 /* ================================================================
