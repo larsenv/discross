@@ -240,14 +240,23 @@ function dominosRequest(options, body) {
 }
 
 // Helper: build dictionary of topping code -> {name, code} for a specific product type
+//
+// Toppings[productType] is a flat map of code -> topping ("Pizza": {"X": {...},
+// "P": {...}}). This used to assume a second level of grouping and iterate the
+// fields of each topping looking for a Code, which found nothing at all: the
+// dictionary came back empty, so the customize page decided the product had no
+// toppings and rendered no sauce or topping rows. Both shapes are accepted here
+// in case a product type ever does nest.
 function buildToppingDict(menuData, productType) {
     const toppingDict = {};
-    const toppingsSection = menuData.Toppings?.[productType] || {};
-    for (const group of Object.values(toppingsSection)) {
-        for (const item of Object.values(group || {})) {
-            if (item.Code)
-                toppingDict[item.Code] = { name: item.Name, code: item.Code, Tags: item.Tags };
-        }
+    const add = (item) => {
+        if (item && item.Code)
+            toppingDict[item.Code] = { name: item.Name, code: item.Code, Tags: item.Tags };
+    };
+    for (const entry of Object.values(menuData.Toppings?.[productType] || {})) {
+        if (!entry || typeof entry !== 'object') continue;
+        if (entry.Code) add(entry);
+        else for (const item of Object.values(entry)) add(item);
     }
     return toppingDict;
 }
@@ -327,9 +336,17 @@ function parseOptions(params) {
     // toppings, not for defaults like cheese. Building up from the defaults (the
     // same way Domino's own clients do) keeps those on the order; the form fields
     // below then override the ones the user actually chose.
+    //
+    // Values are copied through with their shape intact: toppings are portioned
+    // objects like {"1/1": "1"}, sides are a bare amount like "1".
     const options = {};
-    for (const [code, amount] of Object.entries(defaultsMap)) {
-        if (parseFloat(amount) > 0) options[code] = { '1/1': String(amount) };
+    for (const [code, value] of Object.entries(defaultsMap)) {
+        if (value !== null && typeof value === 'object') {
+            const amount = value['1/1'] ?? Object.values(value)[0];
+            if (parseFloat(amount) > 0) options[code] = { ...value };
+        } else if (parseFloat(value) > 0) {
+            options[code] = String(value);
+        }
     }
 
     for (const [key, amount] of Object.entries(params)) {
@@ -1042,18 +1059,6 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
                 const toppingDict = buildToppingDict(menuData, product.ProductType || '');
                 const { codeSet, portions } = parseAvailableToppings(product.AvailableToppings);
-                const normalizedDefaults = Object.fromEntries(
-                    Object.entries(v.Options || {}).map(([code, pObj]) => [
-                        code,
-                        String(
-                            pObj?.['1/1'] ||
-                                pObj?.['1/2'] ||
-                                pObj?.['2/4'] ||
-                                Object.values(pObj || {})[0] ||
-                                '1'
-                        ),
-                    ])
-                );
 
                 const parseKvStr = (str) =>
                     Object.fromEntries(
@@ -1067,10 +1072,45 @@ exports.handleGet = async function (bot, req, res, discordID) {
                             })
                             .filter(Boolean)
                     );
+
+                // What the product already comes with, in the exact shape the
+                // order API expects. Variants carry this in Tags, not Options —
+                // Options is null on every pizza variant — and the two Tags have
+                // different shapes: toppings are portioned per fraction, sides
+                // are a bare amount.
                 const tagDefaults = {
-                    ...parseKvStr(v.Tags?.DefaultToppings),
-                    ...parseKvStr(v.Tags?.DefaultSides),
+                    ...Object.fromEntries(
+                        Object.entries(parseKvStr(v.Tags?.DefaultToppings)).map(([c, amt]) => [
+                            c,
+                            { '1/1': String(amt) },
+                        ])
+                    ),
+                    ...Object.fromEntries(
+                        Object.entries(parseKvStr(v.Tags?.DefaultSides)).map(([c, amt]) => [
+                            c,
+                            String(amt),
+                        ])
+                    ),
                 };
+                // A variant may still spell its own Options out; prefer those.
+                const defaultOptions =
+                    v.Options && Object.keys(v.Options).length ? { ...v.Options } : tagDefaults;
+
+                // Flattened to code -> amount, for preselecting the form rows.
+                const normalizedDefaults = Object.fromEntries(
+                    Object.entries(defaultOptions).map(([code, pObj]) => [
+                        code,
+                        String(
+                            typeof pObj === 'object' && pObj !== null
+                                ? (pObj['1/1'] ??
+                                      pObj['1/2'] ??
+                                      pObj['2/4'] ??
+                                      Object.values(pObj)[0] ??
+                                      '1')
+                                : (pObj ?? '1')
+                        ),
+                    ])
+                );
 
                 const toppingsSection = (() => {
                     const hasInteractive = codeSet.size > 0 && Object.keys(toppingDict).length > 0;
@@ -1125,10 +1165,12 @@ exports.handleGet = async function (bot, req, res, discordID) {
                               templates.lineBreak
                             : '';
 
+                        // Carry the real option shapes, not the flattened
+                        // display map, so the order keeps them intact.
                         form = strReplace(
                             form,
                             '{$DEFAULT_OPTIONS}',
-                            escape(JSON.stringify(normalizedDefaults))
+                            escape(JSON.stringify(defaultOptions))
                         );
                         form = strReplace(
                             form,
@@ -1140,7 +1182,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
                         form = strReplace(
                             form,
                             '{$DEFAULT_OPTIONS}',
-                            escape(JSON.stringify(tagDefaults))
+                            escape(JSON.stringify(defaultOptions))
                         );
                         form = strReplace(form, '{$TOPPINGS_INFO_HTML}', '');
                         form = strReplace(form, '{$MARGIN_STYLE}', 'margin-top:8px');
