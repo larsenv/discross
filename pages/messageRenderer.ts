@@ -1381,6 +1381,10 @@ async function resolveReplyData(
                 item.author?.id !== replyUser?.id,
             content: replyContent,
             hasAttachment: hasNonTextContent(replyMessage),
+            // ID of the quoted message so the indicator can jump to it, like
+            // Discord. Falls back to the reference's messageId when the message
+            // itself couldn't be fetched (e.g. deleted).
+            messageId: replyMessage?.id ?? item.reference?.messageId ?? null,
         };
     } catch (err) {
         console.error('Could not process reply data:', err);
@@ -1388,7 +1392,13 @@ async function resolveReplyData(
     }
 }
 
-function buildReplyIndicator(replyData, replyText, barColor = '#808080', imagesCookie = 0) {
+function buildReplyIndicator(
+    replyData,
+    replyText,
+    barColor = '#808080',
+    imagesCookie = 0,
+    channelId = ''
+) {
     const normalizedReplyContent = (replyData.content || '')
         .replace(/<br[^>]*>/gi, ' ')
         .replace(/\r?\n/g, ' ')
@@ -1401,11 +1411,21 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080', imagesC
         ? render('channel/reply-attachment-icon', { CODE: REPLY_ATTACHMENT_ICON_CODE })
         : '';
 
-    const previewHtml = normalizedReplyContent
+    const rawPreview = normalizedReplyContent
         ? he.encode(normalizedReplyContent, { useNamedReferences: true }) + attachmentIcon
         : replyData.hasAttachment
           ? getTemplate('reply-attachment-only', 'channel') + attachmentIcon
           : '';
+
+    // Like Discord, the preview jumps to the quoted message when clicked — which
+    // is the only way to actually reach a quoted attachment.
+    const previewHtml =
+        rawPreview && channelId && replyData.messageId
+            ? render('channel/reply-jump-link', {
+                  JUMP_HREF: `/channels/${channelId}/${replyData.messageId}`,
+                  INNER: rawPreview,
+              })
+            : rawPreview;
 
     const contentTd = previewHtml
         ? render('channel/reply-content-cell', {
@@ -1595,7 +1615,7 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
 
     // If the group starts with a reply or was an interaction, build the top "indicator" bar.
     const replyIndicator = state.lastReply
-        ? buildReplyIndicator(state.lastReplyData, replyText, barColor, state.imagesCookie)
+        ? buildReplyIndicator(state.lastReplyData, replyText, barColor, state.imagesCookie, channelId)
         : state.lastInteraction
           ? buildInteractionIndicator(state.lastInteractionData, replyText, barColor)
           : '';

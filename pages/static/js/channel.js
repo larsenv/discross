@@ -136,6 +136,24 @@ function insertMention(tag) {
     appendToMessage(tag);
 }
 
+// Reveals a text spoiler. The spoiler markup (discordMarkdown/spoiler.html)
+// calls this from its onclick: the content starts with visibility:hidden and
+// the box carries .spoiler-box, so we make the text visible and flip it into the
+// .spoiler-revealed state the stylesheet paints. Image spoilers reveal
+// themselves via their own inline handler and don't go through here.
+function show(el) {
+    if (!el) return;
+    var spans = el.getElementsByTagName('span');
+    for (var i = 0; i < spans.length; i++) {
+        spans[i].style.visibility = 'visible';
+    }
+    if ((' ' + el.className + ' ').indexOf(' spoiler-revealed ') === -1) {
+        el.className += (el.className ? ' ' : '') + 'spoiler-revealed';
+    }
+    el.style.cursor = 'auto';
+    el.onclick = null;
+}
+
 function showEmoji() {
     var emojiDiv = document.getElementById('emoji');
     if (!emojiDiv) return;

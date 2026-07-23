@@ -11,13 +11,13 @@
       <p>
         <font face="'rodin', Arial, sans-serif" color="#dddddd">Upload a file to #{$CHANNEL_NAME}:</font>
       </p>
-      <form action="/uploadFile?traditional=true&sessionID={$SESSION_ID}" method="POST" enctype="multipart/form-data">
+      <form action="/uploadFile?traditional=true&sessionID={$SESSION_ID}" method="POST" enctype="multipart/form-data" onsubmit="if(this.submitted){return false;} this.submitted=true; var b=this.uploadbtn; if(b){b.disabled=true; b.value='Uploading...';} return true;">
         <input type="hidden" name="channel" value="{$CHANNEL_ID}" />
         <input type="hidden" name="message" value="" />
         <input type="hidden" name="sessionID" value="{$SESSION_ID}" />
         <input type="file" name="file" />
         <br /><br />
-        <input type="submit" value="Upload" />
+        <input type="submit" name="uploadbtn" value="Upload" />
       </form>
     </div>
   </body>
