@@ -51,6 +51,10 @@
                 <input type="submit" style=" color: #ffffff; height: 44px; width: 150px; border: none; background: #5865f2; border-radius: 8px; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 500; cursor: pointer; " value="Login" />
                 </font>
                 </form>
+                <!-- Shown only once we know the browser can do WebAuthn: conditional
+                     autofill is not offered by every browser, and without this there
+                     is no way to start a passkey login at all. -->
+                <button type="button" id="passkey-login" style="display: none; color: #ffffff; height: 44px; width: 220px; margin-top: 12px; border: none; background: #4f545c; border-radius: 8px; font-family: 'rodin', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 500; cursor: pointer;">Sign in with a passkey</button>
                 </td>
                 </tr>
                 </table>
@@ -59,7 +63,7 @@
                 (function() {
                     async function doPasskeyLogin(options, isConditional) {
                         try {
-                            console.log('Starting passkey login, conditional:', isConditional, 'rp:', options.rp.id);
+                            console.log('Starting passkey login, conditional:', isConditional, 'rpId:', options.rpId);
                             
                             // Prepare options for navigator.credentials.get
                             var getOptions = {
@@ -114,19 +118,31 @@
                         }
                     }
 
+                    function fetchOptionsAndLogin(isConditional) {
+                        return fetch('/passkey/options?type=login')
+                            .then(function(res) { return res.json(); })
+                            .then(function(options) { return doPasskeyLogin(options, isConditional); })
+                            .catch(function(err) {
+                                console.error('Failed to fetch passkey options:', err);
+                                if (!isConditional) alert('Could not start passkey login.');
+                            });
+                    }
+
+                    var hasWebAuthn = !!(window.PublicKeyCredential && window.navigator.credentials
+                        && typeof navigator.credentials.get === 'function' && window.fetch);
+
+                    // Explicit button. Conditional autofill below is not offered by
+                    // every browser, so without this there is no way in at all.
+                    var passkeyBtn = document.getElementById('passkey-login');
+                    if (passkeyBtn && hasWebAuthn) {
+                        passkeyBtn.style.display = '';
+                        passkeyBtn.onclick = function() { fetchOptionsAndLogin(false); };
+                    }
+
                     // Conditional UI (Autofill) / Auto-trigger
-                    if (window.PublicKeyCredential && PublicKeyCredential.isConditionalMediationAvailable) {
+                    if (hasWebAuthn && PublicKeyCredential.isConditionalMediationAvailable) {
                         PublicKeyCredential.isConditionalMediationAvailable().then(function(available) {
-                            if (available) {
-                                fetch('/passkey/options?type=login')
-                                    .then(function(res) { return res.json(); })
-                                    .then(function(options) {
-                                        doPasskeyLogin(options, true);
-                                    })
-                                    .catch(function(err) {
-                                        console.error('Failed to fetch passkey options:', err);
-                                    });
-                            }
+                            if (available) fetchOptionsAndLogin(true);
                         });
                     }
                 })();
