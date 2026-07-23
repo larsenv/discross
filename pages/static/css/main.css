@@ -1,107 +1,6 @@
 /* main.css - Unified stylesheet for all Discross pages */
 
 /* ================================================================
-   0. MESSAGE TYPE SCALE
-   ================================================================ */
-
-/*
-   Message text is sized through these variables so the desktop scale can be
-   raised without touching consoles. Every place that consumes one declares the
-   old fixed px value first and the var() second:
-
-       font-size: 17px;
-       font-size: var(--msg-font-size, 17px);
-
-   Legacy engines (Wii Opera 9, PS3 NetFront, DSi, 3DS, PSP) don't understand
-   var(), so they drop the second declaration and keep the exact size they
-   render today. Modern browsers apply the variable. The bump is also gated
-   behind a min-width query, so phones keep the compact scale and only real
-   desktop windows get the larger text.
-*/
-:root {
-    --msg-font-size: 17px;
-    --msg-line-height: 24px;
-    --msg-author-font-size: 16px;
-    --msg-meta-font-size: 12px;
-    /*
-       Vertical gap above a new author's message group, on top of the 8px of
-       padding each group already carries top and bottom.
-
-       Sized against Discord: there, the distance from a group's last line of
-       text to the next author's name is about 1.95x the line height (43px at a
-       22px line height — 17px of group margin plus the message's own padding).
-       8px of padding + 6px here + a 24px line height lands on the same ratio.
-    */
-    --msg-group-gap: 6px;
-
-    /*
-       The same scale for the surrounding UI. Each default below is the size
-       that element renders at today, including the ones that come from legacy
-       <font size> attributes rather than CSS:
-         size="3" -> 16px (channel names), size="5" -> 24px (server name).
-    */
-    --ui-font-size: 16px;
-    --ui-heading-font-size: 24px;
-    --ui-small-font-size: 12px;
-    /* <font size="2"> — the collapsed "Threads" group header. */
-    --ui-subitem-font-size: 13px;
-    --reply-preview-font-size: 11px;
-    --reply-bar-font-size: 14px;
-
-    /*
-       Proportional factor for the remaining fixed-px text (shared typography,
-       form controls, the news/movies pages). Used as
-           font-size: 14px;
-           font-size: calc(14px * var(--ui-scale, 1));
-       so legacy engines keep the fixed size and modern ones scale by one
-       number. Matches the 16px -> 18px root bump below.
-    */
-    --ui-scale: 1;
-    --root-font-size: 16px;
-}
-
-@media screen and (min-width: 1000px) {
-    :root {
-        --msg-font-size: 19px;
-        --msg-line-height: 27px;
-        --msg-author-font-size: 18px;
-        --msg-meta-font-size: 13px;
-        --msg-group-gap: 10px;
-
-        --ui-font-size: 18px;
-        --ui-heading-font-size: 28px;
-        --ui-small-font-size: 13px;
-        --ui-subitem-font-size: 15px;
-        --reply-preview-font-size: 13px;
-        --reply-bar-font-size: 15px;
-
-        --ui-scale: 1.125;
-        --root-font-size: 18px;
-    }
-}
-
-/*
-   Channel list and server name. These have no CSS font-size of their own —
-   they're sized by <font size="3"/"5"> attributes — so a single var()
-   declaration is enough: legacy engines drop it and keep the attribute size,
-   which is what the defaults above are set to.
-*/
-.channel-list-item {
-    font-size: var(--ui-font-size, 16px);
-}
-.channel-list-subitem {
-    font-size: var(--ui-subitem-font-size, 13px);
-}
-.server-name-header {
-    font-size: var(--ui-heading-font-size, 24px);
-}
-
-/* The first group in the list sits against the container's own padding. */
-#msgcontainer > table:first-child {
-    margin-top: 0 !important;
-}
-
-/* ================================================================
    1. GLOBAL RESET
    ================================================================ */
 
@@ -142,7 +41,6 @@ body,
         Arial,
         sans-serif;
     font-size: 16px;
-    font-size: var(--root-font-size, 16px);
     line-height: 1.45;
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
@@ -163,7 +61,6 @@ body {
 h1 {
     margin: 8px 0 4px 0;
     font-size: 24px;
-    font-size: calc(24px * var(--ui-scale, 1));
     font-weight: 700;
     line-height: 1.2;
     font-family: inherit;
@@ -172,7 +69,6 @@ h1 {
 h2 {
     margin: 8px 0 4px 0;
     font-size: 20px;
-    font-size: calc(20px * var(--ui-scale, 1));
     font-weight: 700;
     line-height: 1.2;
     font-family: inherit;
@@ -181,7 +77,6 @@ h2 {
 h3 {
     margin: 8px 0 4px 0;
     font-size: 18px;
-    font-size: calc(18px * var(--ui-scale, 1));
     font-weight: 700;
     line-height: 1.2;
     font-family: inherit;
@@ -248,7 +143,6 @@ table {
 /* Subtext */
 .subtext {
     font-size: 12px;
-    font-size: calc(12px * var(--ui-scale, 1));
     color: #b5bac1;
 }
 
@@ -280,7 +174,6 @@ code {
     padding: 2px 4px;
     font-family: Consolas, Monaco, monospace;
     font-size: 14px;
-    font-size: calc(14px * var(--ui-scale, 1));
     color: #dcddde;
     white-space: -pre-wrap;
     white-space: -o-pre-wrap;
@@ -410,15 +303,12 @@ pre code {
 .messagecontent-font {
     color: #dcdcdf;
     font-size: 17px;
-    font-size: var(--msg-font-size, 17px);
     line-height: 24px;
-    line-height: var(--msg-line-height, 24px);
     word-wrap: break-word;
     max-width: 100%;
 }
 .messagecontent p {
     font-size: 17px;
-    font-size: var(--msg-font-size, 17px);
     margin: 0 0 8px 0;
     max-width: 100%;
 }
@@ -455,21 +345,18 @@ pre code {
 /* Ensure headings have proper standard discord sizes */
 .messagecontent h1 {
     font-size: 24px;
-    font-size: calc(24px * var(--ui-scale, 1));
     line-height: 30px;
     font-weight: 700;
     margin: 16px 0 8px 0;
 }
 .messagecontent h2 {
     font-size: 20px;
-    font-size: calc(20px * var(--ui-scale, 1));
     line-height: 24px;
     font-weight: 700;
     margin: 16px 0 8px 0;
 }
 .messagecontent h3 {
     font-size: 16px;
-    font-size: calc(16px * var(--ui-scale, 1));
     line-height: 20px;
     font-weight: 700;
     margin: 16px 0 8px 0;
@@ -585,7 +472,6 @@ pre code {
 .reaction-count {
     color: #abacb2;
     font-size: 12px;
-    font-size: calc(12px * var(--ui-scale, 1));
     margin-left: 4px;
     font-weight: bold;
     font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -722,7 +608,6 @@ pre code {
     height: 40px;
     padding: 9px 16px;
     font-size: 16px;
-    font-size: var(--ui-font-size, 16px);
     line-height: 22px;
     box-sizing: border-box;
     resize: none;
@@ -746,7 +631,6 @@ pre code {
         Arial,
         sans-serif;
     font-size: 16px;
-    font-size: var(--ui-font-size, 16px);
     font-weight: 600;
     height: 40px;
     line-height: 40px;
@@ -870,7 +754,6 @@ textarea:focus {
     text-decoration: none;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
     font-size: 16px;
-    font-size: calc(16px * var(--ui-scale, 1));
     font-weight: 500;
     border: none;
     cursor: pointer;
@@ -1041,7 +924,6 @@ br.nodisp {
     background: #2b2e59;
     border-radius: 3px;
     font-size: 17px;
-    font-size: calc(17px * var(--ui-scale, 1));
     color: #dcddde;
     white-space: nowrap;
 }
@@ -1460,7 +1342,6 @@ html.page-channel-reply #replying_to {
 }
 html.page-channel-reply #replying_to .reply-label {
     font-size: 14px;
-    font-size: var(--reply-bar-font-size, 14px);
     margin: 0;
     line-height: 1.2;
     color: #b9bbbe;
@@ -1472,7 +1353,6 @@ html.page-channel-reply #replying_to .reply-cancel {
 }
 html.page-channel-reply #replying_to .reply-content-preview {
     font-size: 14px;
-    font-size: var(--reply-bar-font-size, 14px);
     line-height: 1.2;
     color: #dcddde;
 }
@@ -1820,7 +1700,6 @@ html.page-server font[color='#dcddde'] {
     background: #2f3136;
     color: #dcddde;
     font-size: 14px;
-    font-size: calc(14px * var(--ui-scale, 1));
     font-family: 'rodin', Arial, Helvetica, sans-serif;
     margin-right: 4px;
     vertical-align: middle;
@@ -1830,7 +1709,6 @@ html.page-server font[color='#dcddde'] {
 .news-search-btn {
     padding: 8px 16px;
     font-size: 14px;
-    font-size: calc(14px * var(--ui-scale, 1));
     margin: 0;
     vertical-align: middle;
 }
@@ -1859,7 +1737,6 @@ html.page-server font[color='#dcddde'] {
 }
 .news-card-caption {
     font-size: 11px;
-    font-size: calc(11px * var(--ui-scale, 1));
     color: #72767d;
     display: block;
     padding: 2px 8px;
@@ -1869,34 +1746,29 @@ html.page-server font[color='#dcddde'] {
 }
 .news-card-title {
     font-size: 16px;
-    font-size: calc(16px * var(--ui-scale, 1));
     display: block;
     margin-bottom: 4px;
 }
 .news-card-meta {
     font-size: 12px;
-    font-size: calc(12px * var(--ui-scale, 1));
     color: #72767d;
     display: block;
     margin-bottom: 6px;
 }
 .news-card-summary {
     font-size: 14px;
-    font-size: calc(14px * var(--ui-scale, 1));
     color: #b5bac1;
 }
 .news-read-btn {
     margin-top: 8px;
     padding: 6px 16px;
     font-size: 13px;
-    font-size: calc(13px * var(--ui-scale, 1));
 }
 
 /* Article view */
 .news-article-meta {
     color: #72767d;
     font-size: 13px;
-    font-size: calc(13px * var(--ui-scale, 1));
     margin-bottom: 16px;
 }
 .news-article-content {
@@ -1905,7 +1777,6 @@ html.page-server font[color='#dcddde'] {
 .news-article-paragraph {
     margin: 0 0 14px 0;
     font-size: 15px;
-    font-size: calc(15px * var(--ui-scale, 1));
     line-height: 1.6;
     color: #dcddde;
 }
@@ -1922,14 +1793,12 @@ html.page-server font[color='#dcddde'] {
 }
 .news-article-caption {
     font-size: 12px;
-    font-size: calc(12px * var(--ui-scale, 1));
     color: #72767d;
     display: block;
     margin-top: 4px;
 }
 .news-attribution {
     font-size: 12px;
-    font-size: calc(12px * var(--ui-scale, 1));
     color: #72767d;
     margin-top: 16px;
 }
@@ -1976,7 +1845,6 @@ html.page-server font[color='#dcddde'] {
     text-decoration: none;
     font-family: 'rodin', Arial, Helvetica, sans-serif;
     font-size: 14px;
-    font-size: calc(14px * var(--ui-scale, 1));
 }
 a.movie-tab {
     color: #dcddde;
@@ -2013,13 +1881,11 @@ a.movie-tab-active {
 }
 .movie-card-title {
     font-size: 16px;
-    font-size: calc(16px * var(--ui-scale, 1));
     display: block;
     margin-bottom: 6px;
 }
 .movie-card-scores {
     font-size: 13px;
-    font-size: calc(13px * var(--ui-scale, 1));
     margin-bottom: 6px;
     display: block;
 }
@@ -2029,13 +1895,11 @@ a.movie-tab-active {
     border-radius: 3px;
     color: #ffffff;
     font-size: 12px;
-    font-size: calc(12px * var(--ui-scale, 1));
     font-weight: bold;
     vertical-align: middle;
 }
 .movie-score-label {
     font-size: 12px;
-    font-size: calc(12px * var(--ui-scale, 1));
     color: #b5bac1;
     vertical-align: middle;
 }
@@ -2043,7 +1907,6 @@ a.movie-tab-active {
     margin-top: 6px;
     padding: 5px 14px;
     font-size: 13px;
-    font-size: calc(13px * var(--ui-scale, 1));
 }
 .movie-empty {
     color: #72767d;
@@ -2051,7 +1914,6 @@ a.movie-tab-active {
 }
 .movie-attribution {
     font-size: 12px;
-    font-size: calc(12px * var(--ui-scale, 1));
     color: #72767d;
     margin-top: 16px;
 }
@@ -3541,4 +3403,238 @@ html.client-psp .light-theme .messagecontent-font,
 html.client-psp .light-theme font.messagecontent-font,
 html.client-psp .light-theme .messagecontent font {
     color: #2e3338 !important;
+}
+
+/* ================================================================
+   MODERN TYPE SCALE
+   ================================================================ */
+
+/*
+   Everything that scales text for larger screens lives in this one block.
+
+   @supports is the gate rather than var() itself: legacy console engines
+   (Wii Opera 9, PS3 NetFront, DSi, 3DS, PSP) do not know the at-rule, so
+   they skip the whole block without having to parse — or recover from —
+   any declaration inside it. Every size above is left at the value those
+   browsers already render.
+
+   The message templates carry a few inline font-size/line-height/margin
+   declarations that cannot be gated this way; those still rely on normal
+   per-declaration error recovery, and each is written fixed-value first
+   so the fallback survives.
+*/
+@supports (--gate: 0) {
+    /* ================================================================
+       0. MESSAGE TYPE SCALE
+       ================================================================ */
+
+    /*
+       Message text is sized through these variables so the desktop scale can be
+       raised without touching consoles. Every place that consumes one declares the
+       old fixed px value first and the var() second:
+
+           font-size: 17px;
+           font-size: var(--msg-font-size, 17px);
+
+       Legacy engines (Wii Opera 9, PS3 NetFront, DSi, 3DS, PSP) don't understand
+       var(), so they drop the second declaration and keep the exact size they
+       render today. Modern browsers apply the variable. The bump is also gated
+       behind a min-width query, so phones keep the compact scale and only real
+       desktop windows get the larger text.
+    */
+    :root {
+        --msg-font-size: 17px;
+        --msg-line-height: 24px;
+        --msg-author-font-size: 16px;
+        --msg-meta-font-size: 12px;
+        /*
+           Vertical gap above a new author's message group, on top of the 8px of
+           padding each group already carries top and bottom.
+
+           Sized against Discord: there, the distance from a group's last line of
+           text to the next author's name is about 1.95x the line height (43px at a
+           22px line height — 17px of group margin plus the message's own padding).
+           8px of padding + 6px here + a 24px line height lands on the same ratio.
+        */
+        --msg-group-gap: 6px;
+
+        /*
+           The same scale for the surrounding UI. Each default below is the size
+           that element renders at today, including the ones that come from legacy
+           <font size> attributes rather than CSS:
+             size="3" -> 16px (channel names), size="5" -> 24px (server name).
+        */
+        --ui-font-size: 16px;
+        --ui-heading-font-size: 24px;
+        --ui-small-font-size: 12px;
+        /* <font size="2"> — the collapsed "Threads" group header. */
+        --ui-subitem-font-size: 13px;
+        --reply-preview-font-size: 11px;
+        --reply-bar-font-size: 14px;
+
+        /*
+           Proportional factor for the remaining fixed-px text (shared typography,
+           form controls, the news/movies pages). Used as
+               font-size: 14px;
+               font-size: calc(14px * var(--ui-scale, 1));
+           so legacy engines keep the fixed size and modern ones scale by one
+           number. Matches the 16px -> 18px root bump below.
+        */
+        --ui-scale: 1;
+        --root-font-size: 16px;
+    }
+
+    @media screen and (min-width: 1000px) {
+        :root {
+            --msg-font-size: 19px;
+            --msg-line-height: 27px;
+            --msg-author-font-size: 18px;
+            --msg-meta-font-size: 13px;
+            --msg-group-gap: 10px;
+
+            --ui-font-size: 18px;
+            --ui-heading-font-size: 28px;
+            --ui-small-font-size: 13px;
+            --ui-subitem-font-size: 15px;
+            --reply-preview-font-size: 13px;
+            --reply-bar-font-size: 15px;
+
+            --ui-scale: 1.125;
+            --root-font-size: 18px;
+        }
+    }
+
+    /*
+       Channel list and server name. These have no CSS font-size of their own —
+       they're sized by <font size="3"/"5"> attributes — so a single var()
+       declaration is enough: legacy engines drop it and keep the attribute size,
+       which is what the defaults above are set to.
+    */
+    .channel-list-item {
+        font-size: var(--ui-font-size, 16px);
+    }
+    .channel-list-subitem {
+        font-size: var(--ui-subitem-font-size, 13px);
+    }
+    .server-name-header {
+        font-size: var(--ui-heading-font-size, 24px);
+    }
+
+    /* The first group in the list sits against the container's own padding. */
+    #msgcontainer > table:first-child {
+        margin-top: 0 !important;
+    }
+
+    html,
+    body,
+    #wrapper {
+        font-size: var(--root-font-size, 16px);
+    }
+    h1 {
+        font-size: calc(24px * var(--ui-scale, 1));
+    }
+    h2 {
+        font-size: calc(20px * var(--ui-scale, 1));
+    }
+    h3 {
+        font-size: calc(18px * var(--ui-scale, 1));
+    }
+    .subtext {
+        font-size: calc(12px * var(--ui-scale, 1));
+    }
+    code {
+        font-size: calc(14px * var(--ui-scale, 1));
+    }
+    .messagecontent,
+    .messagecontent-font {
+        font-size: var(--msg-font-size, 17px);
+        line-height: var(--msg-line-height, 24px);
+    }
+    .messagecontent p {
+        font-size: var(--msg-font-size, 17px);
+    }
+    .messagecontent h1 {
+        font-size: calc(24px * var(--ui-scale, 1));
+    }
+    .messagecontent h2 {
+        font-size: calc(20px * var(--ui-scale, 1));
+    }
+    .messagecontent h3 {
+        font-size: calc(16px * var(--ui-scale, 1));
+    }
+    .reaction-count {
+        font-size: calc(12px * var(--ui-scale, 1));
+    }
+    .message-input-field {
+        font-size: var(--ui-font-size, 16px);
+    }
+    .send-button-input {
+        font-size: var(--ui-font-size, 16px);
+    }
+    .discross-button {
+        font-size: calc(16px * var(--ui-scale, 1));
+    }
+    .discord-timestamp {
+        font-size: calc(17px * var(--ui-scale, 1));
+    }
+    html.page-channel-reply #replying_to .reply-label {
+        font-size: var(--reply-bar-font-size, 14px);
+    }
+    html.page-channel-reply #replying_to .reply-content-preview {
+        font-size: var(--reply-bar-font-size, 14px);
+    }
+    .news-search-input {
+        font-size: calc(14px * var(--ui-scale, 1));
+    }
+    .news-search-btn {
+        font-size: calc(14px * var(--ui-scale, 1));
+    }
+    .news-card-caption {
+        font-size: calc(11px * var(--ui-scale, 1));
+    }
+    .news-card-title {
+        font-size: calc(16px * var(--ui-scale, 1));
+    }
+    .news-card-meta {
+        font-size: calc(12px * var(--ui-scale, 1));
+    }
+    .news-card-summary {
+        font-size: calc(14px * var(--ui-scale, 1));
+    }
+    .news-read-btn {
+        font-size: calc(13px * var(--ui-scale, 1));
+    }
+    .news-article-meta {
+        font-size: calc(13px * var(--ui-scale, 1));
+    }
+    .news-article-paragraph {
+        font-size: calc(15px * var(--ui-scale, 1));
+    }
+    .news-article-caption {
+        font-size: calc(12px * var(--ui-scale, 1));
+    }
+    .news-attribution {
+        font-size: calc(12px * var(--ui-scale, 1));
+    }
+    .movie-tab {
+        font-size: calc(14px * var(--ui-scale, 1));
+    }
+    .movie-card-title {
+        font-size: calc(16px * var(--ui-scale, 1));
+    }
+    .movie-card-scores {
+        font-size: calc(13px * var(--ui-scale, 1));
+    }
+    .movie-score-badge {
+        font-size: calc(12px * var(--ui-scale, 1));
+    }
+    .movie-score-label {
+        font-size: calc(12px * var(--ui-scale, 1));
+    }
+    .movie-rt-btn {
+        font-size: calc(13px * var(--ui-scale, 1));
+    }
+    .movie-attribution {
+        font-size: calc(12px * var(--ui-scale, 1));
+    }
 }
