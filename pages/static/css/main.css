@@ -3185,9 +3185,13 @@ html.client-psp img {
     height: auto;
 }
 
-/* Default desktop/tablet reply quote max-width */
+/* Default desktop/tablet reply quote max-width.
+   The cell clips with an ellipsis rather than wrapping, so this is the only
+   thing deciding how much of a quoted message is readable — keep it generous. */
 .reply-content-cell {
-    max-width: 350px !important;
+    max-width: 520px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 /* Responsive message headers for narrow screens to prevent overflow */
@@ -3210,7 +3214,7 @@ html.client-psp img {
     }
 
     .reply-content-cell {
-        max-width: 170px !important;
+        max-width: 220px !important;
     }
 
     /* 2-column header: author shrinks, meta stays at right */
@@ -3273,10 +3277,10 @@ html.client-psp #msgcontainer a {
 
 html.client-3ds .reply-content-cell,
 html.client-new3ds .reply-content-cell {
-    max-width: 130px !important; /* Extra constrained for 3DS bottom screen */
+    max-width: 160px !important; /* Extra constrained for 3DS bottom screen */
 }
 html.client-psp .reply-content-cell {
-    max-width: 200px !important;
+    max-width: 240px !important;
 }
 
 html.client-3ds .message-header-table,

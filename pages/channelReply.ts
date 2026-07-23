@@ -3,7 +3,12 @@ const escape = require('escape-html');
 const { PermissionFlagsBits } = require('discord');
 const { getDisplayName } = require('./memberUtils');
 const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../src/timezoneUtils');
-const { buildMessagesHtml } = require('./messageRenderer');
+const {
+    buildMessagesHtml,
+    flattenPreviewMarkup,
+    hasNonTextContent,
+    REPLY_ATTACHMENT_ICON_CODE,
+} = require('./messageRenderer');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {
     getSkinToneSelectorHTML,
@@ -54,15 +59,16 @@ const file_download_template = getTemplate('file-download', 'channel');
 const reactions_template = getTemplate('reactions', 'message');
 const reaction_template = getTemplate('reaction', 'message');
 const date_separator_template = getTemplate('date-separator', 'message');
-const REPLY_PREVIEW_MAX_LENGTH = 25;
+const REPLY_PREVIEW_MAX_LENGTH = 120;
 
 function buildReplyPreviewContent(message) {
-    // If the message has attachments, show "Attachment" instead of text preview
-    if (message.attachments && message.attachments.size > 0) {
-        return 'Attachment';
-    }
+    // Attachments get the same picture glyph as the in-channel reply indicator,
+    // appended after the text (or standing in for it when there is none).
+    const attachmentIcon = hasNonTextContent(message)
+        ? render('channel/reply-attachment-icon', { CODE: REPLY_ATTACHMENT_ICON_CODE })
+        : '';
 
-    const flattened = message.content.replace(/\s+/g, ' ').trim();
+    const flattened = flattenPreviewMarkup(message.content.replace(/\s+/g, ' ').trim()).trim();
     let preview = flattened;
 
     message.mentions?.users?.forEach((user) => {
@@ -82,8 +88,11 @@ function buildReplyPreviewContent(message) {
     if (chars.length > REPLY_PREVIEW_MAX_LENGTH) {
         preview = chars.slice(0, REPLY_PREVIEW_MAX_LENGTH).join('') + '...';
     }
-    if (!preview) return ''; // Prevent empty <br>
-    return escape(preview);
+    if (!preview)
+        return attachmentIcon
+            ? getTemplate('reply-attachment-only', 'channel') + attachmentIcon
+            : ''; // Prevent empty <br>
+    return escape(preview) + attachmentIcon;
 }
 
 exports.processChannelReply = async function processChannelReply(bot, req, res, args, discordID) {
