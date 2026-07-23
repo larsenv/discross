@@ -14,6 +14,7 @@ const {
 const search_template = loadAndRenderPageTemplate('search');
 
 const logged_in_template = getTemplate('logged-in', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 const SEARCH_ENGINES = {
     frogfind: 'http://frogfind.com/?q=',
@@ -24,8 +25,9 @@ const SEARCH_ENGINES = {
 const VALID_ENGINES = Object.keys(SEARCH_ENGINES);
 
 exports.processSearch = async function processSearch(req, res) {
-    const discordID = await auth.checkAuth(req, res);
-    if (!discordID) return;
+    // These pages are public — read the session if there is one (so the header
+    // can greet the user) but never send a logged-out visitor to the login page.
+    const discordID = await auth.checkAuth(req, res, true);
 
     const parsedUrl = new URL(req.url, 'http://localhost');
     const query = parsedUrl.searchParams.get('q') || '';
@@ -43,9 +45,9 @@ exports.processSearch = async function processSearch(req, res) {
 
     const themeClass = getPageThemeAttr(req);
 
-    const menuOptions = renderTemplate(logged_in_template, {
-        USER: escape(await auth.getUsername(discordID)),
-    });
+    const menuOptions = discordID
+        ? renderTemplate(logged_in_template, { USER: escape(await auth.getUsername(discordID)) })
+        : logged_out_template;
 
     const pageTitle = 'Search - Discross';
     const seoDescription =
