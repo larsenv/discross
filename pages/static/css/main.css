@@ -3571,9 +3571,13 @@ html.client-psp .light-theme .messagecontent font {
     .send-button-input {
         font-size: var(--ui-font-size, 16px);
     }
-    .discross-button {
-        font-size: calc(16px * var(--ui-scale, 1));
-    }
+    /*
+       .discross-button is deliberately NOT scaled. These buttons are given a
+       fixed width by the pages that use them (max-width:280px on the home page,
+       width:180px for the feature rows), so larger text wraps inside the button
+       instead of widening it — "Add Discross to your server" breaks onto a
+       second line. The label stays at 16px.
+    */
     .discord-timestamp {
         font-size: calc(17px * var(--ui-scale, 1));
     }
