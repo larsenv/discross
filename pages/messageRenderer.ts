@@ -1419,10 +1419,14 @@ function buildReplyIndicator(
 
     // Like Discord, the preview jumps to the quoted message when clicked — which
     // is the only way to actually reach a quoted attachment.
+    // Jump to the quoted message's in-page anchor (added in the render loop). A
+    // bare #hash keeps the current channel URL/session and just scrolls; if the
+    // quoted message isn't in the rendered window nothing happens, which still
+    // beats opening the reply composer (the /channels/ch/id route does that).
     const previewHtml =
-        rawPreview && channelId && replyData.messageId
+        rawPreview && replyData.messageId
             ? render('channel/reply-jump-link', {
-                  JUMP_HREF: `/channels/${channelId}/${replyData.messageId}`,
+                  JUMP_HREF: `#msg-${replyData.messageId}`,
                   INNER: rawPreview,
               })
             : rawPreview;
@@ -2087,7 +2091,10 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             state.lastInteractionData = interactionData;
         }
         state.lastForwarded = isForwarded;
-        state.currentmessage += messageHtml;
+        // A per-message anchor so a reply indicator can jump to the quoted
+        // message (see buildReplyIndicator's #msg- link) rather than opening the
+        // reply composer.
+        state.currentmessage += `<a id="msg-${item.id}" name="msg-${item.id}"></a>` + messageHtml;
         state.lastIsBot = !!item.author.bot;
         state.lastIsVerified = !!(
             item.author.verified ||
