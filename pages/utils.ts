@@ -656,20 +656,29 @@ function mentionsToReadableText(text, guild) {
  */
 function buildAllowedMentions(content, member, channel) {
     const canMentionEveryone = canMentionEveryoneIn(member, channel);
+    const text = String(content);
+
+    // Enumerate the user IDs the message literally contains as `<@id>` markup and
+    // ping only those, rather than trusting `parse: ['users']` to re-scan the
+    // content. Both ultimately ping the same people, but an explicit, deduped,
+    // capped list is the safer of the two: it can never resolve to a user the
+    // text doesn't actually name, and it stays within Discord's 100-mention cap.
+    // (This hardens the payload; it does not change which mentions are allowed.)
+    const users = [...new Set([...text.matchAll(/<@!?(\d+)>/g)].map((m) => m[1]))].slice(0, 100);
 
     if (canMentionEveryone) {
-        return { parse: ['users', 'roles', 'everyone'] };
+        return { parse: ['roles', 'everyone'], users };
     }
 
     // Without the permission, allow only the mentionable roles actually named in
     // the message — and no @everyone/@here.
     const guild = channel.guild;
-    const mentionedRoles = [...String(content).matchAll(/<@&(\d+)>/g)].map((m) => m[1]);
+    const mentionedRoles = [...text.matchAll(/<@&(\d+)>/g)].map((m) => m[1]);
     const roles = [...new Set(mentionedRoles)].filter(
         (id) => guild?.roles?.cache?.get(id)?.mentionable
     );
 
-    return { parse: ['users'], roles };
+    return { parse: [], users, roles };
 }
 
 /**

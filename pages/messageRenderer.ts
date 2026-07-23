@@ -53,7 +53,14 @@ function formatAuthorName(name) {
 // ---------------------------------------------------------------------------
 
 const FORWARDED_CONTENT_MAX_LENGTH = 4000;
-const REPLY_CONTENT_MAX_LENGTH = 25;
+// Discord's own reply preview keeps roughly a line and a half of text before it
+// gives up; 25 characters cut nearly every preview mid-word (and sliced URLs in
+// half). The cell clips with an ellipsis in CSS, so this is just a sanity cap to
+// keep the served HTML small.
+const REPLY_CONTENT_MAX_LENGTH = 120;
+// Twemoji codepoint for 🖼 (framed picture), used to flag replies to messages
+// whose content is an attachment rather than text.
+const REPLY_ATTACHMENT_ICON_CODE = '1f5bc';
 const MESSAGE_GROUP_TIMEOUT_MS = 420_000; // 7 minutes
 const LEGACY_MESSAGE_LIMIT = 25;
 
@@ -142,6 +149,61 @@ function truncateFileName(name) {
 function truncateText(text, maxLength) {
     const chars = Array.from(text);
     return chars.length > maxLength ? chars.slice(0, maxLength).join('') + '...' : text;
+}
+
+/**
+ * Flattens Discord markup that only makes sense when fully rendered into plain
+ * text suitable for a one-line preview.
+ *
+ * Without this, previews leaked half-rendered syntax: masked links showed their
+ * raw `[label](https://...)` form (usually truncated mid-URL), custom emoji
+ * showed as `<:name:1234567890>`, and spoiler bars showed as stray pipes.
+ *
+ * @param {string} text - Raw message content.
+ * @returns {string} Plain text with markup collapsed to its visible form.
+ */
+function flattenPreviewMarkup(text) {
+    return (
+        text
+            // Fenced and inline code keep their contents, drop their fences.
+            .replace(/```[a-z0-9+#.-]*\s*([\s\S]*?)```/gi, '$1')
+            .replace(/`([^`]+)`/g, '$1')
+            // Masked links render as their label; <url> is a plain url with the
+            // embed suppressed.
+            .replace(/\[([^\]\n]+)\]\(\s*<?[^)\s]+>?\s*\)/g, '$1')
+            .replace(/<((?:https?|discord):\/\/[^>\s]+)>/g, '$1')
+            // Custom (and animated) server emoji have no image in a preview.
+            .replace(/<a?:([a-zA-Z0-9_]+):\d{16,20}>/g, ':$1:')
+            // Spoilers and emphasis: keep the words, drop the markers. Matched in
+            // pairs so stray underscores inside URLs survive intact.
+            .replace(/\|\|([\s\S]+?)\|\|/g, '$1')
+            .replace(/\*\*\*([\s\S]+?)\*\*\*/g, '$1')
+            .replace(/\*\*([\s\S]+?)\*\*/g, '$1')
+            .replace(/\*([^*\n]+)\*/g, '$1')
+            .replace(/__([\s\S]+?)__/g, '$1')
+            .replace(/~~([\s\S]+?)~~/g, '$1')
+            // Leading quote markers ("> ", ">>> ") aren't part of the text.
+            .replace(/^(>>?>?\s*)+/, '')
+    );
+}
+
+/**
+ * Returns true when a message's visible content is (or includes) something
+ * other than text: an attachment, sticker, or embed.
+ *
+ * @param {object} message - The Discord message object.
+ * @returns {boolean}
+ */
+function hasNonTextContent(message) {
+    if (!message) return false;
+    return !!(
+        message.attachments?.size ||
+        message.attachments?.length ||
+        message.stickers?.size ||
+        message.stickers?.length ||
+        message.embeds?.size ||
+        message.embeds?.length
+    );
 }
 
 function isSameAuthor(member1, author1, member2, author2) {
@@ -1303,7 +1365,7 @@ async function resolveReplyData(
                   );
 
                   return truncateText(
-                      resolvedFlat.replace(/^(>>?>?\s*)+/, ''),
+                      flattenPreviewMarkup(resolvedFlat).trim(),
                       REPLY_CONTENT_MAX_LENGTH
                   );
               })()
@@ -1318,6 +1380,7 @@ async function resolveReplyData(
                 item.mentions?.repliedUser !== undefined &&
                 item.author?.id !== replyUser?.id,
             content: replyContent,
+            hasAttachment: hasNonTextContent(replyMessage),
         };
     } catch (err) {
         console.error('Could not process reply data:', err);
@@ -1331,17 +1394,28 @@ function buildReplyIndicator(replyData, replyText, barColor = '#808080', imagesC
         .replace(/\r?\n/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
-    const contentTd = normalizedReplyContent
+    // Discord shows a picture glyph for a quoted attachment, and falls back to
+    // "Click to see attachment" when the quoted message is nothing but the
+    // attachment.
+    const attachmentIcon = replyData.hasAttachment
+        ? render('channel/reply-attachment-icon', { CODE: REPLY_ATTACHMENT_ICON_CODE })
+        : '';
+
+    const previewHtml = normalizedReplyContent
+        ? he.encode(normalizedReplyContent, { useNamedReferences: true }) + attachmentIcon
+        : replyData.hasAttachment
+          ? getTemplate('reply-attachment-only', 'channel') + attachmentIcon
+          : '';
+
+    const contentTd = previewHtml
         ? render('channel/reply-content-cell', {
-              REPLY_TEXT_TOP_OFFSET: '-1',
               REPLY_TEXT: replyText,
-              REPLY_PREVIEW: he.encode(normalizedReplyContent, { useNamedReferences: true }),
+              REPLY_PREVIEW: previewHtml,
           })
         : '';
 
     const replyContent = render('channel/reply-with-content', {
         BAR_COLOR: barColor,
-        REPLY_TEXT_TOP_OFFSET: '-1',
         AUTHOR_COLOR: replyData.authorColor,
         AT_SIGN: replyData.mentionsPing ? '@' : '',
         AUTHOR_NAME: formatAuthorName(replyData.author),
@@ -2010,6 +2084,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     response += getTemplate('end-anchor', 'channel');
     return response;
 };
+
+// Shared with the reply page, which renders its own preview of the quoted
+// message and has to agree with the in-channel indicator.
+exports.flattenPreviewMarkup = flattenPreviewMarkup;
+exports.hasNonTextContent = hasNonTextContent;
+exports.REPLY_ATTACHMENT_ICON_CODE = REPLY_ATTACHMENT_ICON_CODE;
 
 /**
  * Main request handler for serving a Discord channel page.
