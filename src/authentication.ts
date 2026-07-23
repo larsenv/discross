@@ -766,13 +766,20 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
     storePasskeyChallenge(challengeB64url, { type, discordID, rpId, challengeB64url });
     const options = {
         challenge: Array.from(challenge),
-        rp: {
-            id: rpId,
-            name: 'Discross',
-        },
         timeout: 60000,
         userVerification: type === 'login' ? 'required' : 'preferred',
     };
+    // The two ceremonies name the relying party differently:
+    // navigator.credentials.create() takes an `rp` object, while .get() takes a
+    // plain `rpId` string. Sending `rp` to .get() is not a member of
+    // PublicKeyCredentialRequestOptions, so the browser ignores it and falls
+    // back to the origin's effective domain — which silently breaks the login
+    // whenever that differs from the RP ID the passkey was registered under.
+    if (type === 'register') {
+        options.rp = { id: rpId, name: 'Discross' };
+    } else {
+        options.rpId = rpId;
+    }
     if (type === 'register') {
         const user = querySingle('SELECT username FROM users WHERE discordID = ?', [discordID]);
         const username = user ? user.username : discordID;
