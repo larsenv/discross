@@ -126,6 +126,7 @@ function buildNavButtons(city, activeView, urlSessionID) {
 const weather_template = loadAndRenderPageTemplate('weather');
 
 const logged_in_template = getTemplate('logged-in', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 function fetchJson(hostname, path) {
     return new Promise((resolve, reject) => {
@@ -342,8 +343,9 @@ function renderDaily(daily) {
 }
 
 exports.processWeather = async function processWeather(req, res) {
-    const discordID = await auth.checkAuth(req, res);
-    if (!discordID) return;
+    // These pages are public — read the session if there is one (so the header
+    // can greet the user) but never send a logged-out visitor to the login page.
+    const discordID = await auth.checkAuth(req, res, true);
 
     const parsedUrl = new URL(req.url, 'http://localhost');
     const city = parsedUrl.searchParams.get('city') || '';
@@ -446,9 +448,9 @@ exports.processWeather = async function processWeather(req, res) {
         }
     }
 
-    const menuOptions = render('index/logged-in', {
-        USER: escape(await auth.getUsername(discordID)),
-    });
+    const menuOptions = discordID
+        ? render('index/logged-in', { USER: escape(await auth.getUsername(discordID)) })
+        : logged_out_template;
 
     const pageTitle = city.trim() ? `Weather in ${city} - Discross` : 'Weather - Discross';
     const seoDescription = city.trim()

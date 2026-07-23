@@ -22,6 +22,7 @@ const tv_template = loadAndRenderPageTemplate('index', 'tv');
 const tv_station_template = loadAndRenderPageTemplate('station', 'tv');
 
 const logged_in_template = getTemplate('logged-in', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 // Make an HTTPS request (GET or POST), following up to maxRedirects redirects.
 // After a POST redirect, follow the redirect with a GET (standard browser POST-back behaviour).
@@ -669,8 +670,9 @@ function getThemeClass(req, parsedUrl) {
 }
 
 exports.processTV = async function processTV(req, res) {
-    var discordID = await auth.checkAuth(req, res);
-    if (!discordID) return;
+    // These pages are public — read the session if there is one (so the header
+    // can greet the user) but never send a logged-out visitor to the login page.
+    var discordID = await auth.checkAuth(req, res, true);
 
     var parsedUrl = new URL(req.url, 'http://localhost');
     var subpath = parsedUrl.pathname.replace(/^\/tv\/?/, '').replace(/\/$/, '');
@@ -678,8 +680,9 @@ exports.processTV = async function processTV(req, res) {
     var sessionSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '';
     var sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
     var themeClass = getThemeClass(req, parsedUrl);
-    var username = await auth.getUsername(discordID);
-    var menuHtml = renderTemplate(logged_in_template, { USER: escape(username) });
+    var menuHtml = discordID
+        ? renderTemplate(logged_in_template, { USER: escape(await auth.getUsername(discordID)) })
+        : logged_out_template;
 
     // Station schedule sub-page: /tv/station/{slug}/{id}
     if (subpath.startsWith('station/')) {

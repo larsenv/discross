@@ -26,6 +26,7 @@ const BG_UPCOMING = '#2f3136'; // default dark — upcoming row
 const sports_template = loadAndRenderPageTemplate('sports');
 
 const logged_in_template = getTemplate('logged-in', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 // NBA first — in full regular season; NFL last since it's off-season in early spring
 const SPORTS = [
@@ -254,8 +255,9 @@ function buildNavButtons(activeSport, urlSessionID) {
 }
 
 exports.processSports = async function processSports(req, res) {
-    const discordID = await auth.checkAuth(req, res);
-    if (!discordID) return;
+    // These pages are public — read the session if there is one (so the header
+    // can greet the user) but never send a logged-out visitor to the login page.
+    const discordID = await auth.checkAuth(req, res, true);
 
     const parsedUrl = new URL(req.url, 'http://localhost');
     const sportId = parsedUrl.searchParams.get('sport') || 'nba';
@@ -305,9 +307,9 @@ exports.processSports = async function processSports(req, res) {
         sportsHtml = getTemplate('fetch-error', 'sports');
     }
 
-    const menuOptions = render('index/logged-in', {
-        USER: escape(await auth.getUsername(discordID)),
-    });
+    const menuOptions = discordID
+        ? render('index/logged-in', { USER: escape(await auth.getUsername(discordID)) })
+        : logged_out_template;
 
     const pageTitle = `Sports Scores (${sport.label}) - Discross`;
     const seoDescription = `Get live scores, schedules, and results for ${sport.label} games on Discross, the universal Discord client.`;

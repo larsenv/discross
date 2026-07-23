@@ -33,6 +33,7 @@ const DISPLAY_NAMES = {
 const stocks_template = loadAndRenderPageTemplate('stocks');
 
 const logged_in_template = getTemplate('logged-in', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 function normalizeSymbol(symbol) {
     let sym = symbol.trim();
@@ -196,8 +197,9 @@ function renderTopIndices(quotes) {
 }
 
 exports.processStocks = async function processStocks(req, res) {
-    const discordID = await auth.checkAuth(req, res);
-    if (!discordID) return;
+    // These pages are public — read the session if there is one (so the header
+    // can greet the user) but never send a logged-out visitor to the login page.
+    const discordID = await auth.checkAuth(req, res, true);
 
     const parsedUrl = new URL(req.url, 'http://localhost');
     const ticker = (parsedUrl.searchParams.get('ticker') || '').trim().toUpperCase();
@@ -228,9 +230,9 @@ exports.processStocks = async function processStocks(req, res) {
     });
 
     const credit = getTemplate('yahoo-credit', 'stocks');
-    const menuOptions = render('index/logged-in', {
-        USER: escape(await auth.getUsername(discordID)),
-    });
+    const menuOptions = discordID
+        ? render('index/logged-in', { USER: escape(await auth.getUsername(discordID)) })
+        : logged_out_template;
 
     const pageTitle = ticker
         ? `Stock Quote (${ticker}) - Discross`

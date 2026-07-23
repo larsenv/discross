@@ -77,6 +77,7 @@ const CURRENCY_NAMES = {
 const currency_template = loadAndRenderPageTemplate('currency');
 
 const logged_in_template = getTemplate('logged-in', 'index');
+const logged_out_template = getTemplate('logged-out', 'index');
 
 /**
  * Return a date string N calendar days before today in YYYY-MM-DD format.
@@ -193,8 +194,9 @@ function renderRatesTable(base, latestData, prevData, targets) {
 }
 
 exports.processCurrency = async function processCurrency(req, res) {
-    const discordID = await auth.checkAuth(req, res);
-    if (!discordID) return;
+    // These pages are public — read the session if there is one (so the header
+    // can greet the user) but never send a logged-out visitor to the login page.
+    const discordID = await auth.checkAuth(req, res, true);
 
     const parsedUrl = new URL(req.url, 'http://localhost');
     const rawBase = (parsedUrl.searchParams.get('base') || 'USD').trim().toUpperCase();
@@ -234,9 +236,9 @@ exports.processCurrency = async function processCurrency(req, res) {
         }
     })();
 
-    const menuOptions = render('index/logged-in', {
-        USER: escape(await auth.getUsername(discordID)),
-    });
+    const menuOptions = discordID
+        ? render('index/logged-in', { USER: escape(await auth.getUsername(discordID)) })
+        : logged_out_template;
 
     const pageTitle = `Currency Converter (${base}) - Discross`;
     const seoDescription = `Live currency exchange rates and converter for ${base} and major global currencies on Discross, the universal Discord client.`;
