@@ -744,7 +744,10 @@ textarea:focus {
    pair scales them with the same --ui-scale the surrounding UI text uses, so the
    rail grows on wide screens instead of staying stuck next to larger channel
    names. Legacy engines drop the calc() declaration and keep the px value. */
-.server-icon {
+/* The Home logo is just the first tile in the rail, so it shares the server
+   icons' size, corners and spacing rather than being its own larger thing. */
+.server-icon,
+.home-icon {
     /* Rounded like Discord's rail. border-radius needs no @supports gate: an
        engine that doesn't know it simply paints a square, which is exactly the
        old look — no layout breakage either way. Prefixes pick up the older
@@ -764,12 +767,6 @@ textarea:focus {
     width: 48px;
     height: var(--server-icon-size, 48px);
     width: var(--server-icon-size, 48px);
-}
-.home-icon {
-    height: 64px;
-    width: 64px;
-    height: calc(64px * var(--ui-scale, 1));
-    width: calc(64px * var(--ui-scale, 1));
 }
 .server-br {
     display: none;
