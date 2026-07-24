@@ -81,8 +81,20 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         if (base64Data.includes(';base64,')) {
             base64Image = base64Data.split(';base64,').pop();
         } else {
-            base64Image = base64Data;
+            console.error(
+                '[sendDrawing] Error processing image: Data URL does not contain ;base64,'
+            );
+            res.writeHead(400, { 'Content-Type': 'text/html' });
+            res.end(
+                render('misc/error-text', {
+                    MESSAGE: 'Invalid drawing data format. Please try drawing again.',
+                })
+            );
+            return;
         }
+
+        // Replace spaces with + because URLSearchParams converts + to spaces in form bodies
+        base64Image = base64Image.replace(/ /g, '+');
 
         // Validate the base64 string is not empty
         if (!base64Image || base64Image.trim() === '') {
@@ -98,9 +110,13 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
         const imageBuffer = Buffer.from(base64Image, 'base64');
 
-        // Validate the buffer is not empty
-        if (!imageBuffer || imageBuffer.length === 0) {
-            console.error('[sendDrawing] Error processing image: Generated buffer is empty');
+        // Validate the buffer is not empty or corrupted (e.g. 3-byte garbage)
+        if (!imageBuffer || imageBuffer.length < 50) {
+            console.error(
+                '[sendDrawing] Error processing image: Generated buffer is invalid or too small (' +
+                    (imageBuffer ? imageBuffer.length : 0) +
+                    ' bytes)'
+            );
             res.writeHead(400, { 'Content-Type': 'text/html' });
             res.end(
                 render('misc/error-text', {

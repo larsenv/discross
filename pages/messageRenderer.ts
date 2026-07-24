@@ -1428,12 +1428,7 @@ async function resolveReplyData(
 
                   let html = he.encode(flat.trim(), { useNamedReferences: true });
                   html = renderKnownMentions(html, replyMessage, discordID, member, templates);
-                  html = await resolveRemainingMentions(
-                      html,
-                      chnl,
-                      memberCache,
-                      templates.mention
-                  );
+                  html = await resolveRemainingMentions(html, chnl, memberCache, templates.mention);
                   html = await resolveChannelMentions(html, bot, chnl);
                   html = renderEveryoneMentions(html, replyMessage, templates);
                   // Channel mentions wrap their pill in a link to the channel.
@@ -1704,7 +1699,13 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
 
     // If the group starts with a reply or was an interaction, build the top "indicator" bar.
     const replyIndicator = state.lastReply
-        ? buildReplyIndicator(state.lastReplyData, replyText, barColor, state.imagesCookie, channelId)
+        ? buildReplyIndicator(
+              state.lastReplyData,
+              replyText,
+              barColor,
+              state.imagesCookie,
+              channelId
+          )
         : state.lastInteraction
           ? buildInteractionIndicator(state.lastInteractionData, replyText, barColor)
           : '';
