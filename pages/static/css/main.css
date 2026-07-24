@@ -744,6 +744,15 @@ textarea:focus {
    pair scales them with the same --ui-scale the surrounding UI text uses, so the
    rail grows on wide screens instead of staying stuck next to larger channel
    names. Legacy engines drop the calc() declaration and keep the px value. */
+/* The rail column sat flush against its icons (48px icon in a 50px cell), which
+   is what made it read as cramped — Discord gives a 48px icon a 72px rail, i.e.
+   12px of breathing room each side. The var only resolves on modern engines, so
+   legacy consoles keep the flush column and don't lose screen width. */
+.server-rail {
+    padding-left: var(--server-rail-pad, 0);
+    padding-right: var(--server-rail-pad, 0);
+}
+
 /* The Home logo is just the first tile in the rail, so it shares the server
    icons' size, corners and spacing rather than being its own larger thing. */
 .server-icon,
@@ -3319,7 +3328,8 @@ html.client-psp .light-theme .messagecontent font {
            on the desktop tier below, where it read noticeably smaller than
            Discord's. */
         --server-icon-size: 48px;
-        --server-icon-gap: 8px;
+        --server-icon-gap: 10px;
+        --server-rail-pad: 12px;
     }
 
     @media screen and (min-width: 1000px) {
@@ -3341,7 +3351,8 @@ html.client-psp .light-theme .messagecontent font {
             --root-font-size: 18px;
 
             --server-icon-size: 64px;
-            --server-icon-gap: 11px;
+            --server-icon-gap: 12px;
+            --server-rail-pad: 16px;
         }
     }
 
