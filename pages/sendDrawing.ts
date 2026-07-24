@@ -14,6 +14,47 @@ const {
     render,
 } = require('./utils');
 
+function decodeBmpToRgba(bmpBuf) {
+    if (bmpBuf.length < 54 || bmpBuf[0] !== 0x42 || bmpBuf[1] !== 0x4d) {
+        throw new Error('Not a valid BMP file header');
+    }
+    const offset = bmpBuf.readUInt32LE(10);
+    const width = bmpBuf.readInt32LE(18);
+    const heightRaw = bmpBuf.readInt32LE(22);
+    const height = Math.abs(heightRaw);
+    const bpp = bmpBuf.readUInt16LE(28);
+
+    if (bpp !== 24 && bpp !== 32) {
+        throw new Error('Unsupported BMP bpp: ' + bpp);
+    }
+
+    const bytesPerPixel = bpp / 8;
+    const rowSize = Math.floor((bpp * width + 31) / 32) * 4;
+    const rgbaBuf = Buffer.alloc(width * height * 4);
+    const isTopDown = heightRaw < 0;
+
+    for (let y = 0; y < height; y++) {
+        const srcY = isTopDown ? y : height - 1 - y;
+        const rowStart = offset + srcY * rowSize;
+        const dstRowStart = y * width * 4;
+
+        for (let x = 0; x < width; x++) {
+            const srcIdx = rowStart + x * bytesPerPixel;
+            const dstIdx = dstRowStart + x * 4;
+
+            if (srcIdx + 2 < bmpBuf.length) {
+                rgbaBuf[dstIdx] = bmpBuf[srcIdx + 2]; // R
+                rgbaBuf[dstIdx + 1] = bmpBuf[srcIdx + 1]; // G
+                rgbaBuf[dstIdx + 2] = bmpBuf[srcIdx]; // B
+                rgbaBuf[dstIdx + 3] =
+                    bytesPerPixel === 4 && srcIdx + 3 < bmpBuf.length ? bmpBuf[srcIdx + 3] : 255;
+            }
+        }
+    }
+
+    return { width, height, data: rgbaBuf };
+}
+
 exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID, urlQuery = null) {
     try {
         const parsedurl =
@@ -132,11 +173,22 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             return;
         }
 
-        // If the client sent a BMP (Old 3DS fallback), convert it to PNG using sharp
-        // so Discord always receives a valid PNG attachment regardless of device.
-        if (mimeType === 'image/bmp' || mimeType === 'image/x-bmp') {
+        // If the client sent a BMP (Old 3DS fallback) or the buffer has a BMP header,
+        // decode the BMP pixel structure and convert to PNG via sharp so Discord gets a valid PNG.
+        const isBmpHeader =
+            imageBuffer.length >= 2 && imageBuffer[0] === 0x42 && imageBuffer[1] === 0x4d;
+        if (mimeType === 'image/bmp' || mimeType === 'image/x-bmp' || isBmpHeader) {
             try {
-                imageBuffer = await sharp(imageBuffer).png().toBuffer();
+                const decoded = decodeBmpToRgba(imageBuffer);
+                imageBuffer = await sharp(decoded.data, {
+                    raw: {
+                        width: decoded.width,
+                        height: decoded.height,
+                        channels: 4,
+                    },
+                })
+                    .png()
+                    .toBuffer();
             } catch (convertErr) {
                 console.error('[sendDrawing] BMP→PNG conversion failed:', convertErr);
                 res.writeHead(400, { 'Content-Type': 'text/html' });
