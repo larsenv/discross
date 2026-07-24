@@ -3055,6 +3055,20 @@ html.client-psp img {
     white-space: nowrap !important;
 }
 
+/* The whole quote preview is wrapped in an <a> that jumps to the quoted
+   message, so it inherits the themed link color and reads as a blue link. Force
+   it back to the quoted-text color instead. The theme-scoped selectors are here
+   purely for specificity: .amoled-theme a carries a !important blue, and
+   .amoled-theme .reply-content-cell a outweighs it no matter the source order.
+   Mention pills inside keep their own color, since .mention sets it on the span
+   itself rather than inheriting from the link. */
+.reply-content-cell a,
+.light-theme .reply-content-cell a,
+.amoled-theme .reply-content-cell a {
+    color: inherit !important;
+    text-decoration: none !important;
+}
+
 /* Responsive message headers for narrow screens to prevent overflow */
 @media screen and (max-width: 480px) {
     #msgcontainer > table {
