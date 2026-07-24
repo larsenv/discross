@@ -1,5 +1,6 @@
 'use strict';
 const discord = require('discord');
+const sharp = require('sharp');
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
@@ -76,9 +77,14 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             return;
         }
 
-        // Remove the data URL prefix
+        // Extract mime type and base64 payload from the data URL
         let base64Image;
+        let mimeType = 'image/png';
         if (base64Data.includes(';base64,')) {
+            const headerPart = base64Data.split(';base64,')[0];
+            if (headerPart.includes(':')) {
+                mimeType = headerPart.split(':')[1].trim();
+            }
             base64Image = base64Data.split(';base64,').pop();
         } else {
             console.error(
@@ -108,7 +114,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             return;
         }
 
-        const imageBuffer = Buffer.from(base64Image, 'base64');
+        let imageBuffer = Buffer.from(base64Image, 'base64');
 
         // Validate the buffer is not empty or corrupted (e.g. 3-byte garbage)
         if (!imageBuffer || imageBuffer.length < 50) {
@@ -124,6 +130,23 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
                 })
             );
             return;
+        }
+
+        // If the client sent a BMP (Old 3DS fallback), convert it to PNG using sharp
+        // so Discord always receives a valid PNG attachment regardless of device.
+        if (mimeType === 'image/bmp' || mimeType === 'image/x-bmp') {
+            try {
+                imageBuffer = await sharp(imageBuffer).png().toBuffer();
+            } catch (convertErr) {
+                console.error('[sendDrawing] BMP→PNG conversion failed:', convertErr);
+                res.writeHead(400, { 'Content-Type': 'text/html' });
+                res.end(
+                    render('misc/error-text', {
+                        MESSAGE: 'Could not process the drawing. Please try again.',
+                    })
+                );
+                return;
+            }
         }
 
         // Discord.js requires Buffer for attachments
