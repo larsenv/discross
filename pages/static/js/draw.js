@@ -730,13 +730,19 @@ function canvasToBmpDataUrl(c, cCtx) {
     var i = 0;
     while (i < len) {
         var b1 = out[i++];
-        var b2 = i < len ? out[i++] : 0;
-        var b3 = i < len ? out[i++] : 0;
-        var triple = (b1 << 16) | (b2 << 8) | b3;
+        var b2 = i < len ? out[i++] : null;
+        var b3 = i < len ? out[i++] : null;
+
+        var v1 = b1;
+        var v2 = b2 !== null ? b2 : 0;
+        var v3 = b3 !== null ? b3 : 0;
+
+        var triple = (v1 << 16) | (v2 << 8) | v3;
+
         base64 += chars.charAt((triple >> 18) & 63);
         base64 += chars.charAt((triple >> 12) & 63);
-        base64 += i > len + 1 ? '=' : chars.charAt((triple >> 6) & 63);
-        base64 += i > len ? '=' : chars.charAt(triple & 63);
+        base64 += b2 !== null ? chars.charAt((triple >> 6) & 63) : '=';
+        base64 += b3 !== null ? chars.charAt(triple & 63) : '=';
     }
     return 'data:image/bmp;base64,' + base64;
 }
