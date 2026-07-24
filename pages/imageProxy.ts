@@ -123,17 +123,30 @@ function cacheSet(key, value) {
     imageCache.set(key, value);
 }
 
+function detectBufferMimeType(buf) {
+    if (!buf || buf.length < 4) return 'image/gif';
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47)
+        return 'image/png';
+    if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+    if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return 'image/gif';
+    if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46)
+        return 'image/webp';
+    return 'image/gif';
+}
+
 exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) {
     const cacheKey = fullSize ? URL + ':full' : URL;
     // Serve from in-memory cache if available
     if (imageCache.has(cacheKey)) {
         const cached = imageCache.get(cacheKey);
+        const cachedBuffer = cached.buffer || cached;
+        const contentType = cached.contentType || detectBufferMimeType(cachedBuffer);
         res.writeHead(200, {
-            'Content-Type': 'image/gif',
-            'Content-Length': cached.length,
+            'Content-Type': contentType,
+            'Content-Length': cachedBuffer.length,
             'Cache-Control': CACHE_CONTROL,
         });
-        res.end(cached);
+        res.end(cachedBuffer);
         return;
     }
 
@@ -217,18 +230,25 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
                                     return buffer;
                                 });
                         }
-                        cacheSet(cacheKey, processedBuffer);
+                        let contentType = 'image/gif';
+                        if (processedBuffer === buffer) {
+                            contentType = detectBufferMimeType(buffer);
+                        } else {
+                            contentType = detectBufferMimeType(processedBuffer);
+                        }
+
+                        cacheSet(cacheKey, { buffer: processedBuffer, contentType });
                         res.writeHead(200, {
-                            'Content-Type': 'image/gif',
+                            'Content-Type': contentType,
                             'Content-Length': processedBuffer.length,
                             'Cache-Control': CACHE_CONTROL,
                         });
                         res.end(processedBuffer);
                     } catch (error) {
                         console.error('Error processing image:', error);
-                        // Send original buffer instead of error
+                        const fallbackType = detectBufferMimeType(buffer);
                         res.writeHead(200, {
-                            'Content-Type': 'image/gif',
+                            'Content-Type': fallbackType,
                             'Content-Length': buffer.length,
                         });
                         res.end(buffer);

@@ -3598,3 +3598,10 @@ html.client-psp .light-theme .messagecontent font {
         font-size: calc(13px * var(--ui-scale, 1));
     }
 }
+
+/* Wii (Opera 9.x): strip UA default top margins/padding on server selector tables */
+html.client-wii.page-server #wrapper > table,
+html.client-wii.page-server #wrapper td {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
