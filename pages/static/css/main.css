@@ -745,10 +745,25 @@ textarea:focus {
    rail grows on wide screens instead of staying stuck next to larger channel
    names. Legacy engines drop the calc() declaration and keep the px value. */
 .server-icon {
+    /* Rounded like Discord's rail. border-radius needs no @supports gate: an
+       engine that doesn't know it simply paints a square, which is exactly the
+       old look — no layout breakage either way. Prefixes pick up the older
+       WebKit/Gecko builds some consoles ship. */
+    -webkit-border-radius: 16px;
+    -moz-border-radius: 16px;
+    border-radius: 16px;
+    /* Adjacent icons' margins collapse, so this value is the gap itself, not
+       half of it. Discord runs ~8px between 48px icons; the var keeps that
+       ratio once the icons grow on the desktop tier. */
+    margin: 4px auto;
+    margin: var(--server-icon-gap, 4px) auto;
+    /* px first as the legacy value (and it matches the width/height attributes);
+       --server-icon-size only exists inside the @supports block, so old engines
+       drop these two and stay at 48px. */
     height: 48px;
     width: 48px;
-    height: calc(48px * var(--ui-scale, 1));
-    width: calc(48px * var(--ui-scale, 1));
+    height: var(--server-icon-size, 48px);
+    width: var(--server-icon-size, 48px);
 }
 .home-icon {
     height: 64px;
@@ -3301,6 +3316,13 @@ html.client-psp .light-theme .messagecontent font {
         */
         --ui-scale: 1;
         --root-font-size: 16px;
+
+        /* Server rail avatar. Kept at the legacy 48px on narrow screens — the
+           consoles that show this rail have little width to spare — and grown
+           on the desktop tier below, where it read noticeably smaller than
+           Discord's. */
+        --server-icon-size: 48px;
+        --server-icon-gap: 8px;
     }
 
     @media screen and (min-width: 1000px) {
@@ -3320,6 +3342,9 @@ html.client-psp .light-theme .messagecontent font {
 
             --ui-scale: 1.125;
             --root-font-size: 18px;
+
+            --server-icon-size: 64px;
+            --server-icon-gap: 11px;
         }
     }
 
