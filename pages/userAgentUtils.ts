@@ -22,7 +22,12 @@ const CLIENTS = [
     },
     { id: 'ps3', name: 'PlayStation 3', keywords: ['PLAYSTATION 3'], isLegacy: true },
     { id: 'ps4', name: 'PlayStation 4', keywords: ['PlayStation 4'] },
-    { id: 'psp', name: 'PSP', keywords: ['PSP (PlayStation Portable)', 'PlayStation Portable'], isLegacy: true },
+    {
+        id: 'psp',
+        name: 'PSP',
+        keywords: ['PSP (PlayStation Portable)', 'PlayStation Portable'],
+        isLegacy: true,
+    },
     { id: 'psvita', name: 'PlayStation Vita', keywords: ['PlayStation Vita'], isLegacy: true },
     { id: 'xbox360', name: 'Xbox 360', keywords: ['Xbox 360', 'Xbox'], isLegacy: true },
     { id: 'xboxone', name: 'Xbox One', keywords: ['Xbox One'] },

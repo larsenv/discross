@@ -695,17 +695,80 @@ function wipe() {
 // Guards against a double submission — a fast double-click on Send, or Enter
 // landing while the first POST is still in flight, would otherwise send the
 // drawing twice.
+function canvasToBmpDataUrl(c, cCtx) {
+    var w = c.width;
+    var h = c.height;
+    var imgData = cCtx.getImageData(0, 0, w, h);
+    var data = imgData.data;
+    var padding = (4 - ((w * 3) % 4)) % 4;
+    var fileSize = 54 + (w * 3 + padding) * h;
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    var out = [];
+    var head = [
+        0x42, 0x4D, fileSize & 0xff, (fileSize >> 8) & 0xff, (fileSize >> 16) & 0xff, (fileSize >> 24) & 0xff,
+        0, 0, 0, 0, 54, 0, 0, 0,
+        40, 0, 0, 0, w & 0xff, (w >> 8) & 0xff, (w >> 16) & 0xff, (w >> 24) & 0xff,
+        h & 0xff, (h >> 8) & 0xff, (h >> 16) & 0xff, (h >> 24) & 0xff,
+        1, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ];
+    for (var k = 0; k < head.length; k++) {
+        out.push(head[k]);
+    }
+    for (var y = h - 1; y >= 0; y--) {
+        for (var x = 0; x < w; x++) {
+            var idx = (y * w + x) * 4;
+            out.push(data[idx + 2]);
+            out.push(data[idx + 1]);
+            out.push(data[idx]);
+        }
+        for (var p = 0; p < padding; p++) {
+            out.push(0);
+        }
+    }
+    var base64 = '';
+    var len = out.length;
+    var i = 0;
+    while (i < len) {
+        var b1 = out[i++];
+        var b2 = i < len ? out[i++] : 0;
+        var b3 = i < len ? out[i++] : 0;
+        var triple = (b1 << 16) | (b2 << 8) | b3;
+        base64 += chars.charAt((triple >> 18) & 63);
+        base64 += chars.charAt((triple >> 12) & 63);
+        base64 += i > len + 1 ? '=' : chars.charAt((triple >> 6) & 63);
+        base64 += i > len ? '=' : chars.charAt(triple & 63);
+    }
+    return 'data:image/bmp;base64,' + base64;
+}
+
 var drawingSubmitted = false;
 
 function prepareDrawing() {
     if (drawingSubmitted) return false;
     var inputField = document.getElementById('drawinginput');
+    var data = '';
     try {
-        inputField.value = canvas.toDataURL('image/png');
-    } catch (ex) {
+        data = canvas.toDataURL('image/png');
+    } catch (ex) {}
+
+    if (!data || data === 'data:,' || data.indexOf(';base64,') === -1) {
+        try {
+            data = canvas.toDataURL();
+        } catch (ex) {}
+    }
+
+    if (!data || data === 'data:,' || data.indexOf(';base64,') === -1) {
+        try {
+            data = canvasToBmpDataUrl(canvas, ctx);
+        } catch (ex) {}
+    }
+
+    if (!data || data === 'data:,' || data.indexOf(';base64,') === -1) {
         alert('Could not export the drawing on this browser.');
         return false;
     }
+
+    inputField.value = data;
     drawingSubmitted = true;
     var btn = document.getElementById('send-button');
     if (btn) btn.disabled = true;

@@ -731,7 +731,7 @@ textarea:focus {
 }
 .discross-button.secondary:hover {
     background: #5d6269;
-}/* ================================================================
+} /* ================================================================
    15. SERVER PAGE COMPONENTS
    ================================================================ */
 
@@ -897,7 +897,7 @@ canvas {
     border: 1px solid #202225;
     max-width: 100%;
     touch-action: none;
-}/* ================================================================
+} /* ================================================================
    17. MISC
    ================================================================ */
 
@@ -2204,7 +2204,7 @@ input[type='radio']:checked + .food-tip-btn {
     font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
-.food-store-addr{
+.food-store-addr {
     font-size: 0.9rem;
     color: #b5bac1;
     margin-bottom: 2px;
@@ -3041,6 +3041,35 @@ html.client-psp img {
     height: auto;
 }
 
+/* Specific size protections for header logo and rail icons on 3DS / New 3DS */
+html.client-3ds #wrapper > table:first-child img[src*='logo'],
+html.client-new3ds #wrapper > table:first-child img[src*='logo'],
+html.client-psp #wrapper > table:first-child img[src*='logo'] {
+    max-width: none !important;
+    width: 64px !important;
+    height: 64px !important;
+}
+
+html.client-3ds .server-icon,
+html.client-new3ds .server-icon,
+html.client-psp .server-icon,
+html.client-3ds .home-icon,
+html.client-new3ds .home-icon,
+html.client-psp .home-icon {
+    max-width: none !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+}
+
+html.client-3ds .server-rail,
+html.client-new3ds .server-rail,
+html.client-psp .server-rail {
+    min-width: 56px !important;
+    width: 56px !important;
+}
+
 /* Reply quote preview: fill the remaining width of the (width:100%) reply
    table and clip with an ellipsis. `max-width:0` is the load-bearing part —
    a table cell with nowrap content otherwise sizes to its content and shoves
@@ -3110,7 +3139,6 @@ html.client-psp img {
         width: 1% !important;
         vertical-align: top !important;
     }
-
 }
 
 html.client-3ds #msgcontainer > table,
