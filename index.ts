@@ -493,31 +493,57 @@ async function handleGet(req, res) {
     switch (args[1]) {
         case 'passkey': {
             if (args[2] === 'options') {
-                const type = parsedurl.searchParams.get('type') || 'register';
-                let discordID;
-                if (type === 'login') {
-                    // For login, we need to lookup discordID by username first
-                    const username = parsedurl.searchParams.get('username');
-                    const user = auth.querySingle(
-                        'SELECT discordID FROM users WHERE username = ?',
-                        [username]
-                    );
+                // This endpoint is fetched by client JS that calls response.json()
+                // unconditionally, so it must ALWAYS answer with JSON. Without this
+                // guard a throw here (or in checkAuth/getPasskeyOptions) fell
+                // through to the outer handler's HTML error page, and the browser
+                // reported it as the opaque "JSON.parse: unexpected character at
+                // line 1 column 1" rather than anything actionable.
+                try {
+                    const type = parsedurl.searchParams.get('type') || 'register';
+                    let discordID;
+                    if (type === 'login') {
+                        // For login, we need to lookup discordID by username first
+                        const username = parsedurl.searchParams.get('username');
+                        const user = auth.querySingle(
+                            'SELECT discordID FROM users WHERE username = ?',
+                            [username]
+                        );
 
-                    discordID = user ? user.discordID : null;
-                } else {
-                    discordID = await auth.checkAuth(req, res, true);
-                }
+                        discordID = user ? user.discordID : null;
+                    } else {
+                        discordID = await auth.checkAuth(req, res, true);
+                    }
 
-                if (discordID || type === 'login') {
-                    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
-                    const rpId = host.split(':')[0];
-                    const options = auth.getPasskeyOptions(discordID, type, rpId);
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(options));
-                } else {
-                    res.writeHead(401, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'User not found or not authenticated' }));
+                    if (discordID || type === 'login') {
+                        const host =
+                            req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
+                        const rpId = host.split(':')[0];
+                        const options = auth.getPasskeyOptions(discordID, type, rpId);
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify(options));
+                    } else {
+                        res.writeHead(401, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: 'User not found or not authenticated' }));
+                    }
+                } catch (err) {
+                    // Real cause goes to the server log; the client gets a clean
+                    // JSON error it can show instead of a parse failure.
+                    console.error('passkey options error:', err);
+                    if (!res.headersSent) {
+                        res.writeHead(500, { 'Content-Type': 'application/json' });
+                        res.end(
+                            JSON.stringify({
+                                error: 'Could not create passkey options. Please try again.',
+                            })
+                        );
+                    }
                 }
+            } else {
+                // Any other /passkey/* GET is unknown — still answer with JSON,
+                // since only JS ever hits these paths.
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Unknown passkey endpoint' }));
             }
             break;
         }

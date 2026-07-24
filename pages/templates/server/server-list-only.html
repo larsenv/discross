@@ -49,10 +49,20 @@
                   return fetch('/passkey/options');
               })
               .then(function(response) {
-                  return response.json();
+                  return response.json().catch(function() {
+                      // Non-JSON body (e.g. an HTML error page): surface the
+                      // status instead of a cryptic "unexpected character" parse
+                      // error from farther down the chain.
+                      throw new Error("Server returned an unexpected response (" + response.status + ").");
+                  });
               })
               .then(function(options) {
                   console.log("Registering passkey with options:", options);
+                  // A JSON error object from the server has no challenge/user, so
+                  // report its message rather than crashing on options.user.id.
+                  if (!options || options.error || !options.challenge || !options.user) {
+                      throw new Error((options && options.error) || "Could not start passkey registration.");
+                  }
                   options.challenge = new window.Uint8Array(options.challenge);
                   options.user.id = new window.Uint8Array(options.user.id);
 
