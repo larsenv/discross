@@ -780,6 +780,19 @@ textarea:focus {
 .server-br {
     display: none;
 }
+.server-rail hr {
+    width: 32px;
+    height: 2px;
+    border: none;
+    background-color: #35363c;
+    margin: 4px auto;
+}
+html.page-server .light-theme .server-rail hr {
+    background-color: #e3e5e8 !important;
+}
+html.page-server .amoled-theme .server-rail hr {
+    background-color: #1e1e21 !important;
+}
 .server-select-text {
     font-size: 1.5rem;
     color: #dddddd;
