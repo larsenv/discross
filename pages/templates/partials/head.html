@@ -17,6 +17,10 @@
       // the DSi does not — tagged with client-dsi.
       if (isDSi) document.documentElement.className += ' client-dsi';
     }
+    // Wii Internet Channel (Opera 9.x) — tag so Wii-specific CSS rules can target it.
+    if (ua.indexOf('Nintendo Wii') !== -1 && ua.indexOf('WiiU') === -1) {
+      document.documentElement.className += ' client-wii';
+    }
   })();
 </script>
 
