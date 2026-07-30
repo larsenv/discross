@@ -1943,8 +1943,8 @@ a.movie-tab-active {
     font-display: swap;
     font-family: 'rodin';
     src:
-        url('/css/RodinNTLGPro-DB-AlphaNum.woff2') format('woff2'),
-        url('/css/RodinNTLGPro-DB-AlphaNum.woff') format('woff');
+        url('/css/RodinNTLGPro-DB-Extended.woff2') format('woff2'),
+        url('/css/RodinNTLGPro-DB-Extended.woff') format('woff');
     font-weight: 400;
 }
 
@@ -1952,8 +1952,8 @@ a.movie-tab-active {
     font-display: swap;
     font-family: 'rodin';
     src:
-        url('/css/RodinNTLGPro-B-AlphaNum.woff2') format('woff2'),
-        url('/css/RodinNTLGPro-B-AlphaNum.woff') format('woff');
+        url('/css/RodinNTLGPro-B-Extended.woff2') format('woff2'),
+        url('/css/RodinNTLGPro-B-Extended.woff') format('woff');
     font-weight: 700;
 }
 /* Reset the global input sizing for page-food pages (food ordering).
