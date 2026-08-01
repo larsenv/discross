@@ -81,9 +81,14 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
         const pinnedResponse = await chnl.messages.fetchPins();
         const pinnedMessages = pinnedResponse.items.map((pin) => pin.message);
 
+        let emptyPinnedMessageHtml = getTemplate('no-pinned-messages', 'message');
+        if (Math.random() < 0.1) {
+            emptyPinnedMessageHtml = getTemplate('no-pinned-messages-banana', 'message');
+        }
+
         const messagesHtml =
             pinnedMessages.length === 0
-                ? getTemplate('no-pinned-messages', 'message')
+                ? emptyPinnedMessageHtml
                 : await buildMessagesHtml({
                       bot,
                       chnl,

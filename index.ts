@@ -783,6 +783,10 @@ async function handleGet(req, res) {
         case 'foodProxy':
             await foodpage.foodProxy(req, res);
             break;
+        case 'snake':
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(getTemplate('snake', 'misc'));
+            break;
         case 'discord':
             // OAuth logic (remains inline for now due to complexity, but grouped in switch)
             await handleDiscordOAuth(req, res, parsedurl);
