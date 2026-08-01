@@ -22,6 +22,28 @@
       document.documentElement.className += ' client-wii';
     }
   })();
+
+  var _addKbdEvent = function(obj, type, fn) {
+    if (obj.addEventListener) {
+      obj.addEventListener(type, fn, false);
+    } else if (obj.attachEvent) {
+      obj.attachEvent('on' + type, fn);
+    } else {
+      var old = obj['on' + type];
+      obj['on' + type] = function() {
+        if (old) old.apply(this, arguments);
+        fn.apply(this, arguments);
+      };
+    }
+  };
+  _addKbdEvent(document, 'keydown', function(e) {
+    e = e || window.event;
+    if (e.keyCode === 191 && (e.ctrlKey || e.metaKey)) {
+      alert("Sorry. Discross Discross Revolution doesn't exist yet");
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    }
+  });
 </script>
 
 <!-- Mobile & Legacy Compatibility -->
