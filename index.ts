@@ -783,10 +783,19 @@ async function handleGet(req, res) {
         case 'foodProxy':
             await foodpage.foodProxy(req, res);
             break;
-        case 'snake':
+        case 'snake': {
+            const { renderTemplate, resolveTheme, generateSEOMetadata } = require('./pages/utils');
+            const theme = resolveTheme(req);
+            const pageTitle = 'Snake - Discross';
+            const finalHtml = renderTemplate(getTemplate('snake', 'misc'), {
+                WHITE_THEME_ENABLED: theme.themeClass,
+                PAGE_TITLE: pageTitle,
+                SEO_METADATA: generateSEOMetadata(req, { title: pageTitle, description: 'Play Snake' }),
+            });
             res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(getTemplate('snake', 'misc'));
+            res.end(finalHtml);
             break;
+        }
         case 'discord':
             // OAuth logic (remains inline for now due to complexity, but grouped in switch)
             await handleDiscordOAuth(req, res, parsedurl);
