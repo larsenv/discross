@@ -294,8 +294,8 @@ function classifyToppings(toppingDict, codeSet) {
         const item = toppingDict[code];
         if (!item) continue;
         const isSauce = sauceCodes.has(code) || (item.Tags || {}).Sauce;
-        if (isSauce) sauces.push({ code, name: item.Name || code });
-        else toppings.push({ code, name: item.Name || code });
+        if (isSauce) sauces.push({ code, name: item.name || code });
+        else toppings.push({ code, name: item.name || code });
     }
     return { sauces, toppings };
 }
