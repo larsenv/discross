@@ -271,6 +271,18 @@ pre code {
 .message:hover {
     background: rgba(4, 4, 5, 0.07);
 }
+.message-avatar-cell {
+    width: 40px;
+    padding-right: 12px;
+    padding-top: 2px;
+}
+.author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
 .message-author,
 .message-author-font {
     font-weight: 600;
@@ -2944,10 +2956,13 @@ html.client-new3ds #canvas-wrapper {
 }
 
 /* Absolute fallback for gallery items to ensure visibility */
-.gallery-item,
+.gallery-item {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
 .gallery-item a,
 .gallery-image {
-    display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
 }
@@ -3202,6 +3217,21 @@ html.client-dsi .message-author-cell,
 html.client-psp .message-author-cell {
     max-width: none !important;
     overflow: visible !important;
+}
+
+/* These clients have very little horizontal room (down to a couple hundred
+   px); drop the avatar column rather than fight it for space against the name. */
+html.client-3ds .message-avatar-cell,
+html.client-new3ds .message-avatar-cell,
+html.client-dsi .message-avatar-cell,
+html.client-psp .message-avatar-cell {
+    display: none !important;
+}
+
+@media screen and (max-width: 360px) {
+    .message-avatar-cell {
+        display: none;
+    }
 }
 
 html.client-3ds .message-meta-cell,

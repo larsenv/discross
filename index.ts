@@ -972,10 +972,8 @@ async function handleImageProxy(req, res, parsedurl, args) {
     } else {
         const urlObj = new URL(req.url, 'http://localhost');
         urlObj.searchParams.delete('full');
-        let imagePath = args[2] === 'emoji' ? urlObj.pathname.slice(18) : urlObj.pathname.slice(12);
-        if (args[2] === 'emoji') {
-            imagePath = imagePath.replace(/\.(png|gif)$/i, '.webp');
-        }
+        const imagePath =
+            args[2] === 'emoji' ? urlObj.pathname.slice(18) : urlObj.pathname.slice(12);
         const fullImageUrl = `https://cdn.discordapp.com/${args[2] === 'emoji' ? 'emojis' : 'attachments'}/${imagePath}${urlObj.search}`;
         await imageProxy(req, res, fullImageUrl, isFull);
     }
