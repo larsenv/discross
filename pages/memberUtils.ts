@@ -27,6 +27,25 @@ function getDisplayName(member, author) {
 }
 
 /**
+ * Get the URL of the avatar to show for a message: the per-server member
+ * avatar if the user set one, else their global Discord avatar, else the
+ * default avatar assigned to their account.
+ *
+ * @param {Object} member - Discord GuildMember object (may be null)
+ * @param {Object} author - Discord User object from message author
+ * @returns {string} Avatar image URL
+ */
+function getDisplayAvatarURL(member, author) {
+    if (member && typeof member.displayAvatarURL === 'function') {
+        return member.displayAvatarURL({ extension: 'png', size: 64 });
+    }
+    if (author && typeof author.displayAvatarURL === 'function') {
+        return author.displayAvatarURL({ extension: 'png', size: 64 });
+    }
+    return 'https://cdn.discordapp.com/embed/avatars/0.png';
+}
+
+/**
  * Get the member's highest role color or default to the provided fallback color.
  *
  * @param {Object} member - Discord GuildMember object (may be null)
@@ -113,6 +132,7 @@ async function ensureMemberData(message, guild, cache = null) {
 
 module.exports = {
     getDisplayName,
+    getDisplayAvatarURL,
     getMemberColor,
     ensureMemberData,
 };

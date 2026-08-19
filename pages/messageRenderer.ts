@@ -4,7 +4,12 @@ const escape = require('escape-html');
 const he = require('he');
 const { PermissionFlagsBits, MessageReferenceType, UserFlags } = require('discord');
 const { renderDiscordMarkdown } = require('./discordMarkdown');
-const { getDisplayName, getMemberColor, ensureMemberData } = require('./memberUtils');
+const {
+    getDisplayName,
+    getDisplayAvatarURL,
+    getMemberColor,
+    ensureMemberData,
+} = require('./memberUtils');
 const {
     getClientIP,
     getTimezoneFromIP,
@@ -1710,10 +1715,18 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
           ? buildInteractionIndicator(state.lastInteractionData, replyText, barColor)
           : '';
 
+    const authorAvatar =
+        state.imagesCookie === 1
+            ? render('channel/author-avatar', {
+                  AVATAR_URL: escape(getDisplayAvatarURL(state.lastmember, state.lastauthor)),
+              })
+            : '';
+
     return renderTemplate(afterForwarded, {
         '{$MESSAGE_AUTHOR}':
             formatAuthorName(getDisplayName(state.lastmember, state.lastauthor)) +
             buildAuthorPills(state),
+        '{$AUTHOR_AVATAR}': authorAvatar,
         '{$AUTHOR_COLOR}': authorColor,
         '{$REPLY_INDICATOR}': replyIndicator,
         '{$PING_INDICATOR}': '', // Placeholder for future ping visual effects
