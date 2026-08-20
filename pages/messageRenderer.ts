@@ -1703,7 +1703,10 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
     const authorColor = getMemberColor(state.lastmember, authorText);
 
     // If the group starts with a reply or was an interaction, build the top "indicator" bar.
-    const replyIndicator = state.lastReply
+    // It's rendered as its own full-width table row (rather than stacked inside the
+    // avatar's rowspan) so the avatar still lines up with the username row beneath it
+    // instead of being pulled up to the top of the indicator.
+    const indicatorContent = state.lastReply
         ? buildReplyIndicator(
               state.lastReplyData,
               replyText,
@@ -1714,6 +1717,10 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
         : state.lastInteraction
           ? buildInteractionIndicator(state.lastInteractionData, replyText, barColor)
           : '';
+
+    const replyIndicator = indicatorContent
+        ? render('channel/indicator-row', { CONTENT: indicatorContent })
+        : '';
 
     const authorAvatar =
         state.imagesCookie === 1
