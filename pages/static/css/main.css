@@ -811,6 +811,16 @@ html.page-server .amoled-theme .server-rail hr {
     font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
+/* The channel-list heading (e.g. a server's name) sat flush against the
+   channel list below it with only a single <br> of gap. Give it real
+   breathing room like Discord's server header, matching .server-select-text
+   above it. display:block is safe here since the source is a <b><font>
+   pair, not something a legacy engine depends on staying inline. */
+.server-name-header {
+    display: block;
+    margin-bottom: 12px;
+}
+
 /* Warning box (used in sync_warning embedded template) */
 .warning-box {
     background: #5865f2;
