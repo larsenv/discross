@@ -654,7 +654,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
                     const safeName = escape(p.Name || code);
                     const safePrice = escape(price.replace('$', '') || '0');
                     const safeStoreId = escape(storeId);
-                    const safeRedirect = escape(req.url);
+                    const safeRedirect = escape('/food/cart');
                     const inCart = cartQtyByProduct[code] || 0;
 
                     const actionHtml = (() => {
@@ -1037,7 +1037,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
                     form = strReplace(form, '{$CODE}', escape(productCode));
                     form = strReplace(form, '{$NAME}', escape(product.Name || productCode));
                     form = strReplace(form, '{$PRICE}', '0');
-                    form = strReplace(form, '{$REDIRECT}', escape(backUrl));
+                    form = strReplace(form, '{$REDIRECT}', escape('/food/cart'));
                     form = strReplace(form, '{$DEFAULT_OPTIONS}', '');
                     form = strReplace(form, '{$TOPPINGS_INFO_HTML}', '');
                     form = strReplace(form, '{$MARGIN_STYLE}', 'margin-top:8px');
@@ -1139,7 +1139,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
                     form = strReplace(form, '{$CODE}', escape(variantCode));
                     form = strReplace(form, '{$NAME}', vFullName);
                     form = strReplace(form, '{$PRICE}', vPrice.toFixed(2));
-                    form = strReplace(form, '{$REDIRECT}', escape(backUrl));
+                    form = strReplace(form, '{$REDIRECT}', escape('/food/cart'));
                     form = strReplace(form, '{$BACK_URL}', escape(backUrl));
                     form = strReplace(
                         form,
@@ -1682,9 +1682,8 @@ exports.handlePost = async function (bot, req, res, discordID, body) {
             !orderResult ||
             orderResult.status < 200 ||
             orderResult.status >= 300 ||
-            (orderResult.data?.Status !== 0 &&
-                orderResult.data?.Status !== 1 &&
-                !orderResult.data?.StatusItems?.some((s) => s.Code === 'Failure'))
+            (orderResult.data?.Status !== 0 && orderResult.data?.Status !== 1) ||
+            orderResult.data?.StatusItems?.some((s) => s.Code === 'Failure')
         ) {
             const msg =
                 orderResult?.data?.Order?.StatusItems?.find((s) => s.Message)?.Message ||
