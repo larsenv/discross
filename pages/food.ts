@@ -2,6 +2,7 @@
 const https = require('https');
 const escape = require('escape-html');
 const crypto = require('crypto');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 
 const auth = require('../src/authentication');
 const notFound = require('./notFound');
@@ -19,6 +20,13 @@ const AsyncLock = require('async-lock');
 const API_TIMEOUT_MS = 15000;
 const VERIFICATION_CODE_MIN = 100000;
 const VERIFICATION_CODE_MAX = 999999;
+
+// Domino's fronts its API with Akamai, which 403s requests from datacenter IPs
+// (our server is in a Hetzner datacenter, not a residential/US range). Routing
+// through a US-exit HTTP proxy avoids the block. Optional: unset to go direct.
+const DOMINOS_PROXY_AGENT = process.env.DOMINOS_PROXY_URL
+    ? new HttpsProxyAgent(process.env.DOMINOS_PROXY_URL)
+    : null;
 
 // =============================================================================
 // Helper functions
@@ -199,6 +207,7 @@ function dominosRequest(options, body) {
             'DPZ-Market': market,
             ...options.headers,
         };
+        if (DOMINOS_PROXY_AGENT) options.agent = DOMINOS_PROXY_AGENT;
 
         if (body) {
             Object.assign(options.headers, {
@@ -470,7 +479,16 @@ exports.handleGet = async function (bot, req, res, discordID) {
                         path: `/power/store-locator?type=Carryout&s=${encodeURIComponent(street)}&c=${encodeURIComponent(region)}`,
                         method: 'GET',
                     });
-                    return r.status >= 200 && r.status < 300 && r.data?.Stores ? r.data.Stores : [];
+                    if (r.status < 200 || r.status >= 300 || !r.data?.Stores) {
+                        console.error(
+                            'Dominos store-locator non-store response:',
+                            hostname,
+                            r.status,
+                            typeof r.data === 'string' ? r.data.slice(0, 500) : JSON.stringify(r.data).slice(0, 500)
+                        );
+                        return [];
+                    }
+                    return r.data.Stores;
                 };
                 let stores = await trySearch('order.dominos.com');
                 if (stores.length === 0) {

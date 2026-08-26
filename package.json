@@ -16,6 +16,7 @@
         "geoip-lite": "^2.0.3",
         "he": "^1.2.0",
         "highlight.js": "^11.11.1",
+        "https-proxy-agent": "^9.1.0",
         "ioredis": "^5.11.1",
         "markdown-it": "^14.1.0",
         "mime-types": "^3.0.1",
