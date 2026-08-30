@@ -38,10 +38,27 @@ if (guildMembersIntentEnabled) {
     intentsArray.push(Discord.GatewayIntentBits.GuildMembers);
 }
 
+// Without explicit cache limits, discord.js caches every user, member, channel,
+// and message it ever sees or fetches for the life of the process. Messages are
+// already tracked ourselves in msghistory (bounded, see above), so the built-in
+// message cache is disabled; members/users are capped with an eviction guard
+// that always keeps the bot's own member/user entries so permission checks
+// (e.g. channel.guild.members.me) keep working.
+const keepClientEntry = (value, key) => key === client.user?.id;
+
 const client = new Discord.Client({
     partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.Reaction],
     shards: 'auto',
     intents: intentsArray,
+    makeCache: Discord.Options.cacheWithLimits({
+        ...Discord.Options.DefaultMakeCacheSettings,
+        MessageManager: 0,
+        GuildMemberManager: { maxSize: 200, keepOverLimit: keepClientEntry },
+        UserManager: { maxSize: 200, keepOverLimit: keepClientEntry },
+        ReactionManager: 0,
+        ReactionUserManager: 0,
+        PresenceManager: 0,
+    }),
 });
 
 client.on('clientReady', async () => {
