@@ -651,7 +651,7 @@ async function backfillHistory(chnl, alreadyFetched) {
     }
 }
 
-exports.getHistoryCached = async function (chnl, desiredLimit) {
+exports.getHistoryCached = async function (chnl, desiredLimit, beforeId) {
     if (typeof chnl === 'string') {
         chnl =
             client.channels.cache.get(chnl) ||
@@ -660,6 +660,26 @@ exports.getHistoryCached = async function (chnl, desiredLimit) {
     if (!chnl || !chnl.id) {
         return [];
     }
+
+    if (beforeId) {
+        try {
+            const fetchLimit = desiredLimit != null ? desiredLimit + 1 : 26;
+            const messagearray = await chnl.messages.fetch({
+                limit: Math.min(fetchLimit, 100),
+                before: beforeId,
+            });
+            return Array.from(messagearray.values()).sort(
+                (messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp
+            );
+        } catch (err) {
+            console.error(
+                `Failed to fetch paginated messages for channel ${chnl.id} before ${beforeId}:`,
+                err
+            );
+            return [];
+        }
+    }
+
     if (!msghistory.has(chnl.id)) {
         try {
             // FIFO eviction for channels
@@ -672,7 +692,7 @@ exports.getHistoryCached = async function (chnl, desiredLimit) {
             // just going to slice off anyway. Discord.js will try to populate
             // member data automatically if available in cache.
             const initialLimit =
-                desiredLimit != null ? Math.min(desiredLimit, cachelength) : cachelength;
+                desiredLimit != null ? Math.min(desiredLimit + 1, cachelength) : cachelength;
             const messagearray = await chnl.messages.fetch({ limit: initialLimit });
             msghistory.set(
                 chnl.id,

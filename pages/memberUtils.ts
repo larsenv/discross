@@ -101,11 +101,23 @@ async function ensureMemberData(message, guild, cache = null) {
         return cache.get(cacheKey);
     }
 
-    // For regular (non-webhook) messages and application webhook messages, fetch from
-    // guild to get a fully-resolved member object with all roles populated (Discord.js
-    // serves this from its own member cache when available, so repeated calls are cheap).
+    // For regular (non-webhook) messages and application webhook messages, check
+    // guild cache and message.member first to avoid costly Discord API round-trips.
     if (!message.webhookId || isAppWebhook) {
         try {
+            const cachedMember = guild.members?.cache?.get(message.author.id);
+            if (cachedMember) {
+                if (cache) {
+                    cache.set(cacheKey, cachedMember);
+                }
+                return cachedMember;
+            }
+            if (message.member) {
+                if (cache) {
+                    cache.set(cacheKey, message.member);
+                }
+                return message.member;
+            }
             const member = await guild.members.fetch(message.author.id);
             if (cache) {
                 cache.set(cacheKey, member);

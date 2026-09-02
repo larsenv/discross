@@ -388,7 +388,7 @@ pre code {
     border-left: 4px solid #dc8d01;
     background: #30271f;
     margin-left: 0 !important;
-    padding-left: 12px;
+    padding-left: 8px !important;
 }
 .mention {
     color: #a9bbff;
@@ -743,13 +743,26 @@ textarea:focus {
 }
 .discross-button.secondary:hover {
     background: #5d6269;
-} /* ================================================================
+}
+.pagination-container {
+    text-align: center;
+    margin: 4px 0 12px 0;
+}
+.pagination-btn {
+    display: inline-block;
+    vertical-align: middle;
+}
+/* ================================================================
    15. SERVER PAGE COMPONENTS
    ================================================================ */
 
 .server-sidebar,
 .server-main {
     vertical-align: top;
+}
+.server-main {
+    padding-top: 0px;
+    padding-top: calc(var(--server-icon-gap, 4px) - 5px);
 }
 /* Server rail avatars, and the Home logo above them. The fixed px pair is the
    legacy fallback (and matches each img's width/height attributes); the calc()
@@ -1088,7 +1101,7 @@ body.light-theme,
     border-left-color: #9e5a01;
     background: #faf4eb;
     margin-left: 0 !important;
-    padding-left: 12px;
+    padding-left: 8px !important;
 }
 .light-theme a {
     color: #0067e0;
@@ -1255,7 +1268,7 @@ body.amoled-theme,
     border-left-color: #c97e01;
     background: #20160a;
     margin-left: 0 !important;
-    padding-left: 12px;
+    padding-left: 8px !important;
 }
 .amoled-theme pre,
 .amoled-theme code {
@@ -1541,6 +1554,16 @@ html.page-simple .amoled-theme #wrapper .discross-button.secondary:hover {
 }
 html.page-simple .amoled-theme #wrapper a:not(.discross-button) {
     color: #00aff4 !important;
+}
+html.page-simple #wrapper #passkey-login,
+html.page-simple #passkey-login {
+    background: #4f545c !important;
+    color: white !important;
+    margin: 12px 0 0 0 !important;
+}
+html.page-simple #wrapper #passkey-login:hover,
+html.page-simple #passkey-login:hover {
+    background: #5d6269 !important;
 }
 
 /* ================================================================
