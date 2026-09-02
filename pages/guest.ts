@@ -81,7 +81,9 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
         return notFound.serve404(req, res, 'Invalid channel.', '/', 'Back to Home');
     }
 
-    const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
+    const botMember =
+        chnl.guild.members.cache.get(bot.client.user.id) ||
+        (await chnl.guild.members.fetch(bot.client.user.id).catch(() => null));
     if (!botMember) {
         res.writeHead(503, { 'Content-Type': 'text/html' });
         res.end(getTemplate('not-in-server', 'misc'));
@@ -154,6 +156,7 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
             COLOR: boxColor,
             CHANNEL_NAME: escape(channelDisplayName),
         });
+        const urlBefore = parsedUrl.searchParams.get('before');
         const messagesHtml = await buildMessagesHtml({
             bot,
             chnl,
@@ -166,10 +169,11 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
             replyText,
             clientTimezone,
             channelId,
+            before: urlBefore,
         });
 
         const randomEmoji = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
-        const refreshUrl = `${channelId}?random=${Math.random()}#end`;
+        const refreshUrl = `${channelId}?random=${Math.random()}${urlBefore ? '&before=' + encodeURIComponent(urlBefore) : ''}${urlBefore ? '' : '#end'}`;
 
         const serverName = chnl.guild.name;
         const normalizedServerName = normalizeWeirdUnicode(serverName);

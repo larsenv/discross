@@ -74,8 +74,8 @@ const LEGACY_MESSAGE_LIMIT = 25;
 // more than truly memory-starved devices, but their browser engines bog down
 // well before the full cache. All use 50 for consistency.
 const MESSAGE_LIMIT_OVERRIDES = {
-    '3ds': 50,
-    wii: 50,
+    '3ds': 25,
+    wii: 25,
     new3ds: 50,
     ps3: 50,
     psvita: 50,
@@ -257,7 +257,11 @@ function hasNonTextContent(message) {
 }
 
 function isSameAuthor(member1, author1, member2, author2) {
-    if (member1 && member2) return member1.user.id === member2.user.id;
+    if (member1 && member2) {
+        const id1 = member1.user?.id || member1.id;
+        const id2 = member2.user?.id || member2.id;
+        if (id1 && id2) return id1 === id2;
+    }
     if (author1 && author2)
         return author1.id === author2.id && author1.username === author2.username;
     return false;
@@ -1382,7 +1386,9 @@ async function resolveReplyData(
     context
 ) {
     try {
-        const replyMessage = await item.fetchReference().catch(() => null);
+        const replyMessage =
+            (item.reference?.messageId && chnl.messages?.cache?.get(item.reference.messageId)) ||
+            (await item.fetchReference().catch(() => null));
 
         const replyUser = replyMessage?.author ?? item.mentions?.repliedUser;
 
@@ -1395,6 +1401,12 @@ async function resolveReplyData(
             if (!replyUser?.id) return undefined;
 
             if (memberCache.has(replyUser.id)) return memberCache.get(replyUser.id);
+
+            const cachedReplyMember = chnl.guild?.members?.cache?.get(replyUser.id);
+            if (cachedReplyMember) {
+                memberCache.set(replyUser.id, cachedReplyMember);
+                return cachedReplyMember;
+            }
 
             return chnl.guild.members
                 .fetch(replyUser.id)
@@ -1722,12 +1734,17 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
         ? render('channel/indicator-row', { CONTENT: indicatorContent })
         : '';
 
-    const authorAvatar =
-        state.imagesCookie === 1
-            ? render('channel/author-avatar', {
-                  AVATAR_URL: escape(getDisplayAvatarURL(state.lastmember, state.lastauthor)),
-              })
+    const rawAvatarUrl = getDisplayAvatarURL(state.lastmember, state.lastauthor);
+    const proxiedAvatarUrl =
+        rawAvatarUrl && state.imagesCookie === 1
+            ? `/imageProxy/external/${Buffer.from(rawAvatarUrl).toString('base64')}`
             : '';
+
+    const authorAvatar = proxiedAvatarUrl
+        ? render('channel/author-avatar', {
+              AVATAR_URL: escape(proxiedAvatarUrl),
+          })
+        : '';
 
     return renderTemplate(afterForwarded, {
         '{$MESSAGE_AUTHOR}':
@@ -1900,6 +1917,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         channelId,
         messages: overrideMessages,
         templates: overrideTemplates,
+        before,
+        sessionParam = '',
     } = params;
 
     // 1. Initialize templates. We use subfolders for organized template retrieval.
@@ -1921,20 +1940,40 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     };
 
     // For legacy/low-memory devices, we limit the number of messages rendered.
-    const uaClient = parseUserAgent(req.headers['user-agent']);
+    const uaClient = parseUserAgent(req?.headers?.['user-agent']);
     const messageLimit = uaClient
         ? (MESSAGE_LIMIT_OVERRIDES[uaClient.id] ??
           (uaClient.isLegacy ? LEGACY_MESSAGE_LIMIT : null))
         : null;
 
-    // 2. Fetch messages (or use override). On a cold cache, only fetch as many
-    // messages as this client is actually going to render, so the response
-    // isn't held up fetching messages that will just get sliced off below;
-    // the rest of the shared cache backfills in the background.
-    let messages = overrideMessages ?? (await bot.getHistoryCached(chnl, messageLimit));
+    const pageSize = messageLimit ?? 25;
 
-    if (messageLimit !== null) {
-        messages = messages.slice(-messageLimit);
+    // 2. Fetch messages (or use override).
+    let allFetched = overrideMessages ?? (await bot.getHistoryCached(chnl, pageSize, before));
+
+    let messages = allFetched;
+    let hasMore = false;
+    if (allFetched.length > pageSize) {
+        hasMore = true;
+        messages = allFetched.slice(-pageSize);
+    } else if (messageLimit !== null) {
+        messages = allFetched.slice(-messageLimit);
+    }
+
+    let paginationHtml = '';
+    if (hasMore && messages.length > 0 && channelId) {
+        const oldestId = messages[0].id;
+        const cleanSession = sessionParam
+            ? sessionParam.startsWith('?')
+                ? sessionParam.slice(1)
+                : sessionParam
+            : '';
+        const queryParams = new URLSearchParams(cleanSession);
+        queryParams.set('before', oldestId);
+        const loadMoreUrl = `/channels/${channelId}?${queryParams.toString()}`;
+        const jumpToPresentUrl = `/channels/${channelId}${cleanSession ? '?' + cleanSession : ''}#end`;
+
+        paginationHtml = `<div class="pagination-container" style="text-align: center; margin: 4px 0 12px 0;"><a href="${loadMoreUrl}" class="discross-button pagination-btn" style="display: inline-block; padding: 6px 16px; text-decoration: none; font-size: 14px; font-weight: 500;">Load More Messages</a>${before ? ` <a href="${jumpToPresentUrl}" class="discross-button secondary pagination-btn" style="display: inline-block; padding: 6px 16px; margin-left: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">Jump to Present</a>` : ''}</div>`;
     }
 
     // memberCache is used to avoid redundant Discord API calls for avatars/names within this render pass.
@@ -2216,7 +2255,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     // Cleanup anchors and add the final scrolling target.
     response = removeExistingEndAnchors(response);
     response += getTemplate('end-anchor', 'channel');
-    return response;
+    return paginationHtml + response;
 };
 
 // Shared with the reply page, which renders its own preview of the quoted

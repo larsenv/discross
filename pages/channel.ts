@@ -29,7 +29,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         urlTheme = parsedUrl.searchParams.get('theme'),
         urlImages = parsedUrl.searchParams.get('images'),
         urlEmoji = parsedUrl.searchParams.get('emoji'),
-        urlExpanded = parsedUrl.searchParams.get('expanded');
+        urlExpanded = parsedUrl.searchParams.get('expanded'),
+        urlBefore = parsedUrl.searchParams.get('before');
 
     const { images: cookieImages, whiteThemeCookie: cookieTheme } = parseCookies(req);
 
@@ -74,7 +75,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
     );
 
     try {
-        const botMember = await chnl.guild.members.fetch(bot.client.user.id).catch(() => null);
+        const botMember =
+            chnl.guild.members.cache.get(bot.client.user.id) ||
+            (await chnl.guild.members.fetch(bot.client.user.id).catch(() => null));
 
         if (!botMember) {
             res.writeHead(503, { 'Content-Type': 'text/html' });
@@ -82,7 +85,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             return;
         }
 
-        const member = await chnl.guild.members.fetch(discordID).catch(() => null);
+        const member =
+            chnl.guild.members.cache.get(discordID) ||
+            (await chnl.guild.members.fetch(discordID).catch(() => null));
 
         if (!member) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
@@ -203,14 +208,17 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             barColor,
             clientTimezone,
             channelId: args[2],
+            before: urlBefore,
+            sessionParam,
         });
 
         const refreshUrl =
             chnl.id +
             '?random=' +
             Math.random() +
+            (urlBefore ? '&before=' + encodeURIComponent(urlBefore) : '') +
             (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '') +
-            '#end';
+            (urlBefore ? '' : '#end');
 
         const final = renderTemplate(baseTemplate, {
             REFRESH_URL: refreshUrl,
