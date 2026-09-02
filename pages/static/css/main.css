@@ -762,7 +762,7 @@ textarea:focus {
 }
 .server-main {
     padding-top: 0px;
-    padding-top: calc(var(--server-icon-gap, 4px) - 5px);
+    padding-top: calc(var(--server-icon-gap, 4px) + 1px);
 }
 /* Server rail avatars, and the Home logo above them. The fixed px pair is the
    legacy fallback (and matches each img's width/height attributes); the calc()
@@ -824,14 +824,24 @@ html.page-server .amoled-theme .server-rail hr {
     font-family: 'rodin', Arial, Helvetica, sans-serif;
 }
 
-/* The channel-list heading (e.g. a server's name) sat flush against the
-   channel list below it with only a single <br> of gap. Give it real
-   breathing room like Discord's server header, matching .server-select-text
-   above it. display:block is safe here since the source is a <b><font>
-   pair, not something a legacy engine depends on staying inline. */
+/* The channel-list heading (e.g. a server's name). display:block is safe here
+   since the source is a <b><font> pair, not something a legacy engine depends
+   on staying inline. Tight margin because the first category already has its
+   own top padding (padding-top: 1.1em via .channel-list-category). The trailing
+   <br class="channel-br"> is already hidden by the .channel-br rule above in
+   @supports blocks, so legacy engines keep the natural line-break spacing. */
 .server-name-header {
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
+}
+
+/* Select a Server heading — nudge up so its top edge is flush with the
+   Home logo's top edge (mirrors what .server-name-header achieves for the
+   server-name case). The value is a best-fit against the heading's natural
+   top margin in modern browsers; legacy engines ignore it and keep the
+   original block flow. */
+.server-select-text {
+    margin-top: -3px;
 }
 
 /* Warning box (used in sync_warning embedded template) */
