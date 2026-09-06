@@ -134,7 +134,10 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
             const userAgentStr = req.headers['user-agent'];
 
             // Reverted to plain content sending by default
-            const finalMessage = replyInfo + resolvedMsg;
+            // Cap at 2000 characters (Discord max message length)
+            const rawMessage = replyInfo + resolvedMsg;
+            const finalMessage =
+                rawMessage.length > 2000 ? rawMessage.substring(0, 2000) : rawMessage;
 
             const sendOptions = {
                 content: finalMessage,

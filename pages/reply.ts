@@ -101,7 +101,11 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
                 .then((m) => m.displayName || m.user.username)
                 .catch(() => reply_message.author.username);
 
-            const processedmessage = `> Replying to ${reply_message_content} from ${author_name}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${resolvedMsg}`;
+            const rawProcessedMessage = `> Replying to ${reply_message_content} from ${author_name}: [jump](https://discord.com/channels/${channel.guild.id}/${channel.id}/${reply_message.id})\n${resolvedMsg}`;
+            const processedmessage =
+                rawProcessedMessage.length > 2000
+                    ? rawProcessedMessage.substring(0, 2000)
+                    : rawProcessedMessage;
 
             const sendOptions: any = {
                 content: processedmessage,

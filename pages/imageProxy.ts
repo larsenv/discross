@@ -193,6 +193,14 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
             proxyRes
                 .on('end', async () => {
                     const buffer = Buffer.concat(chunks);
+                    if (!buffer || buffer.length === 0) {
+                        res.writeHead(200, {
+                            'Content-Type': 'image/gif',
+                            'Content-Length': EMPTY_GIF.length,
+                        });
+                        res.end(EMPTY_GIF);
+                        return;
+                    }
                     try {
                         let processedBuffer;
                         if (fullSize) {
