@@ -50,6 +50,15 @@ const client = new Discord.Client({
     partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.Reaction],
     shards: 'auto',
     intents: intentsArray,
+    presence: {
+        activities: [
+            {
+                name: 'Custom Status',
+                type: Discord.ActivityType.Custom,
+                state: 'https://discross.net/',
+            },
+        ],
+    },
     makeCache: Discord.Options.cacheWithLimits({
         ...Discord.Options.DefaultMakeCacheSettings,
         MessageManager: 0,
@@ -63,6 +72,15 @@ const client = new Discord.Client({
 
 client.on('clientReady', async () => {
     console.info(`Logged in as ${client.user.tag}!`);
+    client.user?.setPresence({
+        activities: [
+            {
+                name: 'Custom Status',
+                type: Discord.ActivityType.Custom,
+                state: 'https://discross.net/',
+            },
+        ],
+    });
     try {
         await client.application.commands.set([
             {
