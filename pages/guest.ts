@@ -20,7 +20,12 @@ const {
     getTemplate,
     generateSEOMetadata,
 } = require('./utils');
-const { generateCaptcha, verifyCaptcha } = require('./guestCaptcha');
+const {
+    generateCaptcha,
+    verifyCaptcha,
+    issueCaptchaPass,
+    verifyCaptchaPass,
+} = require('./guestCaptcha');
 
 const TEMPLATE_CHANNEL = loadAndRenderPageTemplate('channel', 'guest');
 const TEMPLATE_NAME = loadAndRenderPageTemplate('name', 'guest');
@@ -60,7 +65,9 @@ exports.processGuestName = async function processGuestName(req, res) {
         Location: `/channels/${channelId}`,
         'Set-Cookie': [
             `guest_name=${encodeURIComponent(name)}; path=/; expires=${expires}; HttpOnly; SameSite=Lax`,
-            `guest_captcha=passed; path=/; expires=${expires}; HttpOnly; SameSite=Lax`,
+            // Signed pass, not a static "passed" string — the send handler
+            // verifies the HMAC so the captcha can't be skipped by forging a cookie.
+            `guest_captcha=${encodeURIComponent(issueCaptchaPass())}; path=/; expires=${expires}; HttpOnly; SameSite=Lax`,
         ],
     });
     res.end();
@@ -100,10 +107,10 @@ exports.processGuestChannel = async function processGuestChannel(bot, req, res, 
     const parsedUrl = new URL(req.url, 'http://localhost');
     const cookies = parseCookies(req);
     const guestName = cookies.guest_name;
-    const guestCaptcha = cookies.guest_captcha;
+    const captchaPassed = verifyCaptchaPass(cookies.guest_captcha);
 
     // Show name & CAPTCHA entry page if no guest name set or captcha not solved
-    if (!guestName || guestCaptcha !== 'passed') {
+    if (!guestName || !captchaPassed) {
         const hasNameError = parsedUrl.searchParams.get('guest_name_error') === '1';
         const hasCaptchaError = parsedUrl.searchParams.get('guest_captcha_error') === '1';
         let errorHtml = '';

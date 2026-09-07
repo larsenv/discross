@@ -7,6 +7,7 @@ const { getOrCreateWebhook } = require('./webhookCache');
 const {
     isValidSnowflake,
     isBotReady,
+    isCrossSiteRequest,
     parseCookies,
     getBaseUrl,
     sanitizeGuestName,
@@ -14,8 +15,17 @@ const {
     getTemplate,
 } = require('./utils');
 const { checkAndMarkNonce } = require('./messageDedup');
+const { verifyCaptchaPass } = require('./guestCaptcha');
 
 exports.guestSend = async function guestSend(bot, req, res) {
+    // Reject cross-site initiated guest sends (CSRF): the guest_name /
+    // guest_captcha cookies are ambient, so a hostile page could otherwise post
+    // as a visitor who has a guest session in a guest-enabled channel.
+    if (isCrossSiteRequest(req)) {
+        res.writeHead(403, { 'Content-Type': 'text/html' });
+        res.end('Request blocked for security reasons.');
+        return;
+    }
     const parsedUrl = new URL(req.url, 'http://localhost');
     const channelId = parsedUrl.searchParams.get('channel');
     const rawMessage = parsedUrl.searchParams.get('message') || '';
@@ -39,8 +49,10 @@ exports.guestSend = async function guestSend(bot, req, res) {
         return;
     }
 
-    // Validate guest name and anti-spam captcha cookie
-    if (!guestName || cookies.guest_captcha !== 'passed') {
+    // Validate guest name and the signed anti-spam captcha pass. The cookie is
+    // HMAC-signed at issue time (see guestCaptcha.issueCaptchaPass), so a client
+    // can't skip the captcha by setting a static value by hand.
+    if (!guestName || !verifyCaptchaPass(cookies.guest_captcha)) {
         res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
         res.end();
         return;

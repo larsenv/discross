@@ -68,7 +68,44 @@ function verifyCaptcha(userAnswer, token) {
     return String(userAnswer).trim() === expectedAnswer;
 }
 
+// --- Signed "captcha passed" cookie ------------------------------------------
+// The guest send handler must not trust a plain "passed" string cookie: any
+// client can set that by hand and skip the captcha entirely. Instead, once the
+// captcha is solved we issue an HMAC-signed pass tied to a timestamp, and the
+// send handler verifies the signature (and freshness) before accepting a guest
+// message. Reuses CAPTCHA_SECRET, which is per-process.
+const PASS_TTL_MS = 12 * 60 * 60 * 1000; // a solved captcha is good for 12h
+
+function issueCaptchaPass() {
+    const timestamp = Date.now();
+    const sig = crypto
+        .createHmac('sha256', CAPTCHA_SECRET)
+        .update(`pass:${timestamp}`)
+        .digest('hex');
+    return `${timestamp}:${sig}`;
+}
+
+function verifyCaptchaPass(cookieValue) {
+    if (!cookieValue || typeof cookieValue !== 'string') return false;
+    const parts = cookieValue.split(':');
+    if (parts.length !== 2) return false;
+    const [timestampStr, providedSig] = parts;
+    const timestamp = parseInt(timestampStr, 10);
+    if (!Number.isFinite(timestamp)) return false;
+    if (Date.now() - timestamp > PASS_TTL_MS) return false;
+
+    const expectedSig = crypto
+        .createHmac('sha256', CAPTCHA_SECRET)
+        .update(`pass:${timestampStr}`)
+        .digest('hex');
+    const a = Buffer.from(providedSig, 'hex');
+    const b = Buffer.from(expectedSig, 'hex');
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 module.exports = {
     generateCaptcha,
     verifyCaptcha,
+    issueCaptchaPass,
+    verifyCaptchaPass,
 };

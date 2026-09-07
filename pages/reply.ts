@@ -5,6 +5,7 @@ const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
 const {
     isBotReady,
+    isCrossSiteRequest,
     resolveMentions,
     resolveNameMentions,
     mentionsToReadableText,
@@ -18,6 +19,12 @@ const {
 
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
     try {
+        // Reject cross-site initiated replies (CSRF); see isCrossSiteRequest.
+        if (isCrossSiteRequest(req)) {
+            res.writeHead(403, { 'Content-Type': 'text/html' });
+            res.end(render('misc/error-text', { MESSAGE: 'Request blocked for security reasons.' }));
+            return;
+        }
         const parsedurl = new URL(req.url, 'http://localhost');
         if (
             parsedurl.searchParams.get('message') !== null &&

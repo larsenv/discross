@@ -444,7 +444,11 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download, 
         } else {
             // Render a file download card for non-images or if images are disabled.
             const card = renderTemplate(tmpl_file_download, {
-                '{$FILE_NAME}': truncateFileName(attachment.name || 'file'),
+                // Escape the author-controlled filename: it is rendered straight
+                // into the card's HTML, so an attachment named like
+                // `x"><img src=x onerror=...>` would otherwise execute for every
+                // viewer of the channel (matches the audio branch above).
+                '{$FILE_NAME}': escape(truncateFileName(attachment.name || 'file')),
                 '{$FILE_SIZE}': formatFileSize(attachment.size || 0),
                 // Videos are not supported for inline playback yet, so they are just downloads.
                 '{$FILE_LINK}': url,

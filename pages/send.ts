@@ -7,6 +7,7 @@ const { getOrCreateWebhook } = require('./webhookCache');
 const {
     isValidSnowflake,
     isBotReady,
+    isCrossSiteRequest,
     getBaseUrl,
     resolveMentions,
     resolveNameMentions,
@@ -25,6 +26,18 @@ const { parseUserAgent } = require('./userAgentUtils');
 exports.sendMessage = async function sendMessage(bot, req, req_res, args, discordID) {
     const baseUrl = getBaseUrl(req);
     try {
+        // Reject cross-site initiated sends (CSRF): the Lax session cookie would
+        // otherwise let a hostile page make a logged-in user post on their behalf.
+        if (isCrossSiteRequest(req)) {
+            req_res.writeHead(403, { 'Content-Type': 'text/html' });
+            req_res.end(
+                render('misc/error-text', {
+                    MESSAGE: 'Request blocked for security reasons.',
+                })
+            );
+            return;
+        }
+
         const parsedurl = new URL(req.url, 'http://localhost');
         const query = Object.fromEntries(parsedurl.searchParams);
 

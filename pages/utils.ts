@@ -825,9 +825,39 @@ function render(path, data = {}) {
     return renderTemplate(getTemplate(name, finalFolder), data);
 }
 
+/**
+ * Cross-site (CSRF) guard for state-changing GET/POST endpoints.
+ *
+ * Session auth rides on a `SameSite=Lax` cookie, which browsers still attach to
+ * top-level cross-site navigations — so a link/redirect to an action URL like
+ * `/send?...` would otherwise let an attacker act as a logged-in victim. Modern
+ * browsers advertise the request initiator via `Sec-Fetch-Site`; a genuine
+ * cross-site initiator is the CSRF case and is rejected.
+ *
+ * Kept deliberately narrow to preserve legacy-console support:
+ *  - Legacy clients don't send `Sec-Fetch-Site` at all → allowed (can't tell).
+ *  - `same-origin` / `same-site` / `none` (typed URL, bookmark) → allowed.
+ *  - Requests authenticated by an explicit `?sessionID=` in the URL are a bearer
+ *    credential the attacker doesn't possess, not an ambient cookie, so they are
+ *    not a CSRF vector and are allowed regardless.
+ *
+ * @param {object} req - Node.js IncomingMessage.
+ * @returns {boolean} True if the request should be rejected as cross-site.
+ */
+function isCrossSiteRequest(req) {
+    try {
+        if (new URL(req.url, 'http://localhost').searchParams.get('sessionID')) return false;
+    } catch (e) {
+        // fall through — treat as no URL session
+    }
+    const site = req.headers && req.headers['sec-fetch-site'];
+    return site === 'cross-site';
+}
+
 module.exports = {
     getTemplate,
     renderTemplate,
+    isCrossSiteRequest,
     render,
     loadAndRenderPageTemplate,
     generateSEOMetadata,
