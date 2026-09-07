@@ -8,22 +8,25 @@ const Discord = require('discord');
 const escapeHtml = require('escape-html');
 const crypto = require('crypto');
 
-// Resend signs inbound webhooks with Svix. When a signing secret is configured
-// we verify the signature so that only Resend can trigger DMs to users; without
-// this, anyone who can POST to /api/inbound/mail could forge an email from any
-// sender to any registered prefix. Set RESEND_WEBHOOK_SECRET (the "whsec_..."
-// value from the Resend dashboard) to enable enforcement.
+// Resend signs inbound webhooks with Svix. We verify the signature so that only
+// Resend can trigger DMs to users; without this, anyone who can POST to
+// /api/inbound/mail could forge an email from any sender to any registered
+// prefix. Set RESEND_WEBHOOK_SECRET (the "whsec_..." value from the Resend
+// dashboard) to enable inbound mail.
 const WEBHOOK_SECRET = process.env.RESEND_WEBHOOK_SECRET || '';
 if (!WEBHOOK_SECRET) {
     console.warn(
-        'RESEND_WEBHOOK_SECRET is not set — inbound mail webhook signatures will NOT be verified.'
+        'RESEND_WEBHOOK_SECRET is not set — inbound mail webhook is DISABLED (all requests rejected). ' +
+            'Set it to the whsec_... value from the Resend dashboard to enable inbound mail.'
     );
 }
 
-// Verify a Svix-signed webhook. Returns true if the signature is valid (or if
-// no secret is configured, in which case verification is skipped with a warning).
+// Verify a Svix-signed webhook. Returns true only for a valid signature.
+// Fails closed: if no secret is configured, verification can never pass, so a
+// misconfiguration disables the endpoint rather than silently accepting forged
+// requests.
 function verifyWebhookSignature(req) {
-    if (!WEBHOOK_SECRET) return true; // enforcement disabled
+    if (!WEBHOOK_SECRET) return false; // fail closed — no secret means no trust
 
     const id = req.headers['svix-id'];
     const timestamp = req.headers['svix-timestamp'];
