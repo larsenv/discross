@@ -34,6 +34,30 @@ if (process.env.SENTRY_DSN) {
                 return null;
             }
 
+            // Ignore transient third-party upload provider (x0.at) 502 errors
+            if (message.includes('Upload failed with status 502') || message.includes('Error uploading to x0.at')) {
+                return null;
+            }
+
+            // Ignore expected Discord API rate limit responses
+            if (
+                message.includes('rate limited') ||
+                message.includes('limitate') ||
+                (error && error.status === 429) ||
+                (error && error.code === 20028)
+            ) {
+                return null;
+            }
+
+            // Ignore transient Discord connection timeouts
+            if (
+                (error && error.name === 'ConnectTimeoutError') ||
+                message.includes('Connect Timeout Error') ||
+                message.includes('getaddrinfo EAI_AGAIN discord.com')
+            ) {
+                return null;
+            }
+
             return event;
         },
     });
