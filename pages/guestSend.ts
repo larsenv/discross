@@ -10,6 +10,7 @@ const {
     parseCookies,
     getBaseUrl,
     sanitizeGuestName,
+    sanitizeWebhookUsername,
     getTemplate,
 } = require('./utils');
 const { checkAndMarkNonce } = require('./messageDedup');
@@ -78,7 +79,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
 
         const sendOptions = {
             content: processedMessage,
-            username: normalizeWeirdUnicode(guestName) + ' (guest)',
+            username: sanitizeWebhookUsername((guestName || 'Guest') + ' (guest)'),
             avatarURL: avatarURL,
             // Guests are unauthenticated, so block ALL pings (users, roles,
             // @everyone/@here). (`disableEveryone` was the discord.js v11 option

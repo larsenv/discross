@@ -6,7 +6,7 @@ const { parseUserAgent } = require('./userAgentUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const discord = require('discord');
 
-const { getTemplate, renderTemplate, render } = require('./utils');
+const { getTemplate, renderTemplate, render, sanitizeWebhookUsername } = require('./utils');
 
 exports.sendMeta = async function (bot, req, res, channelId) {
     const discordID = await auth.checkAuth(req, res);
@@ -55,7 +55,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
         const footerText = client ? `Sent from ${client.name}` : 'Sent using Discross';
 
         const payload = {
-            username: normalizeWeirdUnicode(member.displayName || member.user.tag),
+            username: sanitizeWebhookUsername(member.displayName || member.user.tag),
             avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
             embeds: [
                 {

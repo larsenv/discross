@@ -10,6 +10,7 @@ const {
     mentionsToReadableText,
     buildAllowedMentions,
     canMentionEveryoneIn,
+    sanitizeWebhookUsername,
     getTemplate,
     renderTemplate,
     render,
@@ -109,7 +110,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
             const sendOptions: any = {
                 content: processedmessage,
-                username: member.displayName || member.user.tag,
+                username: sanitizeWebhookUsername(member.displayName || member.user.tag),
                 avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
                 // Webhooks bypass the member's own mention permissions, so every
                 // ping is re-checked against what this member could do natively.
