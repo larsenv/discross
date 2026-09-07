@@ -5,7 +5,7 @@ const bot = require('../src/bot');
 const discord = require('discord');
 const auth = require('../src/authentication');
 const { formidable } = require('formidable');
-const { isBotReady, getTemplate, renderTemplate, render } = require('./utils');
+const { isBotReady, getTemplate, renderTemplate, render, sanitizeWebhookUsername } = require('./utils');
 const { getOrCreateWebhook } = require('./webhookCache');
 const mime = require('mime-types');
 
@@ -340,7 +340,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         // Send message with just the x0.at URL as a link
                         const sendOptions: any = {
                             content: transferUrl,
-                            username: member.displayName || member.user.tag,
+                            username: sanitizeWebhookUsername(member.displayName || member.user.tag),
                             avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
                         };
                         if (channel.isThread()) {

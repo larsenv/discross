@@ -638,6 +638,35 @@ function mentionsToReadableText(text, guild) {
 }
 
 /**
+ * Sanitizes a username for Discord webhooks.
+ * Discord webhooks reject usernames containing substrings like "wumpus", "discord", "clyde"
+ * (case-insensitive) with error 50035 USERNAME_INVALID_CONTAINS.
+ * They also require length between 1 and 80 characters.
+ *
+ * @param {string} raw - The raw username/display name.
+ * @returns {string} Sanitized username acceptable to Discord webhook API.
+ */
+function sanitizeWebhookUsername(raw) {
+    const { normalizeWeirdUnicode } = require('./unicodeUtils');
+    let name = normalizeWeirdUnicode(raw || '').trim();
+
+    // Replace prohibited substrings (case-insensitive) that Discord disallows in webhook usernames
+    name = name
+        .replace(/wumpus/gi, 'wump')
+        .replace(/discord/gi, 'discr')
+        .replace(/clyde/gi, 'clyd');
+
+    name = name.trim();
+    if (!name) {
+        name = 'User';
+    }
+    if (name.length > 80) {
+        name = name.slice(0, 80).trim();
+    }
+    return name;
+}
+
+/**
  * Builds the `allowedMentions` payload for a webhook send.
  *
  * Webhooks bypass the sending member's own permissions, so every ping a message
@@ -815,6 +844,7 @@ module.exports = {
     buildEmojiToggleUrl,
     buildEmojiExpandUrl,
     sanitizeGuestName,
+    sanitizeWebhookUsername,
     resolveMentions,
     resolveNameMentions,
     mentionsToReadableText,

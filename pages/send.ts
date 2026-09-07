@@ -13,6 +13,7 @@ const {
     mentionsToReadableText,
     buildAllowedMentions,
     canMentionEveryoneIn,
+    sanitizeWebhookUsername,
     renderTemplate,
     render,
     getTemplate,
@@ -141,7 +142,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
 
             const sendOptions = {
                 content: finalMessage,
-                username: normalizeWeirdUnicode(member.displayName || member.user.tag),
+                username: sanitizeWebhookUsername(member.displayName || member.user.tag),
                 avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
                 // Webhooks bypass the member's own mention permissions, so every
                 // ping is re-checked against what this member could do natively.

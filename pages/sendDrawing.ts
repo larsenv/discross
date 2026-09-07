@@ -9,6 +9,7 @@ const {
     resolveNameMentions,
     buildAllowedMentions,
     canMentionEveryoneIn,
+    sanitizeWebhookUsername,
     getTemplate,
     renderTemplate,
     render,
@@ -203,7 +204,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
 
         // Discord.js requires Buffer for attachments
         const webhookOptions = {
-            username: member.displayName || member.user.tag,
+            username: sanitizeWebhookUsername(member.displayName || member.user.tag),
             avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
             // Webhooks bypass the member's own mention permissions, so the pings
             // in the optional caption are re-checked against this member's own.
