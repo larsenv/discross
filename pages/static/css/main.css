@@ -2291,7 +2291,13 @@ input[type='radio']:checked + .food-tip-btn {
     margin-bottom: 20px;
 }
 
-/* Use anchor-specific selectors so the global "a { color: #00aff4 }" doesn't win */
+/* Use anchor-specific selectors so the global "a { color: #00aff4 }" (and the
+   theme overrides that also !important the color) don't win */
+a.food-nav-link,
+.food-nav-link {
+    color: #dddddd !important;
+}
+
 a.food-tab,
 .food-tab {
     display: inline-block;
