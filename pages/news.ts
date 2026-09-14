@@ -116,6 +116,88 @@ async function fetchHtml(url) {
     return response.text();
 }
 
+// AP News mobile GraphQL API - far more reliable for fetching article bodies
+// and thumbnails than scraping the rendered HTML, since AP frequently changes
+// its page markup but keeps this persisted-query API stable.
+const GRAPHQL_BASE = 'https://apnews.com/graphql/delivery/ap/v1';
+const STORY_QUERY_HASH = 'd61508dd5f8c1d84fa6d49338e321266f56b4538c07c233564bb11300287d69c';
+
+async function fetchStoryGraphQL(articlePath) {
+    const url = new URL(GRAPHQL_BASE);
+    url.searchParams.set('operationName', 'StoryQuery');
+    url.searchParams.set('variables', JSON.stringify({ path: articlePath }));
+    url.searchParams.set(
+        'extensions',
+        JSON.stringify({ persistedQuery: { version: 1, sha256Hash: STORY_QUERY_HASH } })
+    );
+
+    const response = await fetch(url.toString(), {
+        headers: {
+            'User-Agent': BROWSER_UA,
+            Accept: 'application/json',
+        },
+    });
+    if (!response.ok) {
+        const err = new Error(`HTTP ${response.status} fetching ${url}`);
+        err.statusCode = response.status;
+        throw err;
+    }
+    return response.json();
+}
+
+// Reconstruct usable HTML from the storyBody parts returned by the GraphQL API.
+function reconstructStoryHtml(storyBody) {
+    let html = '';
+    for (const part of storyBody || []) {
+        if (part.__typename === 'HtmlString') {
+            html += part.html || '';
+        } else if (part.__typename === 'LinkEnhancement') {
+            html += (part.body || []).join('');
+        }
+        // Other parts (video players, ads, etc) are intentionally skipped.
+    }
+    return html;
+}
+
+function extractURLFromImageMap(imageMap) {
+    if (!imageMap || imageMap.__typename !== 'Map') return '';
+    for (const entry of imageMap.entries || []) {
+        if (entry.__typename === 'MapEntry' && entry.key === 'src') return entry.value;
+    }
+    return '';
+}
+
+function extractGalleryImage(gallery) {
+    for (const item of gallery || []) {
+        if (item.__typename !== 'Carousel') continue;
+        for (const slide of item.slides || []) {
+            if (slide.__typename !== 'GallerySlide') continue;
+            const caption = (slide.caption || []).find((c) => c) || '';
+            for (const media of slide.media || []) {
+                if (media.__typename !== 'Image') continue;
+                const url = extractURLFromImageMap(media.image);
+                if (url) return { caption, url };
+            }
+        }
+    }
+    return null;
+}
+
+function extractLeadImage(storyLead) {
+    for (const item of storyLead || []) {
+        if (item.__typename !== 'Figure') continue;
+        const url = extractURLFromImageMap(item.image);
+        if (url) return { caption: item.alt || '', url };
+    }
+    return null;
+}
+
+// Prefer the blended gallery image (as AP does for stories with a lead
+// gallery), falling back to the story's lead figure.
+function extractStoryThumbnail(storyPage) {
+    return extractGalleryImage(storyPage.blendedGallery) || extractLeadImage(storyPage.storyLead);
+}
+
 // AP News image src regex: matches src="https://dims.apnews.com/..." or assets.apnews.com
 // Uses negative lookahead (?!set) to avoid matching srcset attributes.
 const AP_IMG_SRC_RE = /\bsrc(?!set)="(https?:\/\/(?:dims|assets)\.apnews\.com\/[^"]+)"/i;
@@ -288,8 +370,10 @@ function extractStoryBody(html) {
 
 // Parse an AP News article HTML page.
 // Extracts headline/author/date from JSON-LD, with a GTM dataLayer fallback.
-// Body text and inline images come from div.RichTextStoryBody only.
-function parseArticlePage(html, showImages) {
+// `bodyHtml`/`thumbnail` come from the GraphQL API when available (see
+// fetchStoryGraphQL); when they aren't, body text and inline images fall
+// back to scraping div.RichTextStoryBody from the rendered page.
+function parseArticlePage(html, showImages, bodyHtml, thumbnail) {
     let headline = '',
         bylines = '',
         date = null;
@@ -337,44 +421,62 @@ function parseArticlePage(html, showImages) {
         }
     }
 
-    // Extract article body — ONLY what's inside div.RichTextStoryBody
-    const body = extractStoryBody(html);
+    // Prefer the body reconstructed from the GraphQL API; fall back to
+    // scraping div.RichTextStoryBody if that wasn't available.
+    const body = bodyHtml || extractStoryBody(html);
 
     const leadImageHtml =
-        body && showImages
+        showImages && thumbnail && thumbnail.url
             ? (() => {
-                  const imgTagRe = /<img(\s[^>]*)>/gi;
-                  let imgMatch;
-                  while ((imgMatch = imgTagRe.exec(body)) !== null) {
-                      const srcMatch = imgMatch[0].match(AP_IMG_SRC_RE);
-                      if (!srcMatch) continue;
-                      const imgUrl = srcMatch[1];
-                      const proxied = proxyImageUrl(imgUrl);
-                      const tagEnd = imgMatch.index + imgMatch[0].length;
-                      const searchStart = Math.max(0, imgMatch.index - 3000);
-                      const nearby = body.slice(searchStart, tagEnd + 5000);
-                      const captionMatch = nearby.match(
-                          /<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i
-                      );
-                      const caption = captionMatch
-                          ? escapeContent(stripHtml(captionMatch[1]), showImages)
-                          : '';
-                      return (
-                          render('news/news-article-image', {
-                              PROXIED_URL: proxied,
-                              ALT_TEXT: '', // alt is empty here, as in the original
-                              CAPTION_HTML: caption
-                                  ? render('news/caption', {
-                                        CLASS: 'news-article-caption',
-                                        CAPTION: caption,
-                                    })
-                                  : '',
-                          }) + '\n'
-                      );
-                  }
-                  return '';
+                  const proxied = proxyImageUrl(thumbnail.url);
+                  const caption = escapeContent(stripHtml(thumbnail.caption || ''), showImages);
+                  return (
+                      render('news/news-article-image', {
+                          PROXIED_URL: proxied,
+                          ALT_TEXT: '',
+                          CAPTION_HTML: caption
+                              ? render('news/caption', {
+                                    CLASS: 'news-article-caption',
+                                    CAPTION: caption,
+                                })
+                              : '',
+                      }) + '\n'
+                  );
               })()
-            : '';
+            : body && showImages
+              ? (() => {
+                    const imgTagRe = /<img(\s[^>]*)>/gi;
+                    let imgMatch;
+                    while ((imgMatch = imgTagRe.exec(body)) !== null) {
+                        const srcMatch = imgMatch[0].match(AP_IMG_SRC_RE);
+                        if (!srcMatch) continue;
+                        const imgUrl = srcMatch[1];
+                        const proxied = proxyImageUrl(imgUrl);
+                        const tagEnd = imgMatch.index + imgMatch[0].length;
+                        const searchStart = Math.max(0, imgMatch.index - 3000);
+                        const nearby = body.slice(searchStart, tagEnd + 5000);
+                        const captionMatch = nearby.match(
+                            /<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i
+                        );
+                        const caption = captionMatch
+                            ? escapeContent(stripHtml(captionMatch[1]), showImages)
+                            : '';
+                        return (
+                            render('news/news-article-image', {
+                                PROXIED_URL: proxied,
+                                ALT_TEXT: '', // alt is empty here, as in the original
+                                CAPTION_HTML: caption
+                                    ? render('news/caption', {
+                                          CLASS: 'news-article-caption',
+                                          CAPTION: caption,
+                                      })
+                                    : '',
+                            }) + '\n'
+                        );
+                    }
+                    return '';
+                })()
+              : '';
 
     const contentHtml = (() => {
         if (!body) return getTemplate('news-article-text-error', 'news');
@@ -482,10 +584,23 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     const articleUrl = `${AP_BASE}/article/${articleSlug}`;
 
     try {
-        const html = await fetchHtml(articleUrl);
+        const [html, storyGraphQL] = await Promise.all([
+            fetchHtml(articleUrl),
+            fetchStoryGraphQL(`/article/${articleSlug}`).catch((err) => {
+                console.warn('AP News GraphQL story error:', err.message || err);
+                return null;
+            }),
+        ]);
+
+        const storyPage = storyGraphQL?.data?.StoryPage;
+        const bodyHtml = storyPage ? reconstructStoryHtml(storyPage.storyBody) : '';
+        const thumbnail = storyPage ? extractStoryThumbnail(storyPage) : null;
+
         const { headline, bylines, date, leadImageHtml, contentHtml } = parseArticlePage(
             html,
-            imagesCookie !== 0
+            imagesCookie !== 0,
+            bodyHtml,
+            thumbnail
         );
 
         const headlineEscaped = escapeContent(headline || 'Untitled', imagesCookie !== 0);
