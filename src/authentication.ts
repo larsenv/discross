@@ -980,6 +980,18 @@ exports.addMailBlock = function (discordID, blocked_email) {
     }
 };
 
+exports.removeMailBlock = function (discordID, blocked_email) {
+    try {
+        queryRun('DELETE FROM mail_blocks WHERE discordID=? AND blocked_email=?', [
+            discordID,
+            blocked_email.toLowerCase(),
+        ]);
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+};
+
 exports.isMailBlocked = function (discordID, checkEmail) {
     const match = querySingle('SELECT 1 FROM mail_blocks WHERE discordID=? AND blocked_email=?', [
         discordID,
