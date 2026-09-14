@@ -159,10 +159,14 @@ function reconstructStoryHtml(storyBody) {
     return html;
 }
 
+// __typename discriminators ("Map"/"MapEntry") are only present on some
+// persisted queries (e.g. StoryQuery) and absent on others (e.g.
+// ContentPageQuery's hub listing), so match on the `key`/`entries` shape
+// itself rather than requiring __typename.
 function extractURLFromImageMap(imageMap) {
-    if (!imageMap || imageMap.__typename !== 'Map') return '';
+    if (!imageMap) return '';
     for (const entry of imageMap.entries || []) {
-        if (entry.__typename === 'MapEntry' && entry.key === 'src') return entry.value;
+        if (entry.key === 'src') return entry.value;
     }
     return '';
 }
@@ -241,89 +245,79 @@ function extractDivContent(html, contentStart) {
     return html.slice(contentStart, i);
 }
 
-// Scrape the AP News hub HTML page for feed items.
-// Mirrors the approach used by RSSHub topics.ts but also extracts images.
-function parseHubHtml(html) {
-    const itemsMap = new Map();
-    const PROMO_OPEN_RE = /<div[^>]+class="[^"]*\bPagePromo[^"]*"[^>]*>/gi;
-    let m;
+// Fetch the AP News hub listing from the mobile GraphQL API. AP now returns
+// 403 for direct HTML fetches of hub pages from server IPs, so this replaces
+// the previous HTML scrape entirely.
+const CONTENT_PAGE_QUERY_HASH = '3bc305abbf62e9e632403a74cc86dc1cba51156d2313f09b3779efec51fc3acb';
 
-    while ((m = PROMO_OPEN_RE.exec(html)) !== null) {
-        const contentStart = m.index + m[0].length;
-        const block = extractDivContent(html, contentStart);
-        PROMO_OPEN_RE.lastIndex = contentStart + block.length;
+async function fetchHubGraphQL(hubPath) {
+    const url = new URL(GRAPHQL_BASE);
+    url.searchParams.set('operationName', 'ContentPageQuery');
+    url.searchParams.set('variables', JSON.stringify({ path: hubPath }));
+    url.searchParams.set(
+        'extensions',
+        JSON.stringify({ persistedQuery: { version: 1, sha256Hash: CONTENT_PAGE_QUERY_HASH } })
+    );
 
-        const urlMatch = block.match(/href="((?:https:\/\/apnews\.com)?\/article\/[^"#]+)"/i);
-        if (!urlMatch) continue;
-
-        const url = urlMatch[1].startsWith('http') ? urlMatch[1] : `${AP_BASE}${urlMatch[1]}`;
-        if (!itemsMap.has(url)) {
-            itemsMap.set(url, {
-                url,
-                title: '',
-                publishDateStamp: 0,
-                imageUrl: null,
-                imageAlt: '',
-                imageCaption: '',
-            });
-        }
-        const item = itemsMap.get(url);
-
-        const ariaMatch = block.match(/aria-label="([^"]+)"/i);
-        const spanMatch = block.match(
-            /<span[^>]+class="[^"]*PagePromoContentIcons-text[^"]*"[^>]*>([\s\S]*?)<\/span>/i
-        );
-        const candidateTitle = ariaMatch
-            ? stripHtml(ariaMatch[1]).trim()
-            : spanMatch
-              ? stripHtml(spanMatch[1]).trim()
-              : null;
-        if (
-            candidateTitle &&
-            !candidateTitle.includes('AP Photo') &&
-            (!item.title || candidateTitle.length > item.title.length)
-        ) {
-            item.title = candidateTitle;
-        }
-
-        const tsMatch = m[0].match(/data-posted-date-timestamp="(\d+)"/);
-        if (tsMatch) {
-            const ts = parseInt(tsMatch[1], 10);
-            if (ts > item.publishDateStamp) item.publishDateStamp = ts;
-        }
-
-        const imgMatch = block.match(AP_IMG_SRC_RE);
-        if (imgMatch && !item.imageUrl) {
-            item.imageUrl = imgMatch[1];
-            const altMatch = block.match(/<img[^>]+alt="([^"]*)"[^>]*>/i);
-            item.imageAlt = altMatch ? altMatch[1] : item.title;
-            const captionMatch = block.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i);
-            item.imageCaption = captionMatch ? stripHtml(captionMatch[1]) : '';
-        }
+    const response = await fetch(url.toString(), {
+        headers: {
+            'User-Agent': BROWSER_UA,
+            Accept: 'application/json',
+        },
+    });
+    if (!response.ok) {
+        const err = new Error(`HTTP ${response.status} fetching ${url}`);
+        err.statusCode = response.status;
+        throw err;
     }
-
-    return Array.from(itemsMap.values()).filter((i) => i.title);
+    return response.json();
 }
 
-// Extract the article slug from an AP News article URL
-function articleUrlToSlug(url) {
-    if (!url) return null;
-    try {
-        const parsed = new URL(url, AP_BASE);
-        const parts = parsed.pathname.split('/').filter(Boolean);
-        if (parts[0] === 'article' && parts[1]) return parts[1];
-        return null;
-    } catch {
-        return null;
+// Parse the ContentPageQuery response into feed items, deduplicated by path.
+function parseHubGraphQL(data) {
+    const itemsMap = new Map();
+    const main = data?.data?.Screen?.main || [];
+
+    for (const block of main) {
+        if (block.__typename !== 'ColumnContainer') continue;
+        for (const column of block.columns || []) {
+            if (column.__typename !== 'PageListModule') continue;
+            for (const item of column.items || []) {
+                if (item.__typename !== 'PagePromo' || !item.title || !item.graphqlPath) continue;
+                if (itemsMap.has(item.graphqlPath)) continue;
+
+                const media = (item.media || [])[0];
+                const imageUrl = media ? extractURLFromImageMap(media.image) : '';
+
+                itemsMap.set(item.graphqlPath, {
+                    path: item.graphqlPath,
+                    title: item.title,
+                    publishDateStamp: item.publishDateStamp || 0,
+                    imageUrl,
+                    imageAlt: (media && media.alt) || item.title,
+                    imageCaption: '',
+                });
+            }
+        }
     }
+
+    return Array.from(itemsMap.values());
+}
+
+// Extract the article slug from an AP News article path (e.g. "/article/foo-abc123")
+function articlePathToSlug(path) {
+    if (!path) return null;
+    const parts = path.split('/').filter(Boolean);
+    if (parts[0] === 'article' && parts[1]) return parts[1];
+    return null;
 }
 
 function buildNewsCardHtml(item, timezone, sessionParam, showImages) {
     if (!item) return '';
-    const { url, title, publishDateStamp, imageUrl, imageAlt, imageCaption } = item;
-    if (!title || !url) return '';
+    const { path, title, publishDateStamp, imageUrl, imageAlt, imageCaption } = item;
+    if (!title || !path) return '';
 
-    const slug = articleUrlToSlug(url);
+    const slug = articlePathToSlug(path);
     if (!slug) return '';
 
     const headline = escapeContent(title, showImages);
@@ -369,17 +363,28 @@ function extractStoryBody(html) {
 }
 
 // Parse an AP News article HTML page.
-// Extracts headline/author/date from JSON-LD, with a GTM dataLayer fallback.
-// `bodyHtml`/`thumbnail` come from the GraphQL API when available (see
-// fetchStoryGraphQL); when they aren't, body text and inline images fall
-// back to scraping div.RichTextStoryBody from the rendered page.
-function parseArticlePage(html, showImages, bodyHtml, thumbnail) {
+// Extracts headline/author/date from the GraphQL StoryPage when available
+// (AP now blocks direct HTML fetches of article pages from server IPs with a
+// 403), falling back to JSON-LD/GTM scraping of the rendered page otherwise.
+// `bodyHtml`/`thumbnail` similarly come from the GraphQL API when available
+// (see fetchStoryGraphQL); when they aren't, body text and inline images
+// fall back to scraping div.RichTextStoryBody from the rendered page.
+function parseArticlePage(html, showImages, bodyHtml, thumbnail, storyPage) {
     let headline = '',
         bylines = '',
         date = null;
 
-    // Primary: JSON-LD structured data
-    const ldMatch = html.match(/<script[^>]+id="link-ld-json"[^>]*>([\s\S]*?)<\/script>/i);
+    if (storyPage) {
+        headline = storyPage.headline || '';
+        bylines = storyPage.authorByline || '';
+        if (storyPage.datePublishedISO) date = new Date(storyPage.datePublishedISO);
+    }
+
+    // Fallback: JSON-LD structured data from the rendered page
+    const ldMatch =
+        !headline && html
+            ? html.match(/<script[^>]+id="link-ld-json"[^>]*>([\s\S]*?)<\/script>/i)
+            : null;
     if (ldMatch) {
         try {
             const raw = JSON.parse(ldMatch[1]);
@@ -407,7 +412,7 @@ function parseArticlePage(html, showImages, bodyHtml, thumbnail) {
     }
 
     // Fallback: GTM dataLayer meta tag
-    if (!headline) {
+    if (!headline && html) {
         const gtmMatch = html.match(/name="gtm-dataLayer"[^>]+content="([^"]+)"/);
         if (gtmMatch) {
             try {
@@ -423,7 +428,7 @@ function parseArticlePage(html, showImages, bodyHtml, thumbnail) {
 
     // Prefer the body reconstructed from the GraphQL API; fall back to
     // scraping div.RichTextStoryBody if that wasn't available.
-    const body = bodyHtml || extractStoryBody(html);
+    const body = bodyHtml || (html ? extractStoryBody(html) : '');
 
     const leadImageHtml =
         showImages && thumbnail && thumbnail.url
@@ -519,9 +524,11 @@ exports.processNews = async function processNews(req, res, args, discordID) {
     const tagInputValue = escape(tag === DEFAULT_TOPIC ? '' : tag);
 
     try {
-        // Scrape the hub HTML page — gives us titles, dates, URLs, and lead images
-        const html = await fetchHtml(`${AP_BASE}/hub/${tag}`);
-        const feedItems = parseHubHtml(html);
+        // AP returns 403 for direct HTML fetches of hub pages from server IPs,
+        // so fetch the listing from the mobile GraphQL API instead.
+        const hubPath = tag === DEFAULT_TOPIC ? '/' : `/hub/${tag}`;
+        const hubData = await fetchHubGraphQL(hubPath);
+        const feedItems = parseHubGraphQL(hubData);
 
         const cards = feedItems
             .map((item) => buildNewsCardHtml(item, timezone, sessionParam, imagesCookie !== 0))
@@ -584,10 +591,14 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
     const articleUrl = `${AP_BASE}/article/${articleSlug}`;
 
     try {
-        const [html, storyGraphQL] = await Promise.all([
-            fetchHtml(articleUrl),
-            fetchStoryGraphQL(`/article/${articleSlug}`).catch((err) => {
-                console.warn('AP News GraphQL story error:', err.message || err);
+        // The GraphQL API is the primary source: AP now returns 403 for
+        // direct HTML fetches of article pages from server IPs, so the
+        // rendered-page fetch is best-effort only, used as a fallback for
+        // metadata/body if the GraphQL call comes back empty.
+        const [storyGraphQL, html] = await Promise.all([
+            fetchStoryGraphQL(`/article/${articleSlug}`),
+            fetchHtml(articleUrl).catch((err) => {
+                console.warn('AP News article HTML fetch error:', err.message || err);
                 return null;
             }),
         ]);
@@ -600,7 +611,8 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
             html,
             imagesCookie !== 0,
             bodyHtml,
-            thumbnail
+            thumbnail,
+            storyPage
         );
 
         const headlineEscaped = escapeContent(headline || 'Untitled', imagesCookie !== 0);
