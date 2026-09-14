@@ -454,7 +454,7 @@ exports.processNews = async function processNews(req, res, args, discordID) {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(final);
     } catch (err) {
-        console.error('AP News feed error:', err);
+        console.warn('AP News feed error:', err.message || err);
         const msg =
             err.statusCode === 404
                 ? getTemplate('news-category-not-found-error', 'misc')
@@ -514,7 +514,7 @@ exports.processNewsArticle = async function processNewsArticle(req, res, args, d
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(final);
     } catch (err) {
-        console.error('AP News article error:', err);
+        console.warn('AP News article error:', err.message || err);
         const msg =
             err.statusCode === 404
                 ? getTemplate('news-article-not-found-error', 'misc')
