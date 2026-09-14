@@ -262,9 +262,38 @@ client.on('interactionCreate', async (interaction) => {
             });
         } else if (customId.startsWith('mail_block:')) {
             const blockEmail = customId.split(':').slice(1).join(':');
-            auth.addMailBlock(interaction.user.id, blockEmail);
-            return interaction.reply({
-                content: `Successfully blocked \`${blockEmail}\`.`,
+            const alreadyBlocked = auth.isMailBlocked(interaction.user.id, blockEmail);
+
+            if (alreadyBlocked) {
+                auth.removeMailBlock(interaction.user.id, blockEmail);
+            } else {
+                auth.addMailBlock(interaction.user.id, blockEmail);
+            }
+            const nowBlocked = !alreadyBlocked;
+
+            const rows = interaction.message.components.map((row) =>
+                new Discord.ActionRowBuilder().addComponents(
+                    row.components.map((component) => {
+                        const builder = Discord.ButtonBuilder.from(component);
+                        if (component.customId === customId) {
+                            builder
+                                .setLabel(nowBlocked ? 'Unblock Sender' : 'Block Sender')
+                                .setStyle(
+                                    nowBlocked
+                                        ? Discord.ButtonStyle.Secondary
+                                        : Discord.ButtonStyle.Danger
+                                );
+                        }
+                        return builder;
+                    })
+                )
+            );
+            await interaction.update({ components: rows }).catch(() => {});
+
+            return interaction.followUp({
+                content: nowBlocked
+                    ? `Successfully blocked \`${blockEmail}\`.`
+                    : `Successfully unblocked \`${blockEmail}\`.`,
                 flags: Discord.MessageFlags.Ephemeral,
             });
         } else if (customId === 'mail_delete') {
