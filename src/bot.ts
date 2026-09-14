@@ -108,7 +108,8 @@ client.on('clientReady', async () => {
 });
 
 client.on('interactionCreate', async (interaction) => {
-    if (interaction.isChatInputCommand()) {
+    try {
+        if (interaction.isChatInputCommand()) {
         const { commandName } = interaction;
 
         if (commandName === 'connect') {
@@ -430,6 +431,17 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.editReply({ content: `Failed to send reply: ${res.error}` });
             }
         }
+    }
+    } catch (err) {
+        if (
+            err.code === 10062 ||
+            err.code === 40060 ||
+            (err.message && (err.message.includes('10062') || err.message.includes('Unknown interaction')))
+        ) {
+            console.warn('Interaction expired or already handled:', err.message);
+            return;
+        }
+        console.error('Error handling interaction:', err);
     }
 });
 

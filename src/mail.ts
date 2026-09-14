@@ -126,13 +126,23 @@ exports.handleInboundWebhook = async function (req, res) {
         try {
             const { data, error } = await resend.emails.receiving.get(emailId);
             if (error) {
-                console.error('Failed to retrieve received email from Resend API:', error);
+                const errMsg = error.message || (typeof error === 'object' ? JSON.stringify(error) : String(error));
+                if (error.statusCode === 401 || errMsg.includes('restricted to only send')) {
+                    console.warn('Resend API key is restricted to send-only; cannot fetch inbound email body:', errMsg);
+                } else {
+                    console.error('Failed to retrieve received email from Resend API:', errMsg);
+                }
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 return res.end(JSON.stringify({ error: 'Failed to retrieve email content' }));
             }
             emailData = data;
         } catch (err) {
-            console.error('Failed to retrieve received email from Resend API:', err);
+            const errMsg = err.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+            if (err.statusCode === 401 || errMsg.includes('restricted to only send')) {
+                console.warn('Resend API key is restricted to send-only; cannot fetch inbound email body:', errMsg);
+            } else {
+                console.error('Failed to retrieve received email from Resend API:', errMsg);
+            }
             res.writeHead(500, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ error: 'Failed to retrieve email content' }));
         }

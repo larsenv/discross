@@ -42,7 +42,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
         const query = Object.fromEntries(parsedurl.searchParams);
 
         // Ensure message exists and is a non-empty string
-        if (typeof query.message === 'string' && query.message !== '') {
+        if (typeof query.message === 'string' && query.message.trim() !== '') {
             // Deduplicate: if this nonce was already processed, skip sending
             if (checkAndMarkNonce(query.nonce)) {
                 const redirectChannel = parsedurl.searchParams.get('channel') || args?.[2] || '';
@@ -153,6 +153,17 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
             const finalMessage =
                 rawMessage.length > 2000 ? rawMessage.substring(0, 2000) : rawMessage;
 
+            if (!finalMessage || !finalMessage.trim()) {
+                const redirectChannel = parsedurl.searchParams.get('channel') || args?.[2] || '';
+                const sessionID = parsedurl.searchParams.get('sessionID') || '';
+                const sessionPart = sessionID ? `?sessionID=${encodeURIComponent(sessionID)}` : '';
+                req_res.writeHead(302, {
+                    Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}#end`,
+                });
+                req_res.end();
+                return;
+            }
+
             const sendOptions = {
                 content: finalMessage,
                 username: sanitizeWebhookUsername(member.displayName || member.user.tag),
@@ -189,7 +200,14 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
         });
         req_res.end();
     } catch (err) {
-        console.error('Error sending message:', err);
+        if (
+            err.code === 50006 ||
+            (err.message && err.message.includes('Cannot send an empty message'))
+        ) {
+            console.warn('Attempted to send empty message:', err.message);
+        } else {
+            console.error('Error sending message:', err);
+        }
         req_res.writeHead(500, { 'Content-Type': 'text/html' });
         req_res.end(
             getTemplate('generic-error', 'misc').replace(

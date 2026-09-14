@@ -287,7 +287,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             // Trigger background refresh if we're on the main server list and bot is ready
             if (!args[2] && clientIsReady) {
                 // We don't await this to keep the page load fast
-                refreshDiscordServers(bot, discordID).catch(console.error);
+                refreshDiscordServers(bot, discordID).catch(console.warn);
             }
 
             const data = auth.queryAll('SELECT * FROM servers WHERE discordID=?', [discordID]);
@@ -591,11 +591,11 @@ async function refreshDiscordServers(bot, discordID) {
                     now + (tokenData.expires_in || 0)
                 );
             } else {
-                console.error('Failed to refresh Discord token:', tokenData);
+                console.warn('Failed to refresh Discord token:', tokenData);
                 return;
             }
         } catch (err) {
-            console.error('Error refreshing Discord token:', err);
+            console.warn('Error refreshing Discord token:', err);
             return;
         }
     }
@@ -643,6 +643,10 @@ async function refreshDiscordServers(bot, discordID) {
             }
         }
     } catch (err) {
+        if (err.message && err.message.includes('401: Unauthorized')) {
+            console.warn(`Discord user token unauthorized for user ${discordID}; skipping guild refresh`);
+            return;
+        }
         console.error('Error refreshing Discord guilds:', err);
     }
 }
