@@ -49,11 +49,28 @@ if (process.env.SENTRY_DSN) {
                 return null;
             }
 
-            // Ignore transient Discord connection timeouts
+            // Ignore transient Discord connection timeouts and undici fetch timeouts
+            const cause = error && error.cause;
+            const causeMessage = (cause && (cause.message || cause.toString())) || '';
             if (
-                (error && error.name === 'ConnectTimeoutError') ||
+                (error && (error.name === 'ConnectTimeoutError' || error.code === 'UND_ERR_CONNECT_TIMEOUT')) ||
+                (cause && (cause.name === 'ConnectTimeoutError' || cause.code === 'UND_ERR_CONNECT_TIMEOUT')) ||
                 message.includes('Connect Timeout Error') ||
-                message.includes('getaddrinfo EAI_AGAIN discord.com')
+                causeMessage.includes('Connect Timeout Error') ||
+                message.includes('getaddrinfo EAI_AGAIN discord.com') ||
+                causeMessage.includes('getaddrinfo EAI_AGAIN discord.com') ||
+                (message.includes('fetch failed') && (causeMessage.includes('timeout') || causeMessage.includes('discord.com')))
+            ) {
+                return null;
+            }
+
+            // Ignore expected Discord DM failures (user closed DMs, bot has no mutual guilds)
+            if (
+                (error && (error.code === 50278 || error.code === 50007)) ||
+                message.includes('50278') ||
+                message.includes('50007') ||
+                message.includes('no mutual guilds') ||
+                message.includes('Cannot send messages to this user')
             ) {
                 return null;
             }
