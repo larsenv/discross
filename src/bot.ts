@@ -829,7 +829,20 @@ exports.sendDM = async function (discordID, message) {
         await user.send(message);
         return { success: true };
     } catch (err) {
-        console.error('Failed to send DM to', discordID, ':', err);
+        if (
+            err &&
+            (err.code === 50278 ||
+                err.code === 50007 ||
+                (err.message &&
+                    (err.message.includes('no mutual guilds') ||
+                        err.message.includes('Cannot send messages to this user'))))
+        ) {
+            console.warn(
+                `Could not send DM to ${discordID}: user DMs disabled or no mutual guilds (${err.code || err.message})`
+            );
+        } else {
+            console.error('Failed to send DM to', discordID, ':', err);
+        }
         return { success: false, error: err.message || 'Failed to send Discord DM.' };
     }
 };
