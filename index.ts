@@ -790,7 +790,10 @@ async function handleGet(req, res) {
             const finalHtml = renderTemplate(getTemplate('snake', 'misc'), {
                 WHITE_THEME_ENABLED: theme.themeClass,
                 PAGE_TITLE: pageTitle,
-                SEO_METADATA: generateSEOMetadata(req, { title: pageTitle, description: 'Play Snake' }),
+                SEO_METADATA: generateSEOMetadata(req, {
+                    title: pageTitle,
+                    description: 'Play Snake',
+                }),
             });
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(finalHtml);
@@ -820,6 +823,21 @@ async function handleGet(req, res) {
             }
             const filePath = req.url.slice(11);
             await fileProxy(res, `https://cdn.discordapp.com/attachments/${filePath}`, req);
+            break;
+        }
+        case 'wii': {
+            // Old Wii "channel" clients redirected here (patched to point at
+            // discross.net instead of their original streaming service) expect
+            // this exact shape: GET /wii/time.html just needs to come back with
+            // a valid Date header, which Node sets on every response by itself,
+            // so any 200 works. GET /wii/ (and anything else under /wii/*) is
+            // the client's real app entry point - just the normal site.
+            if (args[2] === 'time.html') {
+                res.writeHead(200, { 'Content-Type': 'text/plain' });
+                res.end('ok');
+            } else {
+                await indexpage.processIndex(bot, req, res, args);
+            }
             break;
         }
         case 'ico':
