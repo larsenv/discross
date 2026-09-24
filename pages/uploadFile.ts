@@ -68,40 +68,62 @@ async function uploadToTransfer(filePath, filename) {
                 timeout: 30 * 60 * 1000,
             };
 
-            const req = https.request(options, (res) => {
-                let data = '';
+            const MAX_RETRIES = 3;
+            let attempt = 0;
 
-                res.on('data', (chunk) => {
-                    data += chunk;
+            function tryUpload() {
+                attempt++;
+                const req = https.request(options, (res) => {
+                    let data = '';
+
+                    res.on('data', (chunk) => {
+                        data += chunk;
+                    });
+
+                    res.on('end', () => {
+                        if (res.statusCode === 200) {
+                            const x0Url = data.trim();
+
+                            // Validate that the response is a valid URL
+                            if (!x0Url || !x0Url.startsWith('https://x0.at/')) {
+                                reject(new Error(`Invalid URL received from x0.at: ${x0Url}`));
+                                return;
+                            }
+
+                            resolve(x0Url);
+                        } else {
+                            reject(new Error(`Upload failed with status ${res.statusCode}: ${data}`));
+                        }
+                    });
                 });
 
-                res.on('end', () => {
-                    if (res.statusCode === 200) {
-                        const x0Url = data.trim();
-
-                        // Validate that the response is a valid URL
-                        if (!x0Url || !x0Url.startsWith('https://x0.at/')) {
-                            reject(new Error(`Invalid URL received from x0.at: ${x0Url}`));
-                            return;
-                        }
-
-                        resolve(x0Url);
+                req.on('error', (err) => {
+                    // Retry on transient DNS / network errors (fixes DISCROS-3Y: EAI_AGAIN)
+                    if (attempt < MAX_RETRIES && (err.code === 'EAI_AGAIN' || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT')) {
+                        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, ...
+                        console.warn(`Upload attempt ${attempt} failed (${err.code}), retrying in ${delay}ms...`);
+                        setTimeout(tryUpload, delay);
                     } else {
-                        reject(new Error(`Upload failed with status ${res.statusCode}: ${data}`));
+                        reject(err);
                     }
                 });
-            });
 
-            req.on('error', (err) => {
-                reject(err);
-            });
+                req.on('timeout', () => {
+                    req.destroy();
+                    // Retry on timeout (fixes DISCROS-43: Upload timeout)
+                    if (attempt < MAX_RETRIES) {
+                        const delay = Math.pow(2, attempt) * 1000;
+                        console.warn(`Upload attempt ${attempt} timed out, retrying in ${delay}ms...`);
+                        setTimeout(tryUpload, delay);
+                    } else {
+                        reject(new Error('Upload timeout - file may be too large'));
+                    }
+                });
 
-            req.on('timeout', () => {
-                req.destroy();
-                reject(new Error('Upload timeout - file may be too large'));
-            });
+                req.end(body);
+            }
 
-            req.end(body);
+            tryUpload();
         });
     });
 }
