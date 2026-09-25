@@ -929,7 +929,7 @@ async function renderDiscordInvites(messagetext, item, bot, imagesCookie) {
  * @returns {string} The rendered activity banner HTML or an empty string.
  */
 function renderActivityBanner(item, context) {
-    const { templates, req } = context;
+    const { templates, req, imagesCookie } = context;
     // Activity Reply is type 25. Shared activities may also have .activity
     if (item.type !== 25 && !item.activity) return '';
 
@@ -956,7 +956,10 @@ function renderActivityBanner(item, context) {
     // Icon: Use embed thumbnail, or try application icon
     let iconUrl = embed?.thumbnail?.url || '/resources/twemoji/1f3ae.gif';
     if (!embed?.thumbnail?.url && item.applicationId) {
-        iconUrl = `https://cdn.discordapp.com/app-icons/${item.applicationId}/icon.png`;
+        iconUrl =
+            imagesCookie === 1
+                ? `/imageProxy/app-icon/${item.applicationId}/icon.png`
+                : '/resources/twemoji/1f3ae.gif';
     }
 
     // Theme-aware colors
@@ -1069,9 +1072,7 @@ async function fetchGameApplication(id) {
 function renderGameMentionCard(app, isLight, imagesCookie) {
     const iconUrl =
         app.icon && imagesCookie === 1
-            ? `/imageProxy/external/${Buffer.from(
-                  `https://cdn.discordapp.com/app-icons/${app.id}/${app.icon}.png`
-              ).toString('base64')}`
+            ? `/imageProxy/app-icon/${app.id}/${app.icon}.png`
             : GAME_MENTION_FALLBACK_ICON;
     return render('channel/game-mention', {
         APP_ID: app.id,

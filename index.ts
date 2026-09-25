@@ -987,6 +987,15 @@ async function handleImageProxy(req, res, parsedurl, args) {
             `https://media.discordapp.net/stickers/${stickerId}.png`,
             isFull
         );
+    } else if (args[2] === 'app-icon') {
+        const appId = args[3];
+        const iconFile = args[4] || '';
+        await imageProxy(
+            req,
+            res,
+            `https://cdn.discordapp.com/app-icons/${appId}/${iconFile}`,
+            isFull
+        );
     } else {
         const urlObj = new URL(req.url, 'http://localhost');
         urlObj.searchParams.delete('full');
