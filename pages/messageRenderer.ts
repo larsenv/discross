@@ -2095,6 +2095,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         messages: overrideMessages,
         templates: overrideTemplates,
         before,
+        around,
         sessionParam = '',
     } = params;
 
@@ -2126,7 +2127,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     const pageSize = messageLimit ?? 25;
 
     // 2. Fetch messages (or use override).
-    let allFetched = overrideMessages ?? (await bot.getHistoryCached(chnl, pageSize, before));
+    let allFetched =
+        overrideMessages ?? (await bot.getHistoryCached(chnl, pageSize, before, around));
 
     let messages = allFetched;
     let hasMore = false;
@@ -2151,6 +2153,18 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         const jumpToPresentUrl = `/channels/${channelId}${cleanSession ? '?' + cleanSession : ''}#end`;
 
         paginationHtml = `<div class="pagination-container" style="text-align: center; margin: 4px 0 12px 0;"><a href="${loadMoreUrl}" class="discross-button pagination-btn" style="display: inline-block; padding: 6px 16px; text-decoration: none; font-size: 14px; font-weight: 500;">Load More Messages</a>${before ? ` <a href="${jumpToPresentUrl}" class="discross-button secondary pagination-btn" style="display: inline-block; padding: 6px 16px; margin-left: 8px; text-decoration: none; font-size: 14px; font-weight: 500;">Jump to Present</a>` : ''}</div>`;
+    } else if (around && messages.length > 0 && channelId) {
+        // Landed here from a search result jump: there's no older-messages
+        // link (the around fetch is centered, not a page boundary), but the
+        // user still needs a way back to the live view.
+        const cleanSession = sessionParam
+            ? sessionParam.startsWith('?')
+                ? sessionParam.slice(1)
+                : sessionParam
+            : '';
+        const jumpToPresentUrl = `/channels/${channelId}${cleanSession ? '?' + cleanSession : ''}#end`;
+
+        paginationHtml = `<div class="pagination-container" style="text-align: center; margin: 4px 0 12px 0;"><a href="${jumpToPresentUrl}" class="discross-button pagination-btn" style="display: inline-block; padding: 6px 16px; text-decoration: none; font-size: 14px; font-weight: 500;">Jump to Present</a></div>`;
     }
 
     // memberCache is used to avoid redundant Discord API calls for avatars/names within this render pass.

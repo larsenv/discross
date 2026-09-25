@@ -764,7 +764,7 @@ async function handleGet(req, res) {
             await stockspage.processStocks(req, res);
             break;
         case 'search':
-            await searchpage.processSearch(req, res);
+            await searchpage.processSearch(bot, req, res);
             break;
         case 'tv':
             await tvpage.processTV(req, res);

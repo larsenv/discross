@@ -17,6 +17,7 @@ const {
     render,
     generateSEOMetadata,
     canViewChannel,
+    isValidSnowflake,
 } = require('./utils');
 const { getTimezoneFromIP } = require('../src/timezoneUtils');
 const { isLegacyClient } = require('./userAgentUtils');
@@ -30,7 +31,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         urlImages = parsedUrl.searchParams.get('images'),
         urlEmoji = parsedUrl.searchParams.get('emoji'),
         urlExpanded = parsedUrl.searchParams.get('expanded'),
-        urlBefore = parsedUrl.searchParams.get('before');
+        urlBefore = parsedUrl.searchParams.get('before'),
+        urlAround = parsedUrl.searchParams.get('around');
 
     const { images: cookieImages, whiteThemeCookie: cookieTheme } = parseCookies(req);
 
@@ -209,6 +211,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             clientTimezone,
             channelId: args[2],
             before: urlBefore,
+            around: isValidSnowflake(urlAround) ? urlAround : null,
             sessionParam,
         });
 
@@ -217,8 +220,9 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             '?random=' +
             Math.random() +
             (urlBefore ? '&before=' + encodeURIComponent(urlBefore) : '') +
+            (urlAround ? '&around=' + encodeURIComponent(urlAround) : '') +
             (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '') +
-            (urlBefore ? '' : '#end');
+            (urlBefore || urlAround ? '' : '#end');
 
         const final = renderTemplate(baseTemplate, {
             REFRESH_URL: refreshUrl,

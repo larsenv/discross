@@ -713,7 +713,7 @@ async function backfillHistory(chnl, alreadyFetched) {
     }
 }
 
-exports.getHistoryCached = async function (chnl, desiredLimit, beforeId) {
+exports.getHistoryCached = async function (chnl, desiredLimit, beforeId, aroundId) {
     if (typeof chnl === 'string') {
         chnl =
             client.channels.cache.get(chnl) ||
@@ -721,6 +721,24 @@ exports.getHistoryCached = async function (chnl, desiredLimit, beforeId) {
     }
     if (!chnl || !chnl.id) {
         return [];
+    }
+
+    if (aroundId) {
+        try {
+            const messagearray = await chnl.messages.fetch({
+                limit: Math.min(desiredLimit != null ? desiredLimit : 50, 100),
+                around: aroundId,
+            });
+            return (Array.from(messagearray.values()) as any[]).sort(
+                (messageA, messageB) => messageA.createdTimestamp - messageB.createdTimestamp
+            );
+        } catch (err) {
+            console.error(
+                `Failed to fetch messages for channel ${chnl.id} around ${aroundId}:`,
+                err
+            );
+            return [];
+        }
     }
 
     if (beforeId) {
@@ -775,6 +793,33 @@ exports.getHistoryCached = async function (chnl, desiredLimit, beforeId) {
         }
     }
     return Array.from(msghistory.get(chnl.id).values());
+};
+
+// Discord's message search (GET /guilds/{id}/messages/search) isn't part of
+// the official documented API, so discord.js has no typed wrapper for it —
+// call it directly through the low-level REST manager. Requires the
+// MESSAGE_CONTENT intent (already enabled above) and READ_MESSAGE_HISTORY in
+// the searched channels.
+exports.searchGuildMessages = async function (guildId, { content, channelIds, limit, offset }) {
+    const query = new URLSearchParams();
+    if (content) query.set('content', content);
+    for (const id of channelIds || []) query.append('channel_id', id);
+    query.set('limit', String(Math.min(limit || 25, 25)));
+    if (offset) query.set('offset', String(offset));
+
+    const data: any = await client.rest.get(`/guilds/${guildId}/messages/search`, { query });
+
+    // While the guild's search index is still being built, Discord returns a
+    // 200/202 with no messages array and a retry_after hint instead of an
+    // error — retry once after that delay rather than reporting zero results.
+    if (!data.messages && data.retry_after != null) {
+        await new Promise((resolve) =>
+            setTimeout(resolve, Math.min(data.retry_after * 1000, 5000))
+        );
+        return client.rest.get(`/guilds/${guildId}/messages/search`, { query });
+    }
+
+    return data;
 };
 
 exports.client = client;
