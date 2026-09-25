@@ -34,8 +34,24 @@ if (process.env.SENTRY_DSN) {
                 return null;
             }
 
-            // Ignore transient third-party upload provider (x0.at) 502 errors
-            if (message.includes('Upload failed with status 502') || message.includes('Error uploading to x0.at')) {
+            // Ignore transient third-party upload provider (x0.at) errors (5xx, timeouts, DNS)
+            const extraStr = event.extra ? JSON.stringify(event.extra) : '';
+            const exceptionText = (event.exception?.values || [])
+                .map((v: any) => `${v.type || ''} ${v.value || ''}`)
+                .join(' ');
+            if (
+                message.includes('x0.at') ||
+                extraStr.includes('x0.at') ||
+                exceptionText.includes('x0.at') ||
+                message.includes('Upload failed with status') ||
+                extraStr.includes('Upload failed with status') ||
+                exceptionText.includes('Upload failed with status') ||
+                message.includes('Upload timeout - file may be too large') ||
+                extraStr.includes('Upload timeout - file may be too large') ||
+                exceptionText.includes('Upload timeout - file may be too large') ||
+                message.includes('Error uploading to x0.at') ||
+                extraStr.includes('Error uploading to x0.at')
+            ) {
                 return null;
             }
 

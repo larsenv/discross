@@ -79,6 +79,8 @@ async function uploadToTransfer(filePath, filename) {
 
             function tryUpload() {
                 attempt++;
+                let attemptSettled = false;
+
                 const req = https.request(options, (res) => {
                     let data = '';
 
@@ -87,6 +89,9 @@ async function uploadToTransfer(filePath, filename) {
                     });
 
                     res.on('end', () => {
+                        if (attemptSettled) return;
+                        attemptSettled = true;
+
                         if (res.statusCode === 200) {
                             const x0Url = data.trim();
 
@@ -97,6 +102,15 @@ async function uploadToTransfer(filePath, filename) {
                             }
 
                             resolve(x0Url);
+                        } else if (
+                            attempt < MAX_RETRIES &&
+                            [429, 500, 502, 503, 504].includes(res.statusCode)
+                        ) {
+                            const delay = Math.pow(2, attempt) * 1000;
+                            console.warn(
+                                `Upload attempt ${attempt} failed with status ${res.statusCode}, retrying in ${delay}ms...`
+                            );
+                            setTimeout(tryUpload, delay);
                         } else {
                             reject(
                                 new Error(`Upload failed with status ${res.statusCode}: ${data}`)
@@ -106,12 +120,18 @@ async function uploadToTransfer(filePath, filename) {
                 });
 
                 req.on('error', (err) => {
+                    if (attemptSettled) return;
+                    attemptSettled = true;
+
                     // Retry on transient DNS / network errors (fixes DISCROS-3Y: EAI_AGAIN)
                     if (
                         attempt < MAX_RETRIES &&
                         (err.code === 'EAI_AGAIN' ||
                             err.code === 'ECONNRESET' ||
-                            err.code === 'ETIMEDOUT')
+                            err.code === 'ETIMEDOUT' ||
+                            err.code === 'ENOTFOUND' ||
+                            err.code === 'EAI_FAIL' ||
+                            err.code === 'EPIPE')
                     ) {
                         const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, ...
                         console.warn(
@@ -124,7 +144,10 @@ async function uploadToTransfer(filePath, filename) {
                 });
 
                 req.on('timeout', () => {
+                    if (attemptSettled) return;
+                    attemptSettled = true;
                     req.destroy();
+
                     // Retry on timeout (fixes DISCROS-43: Upload timeout)
                     if (attempt < MAX_RETRIES) {
                         const delay = Math.pow(2, attempt) * 1000;
@@ -351,7 +374,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             file.originalFilename || file.name || 'uploaded_file'
                         ).catch((uploadError) => {
                             cleanup();
-                            console.error('Error uploading to x0.at:', uploadError);
+                            console.warn('Error uploading to x0.at:', uploadError);
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 res.end(
