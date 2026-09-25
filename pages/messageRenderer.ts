@@ -116,9 +116,42 @@ const SYSTEM_MESSAGE_TEXT = {
     37: 'disabled raid alert mode',
     38: 'reported a raid',
     39: 'reported a false alarm',
+    40: 'revived a dead chat',
+    41: 'sent a gift',
     44: 'made a purchase',
+    45: 'invited to a voice hangout',
     46: 'completed a poll',
+    47: 'posted a changelog',
+    49: 'linked this channel to a lobby',
+    58: 'deleted the reported message',
+    59: 'timed out the reported user',
+    60: 'kicked the reported user',
+    61: 'banned the reported user',
+    62: 'resolved a report',
+    63: 'added a new emoji',
+    65: 'started a voice hangout',
 };
+
+/**
+ * Returns the italic system-message text for a message, enriching it with
+ * live details where discord.js actually models the underlying data.
+ *
+ * Note: several newer system message fields (gift_info, purchase_notification,
+ * potions) aren't parsed by discord.js yet, so those types fall back to the
+ * static SYSTEM_MESSAGE_TEXT phrasing above rather than going into detail.
+ *
+ * @param {object} item - The Discord message object.
+ * @returns {string} The rendered system message text.
+ */
+function getSystemMessageText(item) {
+    if (item.type === 25 && item.roleSubscriptionData) {
+        const d = item.roleSubscriptionData;
+        const verb = d.isRenewal ? 'renewed' : 'joined';
+        const months = d.totalMonthsSubscribed;
+        return `${verb} ${escape(d.tierName)} and has been a subscriber for ${months} month${months === 1 ? '' : 's'}`;
+    }
+    return SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action';
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -2340,7 +2373,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             isSystem && visibleText.length === 0
                 ? render('channel/system-message', {
                       AUTHOR_NAME: formatAuthorName(getDisplayName(currentMember, item.author)),
-                      TEXT: SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action',
+                      TEXT: getSystemMessageText(item),
                   })
                 : withReactions;
 
