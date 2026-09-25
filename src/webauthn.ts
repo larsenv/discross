@@ -82,7 +82,15 @@ function parseAuthData(authData) {
     const rpIdHash = authData.subarray(0, 32);
     const flags = authData[32];
     const signCount = authData.readUInt32BE(33);
-    const result = {
+    const result: {
+        rpIdHash: Buffer;
+        userPresent: boolean;
+        userVerified: boolean;
+        attestedCredentialDataIncluded: boolean;
+        signCount: number;
+        credentialId?: Buffer;
+        credentialPublicKey?: any;
+    } = {
         rpIdHash,
         userPresent: !!(flags & 0x01),
         userVerified: !!(flags & 0x04),

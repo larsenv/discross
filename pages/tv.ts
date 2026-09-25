@@ -26,9 +26,12 @@ const logged_out_template = getTemplate('logged-out', 'index');
 
 // Make an HTTPS request (GET or POST), following up to maxRedirects redirects.
 // After a POST redirect, follow the redirect with a GET (standard browser POST-back behaviour).
-function httpsRequest(options, postBody, maxRedirects) {
+function httpsRequest(options, postBody?, maxRedirects?) {
     if (maxRedirects === undefined) maxRedirects = 5;
-    return new Promise(function (resolve, reject) {
+    return new Promise<{ statusCode: number; body: string; headers: any }>(function (
+        resolve,
+        reject
+    ) {
         const req = https.request(options, function (res) {
             const status = res.statusCode;
             if (status >= 300 && status < 400 && res.headers.location && maxRedirects > 0) {
@@ -81,7 +84,7 @@ function httpsRequest(options, postBody, maxRedirects) {
 }
 
 // Convenience wrappers
-function httpsGet(options, maxRedirects) {
+function httpsGet(options, maxRedirects?) {
     return httpsRequest(options, null, maxRedirects);
 }
 

@@ -188,7 +188,19 @@ function getBaseUrl(req) {
  * @param {object} options - SEO options (title, description, canonical, type, image).
  * @returns {string}
  */
-function generateSEOMetadata(req, options = {}) {
+function generateSEOMetadata(
+    req,
+    options: {
+        title?: string;
+        description?: string;
+        canonical?: string;
+        type?: string;
+        image?: string;
+        noindex?: boolean;
+        schemaType?: string;
+        schemaExtra?: Record<string, any>;
+    } = {}
+) {
     const baseUrl = getBaseUrl(req);
     const path = new URL(req.url, 'http://localhost').pathname;
     const url = baseUrl + path;

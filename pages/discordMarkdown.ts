@@ -76,7 +76,7 @@ function highlightCode(code, lang) {
     }
 }
 
-function renderDiscordMarkdown(text, options = {}) {
+function renderDiscordMarkdown(text, options: { barColor?: string; timezone?: string } = {}) {
     if (!text) return '';
 
     const tmpl = {

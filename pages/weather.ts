@@ -129,7 +129,7 @@ const logged_in_template = getTemplate('logged-in', 'index');
 const logged_out_template = getTemplate('logged-out', 'index');
 
 function fetchJson(hostname, path) {
-    return new Promise((resolve, reject) => {
+    return new Promise<{ status: number; data: any }>((resolve, reject) => {
         const options = {
             hostname,
             path,

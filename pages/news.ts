@@ -110,7 +110,7 @@ async function fetchHtml(url) {
     });
     if (!response.ok) {
         const err = new Error(`HTTP ${response.status} fetching ${url}`);
-        err.statusCode = response.status;
+        (err as any).statusCode = response.status;
         throw err;
     }
     return response.text();
@@ -139,7 +139,7 @@ async function fetchStoryGraphQL(articlePath) {
     });
     if (!response.ok) {
         const err = new Error(`HTTP ${response.status} fetching ${url}`);
-        err.statusCode = response.status;
+        (err as any).statusCode = response.status;
         throw err;
     }
     return response.json();
@@ -267,7 +267,7 @@ async function fetchHubGraphQL(hubPath) {
     });
     if (!response.ok) {
         const err = new Error(`HTTP ${response.status} fetching ${url}`);
-        err.statusCode = response.status;
+        (err as any).statusCode = response.status;
         throw err;
     }
     return response.json();

@@ -126,7 +126,7 @@ try {
     const vm = require('vm');
     const emojiListPath = require('path').join(__dirname, 'static/js/emojiList.js');
     const content = fs.readFileSync(emojiListPath, 'utf-8');
-    const sandbox = { window: {} };
+    const sandbox: { window: any } = { window: {} };
     vm.runInNewContext(content, sandbox, { timeout: 5000 });
     emojiCategories = sandbox.window.EMOJI_CATEGORIES || {};
 } catch (err) {

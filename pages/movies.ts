@@ -139,7 +139,7 @@ async function fetchHtml(url) {
     });
     if (!response.ok) {
         const err = new Error(`HTTP ${response.status} fetching ${url}`);
-        err.statusCode = response.status;
+        (err as any).statusCode = response.status;
         throw err;
     }
     return response.text();
@@ -307,7 +307,7 @@ function tryParseEmbeddedJson(html, isTv) {
 }
 
 // Recursively search JSON for movie/TV item arrays
-function extractItemsFromJson(data, isTv, depth) {
+function extractItemsFromJson(data, isTv, depth?) {
     if (!data || typeof data !== 'object' || (depth || 0) > 10) return [];
 
     // Check if data itself is an array of items

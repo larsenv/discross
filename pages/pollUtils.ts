@@ -47,19 +47,24 @@ function processPoll(poll, imagesCookie) {
         // Calculate total votes across all answers
         const totalVotes =
             poll.answers?.size > 0
-                ? Array.from(poll.answers.values()).reduce((sum, a) => sum + (a.voteCount || 0), 0)
+                ? (Array.from(poll.answers.values()) as any[]).reduce(
+                      (sum, a) => sum + (a.voteCount || 0),
+                      0
+                  )
                 : 0;
 
         // Find max votes for winning highlight
         const maxVotes =
             totalVotes > 0
-                ? Math.max(...Array.from(poll.answers.values()).map((a) => a.voteCount || 0))
+                ? Math.max(
+                      ...(Array.from(poll.answers.values()) as any[]).map((a) => a.voteCount || 0)
+                  )
                 : 0;
 
         // Process each answer
         const answersHtml =
             poll.answers?.size > 0
-                ? Array.from(poll.answers.values())
+                ? (Array.from(poll.answers.values()) as any[])
                       .map((answer) => {
                           const voteCount = answer.voteCount || 0;
                           const votePercentage =

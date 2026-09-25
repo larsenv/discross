@@ -7,6 +7,7 @@ const {
     isBotReady,
     getPageThemeAttr,
     loadAndRenderPageTemplate,
+    getTemplate,
 } = require('./utils');
 
 const upload_template = loadAndRenderPageTemplate('upload');

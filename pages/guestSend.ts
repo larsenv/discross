@@ -89,7 +89,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
         // Use the bot's avatar as the guest profile picture
         const avatarURL = bot.client.user.displayAvatarURL({ extension: 'png', size: 128 });
 
-        const sendOptions = {
+        const sendOptions: any = {
             content: processedMessage,
             username: sanitizeWebhookUsername((guestName || 'Guest') + ' (guest)'),
             avatarURL: avatarURL,
