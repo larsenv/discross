@@ -972,8 +972,116 @@ function renderPollResultEmbed(embed) {
 }
 
 // ---------------------------------------------------------------------------
-// Mentions
+// Game mentions
 // ---------------------------------------------------------------------------
+// Discord's `<@$id>` game-mention syntax (added Aug 2026) embeds a game's
+// Discord profile inline. There's no bot-scoped endpoint for arbitrary
+// third-party applications, so we use the same unauthenticated RPC endpoint
+// Rich Presence clients use to resolve name/icon. Metadata rarely changes,
+// so results (including failures, to avoid hammering a dead/unknown ID) are
+// cached for the life of the process, bounded like the other in-memory caches.
+
+const MAX_GAME_APP_CACHE_SIZE = 500;
+const _gameAppCache = new Map();
+const GAME_APP_FETCH_TIMEOUT_MS = 4000;
+const GAME_MENTION_FALLBACK_ICON = '/resources/twemoji/1f3ae.gif';
+
+/**
+ * Fetches (and caches) an application's public name/icon via Discord's
+ * unauthenticated RPC endpoint, used to resolve `<@$id>` game mentions.
+ *
+ * @param {string} id - The application's snowflake ID.
+ * @returns {Promise<{id: string, name: string, icon: ?string}|null>} App info, or null if unresolvable.
+ */
+async function fetchGameApplication(id) {
+    if (_gameAppCache.has(id)) return _gameAppCache.get(id);
+
+    let result = null;
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), GAME_APP_FETCH_TIMEOUT_MS);
+        try {
+            const res = await fetch(`https://discord.com/api/v10/applications/${id}/rpc`, {
+                signal: controller.signal,
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.name) {
+                    result = { id, name: data.name, icon: data.icon || null };
+                }
+            }
+        } finally {
+            clearTimeout(timeout);
+        }
+    } catch {
+        // Network failure, timeout, or bad JSON: cache the miss below so we
+        // don't retry a dead/invalid ID on every message that references it.
+    }
+
+    if (_gameAppCache.size >= MAX_GAME_APP_CACHE_SIZE) {
+        _gameAppCache.delete(_gameAppCache.keys().next().value);
+    }
+    _gameAppCache.set(id, result);
+    return result;
+}
+
+/**
+ * Renders a resolved game mention as an inline card (icon + name) linking to
+ * the game's Discord application-directory profile.
+ *
+ * @param {{id: string, name: string, icon: ?string}} app - Resolved application info.
+ * @param {boolean} isLight - Whether the light theme is active.
+ * @returns {string} The rendered HTML card.
+ */
+function renderGameMentionCard(app, isLight) {
+    const iconUrl = app.icon
+        ? `https://cdn.discordapp.com/app-icons/${app.id}/${app.icon}.png`
+        : GAME_MENTION_FALLBACK_ICON;
+    return render('channel/game-mention', {
+        APP_ID: app.id,
+        ICON_URL: escape(iconUrl),
+        GAME_NAME: escape(normalizeWeirdUnicode(app.name)),
+        BORDER_COLOR: isLight ? '#e3e5e8' : '#40444b',
+        BG_COLOR: isLight ? 'rgba(79, 84, 92, 0.08)' : 'rgba(79, 84, 92, 0.16)',
+        TEXT_COLOR: isLight ? '#060607' : '#dcddde',
+    });
+}
+
+/**
+ * Resolves and renders `<@$id>` game mentions.
+ *
+ * @param {string} messagetext - The text to process.
+ * @param {object} req - The current request (used to resolve theme).
+ * @param {string} tmpl_mention - The template for the plain-pill fallback.
+ * @param {boolean} [compact=false] - Render a plain text pill instead of the
+ *   full icon+name card; used for reply previews, which are single-line and
+ *   length-capped, so a multi-cell table risks corrupting the truncation.
+ * @returns {Promise<string>} The text with game mentions resolved.
+ */
+async function resolveGameMentions(messagetext, req, tmpl_mention, compact = false) {
+    const ids = [...new Set([...messagetext.matchAll(/&lt;@\$(\d{16,20})&gt;/g)].map((m) => m[1]))];
+    if (ids.length === 0) return messagetext;
+
+    const apps = new Map();
+    await Promise.allSettled(
+        ids.map(async (id) => {
+            apps.set(id, await fetchGameApplication(id));
+        })
+    );
+
+    const cookies = parseCookies(req);
+    const isLight = (parseInt(cookies.whiteThemeCookie, 10) || 0) === 1;
+
+    return messagetext.replace(/&lt;@\$(\d{16,20})&gt;/g, (match, id) => {
+        const app = apps.get(id);
+        if (!app) return renderTemplate(tmpl_mention, { '{$USERNAME}': '@Unknown Game' });
+        if (compact)
+            return renderTemplate(tmpl_mention, {
+                '{$USERNAME}': '@' + normalizeWeirdUnicode(app.name),
+            });
+        return renderGameMentionCard(app, isLight);
+    });
+}
 
 /**
  * Renders a role mention pill with appropriate coloring.
@@ -1361,6 +1469,16 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
         return ch ? '#' + normalizeWeirdUnicode(ch.name) : match;
     });
 
+    const gameIds = [...new Set([...text.matchAll(/<@\$(\d{16,20})>/g)].map((m) => m[1]))];
+    const games = new Map();
+    await Promise.allSettled(
+        gameIds.map(async (id) => games.set(id, await fetchGameApplication(id)))
+    );
+    text = text.replace(/<@\$(\d{16,20})>/g, (match, id) => {
+        const app = games.get(id);
+        return app ? '@' + normalizeWeirdUnicode(app.name) : '@Unknown Game';
+    });
+
     return text;
 }
 
@@ -1429,7 +1547,7 @@ async function resolveReplyData(
                   // rest of the markup (links, custom emoji, spoilers) first, then
                   // HTML-escape so the mention tokens become the &lt;@id&gt; form
                   // the pipeline expects.
-                  const { discordID, member, templates } = context ?? {};
+                  const { discordID, member, templates, req } = context ?? {};
                   const flat = flattenPreviewMarkup(
                       replyMessage.content.replace(/\r?\n/g, ' ').replace(/  +/g, ' ').trim()
                   );
@@ -1451,6 +1569,7 @@ async function resolveReplyData(
                   html = renderKnownMentions(html, replyMessage, discordID, member, templates);
                   html = await resolveRemainingMentions(html, chnl, memberCache, templates.mention);
                   html = await resolveChannelMentions(html, bot, chnl);
+                  html = await resolveGameMentions(html, req, templates.mention, true);
                   html = renderEveryoneMentions(html, replyMessage, templates);
                   // Channel mentions wrap their pill in a link to the channel.
                   // The preview as a whole is already an <a> that jumps to the
@@ -1847,7 +1966,9 @@ async function renderMessageContent(item, context) {
 
     const withChannelMentions = await resolveChannelMentions(withRemainingMentions, bot, chnl);
 
-    const withEveryoneMentions = renderEveryoneMentions(withChannelMentions, item, templates);
+    const withGameMentions = await resolveGameMentions(withChannelMentions, req, templates.mention);
+
+    const withEveryoneMentions = renderEveryoneMentions(withGameMentions, item, templates);
 
     let withRoleMentions = withEveryoneMentions;
 
