@@ -14,8 +14,10 @@ const {
     canViewChannel,
     mentionsToReadableText,
     buildSessionParam,
+    parseCookies,
     render,
 } = require('./utils');
+const { processEmbeds } = require('./embedUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { getTimezoneFromIP, formatDateWithTimezone } = require('../src/timezoneUtils');
 
@@ -24,16 +26,16 @@ const search_template = loadAndRenderPageTemplate('search');
 const logged_in_template = getTemplate('logged-in', 'index');
 const logged_out_template = getTemplate('logged-out', 'index');
 
-// FrogFind (frogfind.com) is a proxy that strips modern search result pages
-// down to bare HTML for old browsers, but it's a single-maintainer hobby
-// project that goes down entirely from time to time — as of this writing its
-// server has crashed outright ("Service has crashed", HTTP 503). DuckDuckGo's
-// own HTML-only results page (built for Tor/lite clients, no JS, minimal CSS)
-// serves the same purpose with real live results, so it's the default while
-// FrogFind stays listed in case it comes back.
+const no_results_template = getTemplate('no-results', 'search');
+const no_results_banana_template = getTemplate('no-results-banana', 'search');
+
+// DuckDuckGo's HTML-only results page (built for Tor/lite clients, no JS,
+// minimal CSS) works well for old browsers with real live results.
+// FrogFind used to be listed as an alternative for the same purpose, but it's
+// a single-maintainer hobby project that stopped responding entirely, so it's
+// been dropped.
 const SEARCH_ENGINES = {
     duckduckgo: 'https://html.duckduckgo.com/html/?q=',
-    frogfind: 'http://frogfind.com/?q=',
     wiby: 'http://wiby.me/?q=',
     google: 'http://www.google.com/search?q=',
 };
@@ -78,6 +80,8 @@ function buildServerOptions(rows, bot, selectedGuildId) {
  * @param {string} discordID - The requesting user's Discord ID.
  * @param {string} clientTimezone - The requesting user's timezone.
  * @param {string} sessionParam - Combined session/theme/etc query string to carry through result links.
+ * @param {object} req - The incoming request, needed to render embeds (theme cookie).
+ * @param {number} imagesCookie - Cookie value indicating if images should be displayed.
  * @returns {Promise<string>} Rendered HTML for the results (or an error/empty state).
  */
 async function renderMessageSearchResults(
@@ -87,7 +91,9 @@ async function renderMessageSearchResults(
     channelNameFilter,
     discordID,
     clientTimezone,
-    sessionParam
+    sessionParam,
+    req,
+    imagesCookie
 ) {
     const guild = bot.client.guilds.cache.get(guildId);
     if (!guild) return `<p>That server isn't available.</p>`;
@@ -102,9 +108,13 @@ async function renderMessageSearchResults(
 
     let channelIds;
     if (channelNameFilter.trim()) {
-        const needle = channelNameFilter.trim().toLowerCase().replace(/^#/, '');
+        const rawFilter = channelNameFilter.trim();
+        const needle = rawFilter.toLowerCase().replace(/^#/, '');
         const matches = guild.channels.cache.filter(
-            (c) => c.isTextBased?.() && !c.isThread() && c.name?.toLowerCase() === needle
+            (c) =>
+                c.isTextBased?.() &&
+                !c.isThread() &&
+                (c.id === rawFilter || c.name?.toLowerCase() === needle)
         );
         if (matches.size === 0) {
             return `<p>No channel named "${escape(channelNameFilter.trim())}" in this server.</p>`;
@@ -155,7 +165,7 @@ async function renderMessageSearchResults(
     }
 
     if (visibleResults.length === 0) {
-        return `<p>No messages found${channelNameFilter.trim() ? ` in #${escape(channelNameFilter.trim())}` : ''}.</p>`;
+        return Math.random() < 0.1 ? no_results_banana_template : no_results_template;
     }
 
     const rows = visibleResults
@@ -170,7 +180,10 @@ async function renderMessageSearchResults(
                 content = content.slice(0, CONTENT_SNIPPET_LENGTH).trimEnd() + '...';
             }
             if (!content && msg.attachments?.length) content = '[attachment]';
-            if (!content && msg.embeds?.length) content = '[embed]';
+
+            const embedsHtml = msg.embeds?.length
+                ? processEmbeds(req, msg.embeds, imagesCookie, 1, clientTimezone)
+                : '';
 
             const timestamp = msg.timestamp
                 ? formatDateWithTimezone(new Date(msg.timestamp), clientTimezone)
@@ -186,6 +199,7 @@ async function renderMessageSearchResults(
                 CHANNEL_NAME: escape(normalizeWeirdUnicode(channel.name || 'channel')),
                 TIMESTAMP: escape(timestamp),
                 CONTENT: escape(content),
+                EMBEDS: embedsHtml,
             });
         })
         .join('');
@@ -257,6 +271,9 @@ exports.processSearch = async function processSearch(bot, req, res) {
                     null,
                     undefined
                 );
+                const { images: cookieImages } = parseCookies(req);
+                const imagesCookie =
+                    cookieImages !== undefined ? parseInt(cookieImages, 10) : 1;
                 discordResultsHtml = await renderMessageSearchResults(
                     bot,
                     dguild,
@@ -264,7 +281,9 @@ exports.processSearch = async function processSearch(bot, req, res) {
                     dchannel,
                     discordID,
                     clientTimezone,
-                    sessionParam
+                    sessionParam,
+                    req,
+                    imagesCookie
                 );
             }
         }
@@ -279,7 +298,6 @@ exports.processSearch = async function processSearch(bot, req, res) {
         MENU_OPTIONS: menuOptions,
         QUERY_VALUE: escape(query),
         DUCKDUCKGO_CHECKED: safeEngine === 'duckduckgo' ? 'checked' : '',
-        FROGFIND_CHECKED: safeEngine === 'frogfind' ? 'checked' : '',
         WIBY_CHECKED: safeEngine === 'wiby' ? 'checked' : '',
         GOOGLE_CHECKED: safeEngine === 'google' ? 'checked' : '',
         SESSION_ID: escape(urlSessionID),
