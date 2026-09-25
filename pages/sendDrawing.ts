@@ -203,7 +203,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         }
 
         // Discord.js requires Buffer for attachments
-        const webhookOptions = {
+        const webhookOptions: any = {
             username: sanitizeWebhookUsername(member.displayName || member.user.tag),
             avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
             // Webhooks bypass the member's own mention permissions, so the pings

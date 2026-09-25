@@ -2196,6 +2196,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         lastIsWebhook: false, // Message was sent via webhook
         lastIsInteraction: false, // Message has interaction metadata
         lastIsDiscross: false, // Message was specifically sent via Discross
+        lastUserAgent: null, // User-Agent string of the previous message's sender
         clientTimezone,
     };
 
@@ -2237,7 +2238,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         const shouldStartNewGroup = (item) =>
             !state.lastauthor ||
             !isSameAuthor(state.lastmember, state.lastauthor, null, item.author) ||
-            item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
+            item.createdAt.getTime() - state.lastdate.getTime() > MESSAGE_GROUP_TIMEOUT_MS ||
             !!item.reference ||
             state.lastInteraction ||
             state.lastForwarded ||
@@ -2331,7 +2332,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         const startsNewGroup =
             !state.lastauthor ||
             !isSameAuthor(state.lastmember, state.lastauthor, currentMember, item.author) ||
-            item.createdAt - state.lastdate > MESSAGE_GROUP_TIMEOUT_MS ||
+            item.createdAt.getTime() - state.lastdate.getTime() > MESSAGE_GROUP_TIMEOUT_MS ||
             isReply ||
             isInteraction ||
             (currentIsDiscross && currentUserAgent !== state.lastUserAgent) ||

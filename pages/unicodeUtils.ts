@@ -46,7 +46,7 @@ const TYPOGRAPHIC_MAP = {
     '\u2033': '"', // DOUBLE PRIME  ″ → "
 };
 
-function normalizeWeirdUnicode(str) {
+function normalizeWeirdUnicode(str: string) {
     if (!str) return str;
 
     return Array.from(str)

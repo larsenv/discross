@@ -196,8 +196,8 @@ function clearCartCookieHeader() {
 }
 
 // --- Domino's API helper ---
-function dominosRequest(options, body) {
-    return new Promise((resolve, reject) => {
+function dominosRequest(options, body?) {
+    return new Promise<{ status: number; data: any }>((resolve, reject) => {
         const host = options.hostname || 'order.dominos.com';
         const market = host.endsWith('.ca') ? 'CANADA' : 'UNITED_STATES';
 
@@ -256,13 +256,13 @@ function dominosRequest(options, body) {
 // dictionary came back empty, so the customize page decided the product had no
 // toppings and rendered no sauce or topping rows. Both shapes are accepted here
 // in case a product type ever does nest.
-function buildToppingDict(menuData, productType) {
+function buildToppingDict(menuData: any, productType) {
     const toppingDict = {};
     const add = (item) => {
         if (item && item.Code)
             toppingDict[item.Code] = { name: item.Name, code: item.Code, Tags: item.Tags };
     };
-    for (const entry of Object.values(menuData.Toppings?.[productType] || {})) {
+    for (const entry of Object.values(menuData.Toppings?.[productType] || {}) as any[]) {
         if (!entry || typeof entry !== 'object') continue;
         if (entry.Code) add(entry);
         else for (const item of Object.values(entry)) add(item);
@@ -329,7 +329,7 @@ function splitAddressQuery(address) {
 
 // Helper: parse cart options into {code: amount} map
 function parseOptions(params) {
-    const defaultsMap = (() => {
+    const defaultsMap: any = (() => {
         try {
             return params.default_options
                 ? JSON.parse(decodeURIComponent(params.default_options))
@@ -349,7 +349,7 @@ function parseOptions(params) {
     // Values are copied through with their shape intact: toppings are portioned
     // objects like {"1/1": "1"}, sides are a bare amount like "1".
     const options = {};
-    for (const [code, value] of Object.entries(defaultsMap)) {
+    for (const [code, value] of Object.entries(defaultsMap) as [string, any][]) {
         if (value !== null && typeof value === 'object') {
             const amount = value['1/1'] ?? Object.values(value)[0];
             if (parseFloat(amount) > 0) options[code] = { ...value };
@@ -378,8 +378,8 @@ function buildToppingRow(item, inputName, normalizedDefaults, portions, template
     const DEFAULT_PORTIONS = ['0', '1'];
 
     const defaultAmt = normalizedDefaults[item.code] || '0';
-    const rawPortions = portions.get(item.code) || DEFAULT_PORTIONS;
-    const portionSet = new Set(rawPortions);
+    const rawPortions: any = portions.get(item.code) || DEFAULT_PORTIONS;
+    const portionSet = new Set<string>(rawPortions);
     if (defaultAmt !== '0') portionSet.add(defaultAmt);
 
     const optHtml = Array.from(portionSet)
@@ -415,6 +415,8 @@ exports.handleGet = async function (bot, req, res, discordID) {
         urlSessionID: parsedurl.searchParams.get('sessionID') || '',
         urlCartEncoded: parsedurl.searchParams.get('pizzaCart') || '',
         urlCheckoutEncoded: parsedurl.searchParams.get('pizzaCheckout') || '',
+        persistentParam: '',
+        persistentSuffix: '',
     };
     const _pParts = [];
     if (sessionData.urlSessionID)
@@ -426,7 +428,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
     sessionData.persistentParam = _pParts.length ? '?' + _pParts.join('&') : '';
     sessionData.persistentSuffix = _pParts.length ? '&' + _pParts.join('&') : '';
 
-    const common = (html, seoOptions = {}) => {
+    const common = (html, seoOptions: { title?: string; description?: string } = {}) => {
         const pageTitle = seoOptions.title || 'Pizza - Discross';
         const seoDescription =
             seoOptions.description ||
@@ -484,7 +486,9 @@ exports.handleGet = async function (bot, req, res, discordID) {
                             'Dominos store-locator non-store response:',
                             hostname,
                             r.status,
-                            typeof r.data === 'string' ? r.data.slice(0, 500) : JSON.stringify(r.data).slice(0, 500)
+                            typeof r.data === 'string'
+                                ? r.data.slice(0, 500)
+                                : JSON.stringify(r.data).slice(0, 500)
                         );
                         return [];
                     }
@@ -1755,7 +1759,7 @@ exports.foodProxy = async function (req, res) {
     const imageUrl = `https://cache.dominos.com/olo/6_92_1/assets/build/market/US/_en/images/img/products/larges/${imagePath}`;
 
     try {
-        await new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
             https
                 .get(imageUrl, { headers: { 'User-Agent': 'Dominos API Wrapper' } }, (proxyRes) => {
                     const chunks = [];

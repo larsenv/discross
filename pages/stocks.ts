@@ -220,7 +220,7 @@ exports.processStocks = async function processStocks(req, res) {
         const results = await Promise.allSettled(TOP_SYMBOLS.map((sym) => fetchQuote(sym)));
         const quotes = results
             .filter((r) => r.status === 'fulfilled' && r.value !== null)
-            .map((r) => r.value);
+            .map((r) => (r as PromiseFulfilledResult<any>).value);
         return quotes.length === 0
             ? getTemplate('market-data-error', 'stocks')
             : renderTopIndices(quotes);

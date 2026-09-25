@@ -40,7 +40,7 @@ const SPORTS = [
 const ESPN_HOST = 'site.api.espn.com';
 
 function fetchJson(path) {
-    return new Promise((resolve, reject) => {
+    return new Promise<any>((resolve, reject) => {
         const req = https.request(
             {
                 hostname: ESPN_HOST,

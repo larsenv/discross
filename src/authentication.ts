@@ -78,7 +78,7 @@ function queryAll(sql, params = []) {
 }
 
 function unixTime() {
-    return Math.floor(new Date() / 1000);
+    return Math.floor(Date.now() / 1000);
 }
 
 function setup() {
@@ -608,7 +608,7 @@ exports.changePassword = async function (discordID, currentPassword, newPassword
 
 exports.checkAuth = async function (req, res, noRedirect) {
     const cookies = req.headers.cookie || '';
-    const cookiedict = {};
+    const cookiedict: Record<string, string> = {};
 
     cookies.split(';').forEach(function (cookie) {
         const parts = cookie.split('=');
@@ -805,7 +805,7 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
     // signed exactly this value (single-use, tied to this RP ID and account).
     const challengeB64url = challenge.toString('base64url');
     storePasskeyChallenge(challengeB64url, { type, discordID, rpId, challengeB64url });
-    const options = {
+    const options: any = {
         challenge: Array.from(challenge),
         timeout: 60000,
         userVerification: type === 'login' ? 'required' : 'preferred',

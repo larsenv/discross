@@ -20,68 +20,72 @@ function processReactions(
             return '';
         }
 
-        const reactionsHtml = Array.from(reactionCollection.values()).reduce((acc, reaction) => {
-            try {
-                const emoji = reaction.emoji;
-                const count = reaction.count;
+        const reactionsHtml = (Array.from(reactionCollection.values()) as any[]).reduce(
+            (acc, reaction) => {
+                try {
+                    const emoji = reaction.emoji;
+                    const count = reaction.count;
 
-                // Determine if it's a super reaction based on burst colors
-                const isSuperReaction = reaction.burst_colors && reaction.burst_colors.length > 0;
+                    // Determine if it's a super reaction based on burst colors
+                    const isSuperReaction =
+                        reaction.burst_colors && reaction.burst_colors.length > 0;
 
-                // Set background and border colors
-                const backgroundColor = isSuperReaction
-                    ? 'rgba(88, 101, 242, 0.15)'
-                    : 'rgba(79, 84, 92, 0.16)';
-                const borderColor = isSuperReaction
-                    ? 'rgba(88, 101, 242, 0.4)'
-                    : 'rgba(79, 84, 92, 0.24)';
+                    // Set background and border colors
+                    const backgroundColor = isSuperReaction
+                        ? 'rgba(88, 101, 242, 0.15)'
+                        : 'rgba(79, 84, 92, 0.16)';
+                    const borderColor = isSuperReaction
+                        ? 'rgba(88, 101, 242, 0.4)'
+                        : 'rgba(79, 84, 92, 0.24)';
 
-                const emojiHtml = (() => {
-                    if (emoji.id) {
-                        if (imagesCookie === 1) {
-                            const extension =
-                                emoji.animated && animationsCookie === 1 ? 'gif' : 'png';
-                            cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
-                            return render('channel/emoji-custom', {
-                                EMOJI_ID: emoji.id,
-                                EXT: extension,
-                                PX: '21',
-                                STYLE: 'width: 21px; height: 21px; vertical-align: middle;',
-                            });
+                    const emojiHtml = (() => {
+                        if (emoji.id) {
+                            if (imagesCookie === 1) {
+                                const extension =
+                                    emoji.animated && animationsCookie === 1 ? 'gif' : 'png';
+                                cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
+                                return render('channel/emoji-custom', {
+                                    EMOJI_ID: emoji.id,
+                                    EXT: extension,
+                                    PX: '21',
+                                    STYLE: 'width: 21px; height: 21px; vertical-align: middle;',
+                                });
+                            }
+                            return `:${emoji.name}:`;
                         }
-                        return `:${emoji.name}:`;
-                    }
-                    if (emoji.name) {
-                        if (imagesCookie === 1) {
-                            const output = unicodeToTwemojiCode(emoji.name);
-                            return render('channel/emoji-twemoji', {
-                                CODE: output,
-                                PX: '21',
-                                STYLE: 'width: 21px; height: 21px; vertical-align: middle;',
-                            });
+                        if (emoji.name) {
+                            if (imagesCookie === 1) {
+                                const output = unicodeToTwemojiCode(emoji.name);
+                                return render('channel/emoji-twemoji', {
+                                    CODE: output,
+                                    PX: '21',
+                                    STYLE: 'width: 21px; height: 21px; vertical-align: middle;',
+                                });
+                            }
+                            return emoji.name;
                         }
-                        return emoji.name;
-                    }
-                    return '';
-                })();
+                        return '';
+                    })();
 
-                // Build the reaction HTML - skip if emoji couldn't be processed
-                if (emojiHtml) {
-                    const reactionHtml = renderTemplate(reaction_template, {
-                        EMOJI: emojiHtml,
-                        COUNT: count,
-                        REACTION_BG: backgroundColor,
-                        REACTION_BORDER: borderColor,
-                    });
-                    return acc + reactionHtml;
+                    // Build the reaction HTML - skip if emoji couldn't be processed
+                    if (emojiHtml) {
+                        const reactionHtml = renderTemplate(reaction_template, {
+                            EMOJI: emojiHtml,
+                            COUNT: count,
+                            REACTION_BG: backgroundColor,
+                            REACTION_BORDER: borderColor,
+                        });
+                        return acc + reactionHtml;
+                    }
+                    return acc;
+                } catch (err) {
+                    console.error('Error processing individual reaction:', err);
+                    // Continue processing other reactions even if one fails
+                    return acc;
                 }
-                return acc;
-            } catch (err) {
-                console.error('Error processing individual reaction:', err);
-                // Continue processing other reactions even if one fails
-                return acc;
-            }
-        }, '');
+            },
+            ''
+        );
 
         if (reactionsHtml) {
             return renderTemplate(reactions_template, { REACTIONS: reactionsHtml });

@@ -164,7 +164,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                 return;
             }
 
-            const sendOptions = {
+            const sendOptions: any = {
                 content: finalMessage,
                 username: sanitizeWebhookUsername(member.displayName || member.user.tag),
                 avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,

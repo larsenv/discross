@@ -54,7 +54,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
 
         const footerText = client ? `Sent from ${client.name}` : 'Sent using Discross';
 
-        const payload = {
+        const payload: any = {
             username: sanitizeWebhookUsername(member.displayName || member.user.tag),
             avatarURL: member.user.avatarURL() || member.user.defaultAvatarURL,
             embeds: [

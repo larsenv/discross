@@ -28,7 +28,7 @@ exports.toggleImages = function toggleImages(req, res) {
             req.headers.referer ||
             '/';
         const refererUrl = new URL(returnTarget, 'http://dummy.local');
-        refererUrl.searchParams.set('images', newValue);
+        refererUrl.searchParams.set('images', String(newValue));
         const location = refererUrl.pathname + refererUrl.search;
 
         const oneYear = 365 * 24 * 60 * 60 * 1000;

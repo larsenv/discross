@@ -30,7 +30,7 @@ exports.toggleTheme = function toggleTheme(req, res) {
             req.headers.referer ||
             '/';
         const refererUrl = new URL(returnTarget, 'http://dummy.local');
-        refererUrl.searchParams.set('theme', nextTheme);
+        refererUrl.searchParams.set('theme', String(nextTheme));
         const location = refererUrl.pathname + refererUrl.search;
 
         const oneYear = 365 * 24 * 60 * 60 * 1000;
