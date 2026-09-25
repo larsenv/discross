@@ -1,6 +1,6 @@
 <p align="center" dir="auto"><a href="https://discross.net/" rel="nofollow"><img src="./pages/static/resources/logo_full.png" alt="Discross Logo" style="max-width: 100%;"></a></p>
 
-**Discross** is a universal Discord client designed to work on any device with a basic HTML web browser. Access Discord on everything from retro consoles to modern smartphones.
+Discross is a bot designed to view Discord work on any device with a basic HTML web browser. Access Discord on retro consoles, old computers, and modern devices.
 
 # Try it!
 
