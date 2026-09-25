@@ -11,7 +11,8 @@
         "jsx": "react-jsx",
         "skipLibCheck": true,
         "esModuleInterop": true,
-        "allowJs": true
+        "allowJs": true,
+        "moduleDetection": "force"
     },
     "include": ["**/*.ts", "**/*.js"],
     "exclude": ["node_modules", "dist"]
