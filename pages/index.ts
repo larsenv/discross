@@ -27,7 +27,7 @@ exports.processIndex = async function (bot, req, res, args) {
         SEO_METADATA: generateSEOMetadata(req, {
             title: pageTitle,
             description:
-                'Discross is a bot designed to view Discord work on any device with a basic HTML web browser. Access Discord on retro consoles, old computers, and modern devices.',
+                'Discross is an accessibility bridge that renders Discord channels for devices with basic HTML web browsers. Access Discord on vintage computers, retro game consoles, and low-resource hardware.',
         }),
     });
     res.writeHead(200, { 'Content-Type': 'text/html' });
