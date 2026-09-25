@@ -180,6 +180,16 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             description: seoDescription,
         });
 
+        // Pre-fills the search page with this server + channel scoped, but the
+        // guild dropdown there stays editable so the user can still search any
+        // of their other servers.
+        const searchUrl =
+            '/search?dguild=' +
+            encodeURIComponent(chnl.guild.id) +
+            '&dchannel=' +
+            encodeURIComponent(chnl.id) +
+            (urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '');
+
         if (!member.permissionsIn(chnl).has(PermissionFlagsBits.ReadMessageHistory, true)) {
             const final = renderTemplate(baseTemplate, {
                 INPUT: inputHtml,
@@ -187,6 +197,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                 CHANNEL_NAME: escape(channelDisplayName),
                 SESSION_ID: urlSessionID,
                 SESSION_PARAM: sessionParam,
+                SEARCH_URL: searchUrl,
                 EMOJI_DISPLAY: urlEmoji === '1' ? '' : 'display: none;',
                 EMOJI_TOGGLE_URL: buildEmojiToggleUrl(chnl.id, urlEmoji === '1', sessionParam),
                 PAGE_TITLE: pageTitle,
@@ -226,6 +237,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         const final = renderTemplate(baseTemplate, {
             REFRESH_URL: refreshUrl,
+            SEARCH_URL: searchUrl,
             INPUT: inputHtml,
             RANDOM_EMOJI: RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)],
             CHANNEL_NAME: escape(channelDisplayName),
