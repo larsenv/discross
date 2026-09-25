@@ -1066,10 +1066,13 @@ async function fetchGameApplication(id) {
  * @param {boolean} isLight - Whether the light theme is active.
  * @returns {string} The rendered HTML card.
  */
-function renderGameMentionCard(app, isLight) {
-    const iconUrl = app.icon
-        ? `https://cdn.discordapp.com/app-icons/${app.id}/${app.icon}.png`
-        : GAME_MENTION_FALLBACK_ICON;
+function renderGameMentionCard(app, isLight, imagesCookie) {
+    const iconUrl =
+        app.icon && imagesCookie === 1
+            ? `/imageProxy/external/${Buffer.from(
+                  `https://cdn.discordapp.com/app-icons/${app.id}/${app.icon}.png`
+              ).toString('base64')}`
+            : GAME_MENTION_FALLBACK_ICON;
     return render('channel/game-mention', {
         APP_ID: app.id,
         ICON_URL: escape(iconUrl),
@@ -1089,9 +1092,12 @@ function renderGameMentionCard(app, isLight) {
  * @param {boolean} [compact=false] - Render a plain text pill instead of the
  *   full icon+name card; used for reply previews, which are single-line and
  *   length-capped, so a multi-cell table risks corrupting the truncation.
+ * @param {number} [imagesCookie] - User preference for images; game icons are
+ *   proxied through /imageProxy when enabled, and fall back to a local asset
+ *   (never hotlinked) when disabled.
  * @returns {Promise<string>} The text with game mentions resolved.
  */
-async function resolveGameMentions(messagetext, req, tmpl_mention, compact = false) {
+async function resolveGameMentions(messagetext, req, tmpl_mention, compact = false, imagesCookie) {
     const ids = [...new Set([...messagetext.matchAll(/&lt;@\$(\d{16,20})&gt;/g)].map((m) => m[1]))];
     if (ids.length === 0) return messagetext;
 
@@ -1112,7 +1118,7 @@ async function resolveGameMentions(messagetext, req, tmpl_mention, compact = fal
             return renderTemplate(tmpl_mention, {
                 '{$USERNAME}': '@' + normalizeWeirdUnicode(app.name),
             });
-        return renderGameMentionCard(app, isLight);
+        return renderGameMentionCard(app, isLight, imagesCookie);
     });
 }
 
@@ -1602,7 +1608,13 @@ async function resolveReplyData(
                   html = renderKnownMentions(html, replyMessage, discordID, member, templates);
                   html = await resolveRemainingMentions(html, chnl, memberCache, templates.mention);
                   html = await resolveChannelMentions(html, bot, chnl);
-                  html = await resolveGameMentions(html, req, templates.mention, true);
+                  html = await resolveGameMentions(
+                      html,
+                      req,
+                      templates.mention,
+                      true,
+                      imagesCookie
+                  );
                   html = renderEveryoneMentions(html, replyMessage, templates);
                   // Channel mentions wrap their pill in a link to the channel.
                   // The preview as a whole is already an <a> that jumps to the
@@ -1999,7 +2011,13 @@ async function renderMessageContent(item, context) {
 
     const withChannelMentions = await resolveChannelMentions(withRemainingMentions, bot, chnl);
 
-    const withGameMentions = await resolveGameMentions(withChannelMentions, req, templates.mention);
+    const withGameMentions = await resolveGameMentions(
+        withChannelMentions,
+        req,
+        templates.mention,
+        false,
+        imagesCookie
+    );
 
     const withEveryoneMentions = renderEveryoneMentions(withGameMentions, item, templates);
 
