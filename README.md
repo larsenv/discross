@@ -1,6 +1,6 @@
 <p align="center" dir="auto"><a href="https://discross.net/" rel="nofollow"><img src="./pages/static/resources/logo_full.png" alt="Discross Logo" style="max-width: 100%;"></a></p>
 
-**Discross** is a universal Discord client designed to work on any device with a basic HTML web browser. Access Discord on everything from retro consoles to modern smartphones.
+Discross is a bot designed to view Discord work on any device with a basic HTML web browser. Access Discord on retro consoles, old computers, and modern devices.
 
 # Try it!
 
@@ -11,8 +11,8 @@ You can try out Discross there without having to invite the bot to your own serv
 
 ### All of these steps have to be performed on a modern device that can access Discord.com
 
-1. Use the [link](https://discordapp.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot&permissions=536939520) to add Discross to your server (replace YOUR_CLIENT_ID with your bot's Client ID). Not necessary if you're already on a server with the bot.
-2. Type `^connect` on the server to get your verification code
+1. Use the [link](https://discordapp.com/oauth2/authorize?client_id=968999890640338955&scope=bot&permissions=536870912) to add Discross to your server (replace YOUR_CLIENT_ID with your bot's Client ID). Not necessary if you're already on a server with the bot.
+2. Use the `/connect` on the server to get your verification code
 3. Go to [discross.net](https://discross.net/)
 4. Register on the website with that code
 5. Click the "update your server list" button to authorize Discross with your Discord account (only required on first login or when you've added/removed servers)
