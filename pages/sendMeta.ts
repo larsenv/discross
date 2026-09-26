@@ -7,6 +7,7 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const discord = require('discord');
 
 const { getTemplate, renderTemplate, render, sanitizeWebhookUsername } = require('./utils');
+const { checkSlowMode, recordSend } = require('./slowMode');
 
 exports.sendMeta = async function (bot, req, res, channelId) {
     const discordID = await auth.checkAuth(req, res);
@@ -29,6 +30,18 @@ exports.sendMeta = async function (bot, req, res, channelId) {
             res.end(
                 render('misc/error-text', {
                     MESSAGE: "You don't have permission to do that!",
+                })
+            );
+            return;
+        }
+
+        // Webhook sends bypass Discord's own slow mode, so enforce it here.
+        const slowModeCheck = checkSlowMode(chnl, discordID, member);
+        if (!slowModeCheck.allowed) {
+            res.writeHead(429, { 'Content-Type': 'text/html' });
+            res.end(
+                render('misc/error-text', {
+                    MESSAGE: `This channel is in slow mode. Please wait ${slowModeCheck.retryAfterSeconds}s before sending another message.`,
                 })
             );
             return;
@@ -76,6 +89,7 @@ exports.sendMeta = async function (bot, req, res, channelId) {
         }
 
         const message = await webhook.send(payload);
+        recordSend(chnl, discordID);
 
         if (userAgentStr && message && message.id) {
             auth.queryRun(

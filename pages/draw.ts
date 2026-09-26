@@ -97,7 +97,12 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             const botMember = await chnl.guild.members.fetch(bot.client.user.id);
             const member = await chnl.guild.members.fetch(discordID);
 
-            const canView = await require('./utils').canViewChannel(member, botMember, chnl);
+            const canView = await require('./utils').canViewChannel(
+                member,
+                botMember,
+                chnl,
+                discordID
+            );
             if (!canView) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
                 res.end(getTemplate('draw-permission-error', 'misc'));

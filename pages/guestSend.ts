@@ -16,6 +16,9 @@ const {
 } = require('./utils');
 const { checkAndMarkNonce } = require('./messageDedup');
 const { verifyCaptchaPass } = require('./guestCaptcha');
+const { isNsfwChannel } = require('./nsfwUtils');
+const { checkSlowMode, recordSend } = require('./slowMode');
+const { getClientIP } = require('../src/timezoneUtils');
 
 exports.guestSend = async function guestSend(bot, req, res) {
     // Reject cross-site initiated guest sends (CSRF): the guest_name /
@@ -73,6 +76,14 @@ exports.guestSend = async function guestSend(bot, req, res) {
         return;
     }
 
+    // Guests have no Discord account to age-verify, so NSFW channels are
+    // never sendable by a guest regardless of the guest-channel setting.
+    if (isNsfwChannel(channel)) {
+        res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
+        res.end();
+        return;
+    }
+
     // Only send non-empty messages
     if (typeof rawMessage === 'string' && rawMessage.trim() !== '') {
         // Deduplicate: if this nonce was already processed, skip sending
@@ -80,6 +91,18 @@ exports.guestSend = async function guestSend(bot, req, res) {
         if (checkAndMarkNonce(nonce)) {
             res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
             res.end();
+            return;
+        }
+
+        // Webhook sends bypass Discord's own slow mode, so enforce it here.
+        // Guests have no Discord account, so key by client IP instead.
+        const guestSenderKey = `guest:${getClientIP(req)}`;
+        const slowModeCheck = checkSlowMode(channel, guestSenderKey, null);
+        if (!slowModeCheck.allowed) {
+            res.writeHead(429, { 'Content-Type': 'text/html' });
+            res.end(
+                `This channel is in slow mode. Please wait ${slowModeCheck.retryAfterSeconds}s before sending another message.`
+            );
             return;
         }
 
@@ -102,6 +125,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
             sendOptions.threadId = channel.id;
         }
         const message = await webhook.send(sendOptions);
+        recordSend(channel, guestSenderKey);
 
         const userAgent = req.headers['user-agent'];
         if (userAgent && message && message.id) {

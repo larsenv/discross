@@ -17,6 +17,8 @@ const {
     processUnicodeEmojiInText,
 } = require('./emojiUtils');
 const notFound = require('./notFound');
+const { isNsfwChannel } = require('./nsfwUtils');
+const { isAgeVerified } = require('./ageVerification');
 
 function formatAuthorName(name) {
     if (!name) return '';
@@ -168,7 +170,18 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
                 return;
             }
 
-            const canView = await require('./utils').canViewChannel(member, botMember, chnl);
+            if (isNsfwChannel(chnl) && !(await isAgeVerified(discordID))) {
+                res.writeHead(403, { 'Content-Type': 'text/html' });
+                res.end(render('misc/nsfw-gate', {}));
+                return;
+            }
+
+            const canView = await require('./utils').canViewChannel(
+                member,
+                botMember,
+                chnl,
+                discordID
+            );
             if (!canView) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
                 res.end(getTemplate('no-permission', 'misc'));
