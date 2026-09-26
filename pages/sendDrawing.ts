@@ -14,6 +14,7 @@ const {
     renderTemplate,
     render,
 } = require('./utils');
+const { checkSlowMode, recordSend } = require('./slowMode');
 
 function decodeBmpToRgba(bmpBuf) {
     if (bmpBuf.length < 54 || bmpBuf[0] !== 0x42 || bmpBuf[1] !== 0x4d) {
@@ -86,6 +87,18 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             res.end(
                 render('misc/error-text', {
                     MESSAGE: "You don't have permission to do that!",
+                })
+            );
+            return;
+        }
+
+        // Webhook sends bypass Discord's own slow mode, so enforce it here.
+        const slowModeCheck = checkSlowMode(channel, discordID, member);
+        if (!slowModeCheck.allowed) {
+            res.writeHead(429, { 'Content-Type': 'text/html' });
+            res.end(
+                render('misc/error-text', {
+                    MESSAGE: `This channel is in slow mode. Please wait ${slowModeCheck.retryAfterSeconds}s before sending another message.`,
                 })
             );
             return;
@@ -227,6 +240,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
         }
 
         const message = await webhook.send(webhookOptions);
+        recordSend(channel, discordID);
 
         const userAgentStr = req.headers['user-agent'];
         if (userAgentStr && message && message.id) {

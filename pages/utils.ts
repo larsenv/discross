@@ -772,7 +772,7 @@ function httpsGet(options, maxRedirects) {
  * @param {import('discord.js').BaseGuildTextChannel|import('discord.js').AnyThreadChannel} chnl - The channel.
  * @returns {Promise<boolean>} True if viewable, false otherwise.
  */
-async function canViewChannel(member, botMember, chnl) {
+async function canViewChannel(member, botMember, chnl, discordID) {
     const { PermissionFlagsBits, ChannelType } = require('discord');
 
     if (!botMember || !chnl) return false;
@@ -787,6 +787,17 @@ async function canViewChannel(member, botMember, chnl) {
     // Discussion based channels (Forum/Media) are not directly viewable in this app
     if (chnl.type === ChannelType.GuildForum || chnl.type === ChannelType.GuildMedia) {
         return false;
+    }
+
+    // NSFW channels require the viewer's Discord account to be age-verified
+    // the same way Discord's own clients gate them. Discross can't run
+    // Discord's verification flow itself, so anyone we can't confirm this
+    // for — including guests, who have no Discord account at all — is denied.
+    const { isNsfwChannel } = require('./nsfwUtils');
+    if (isNsfwChannel(chnl)) {
+        if (!discordID) return false;
+        const { isAgeVerified } = require('./ageVerification');
+        if (!(await isAgeVerified(discordID))) return false;
     }
 
     // Thread membership check: if member is provided, they must be a member to view

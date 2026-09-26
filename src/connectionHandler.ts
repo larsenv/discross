@@ -90,15 +90,23 @@ exports.sendToAll = sendToAll;
 async function canListenToChannel(discordID, channelID) {
     if (!channelID) return false;
 
-    // Guest-enabled channels are viewable without an account (parity with the
-    // HTTP guest channel view).
-    if (!discordID) {
-        return auth.isGuestChannel(channelID);
-    }
-
     // Lazy require to avoid a load-time circular dependency (bot.js requires
     // this module). Node resolves the cached module fine at call time.
     const bot = require('./bot');
+    const { isNsfwChannel } = require('../pages/nsfwUtils');
+
+    // Guest-enabled channels are viewable without an account (parity with the
+    // HTTP guest channel view), but a guest has no Discord account to
+    // age-verify, so NSFW channels stay off-limits to them regardless.
+    if (!discordID) {
+        if (!auth.isGuestChannel(channelID)) return false;
+        if (!bot.client) return false;
+        const guestChannel =
+            bot.client.channels.cache.get(channelID) ||
+            (await bot.client.channels.fetch(channelID).catch(() => null));
+        return !!guestChannel && !isNsfwChannel(guestChannel);
+    }
+
     const { canViewChannel } = require('../pages/utils');
     if (!bot.client) return false;
 
@@ -111,7 +119,7 @@ async function canListenToChannel(discordID, channelID) {
     if (!member) return false;
     const botMember = channel.guild.members.me;
 
-    return canViewChannel(member, botMember, channel);
+    return canViewChannel(member, botMember, channel, discordID);
 }
 
 /**

@@ -70,7 +70,7 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
             return;
         }
 
-        const canView = await require('./utils').canViewChannel(member, botMember, chnl);
+        const canView = await require('./utils').canViewChannel(member, botMember, chnl, discordID);
         if (!canView) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
             res.end(getTemplate('no-permission', 'misc'));

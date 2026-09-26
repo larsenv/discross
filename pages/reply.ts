@@ -16,13 +16,16 @@ const {
     renderTemplate,
     render,
 } = require('./utils');
+const { checkSlowMode, recordSend } = require('./slowMode');
 
 exports.replyMessage = async function replyMessage(bot, req, res, args, discordID) {
     try {
         // Reject cross-site initiated replies (CSRF); see isCrossSiteRequest.
         if (isCrossSiteRequest(req)) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
-            res.end(render('misc/error-text', { MESSAGE: 'Request blocked for security reasons.' }));
+            res.end(
+                render('misc/error-text', { MESSAGE: 'Request blocked for security reasons.' })
+            );
             return;
         }
         const parsedurl = new URL(req.url, 'http://localhost');
@@ -64,6 +67,18 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
                 res.end(
                     render('misc/error-text', {
                         MESSAGE: "You don't have permission to do that!",
+                    })
+                );
+                return;
+            }
+
+            // Webhook sends bypass Discord's own slow mode, so enforce it here.
+            const slowModeCheck = checkSlowMode(channel, discordID, member);
+            if (!slowModeCheck.allowed) {
+                res.writeHead(429, { 'Content-Type': 'text/html' });
+                res.end(
+                    render('misc/error-text', {
+                        MESSAGE: `This channel is in slow mode. Please wait ${slowModeCheck.retryAfterSeconds}s before sending another message.`,
                     })
                 );
                 return;
@@ -131,6 +146,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             }
 
             const message = await webhook.send(sendOptions);
+            recordSend(channel, discordID);
 
             const userAgentStr = req.headers['user-agent'];
             if (userAgentStr && message && message.id) {

@@ -13,6 +13,7 @@ const {
     sanitizeWebhookUsername,
 } = require('./utils');
 const { getOrCreateWebhook } = require('./webhookCache');
+const { checkSlowMode, recordSend } = require('./slowMode');
 const mime = require('mime-types');
 
 // Upload file to x0.at and return the URL
@@ -334,6 +335,23 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             return;
                         }
 
+                        // Webhook sends bypass Discord's own slow mode, so enforce it here
+                        // (before we spend time uploading the file to the transfer host).
+                        const slowModeCheck = checkSlowMode(channel, discordID, member);
+                        if (!slowModeCheck.allowed) {
+                            cleanup();
+                            const message = `This channel is in slow mode. Please wait ${slowModeCheck.retryAfterSeconds}s before sending another message.`;
+                            if (isTraditionalSubmission) {
+                                res.writeHead(429, { 'Content-Type': 'text/html' });
+                                res.end(render('misc/script-alert-back', { MESSAGE: message }));
+                            } else {
+                                res.writeHead(429, { 'Content-Type': 'application/json' });
+                                res.end(JSON.stringify({ success: false, error: message }));
+                            }
+                            resolve();
+                            return;
+                        }
+
                         let webhook;
                         try {
                             webhook = await getOrCreateWebhook(channel, channel.guild.id);
@@ -411,6 +429,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             sendOptions.threadId = channel.id;
                         }
                         const message = await webhook.send(sendOptions);
+                        recordSend(channel, discordID);
 
                         const userAgentStr = req.headers['user-agent'];
                         if (userAgentStr && message && message.id) {

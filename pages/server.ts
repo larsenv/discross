@@ -35,6 +35,9 @@ const thread_group_header_template = getTemplate('thread-group-header', 'channel
 const forum_channel_template = getTemplate('forum-channel', 'channellist');
 const locked_channel_template = getTemplate('locked-channel', 'channellist');
 const rules_channel_template = getTemplate('rules-channel', 'channellist');
+const nsfw_channel_template = getTemplate('nsfw-channel', 'channellist');
+const { isNsfwChannel } = require('./nsfwUtils');
+const { isAgeVerified } = require('./ageVerification');
 
 const server_icon_template = getTemplate('server-icon', 'server');
 
@@ -61,6 +64,7 @@ const lock = new AsyncLock();
 async function processServerChannels(server, member, response, sessionParam) {
     try {
         const discordID = member.id;
+        const ageVerified = await isAgeVerified(discordID);
 
         // Fetch active threads for this server
         const activeThreadsList = await server.channels
@@ -171,7 +175,12 @@ async function processServerChannels(server, member, response, sessionParam) {
                     const canSendMessages = member
                         .permissionsIn(item)
                         .has(PermissionFlagsBits.SendMessages, true);
-                    if (!canSendMessages) {
+                    if (isNsfwChannel(item) && !ageVerified) {
+                        channelList += render('channellist/nsfw-channel', {
+                            CHANNEL_NAME: escapedName,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
+                        });
+                    } else if (!canSendMessages) {
                         channelList += render('channellist/locked-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
@@ -194,7 +203,12 @@ async function processServerChannels(server, member, response, sessionParam) {
 
                     const isRulesChannel = item.name.toLowerCase().includes('rule');
 
-                    if (isRulesChannel) {
+                    if (isNsfwChannel(item) && !ageVerified) {
+                        channelList += render('channellist/nsfw-channel', {
+                            CHANNEL_NAME: escapedName,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
+                        });
+                    } else if (isRulesChannel) {
                         channelList += render('channellist/rules-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
@@ -644,7 +658,9 @@ async function refreshDiscordServers(bot, discordID) {
         }
     } catch (err) {
         if (err.message && err.message.includes('401: Unauthorized')) {
-            console.warn(`Discord user token unauthorized for user ${discordID}; skipping guild refresh`);
+            console.warn(
+                `Discord user token unauthorized for user ${discordID}; skipping guild refresh`
+            );
             return;
         }
         console.error('Error refreshing Discord guilds:', err);

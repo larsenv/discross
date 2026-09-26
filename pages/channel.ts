@@ -22,6 +22,8 @@ const {
 const { getTimezoneFromIP } = require('../src/timezoneUtils');
 const { isLegacyClient } = require('./userAgentUtils');
 const { buildMessagesHtml } = require('./messageRenderer');
+const { isNsfwChannel } = require('./nsfwUtils');
+const { isAgeVerified } = require('./ageVerification');
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
     const parsedUrl = new URL(req.url, 'http://localhost');
@@ -97,7 +99,15 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             return;
         }
 
-        const canView = await canViewChannel(member, botMember, chnl);
+        // Age-restricted channels get a dedicated gate instead of the generic
+        // permission error so the user knows why and how to resolve it.
+        if (isNsfwChannel(chnl) && !(await isAgeVerified(discordID))) {
+            res.writeHead(403, { 'Content-Type': 'text/html' });
+            res.end(render('misc/nsfw-gate', {}));
+            return;
+        }
+
+        const canView = await canViewChannel(member, botMember, chnl, discordID);
 
         if (!canView) {
             res.writeHead(403, { 'Content-Type': 'text/html' });

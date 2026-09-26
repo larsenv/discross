@@ -121,7 +121,7 @@ async function renderMessageSearchResults(
         }
         const viewable = [];
         for (const c of matches.values()) {
-            if (await canViewChannel(member, botMember, c)) viewable.push(c.id);
+            if (await canViewChannel(member, botMember, c, discordID)) viewable.push(c.id);
         }
         if (viewable.length === 0) {
             return `<p>You don't have access to #${escape(needle)}.</p>`;
@@ -159,7 +159,7 @@ async function renderMessageSearchResults(
                 (await bot.client.channels.fetch(msg.channel_id).catch(() => null));
             channelCache.set(msg.channel_id, channel);
         }
-        if (channel && (await canViewChannel(member, botMember, channel))) {
+        if (channel && (await canViewChannel(member, botMember, channel, discordID))) {
             visibleResults.push({ msg, channel });
         }
     }
@@ -272,8 +272,7 @@ exports.processSearch = async function processSearch(bot, req, res) {
                     undefined
                 );
                 const { images: cookieImages } = parseCookies(req);
-                const imagesCookie =
-                    cookieImages !== undefined ? parseInt(cookieImages, 10) : 1;
+                const imagesCookie = cookieImages !== undefined ? parseInt(cookieImages, 10) : 1;
                 discordResultsHtml = await renderMessageSearchResults(
                     bot,
                     dguild,
