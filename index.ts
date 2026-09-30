@@ -902,6 +902,8 @@ async function handleDiscordOAuth(req, res, parsedurl) {
                     tokenData.refresh_token,
                     Math.floor(Date.now() / 1000) + (tokenData.expires_in || 0)
                 );
+                // Drop any stale "unverified" result so the new token is checked immediately
+                require('./pages/ageVerification').clearAgeVerificationCache(discordID);
             } else {
                 throw new Error('Failed to exchange code: ' + JSON.stringify(tokenData));
             }

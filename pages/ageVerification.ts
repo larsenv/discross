@@ -112,6 +112,11 @@ async function isAgeVerified(discordID) {
         }
         const user: any = await response.json();
         const verified = user?.nsfw_allowed === true;
+        if (!verified) {
+            console.warn(
+                `Age check for ${discordID}: nsfw_allowed=${user?.nsfw_allowed} (field ${'nsfw_allowed' in (user || {}) ? 'present' : 'absent'} in /users/@me)`
+            );
+        }
         cacheSet(discordID, verified);
         return verified;
     } catch (err) {
@@ -121,4 +126,8 @@ async function isAgeVerified(discordID) {
     }
 }
 
-module.exports = { isAgeVerified };
+function clearAgeVerificationCache(discordID) {
+    verifiedCache.delete(discordID);
+}
+
+module.exports = { isAgeVerified, clearAgeVerificationCache };
