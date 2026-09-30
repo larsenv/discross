@@ -103,7 +103,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         // permission error so the user knows why and how to resolve it.
         if (isNsfwChannel(chnl) && !(await isAgeVerified(discordID))) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
-            res.end(render('misc/nsfw-gate', {}));
+            res.end(
+                render('misc/nsfw-gate', {
+                    STATE: encodeURIComponent('return:' + req.url),
+                })
+            );
             return;
         }
 

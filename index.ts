@@ -952,7 +952,16 @@ async function handleDiscordOAuth(req, res, parsedurl) {
                 }
             }
 
-            if (query.get('state') === 'sync') {
+            const state = query.get('state') || '';
+            const returnPath = state.startsWith('return:') ? state.slice(7) : '';
+            if (
+                returnPath.startsWith('/') &&
+                !returnPath.startsWith('//') &&
+                !returnPath.includes('\\')
+            ) {
+                res.writeHead(302, { Location: returnPath });
+                res.end();
+            } else if (state === 'sync') {
                 res.writeHead(200, { 'Content-Type': 'text/html' });
                 res.end(getTemplate('sync-complete-script', 'misc'));
             } else {

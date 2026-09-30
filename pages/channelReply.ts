@@ -172,7 +172,11 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
 
             if (isNsfwChannel(chnl) && !(await isAgeVerified(discordID))) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
-                res.end(render('misc/nsfw-gate', {}));
+                res.end(
+                    render('misc/nsfw-gate', {
+                        STATE: encodeURIComponent('return:' + req.url),
+                    })
+                );
                 return;
             }
 
