@@ -768,7 +768,7 @@ exports.processMovies = async function processMovies(req, res, discordID) {
                 .join('\n');
         }
     } catch (err) {
-        console.error('Rotten Tomatoes fetch error:', err);
+        console.warn('Rotten Tomatoes fetch failed, rendering fallback:', (err as Error).message);
         moviesHtml = strReplace(
             templates.empty,
             '{$MESSAGE}',
