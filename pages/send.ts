@@ -213,12 +213,17 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
             Location: `${baseUrl}/channels/${redirectChannel}${sessionPart}#end`,
         });
         req_res.end();
-    } catch (err) {
+    } catch (err: any) {
         if (
             err.code === 50006 ||
             (err.message && err.message.includes('Cannot send an empty message'))
         ) {
             console.warn('Attempted to send empty message:', err.message);
+        } else if (
+            err.name === 'AbortError' ||
+            (err.message && err.message.includes('This operation was aborted'))
+        ) {
+            console.warn('Message send request aborted (client cancelled or timed out):', err.message);
         } else {
             console.error('Error sending message:', err);
         }

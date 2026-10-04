@@ -59,8 +59,18 @@ if (process.env.SENTRY_DSN) {
             if (
                 message.includes('rate limited') ||
                 message.includes('limitate') ||
-                (error && error.status === 429) ||
+                message.includes('limitadas') ||
+                (error && (error.status === 429 || error.httpStatus === 429 || error.code === 429)) ||
                 (error && error.code === 20028)
+            ) {
+                return null;
+            }
+
+            // Ignore aborted HTTP requests (e.g. client aborted / timeout on Discord sends)
+            if (
+                (error && error.name === 'AbortError') ||
+                message.includes('AbortError') ||
+                message.includes('This operation was aborted')
             ) {
                 return null;
             }

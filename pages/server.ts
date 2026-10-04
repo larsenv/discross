@@ -656,13 +656,21 @@ async function refreshDiscordServers(bot, discordID) {
                 }
             }
         }
-    } catch (err) {
-        if (err.message && err.message.includes('401: Unauthorized')) {
+    } catch (err: any) {
+        if (
+            (err.code === 429 || err.httpStatus === 429) ||
+            (err.message && (
+                err.message.includes('401: Unauthorized') ||
+                err.message.includes('rate limited') ||
+                err.message.includes('limitadas')
+            ))
+        ) {
             console.warn(
-                `Discord user token unauthorized for user ${discordID}; skipping guild refresh`
+                `Discord API rate limited or unauthorized during guild refresh for user ${discordID}: ${err.message}`
             );
             return;
         }
         console.error('Error refreshing Discord guilds:', err);
     }
 }
+

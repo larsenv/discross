@@ -161,8 +161,15 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
 
         res.writeHead(302, { Location: `/channels/${parsedurl.searchParams.get('channel')}#end` });
         res.end();
-    } catch (err) {
-        console.error('Error sending message:', err);
+    } catch (err: any) {
+        if (
+            err.name === 'AbortError' ||
+            (err.message && err.message.includes('This operation was aborted'))
+        ) {
+            console.warn('Reply send request aborted (client cancelled or timed out):', err.message);
+        } else {
+            console.error('Error sending message:', err);
+        }
         res.writeHead(500, { 'Content-Type': 'text/html' });
         res.end(
             getTemplate('generic-error', 'misc').replace(
