@@ -1,4 +1,5 @@
 'use strict';
+const { isNsfwBlocked } = require('./nsfwUtils');
 
 const auth = require('../src/authentication');
 const { getOrCreateWebhook } = require('./webhookCache');
@@ -26,7 +27,11 @@ exports.sendMeta = async function (bot, req, res, channelId) {
         const resolvedMsg = query.message;
 
         const member = await chnl.guild.members.fetch(discordID).catch(() => null);
-        if (!member || !member.permissionsIn(chnl).has(discord.PermissionFlagsBits.SendMessages)) {
+        if (
+            !member ||
+            !member.permissionsIn(chnl).has(discord.PermissionFlagsBits.SendMessages) ||
+            (await isNsfwBlocked(chnl, discordID))
+        ) {
             res.end(
                 render('misc/error-text', {
                     MESSAGE: "You don't have permission to do that!",

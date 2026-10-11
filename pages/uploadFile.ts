@@ -1,4 +1,5 @@
 'use strict';
+const { isNsfwBlocked } = require('./nsfwUtils');
 const fs = require('fs');
 const https = require('https');
 const bot = require('../src/bot');
@@ -312,7 +313,8 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         if (
                             !member
                                 .permissionsIn(channel)
-                                .has(discord.PermissionFlagsBits.SendMessages)
+                                .has(discord.PermissionFlagsBits.SendMessages) ||
+                            (await isNsfwBlocked(channel, discordID))
                         ) {
                             cleanup();
                             if (isTraditionalSubmission) {

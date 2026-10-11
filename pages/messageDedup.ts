@@ -42,3 +42,14 @@ exports.checkAndMarkNonce = function checkAndMarkNonce(nonce) {
     seenNonces.set(nonce, Date.now());
     return false;
 };
+
+/**
+ * Forget a nonce so the client can retry. Used when a send was rejected or
+ * failed before anything reached Discord; otherwise a transient error would
+ * make the retry look like a duplicate and silently drop the message.
+ */
+exports.releaseNonce = function releaseNonce(nonce) {
+    if (typeof nonce === 'string') {
+        seenNonces.delete(nonce);
+    }
+};
