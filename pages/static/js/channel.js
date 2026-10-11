@@ -242,8 +242,10 @@ function uploadFile(file) {
 // Message Sending
 // =============
 function sendMessageOrFile() {
+    // One nonce per page load: a double Enter/click re-submits the same nonce,
+    // so the server drops the duplicate instead of posting twice.
     var nonceEl = document.getElementById('nonce');
-    if (nonceEl) {
+    if (nonceEl && !nonceEl.value) {
         nonceEl.value = generateNonce();
     }
     return true;

@@ -1,4 +1,5 @@
 'use strict';
+const { isNsfwBlocked } = require('./nsfwUtils');
 const discord = require('discord');
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
@@ -62,7 +63,10 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
                 return;
             }
 
-            if (!member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages)) {
+            if (
+                !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages) ||
+                (await isNsfwBlocked(channel, discordID))
+            ) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
                 res.end(
                     render('misc/error-text', {
@@ -166,7 +170,10 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
             err.name === 'AbortError' ||
             (err.message && err.message.includes('This operation was aborted'))
         ) {
-            console.warn('Reply send request aborted (client cancelled or timed out):', err.message);
+            console.warn(
+                'Reply send request aborted (client cancelled or timed out):',
+                err.message
+            );
         } else {
             console.error('Error sending message:', err);
         }
