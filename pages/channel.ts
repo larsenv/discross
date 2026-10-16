@@ -98,15 +98,19 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             return;
         }
 
-        if (sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
-
-        const canView = await canViewChannel(member, botMember, chnl, discordID);
+        const canView = await canViewChannel(member, botMember, chnl, discordID, {
+            skipAgeGate: true,
+        });
 
         if (!canView) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
             res.end(getTemplate('no-permission', 'misc'));
             return;
         }
+
+        // Only after the view check, so the gate doesn't name a channel the
+        // caller couldn't open anyway.
+        if (sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
 
         // Fetch server emojis
         let serverEmojis = [];
@@ -131,6 +135,11 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
 
         const baseTemplate = render('/channel', {
             COMMON_HEAD: getTemplate('head', 'partials'),
+            // Keep the head's title and SEO placeholders for the final pass below;
+            // otherwise the defaults get baked into the head before the channel
+            // name is known.
+            PAGE_TITLE: '{$PAGE_TITLE}',
+            SEO_METADATA: '{$SEO_METADATA}',
             PAGE_CLASS: 'page-channel',
             EMOJI_PICKER: render(
                 isLegacy ? 'partials/emoji-picker-lite' : 'partials/emoji-picker',

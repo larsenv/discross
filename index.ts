@@ -119,6 +119,7 @@ const {
     loadAndRenderPageTemplate,
     resolveThemeValue,
     toLocalPath,
+    isCrossSiteRequest,
 } = require('./pages/utils');
 
 const messagePageTemplate = loadAndRenderPageTemplate('message');
@@ -597,8 +598,10 @@ async function handleGet(req, res) {
             toggleImages(req, res);
             break;
         case 'logout': {
+            // A GET that clears the session, so a cross-site link or image could
+            // log the user out. Only same-site requests may log out.
             const discordID = await auth.checkAuth(req, res, true);
-            if (discordID) auth.logout(discordID);
+            if (discordID && !isCrossSiteRequest(req)) auth.logout(discordID);
             res.writeHead(302, { Location: '/' });
             res.end();
             break;
@@ -854,8 +857,22 @@ async function handleGet(req, res) {
                     // fall through
                 }
             }
-            const filePath = req.url.slice(11);
-            await fileProxy(res, `https://cdn.discordapp.com/attachments/${filePath}`, req);
+            // Attachments only. Parse the joined URL first so `..` segments can't
+            // climb out of /attachments/ into other paths on the Discord CDN. The
+            // query string stays, since signed attachment URLs need it.
+            let attachmentUrl = null;
+            try {
+                attachmentUrl = new URL(
+                    `https://cdn.discordapp.com/attachments/${req.url.slice(11)}`
+                );
+            } catch (e) {
+                // fall through to the 404 below
+            }
+            if (!attachmentUrl || !attachmentUrl.pathname.startsWith('/attachments/')) {
+                await notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
+                break;
+            }
+            await fileProxy(res, attachmentUrl.href, req);
             break;
         }
         case 'wii': {
@@ -889,7 +906,9 @@ async function handleGet(req, res) {
             } else {
                 const staticDir = path.resolve('pages/static');
                 const filename = path.resolve(staticDir, sanitizer(parsedurl.pathname));
-                if (!filename.startsWith(staticDir)) {
+                // Compare whole path segments: a bare startsWith would let a sibling
+                // such as pages/static-old/ through.
+                if (filename !== staticDir && !filename.startsWith(staticDir + path.sep)) {
                     await notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
                 } else {
                     await servePage(filename, res, undefined, undefined, undefined, req);

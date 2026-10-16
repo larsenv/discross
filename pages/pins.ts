@@ -69,14 +69,22 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
             return;
         }
 
-        if (require('./nsfwUtils').sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
-
-        const canView = await require('./utils').canViewChannel(member, botMember, chnl, discordID);
+        const canView = await require('./utils').canViewChannel(
+            member,
+            botMember,
+            chnl,
+            discordID,
+            { skipAgeGate: true }
+        );
         if (!canView) {
             res.writeHead(403, { 'Content-Type': 'text/html' });
             res.end(getTemplate('no-permission', 'misc'));
             return;
         }
+
+        // Checked after the view test so the gate never names a channel the caller
+        // can't open.
+        if (require('./nsfwUtils').sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
 
         // Fetch pinned messages; fetchPins returns a paginated response with newest-pinned-first
         const pinnedResponse = await chnl.messages.fetchPins();

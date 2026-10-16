@@ -714,6 +714,13 @@ textarea:focus {
     border-color: #5865f2;
 }
 
+/* Keyboard focus uses Discord's blurple instead of the browser's black box,
+   which clashed with the light theme's composer. */
+:focus-visible {
+    outline: 2px solid #5865f2;
+    outline-offset: 1px;
+}
+
 /* ================================================================
    14. BUTTONS
    ================================================================ */
@@ -1044,6 +1051,9 @@ body.light-theme,
 .light-theme .message-form-container {
     background: #fbfbfb !important;
     border-top-color: #e3e5e8 !important;
+}
+.light-theme .message-input-bar-wrapper {
+    background: #ebedef !important;
 }
 .light-theme .icon-button:hover {
     background: rgba(0, 0, 0, 0.08);
