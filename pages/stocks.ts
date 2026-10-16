@@ -32,7 +32,6 @@ const DISPLAY_NAMES = {
 
 const stocks_template = loadAndRenderPageTemplate('stocks');
 
-const logged_in_template = getTemplate('logged-in', 'index');
 const logged_out_template = getTemplate('logged-out', 'index');
 
 function normalizeSymbol(symbol) {

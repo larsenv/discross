@@ -1,6 +1,5 @@
 'use strict';
 const escape = require('escape-html');
-const auth = require('../src/authentication');
 const {
     renderTemplate,
     getPageThemeAttr,

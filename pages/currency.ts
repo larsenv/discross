@@ -76,7 +76,6 @@ const CURRENCY_NAMES = {
 
 const currency_template = loadAndRenderPageTemplate('currency');
 
-const logged_in_template = getTemplate('logged-in', 'index');
 const logged_out_template = getTemplate('logged-out', 'index');
 
 /**

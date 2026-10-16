@@ -8,7 +8,7 @@
 // State is kept in memory only, per (channel, sender) pair, and is bounded by
 // periodic cleanup — nothing here is persisted to disk.
 
-const { PermissionFlagsBits } = require('discord');
+const { PermissionFlagsBits } = require('discord.js');
 
 const lastSentAt = new Map(); // `${channelId}:${senderKey}` -> timestamp (ms)
 

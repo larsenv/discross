@@ -1,5 +1,5 @@
 'use strict';
-const Discord = require('discord');
+const Discord = require('discord.js');
 const dns = require('dns').promises;
 const https = require('https');
 
@@ -145,11 +145,12 @@ client.on('interactionCreate', async (interaction) => {
                     return;
                 }
                 try {
-                    const member = interaction.member;
+                    // memberPermissions is resolved by Discord for this channel, so
+                    // it works even when the member isn't in the bot's cache.
                     if (
-                        !member
-                            .permissionsIn(interaction.channel)
-                            .has(Discord.PermissionFlagsBits.ManageChannels)
+                        !interaction.memberPermissions?.has(
+                            Discord.PermissionFlagsBits.ManageChannels
+                        )
                     ) {
                         await interaction.reply({
                             content: 'You need the Manage Channel permission to use this command.',
@@ -383,8 +384,26 @@ client.on('interactionCreate', async (interaction) => {
                     });
                 }
 
+                if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(backup) || backup.length > 254) {
+                    return interaction.reply({
+                        content: 'Please enter a valid backup email address.',
+                        flags: Discord.MessageFlags.Ephemeral,
+                    });
+                }
+
                 const code = auth.createMailVerificationCode(interaction.user.id, prefix, backup);
-                await mail.sendVerificationEmail(backup, code, interaction.user.username);
+                const sent = await mail.sendVerificationEmail(
+                    backup,
+                    code,
+                    interaction.user.username
+                );
+                if (!sent.success) {
+                    return interaction.reply({
+                        content:
+                            'The verification email could not be sent. Please try again later.',
+                        flags: Discord.MessageFlags.Ephemeral,
+                    });
+                }
 
                 await interaction.reply({
                     content: `A verification code has been sent to \`${backup}\`! Click the "Verify Code" button to enter it.`,
@@ -556,7 +575,7 @@ client.on('messageCreate', async function (msg) {
                 if (footerText.startsWith('To: ')) {
                     const replyTo = embed.author.name;
                     const subject = `Re: ${embed.title || 'Email'}`;
-                    let body = msg.content;
+                    const body = msg.content;
                     const attachments = [];
                     msg.attachments.forEach((att) => {
                         attachments.push({ filename: att.name, path: att.url });

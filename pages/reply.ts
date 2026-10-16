@@ -1,6 +1,4 @@
 'use strict';
-const { isNsfwBlocked } = require('./nsfwUtils');
-const discord = require('discord');
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
@@ -14,8 +12,8 @@ const {
     canMentionEveryoneIn,
     sanitizeWebhookUsername,
     getTemplate,
-    renderTemplate,
     render,
+    canSendInChannel,
 } = require('./utils');
 const { checkSlowMode, recordSend } = require('./slowMode');
 
@@ -63,10 +61,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
                 return;
             }
 
-            if (
-                !member.permissionsIn(channel).has(discord.PermissionFlagsBits.SendMessages) ||
-                (await isNsfwBlocked(channel, discordID))
-            ) {
+            if (!(await canSendInChannel(member, channel, discordID))) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
                 res.end(
                     render('misc/error-text', {

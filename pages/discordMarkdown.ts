@@ -1,11 +1,12 @@
 'use strict';
-const { renderTemplate, getTemplate, render } = require('./utils');
+const { getTemplate, render } = require('./utils');
+const { formatDiscordTimestamp } = require('../src/timezoneUtils');
 const md = require('markdown-it')({
     breaks: true,
     linkify: true,
     html: false,
 }).disable(['blockquote']);
-const hljs = require('highlight');
+const hljs = require('highlight.js');
 
 // Color map from highlight.js token classes to atom-one-dark hex colors.
 const HLJS_INLINE_STYLES = {
@@ -78,10 +79,6 @@ function highlightCode(code, lang) {
 
 function renderDiscordMarkdown(text, options: { barColor?: string; timezone?: string } = {}) {
     if (!text) return '';
-
-    const tmpl = {
-        spoiler: getTemplate('spoiler', 'discordMarkdown'),
-    };
 
     const barColor = options.barColor || '#808080';
     const timezone = options.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -157,7 +154,7 @@ function renderDiscordMarkdown(text, options: { barColor?: string; timezone?: st
     let inQuote = false;
     let currentQuoteList = [];
     let inMultiLineQuote = false;
-    let multiLineQuoteContent = [];
+    const multiLineQuoteContent = [];
 
     function flushAccumulators() {
         if (inList) {
@@ -291,7 +288,7 @@ function renderDiscordMarkdown(text, options: { barColor?: string; timezone?: st
         const items = bulletListPlaceholders[parseInt(i, 10)];
         let html = '';
         let currentLevel = 0;
-        let stack = [];
+        const stack = [];
 
         items.forEach((item) => {
             const level = Math.floor(item.indent / 2);
@@ -348,100 +345,7 @@ function renderDiscordMarkdown(text, options: { barColor?: string; timezone?: st
     );
     final = final.replace(/\uE000TIMESTAMP(\d+)\uE001/g, (m, i) => {
         const ts = timestampPlaceholders[parseInt(i, 10)];
-        const date = new Date(ts.timestamp * 1000);
-        const now = new Date();
-        const formatTime = (dt) =>
-            dt.toLocaleString('en-US', {
-                timeZone: timezone,
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-            });
-        let formatted;
-        switch (ts.format) {
-            case 'S':
-                formatted = date.toLocaleString('en-US', {
-                    timeZone: timezone,
-                    month: '2-digit',
-                    day: '2-digit',
-                    year: '2-digit',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true,
-                });
-                break;
-            case 'f':
-                formatted =
-                    date.toLocaleString('en-US', {
-                        timeZone: timezone,
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                    }) +
-                    ' at ' +
-                    formatTime(date);
-                break;
-            case 'F':
-                formatted =
-                    date.toLocaleString('en-US', {
-                        timeZone: timezone,
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                    }) +
-                    ' at ' +
-                    formatTime(date);
-                break;
-            case 'R':
-                const diffMs = date.getTime() - now.getTime();
-                const absSec = Math.abs(Math.round(diffMs / 1000));
-                const rel = diffMs < 0 ? 'ago' : 'in';
-                if (absSec < 60) formatted = `${absSec} seconds ${rel}`;
-                else if (absSec < 3600) formatted = `${Math.round(absSec / 60)} minutes ${rel}`;
-                else if (absSec < 86400) formatted = `${Math.round(absSec / 3600)} hours ${rel}`;
-                else formatted = `${Math.round(absSec / 86400)} days ${rel}`;
-                break;
-            case 'd':
-                formatted = date.toLocaleString('en-US', {
-                    timeZone: timezone,
-                    month: '2-digit',
-                    day: '2-digit',
-                    year: '2-digit',
-                });
-                break;
-            case 'D':
-                formatted = date.toLocaleString('en-US', {
-                    timeZone: timezone,
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                });
-                break;
-            case 't':
-                formatted = formatTime(date);
-                break;
-            case 'T':
-                formatted = date.toLocaleString('en-US', {
-                    timeZone: timezone,
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true,
-                });
-                break;
-            default:
-                formatted =
-                    date.toLocaleString('en-US', {
-                        timeZone: timezone,
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                    }) +
-                    ' at ' +
-                    formatTime(date);
-        }
+        const formatted = formatDiscordTimestamp(ts.timestamp, ts.format || 'f', timezone);
         return render('discordMarkdown/timestamp', { CONTENT: formatted });
     });
 

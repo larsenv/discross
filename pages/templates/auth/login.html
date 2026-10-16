@@ -29,6 +29,7 @@
           <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
           <td>
             <form action="/login" method="post">
+              <input type="hidden" name="redirect" id="login-redirect" value="{$REDIRECT_URL}" />
               <h1 style="font-size: 24px; font-weight: bold; font-family: 'rodin', Arial, Helvetica, sans-serif; color: #dddddd; margin: 0 0 8px 0;">Login</h1><br />
               {$ERROR}<br />
               <font face="'rodin', Arial, Helvetica, sans-serif" color="#dddddd">
@@ -106,7 +107,11 @@
 
                             var result = await verify.json();
                             if (verify.ok && result.success) {
-                                window.location.href = '/server/?sessionID=' + encodeURIComponent(result.sessionID) + '#end';
+                                var redirectField = document.getElementById('login-redirect');
+                                var target = (redirectField && redirectField.value) || '/server/';
+                                if (target.charAt(0) !== '/' || target.charAt(1) === '/') target = '/server/';
+                                target = target.split('#')[0];
+                                window.location.href = target + (target.indexOf('?') === -1 ? '?' : '&') + 'sessionID=' + encodeURIComponent(result.sessionID) + '#end';
                             } else {
                                 if (!isConditional) alert('Passkey login failed: ' + (result.error || 'Unknown error'));
                             }

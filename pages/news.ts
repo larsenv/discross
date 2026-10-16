@@ -2,7 +2,7 @@
 
 const escape = require('escape-html');
 const he = require('he');
-const { getClientIP, getTimezoneFromIP, formatDateWithTimezone } = require('../src/timezoneUtils');
+const { getTimezoneFromIP, formatDateWithTimezone } = require('../src/timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText } = require('./emojiUtils');
 const {

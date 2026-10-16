@@ -1,7 +1,7 @@
 'use strict';
 
 const escape = require('escape-html');
-const { PermissionFlagsBits } = require('discord');
+const { PermissionFlagsBits } = require('discord.js');
 const notFound = require('./notFound');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {
@@ -22,8 +22,6 @@ const {
 const { getTimezoneFromIP } = require('../src/timezoneUtils');
 const { isLegacyClient } = require('./userAgentUtils');
 const { buildMessagesHtml } = require('./messageRenderer');
-const { isNsfwChannel } = require('./nsfwUtils');
-const { isAgeVerified } = require('./ageVerification');
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
     const parsedUrl = new URL(req.url, 'http://localhost');
@@ -99,18 +97,6 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             return;
         }
 
-        // Age-restricted channels get a dedicated gate instead of the generic
-        // permission error so the user knows why and how to resolve it.
-        if (isNsfwChannel(chnl) && !(await isAgeVerified(discordID))) {
-            res.writeHead(403, { 'Content-Type': 'text/html' });
-            res.end(
-                render('misc/nsfw-gate', {
-                    STATE: encodeURIComponent('return:' + req.url),
-                })
-            );
-            return;
-        }
-
         const canView = await canViewChannel(member, botMember, chnl, discordID);
 
         if (!canView) {
@@ -129,7 +115,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                 animated: e.animated,
                 url: e.imageURL(),
             }));
-            serverEmojisJSON = JSON.stringify(serverEmojis);
+            // Lands inside an inline <script>, so keep '</script>' from closing it.
+            serverEmojisJSON = JSON.stringify(serverEmojis).replace(/</g, '\\u003c');
         }
 
         const {
@@ -209,7 +196,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
                 INPUT: inputHtml,
                 MESSAGES: getTemplate('no-message-history', 'channel'),
                 CHANNEL_NAME: escape(channelDisplayName),
-                SESSION_ID: urlSessionID,
+                SESSION_ID: escape(urlSessionID),
                 SESSION_PARAM: sessionParam,
                 SEARCH_URL: searchUrl,
                 EMOJI_DISPLAY: urlEmoji === '1' ? '' : 'display: none;',
@@ -256,7 +243,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             RANDOM_EMOJI: RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)],
             CHANNEL_NAME: escape(channelDisplayName),
             MESSAGES: messagesHtml,
-            SESSION_ID: urlSessionID,
+            SESSION_ID: escape(urlSessionID),
             SESSION_PARAM: sessionParam,
             EMOJI_DISPLAY: urlEmoji === '1' ? '' : 'display: none;',
             EMOJI_TOGGLE_URL: buildEmojiToggleUrl(chnl.id, urlEmoji === '1', sessionParam),

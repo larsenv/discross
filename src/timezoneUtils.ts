@@ -299,17 +299,6 @@ function formatDiscordTimestamp(unixTimestamp, format, timezone) {
         const userTimezone = timezone || _systemTimezone;
         const now = new Date();
 
-        const messageComps = getDateComponentsInTimezone(date, userTimezone);
-        const todayComps = getDateComponentsInTimezone(now, userTimezone);
-        const messageDateOnly = Date.UTC(
-            messageComps.year,
-            messageComps.month - 1,
-            messageComps.day
-        );
-        const todayDateOnly = Date.UTC(todayComps.year, todayComps.month - 1, todayComps.day);
-        const diffDays = Math.round((todayDateOnly - messageDateOnly) / MILLISECONDS_PER_DAY);
-        const diffTime = messageDateOnly - todayDateOnly;
-
         switch (format) {
             case 'S': // Short date/time: 3/18/26, 3:05:06 PM
                 return date.toLocaleString('en-US', {
@@ -365,42 +354,31 @@ function formatDiscordTimestamp(unixTimestamp, format, timezone) {
                         hour12: true,
                     })
                 );
-            case 'R': // Relative time: a minute ago, 5 months ago, etc.
+            case 'R': {
+                // Relative time, worded like Discord: "5 minutes ago" / "in 5 minutes"
                 const diffNow = date.getTime() - now.getTime();
-                const diffSeconds = Math.abs(Math.floor(diffNow / 1000));
-                const diffMinutes = Math.abs(Math.floor(diffNow / (1000 * 60)));
-                const diffHours = Math.abs(Math.floor(diffNow / (1000 * 60 * 60)));
-                const diffDaysFloor = Math.abs(Math.floor(diffNow / (1000 * 60 * 60 * 24)));
-                const diffMonths = Math.abs(Math.floor(diffDaysFloor / 30));
-                const diffYears = Math.abs(Math.floor(diffDaysFloor / 365));
+                const seconds = Math.abs(Math.floor(diffNow / 1000));
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                const days = Math.floor(hours / 24);
+                const months = Math.floor(days / 30);
+                const years = Math.floor(days / 365);
 
-                const pastOrFuture = diffNow < 0 ? 'ago' : 'in';
-
-                if (diffSeconds < 60) {
-                    return diffSeconds === 1
-                        ? 'a second ' + pastOrFuture
-                        : `${diffSeconds} seconds ` + pastOrFuture;
-                } else if (diffMinutes < 60) {
-                    return diffMinutes === 1
-                        ? 'a minute ' + pastOrFuture
-                        : `${diffMinutes} minutes ` + pastOrFuture;
-                } else if (diffHours < 24) {
-                    return diffHours === 1
-                        ? 'an hour ' + pastOrFuture
-                        : `${diffHours} hours ` + pastOrFuture;
-                } else if (diffDaysFloor < 30) {
-                    return diffDaysFloor === 1
-                        ? 'a day ' + pastOrFuture
-                        : `${diffDaysFloor} days ` + pastOrFuture;
-                } else if (diffMonths < 12) {
-                    return diffMonths === 1
-                        ? 'a month ' + pastOrFuture
-                        : `${diffMonths} months ` + pastOrFuture;
-                } else {
-                    return diffYears === 1
-                        ? 'a year ' + pastOrFuture
-                        : `${diffYears} years ` + pastOrFuture;
-                }
+                const [amount, unit, article] =
+                    seconds < 60
+                        ? [seconds, 'second', 'a']
+                        : minutes < 60
+                          ? [minutes, 'minute', 'a']
+                          : hours < 24
+                            ? [hours, 'hour', 'an']
+                            : days < 30
+                              ? [days, 'day', 'a']
+                              : months < 12
+                                ? [months, 'month', 'a']
+                                : [years, 'year', 'a'];
+                const phrase = amount === 1 ? `${article} ${unit}` : `${amount} ${unit}s`;
+                return diffNow < 0 ? `${phrase} ago` : `in ${phrase}`;
+            }
             case 'd': // Short date: 3/18/26
                 return date.toLocaleString('en-US', {
                     timeZone: userTimezone,

@@ -2,7 +2,7 @@
 
 const escape = require('escape-html');
 const he = require('he');
-const { PermissionFlagsBits, MessageReferenceType, UserFlags } = require('discord');
+const { MessageReferenceType, UserFlags } = require('discord.js');
 const { renderDiscordMarkdown } = require('./discordMarkdown');
 const {
     getDisplayName,
@@ -11,8 +11,6 @@ const {
     ensureMemberData,
 } = require('./memberUtils');
 const {
-    getClientIP,
-    getTimezoneFromIP,
     formatDateWithTimezone,
     formatDateSeparator,
     areDifferentDays,
@@ -26,26 +24,11 @@ const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {
     unicodeToTwemojiCode,
     cacheCustomEmoji,
-    getSkinToneSelectorHTML,
     processUnicodeEmojiInText,
 } = require('./emojiUtils');
 const emojiRegex = require('./twemojiRegex').regex;
-const notFound = require('./notFound');
 const auth = require('../src/authentication');
-const {
-    isBotReady,
-    parseCookies,
-    resolveTheme,
-    RANDOM_EMOJIS,
-    buildSessionParam,
-    buildEmojiToggleUrl,
-    buildEmojiExpandUrl,
-    getTemplate,
-    renderTemplate,
-    render,
-    generateSEOMetadata,
-    canViewChannel,
-} = require('./utils');
+const { getTemplate, renderTemplate, render, resolveThemeValue } = require('./utils');
 const { parseUserAgent } = require('./userAgentUtils');
 
 function formatAuthorName(name) {
@@ -426,10 +409,8 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download, 
     const tmpl_spoiler = getTemplate('spoiler-image', 'channel');
     const tmpl_normal_image = getTemplate('normal-image', 'channel');
     const tmpl_audio_player = getTemplate('audio-player', 'channel');
-    const tmpl_audio_link = getTemplate('audio-link', 'channel');
 
     const IMAGE_EXT = /\.(jpg|gif|png|jpeg|avif|svg|webp|tif|tiff)$/i;
-    const VIDEO_EXT = /\.(mp4|webm|mov|avi|mkv)$/i;
     const AUDIO_EXT = /\.(mp3|ogg|oga|wav|wave|flac|m4a|aac|opus|weba|aiff|aif)$/i;
     const imageData = [];
 
@@ -438,7 +419,6 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download, 
         if (!attachment) continue;
 
         const isImage = IMAGE_EXT.test(attachment.name);
-        const isVideo = VIDEO_EXT.test(attachment.name);
         const isAudio = AUDIO_EXT.test(attachment.name);
         const isSpoiler = attachment.name?.toUpperCase().startsWith('SPOILER_');
 
@@ -589,7 +569,7 @@ function buildProxiedImageTag(
  * @returns {string} The updated message HTML.
  */
 function replaceOrAppendMedia(messagetext, embedUrl, imgHtml) {
-    let result = messagetext || '';
+    const result = messagetext || '';
     if (embedUrl) {
         // Look for the URL inside an <a> tag and replace the whole tag with the image.
         const escaped = embedUrl.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -962,10 +942,8 @@ function renderActivityBanner(item, context) {
                 : '/resources/twemoji/1f3ae.gif';
     }
 
-    // Theme-aware colors
-    const cookies = parseCookies(req);
-    const themeValue = parseInt(cookies.whiteThemeCookie, 10) || 0;
-    const isLight = themeValue === 1;
+    // Theme-aware colors (URL ?theme= wins, for cookieless consoles)
+    const isLight = resolveThemeValue(req) === 1;
 
     return renderTemplate(templates.activityBanner, {
         AUTHOR_NAME: formatAuthorName(authorName),
@@ -1109,8 +1087,7 @@ async function resolveGameMentions(messagetext, req, tmpl_mention, compact = fal
         })
     );
 
-    const cookies = parseCookies(req);
-    const isLight = (parseInt(cookies.whiteThemeCookie, 10) || 0) === 1;
+    const isLight = resolveThemeValue(req) === 1;
 
     return messagetext.replace(/&lt;@\$(\d{16,20})&gt;/g, (match, id) => {
         const app = apps.get(id);
@@ -1254,7 +1231,7 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
         })
     );
     return messagetext.replace(/&lt;#(\d{16,20})&gt;/g, (match, id) => {
-        const { ChannelType } = require('discord');
+        const { ChannelType } = require('discord.js');
         const ch = bot.client.channels.cache.get(id);
         if (!ch) return match;
         if (ch.type === ChannelType.GuildForum || ch.type === ChannelType.GuildMedia)
@@ -2100,13 +2077,16 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     } = params;
 
     // 1. Initialize templates. We use subfolders for organized template retrieval.
-    const templates = overrideTemplates ?? {
+    // Callers may override some templates; anything they leave out falls back
+    // to the default so a partial override can't render "undefined".
+    const templates = {
         message: getTemplate('message', 'message'),
         messageForwarded: getTemplate('forwarded-message', 'message'),
         messageMentioned: getTemplate('message-mentioned', 'message'),
         messageForwardedMentioned: getTemplate('forwarded-message-mentioned', 'message'),
         firstMessageContent: getTemplate('first-message-content', 'message'),
         mergedMessageContent: getTemplate('merged-message-content', 'message'),
+        editedMarker: getTemplate('edited-marker', 'message'),
         mention: getTemplate('mention', 'message'),
         mentionHighlighted: getTemplate('mention', 'message'),
         fileDownload: getTemplate('file-download', 'channel'),
@@ -2115,6 +2095,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         dateSeparator: getTemplate('date-separator', 'message'),
         messageContinuation: getTemplate('message-continuation', 'message'),
         activityBanner: getTemplate('activity-banner', 'channel'),
+        ...overrideTemplates,
     };
 
     // For legacy/low-memory devices, we limit the number of messages rendered.
@@ -2127,7 +2108,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     const pageSize = messageLimit ?? 25;
 
     // 2. Fetch messages (or use override).
-    let allFetched =
+    const allFetched =
         overrideMessages ?? (await bot.getHistoryCached(chnl, pageSize, before, around));
 
     let messages = allFetched;
@@ -2355,9 +2336,12 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         // Apply "First" or "Merged" content templates.
         // First: Includes the message text and potential reactions.
         // Merged: Just appends the text below the previous message in the same group.
+        // Discord marks edited messages with a small "(edited)" after the text.
+        const displayText =
+            item.editedTimestamp && rawText ? rawText + templates.editedMarker : rawText;
         const wrappedText = startsNewGroup
-            ? renderTemplate(templates.firstMessageContent, { '{$MESSAGE_TEXT}': rawText })
-            : renderTemplate(templates.mergedMessageContent, { '{$MESSAGE_TEXT}': rawText });
+            ? renderTemplate(templates.firstMessageContent, { '{$MESSAGE_TEXT}': displayText })
+            : renderTemplate(templates.mergedMessageContent, { '{$MESSAGE_TEXT}': displayText });
 
         if (state.currentmessage === '') state.isContinuationBlock = !startsNewGroup;
 

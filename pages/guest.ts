@@ -1,11 +1,11 @@
 'use strict';
 
 const escape = require('escape-html');
-const { PermissionFlagsBits } = require('discord');
+const { PermissionFlagsBits } = require('discord.js');
 
 const auth = require('../src/authentication');
 const notFound = require('./notFound');
-const { getClientIP, getTimezoneFromIP } = require('../src/timezoneUtils');
+const { getTimezoneFromIP } = require('../src/timezoneUtils');
 const { buildMessagesHtml } = require('./messageRenderer');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const {

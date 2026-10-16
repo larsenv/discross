@@ -228,10 +228,6 @@ window.onload = function () {
 
     if (isServerListPage && typeof sessionStorage !== 'undefined') {
         if (!sessionStorage.getItem('discross_synced')) {
-            var protocol = window.location.protocol;
-            var host = window.location.host;
-            var origin = protocol + '//' + host;
-
             var iframe = document.createElement('iframe');
             iframe.style.display = 'none';
             // Use the templated variables replaced by the server

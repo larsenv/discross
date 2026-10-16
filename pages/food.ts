@@ -10,12 +10,10 @@ const { getTimezoneFromIP, formatDateWithTimezone } = require('../src/timezoneUt
 const {
     renderTemplate,
     getPageThemeAttr,
-    parseCookies,
     loadAndRenderPageTemplate,
     getTemplate,
     generateSEOMetadata,
 } = require('./utils');
-const AsyncLock = require('async-lock');
 
 const API_TIMEOUT_MS = 15000;
 const VERIFICATION_CODE_MIN = 100000;
@@ -856,7 +854,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
 
     // --- Tracker page ---
     if (subpath === 'track') {
-        let html = common(templates.track);
+        const html = common(templates.track);
         const lastOrder = auth.querySingle(
             'SELECT store_name, timestamp FROM pizza_orders WHERE discordID=? ORDER BY timestamp DESC LIMIT 1',
             [discordID]
@@ -1749,7 +1747,7 @@ exports.foodProxy = async function (req, res) {
     const parsedurl = new URL(req.url, 'http://localhost');
     const imagePath = parsedurl.pathname
         .replace(/^\/foodProxy\//, '')
-        .replace(/[^a-zA-Z0-9_.\-]/g, '');
+        .replace(/[^a-zA-Z0-9_.-]/g, '');
 
     if (!imagePath) {
         res.writeHead(404);

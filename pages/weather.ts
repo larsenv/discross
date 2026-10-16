@@ -125,7 +125,6 @@ function buildNavButtons(city, activeView, urlSessionID) {
 
 const weather_template = loadAndRenderPageTemplate('weather');
 
-const logged_in_template = getTemplate('logged-in', 'index');
 const logged_out_template = getTemplate('logged-out', 'index');
 
 function fetchJson(hostname, path) {

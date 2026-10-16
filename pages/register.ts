@@ -12,7 +12,6 @@ const {
 } = require('./utils');
 
 const register_template = loadAndRenderPageTemplate('register', 'auth');
-const error_template = getTemplate('error', 'login');
 const logged_out_template = getTemplate('logged-out', 'index');
 
 exports.processRegister = async function (bot, req, res, args) {

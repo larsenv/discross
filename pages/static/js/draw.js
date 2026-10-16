@@ -282,8 +282,7 @@ function onCanvasMouseMove(e) {
     lastY = pos.y;
 }
 
-function onCanvasMouseUp(e) {
-    e = e || window.event;
+function onCanvasMouseUp() {
     flushDrawQueue();
     isDrawing = false;
 }
@@ -705,11 +704,56 @@ function canvasToBmpDataUrl(c, cCtx) {
     var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     var out = [];
     var head = [
-        0x42, 0x4D, fileSize & 0xff, (fileSize >> 8) & 0xff, (fileSize >> 16) & 0xff, (fileSize >> 24) & 0xff,
-        0, 0, 0, 0, 54, 0, 0, 0,
-        40, 0, 0, 0, w & 0xff, (w >> 8) & 0xff, (w >> 16) & 0xff, (w >> 24) & 0xff,
-        h & 0xff, (h >> 8) & 0xff, (h >> 16) & 0xff, (h >> 24) & 0xff,
-        1, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        0x42,
+        0x4d,
+        fileSize & 0xff,
+        (fileSize >> 8) & 0xff,
+        (fileSize >> 16) & 0xff,
+        (fileSize >> 24) & 0xff,
+        0,
+        0,
+        0,
+        0,
+        54,
+        0,
+        0,
+        0,
+        40,
+        0,
+        0,
+        0,
+        w & 0xff,
+        (w >> 8) & 0xff,
+        (w >> 16) & 0xff,
+        (w >> 24) & 0xff,
+        h & 0xff,
+        (h >> 8) & 0xff,
+        (h >> 16) & 0xff,
+        (h >> 24) & 0xff,
+        1,
+        0,
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
     ];
     for (var k = 0; k < head.length; k++) {
         out.push(head[k]);
@@ -787,6 +831,16 @@ function prepareAndSend() {
     }
 }
 
+// Called by the emoji picker partial, which the draw page shares with the
+// channel page; appends the picked emoji to the caption box.
+function insertEmoji(code) {
+    var input = document.getElementById('message');
+    if (!input || !code) return;
+    var last = input.value.charAt(input.value.length - 1);
+    input.value += (input.value === '' || last === ' ' ? '' : ' ') + code + ' ';
+    autoResize(input);
+}
+
 function handleMessageKeydown(event) {
     var keyCode = event.keyCode || event.which;
     if (keyCode === 13 && !event.shiftKey) {
@@ -801,16 +855,17 @@ function autoResize(el) {
 
     var currentLen = el.value.length;
     var lastLen = parseInt(el.getAttribute('data-last-len') || '0');
+    var newHeight;
     el.setAttribute('data-last-len', currentLen);
 
     if (currentLen > lastLen) {
         if (el.scrollHeight > el.offsetHeight && el.offsetHeight < 200) {
-            var newHeight = Math.min(el.scrollHeight, 200);
+            newHeight = Math.min(el.scrollHeight, 200);
             el.style.height = newHeight + 'px';
         }
     } else {
         el.style.height = 'auto';
-        var newHeight = el.scrollHeight;
+        newHeight = el.scrollHeight;
         if (newHeight < 40) newHeight = 40;
         if (newHeight > 200) newHeight = 200;
         el.style.height = newHeight + 'px';

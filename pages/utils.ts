@@ -175,6 +175,26 @@ function isBotReady(bot) {
  * @param {object} req - Node.js IncomingMessage.
  * @returns {string}
  */
+/**
+ * Reduces a URL (absolute, relative or a Referer) to a path on this site.
+ *
+ * Only the path, query and hash are kept, and leading slashes/backslashes are
+ * collapsed so the result can never be a protocol-relative `//evil.example`
+ * that browsers would treat as an off-site redirect.
+ *
+ * @param {string} target - URL or path supplied by the client.
+ * @param {string} [fallback='/'] - Returned when the target can't be parsed.
+ * @returns {string}
+ */
+function toLocalPath(target, fallback = '/') {
+    try {
+        const url = new URL(String(target ?? ''), 'http://localhost');
+        return '/' + url.pathname.replace(/^[/\\]+/, '') + url.search + url.hash;
+    } catch {
+        return fallback;
+    }
+}
+
 function getBaseUrl(req) {
     const scheme = req.socket && req.socket.encrypted ? 'https' : 'http';
     const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
@@ -440,7 +460,6 @@ function buildEmojiToggleUrl(baseUrl, emojiOpen, sessionParam) {
  * @returns {string} URL with `expanded=1` added (to expand) or removed (to collapse).
  */
 function buildEmojiExpandUrl(baseUrl, expanded, sessionParam) {
-    const separator = sessionParam ? '&' : '?';
     const base = baseUrl + (sessionParam || '');
 
     // Ensure emoji=1 is present
@@ -549,7 +568,7 @@ async function resolveMentions(text, guild) {
  * @returns {boolean} True if the member may ping everyone/here and any role.
  */
 function canMentionEveryoneIn(member, channel) {
-    const { PermissionFlagsBits } = require('discord');
+    const { PermissionFlagsBits } = require('discord.js');
     try {
         return member.permissionsIn(channel).has(PermissionFlagsBits.MentionEveryone);
     } catch (err) {
@@ -773,7 +792,7 @@ function httpsGet(options, maxRedirects) {
  * @returns {Promise<boolean>} True if viewable, false otherwise.
  */
 async function canViewChannel(member, botMember, chnl, discordID) {
-    const { PermissionFlagsBits, ChannelType } = require('discord');
+    const { PermissionFlagsBits, ChannelType } = require('discord.js');
 
     if (!botMember || !chnl) return false;
 
@@ -789,16 +808,9 @@ async function canViewChannel(member, botMember, chnl, discordID) {
         return false;
     }
 
-    // NSFW channels require the viewer's Discord account to be age-verified
-    // the same way Discord's own clients gate them. Discross can't run
-    // Discord's verification flow itself, so anyone we can't confirm this
-    // for — including guests, who have no Discord account at all — is denied.
+    // Anonymous guests never see age-restricted channels.
     const { isNsfwChannel } = require('./nsfwUtils');
-    if (isNsfwChannel(chnl)) {
-        if (!discordID) return false;
-        const { isAgeVerified } = require('./ageVerification');
-        if (!(await isAgeVerified(discordID))) return false;
-    }
+    if (!discordID && isNsfwChannel(chnl)) return false;
 
     // Thread membership check: if member is provided, they must be a member to view
     if (chnl.isThread() && member) {
@@ -811,6 +823,30 @@ async function canViewChannel(member, botMember, chnl, discordID) {
     }
 
     return true;
+}
+
+/**
+ * Whether a member may post in a channel through Discross.
+ *
+ * discord.js doesn't apply Discord's implicit rule that a member who can't view
+ * a channel can't send in it either, and private channels usually only deny
+ * View Channel. So this checks the right send permission *and* the full view
+ * check, which every send path must pass.
+ *
+ * @param {import('discord.js').GuildMember} member
+ * @param {import('discord.js').GuildTextBasedChannel} chnl
+ * @param {string} discordID
+ * @returns {Promise<boolean>}
+ */
+async function canSendInChannel(member, chnl, discordID) {
+    const { PermissionFlagsBits } = require('discord.js');
+    if (!member || !chnl || !chnl.guild) return false;
+    const sendPermission =
+        typeof chnl.isThread === 'function' && chnl.isThread()
+            ? PermissionFlagsBits.SendMessagesInThreads
+            : PermissionFlagsBits.SendMessages;
+    if (!member.permissionsIn(chnl).has(sendPermission)) return false;
+    return canViewChannel(member, chnl.guild.members.me, chnl, discordID);
 }
 
 function reportError(message, error) {
@@ -887,6 +923,7 @@ module.exports = {
     isValidSnowflake,
     isBotReady,
     getBaseUrl,
+    toLocalPath,
     parseCookies,
     getPageThemeAttr,
     resolveTheme,
@@ -908,4 +945,5 @@ module.exports = {
     changeColor,
     reportError,
     canViewChannel,
+    canSendInChannel,
 };
