@@ -36,8 +36,8 @@
         "start": "tsx index.ts",
         "lint": "eslint .",
         "typecheck": "tsc --noEmit -p .",
-        "format": "prettier --write \"**/*.{ts,css,html,json}\"",
-        "format:check": "prettier --check \"**/*.{ts,css,html,json}\"",
+        "format": "prettier --write \"**/*.{ts,js,mjs,css,html,json}\"",
+        "format:check": "prettier --check \"**/*.{ts,js,mjs,css,html,json}\"",
         "check": "npm run typecheck && npm run lint && npm run format:check"
     },
     "overrides": {

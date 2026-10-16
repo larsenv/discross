@@ -1,0 +1,15 @@
+# Editor-level defaults. Prettier (.prettierrc) is the source of truth for
+# code formatting; these settings keep editors and non-Prettier files consistent.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+# Two trailing spaces are a Markdown line break.
+trim_trailing_whitespace = false
