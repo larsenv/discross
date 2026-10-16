@@ -5,6 +5,7 @@ const auth = require('../src/authentication');
 const { formidable } = require('formidable');
 const {
     isBotReady,
+    isValidSnowflake,
     render,
     sanitizeWebhookUsername,
     canSendInChannel,
@@ -232,7 +233,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         const channelId = Array.isArray(fields.channel)
                             ? fields.channel[0]
                             : fields.channel;
-                        if (!channelId || channelId === 'undefined') {
+                        if (!isValidSnowflake(channelId)) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(400, { 'Content-Type': 'text/html' });
                                 res.end(
@@ -312,10 +313,14 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             });
                         };
 
-                        const channel = await bot.client.channels.fetch(channelId);
-                        const member = await channel.guild.members.fetch(discordID);
+                        const channel = await bot.client.channels
+                            .fetch(channelId)
+                            .catch(() => null);
+                        const member = channel?.guild
+                            ? await channel.guild.members.fetch(discordID).catch(() => null)
+                            : null;
 
-                        if (!(await canSendInChannel(member, channel, discordID))) {
+                        if (!member || !(await canSendInChannel(member, channel, discordID))) {
                             cleanup();
                             if (isTraditionalSubmission) {
                                 res.writeHead(403, { 'Content-Type': 'text/html' });
@@ -471,12 +476,17 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 res.end(
                                     renderAlertBack({
-                                        MESSAGE: 'Error: ' + error.message,
+                                        MESSAGE: 'Something went wrong while uploading.',
                                     })
                                 );
                             } else {
                                 res.writeHead(500, { 'Content-Type': 'application/json' });
-                                res.end(JSON.stringify({ success: false, error: error.message }));
+                                res.end(
+                                    JSON.stringify({
+                                        success: false,
+                                        error: 'Something went wrong while uploading.',
+                                    })
+                                );
                             }
                         }
                         resolve();
@@ -499,7 +509,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                 );
             } else {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: err.message }));
+                res.end(JSON.stringify({ success: false, error: 'Internal Server Error' }));
             }
         }
     }

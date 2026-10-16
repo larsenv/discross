@@ -127,6 +127,9 @@ const CACHE_CONTROL = 'public, max-age=86400';
 // response could exhaust memory or tie up sockets.
 const MAX_UPSTREAM_BYTES = 25 * 1024 * 1024;
 const UPSTREAM_TIMEOUT_MS = 20 * 1000;
+// Decoded size matters as much as download size: a small file can expand to a
+// huge bitmap. sharp's default limit is ~268 megapixels.
+const MAX_INPUT_PIXELS = 64 * 1024 * 1024;
 
 function cacheSet(key, value) {
     if (imageCache.size >= MAX_CACHE_SIZE) {
@@ -236,7 +239,10 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
                         if (fullSize) {
                             // Still convert to GIF for compatibility, but don't resize down to 256
                             // We might still want to cap it at a reasonable "full" size for legacy browsers, e.g. 1024
-                            processedBuffer = await sharp(buffer, { animated: true })
+                            processedBuffer = await sharp(buffer, {
+                                animated: true,
+                                limitInputPixels: MAX_INPUT_PIXELS,
+                            })
                                 .resize({
                                     width: 1024,
                                     height: 1024,
@@ -259,7 +265,10 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
                                 fit: 'inside',
                                 withoutEnlargement: true,
                             };
-                            processedBuffer = await sharp(buffer, { animated: true })
+                            processedBuffer = await sharp(buffer, {
+                                animated: true,
+                                limitInputPixels: MAX_INPUT_PIXELS,
+                            })
                                 .resize(resizeOptions)
                                 .toFormat('gif', { colors: 256 })
                                 .toBuffer()

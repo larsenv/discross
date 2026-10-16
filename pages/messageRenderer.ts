@@ -28,7 +28,13 @@ const {
 } = require('./emojiUtils');
 const emojiRegex = require('./twemojiRegex').regex;
 const auth = require('../src/authentication');
-const { getTemplate, renderTemplate, render, resolveThemeValue } = require('./utils');
+const {
+    getTemplate,
+    renderTemplate,
+    render,
+    resolveThemeValue,
+    neutralizePlaceholders,
+} = require('./utils');
 const { parseUserAgent } = require('./userAgentUtils');
 
 function formatAuthorName(name) {
@@ -1760,6 +1766,7 @@ function buildAuthorPills(state) {
     const isVerifiedBot = state.lastIsVerified;
     const isSlashCommand = state.lastIsInteraction;
     const isWebhook = state.lastIsWebhook;
+    const isBot = state.lastIsBot;
     const isDiscross = state.lastIsDiscross;
 
     if (isDiscross) {
@@ -1774,7 +1781,8 @@ function buildAuthorPills(state) {
     } else {
         if (isVerifiedBot || isSlashCommand) {
             pills += getTemplate('verified-app-pill', 'channel');
-        } else if (isWebhook) {
+        } else if (isWebhook || isBot) {
+            // Discord tags every bot account "APP", not only verified ones.
             pills += getTemplate('app-pill', 'channel');
         }
     }
@@ -2391,6 +2399,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             isSystem && visibleText.length === 0
                 ? render('channel/system-message', {
                       AUTHOR_NAME: formatAuthorName(getDisplayName(currentMember, item.author)),
+                      COLOR: replyText,
                       TEXT: getSystemMessageText(item),
                   })
                 : withReactions;
@@ -2430,6 +2439,9 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
     }
     // Cleanup anchors and add the final scrolling target.
     response = removeExistingEndAnchors(response);
+    // Everything above is built from Discord-controlled text; keep it from being
+    // read as page-template placeholders (see neutralizePlaceholders).
+    response = neutralizePlaceholders(response);
     response += getTemplate('end-anchor', 'channel');
     return paginationHtml + response;
 };

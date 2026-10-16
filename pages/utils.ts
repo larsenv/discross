@@ -85,6 +85,34 @@ function loadAndRenderPageTemplate(name, folder = '', data = {}) {
 }
 
 /**
+ * Escapes page-title text for <title>. The unfilled {$PAGE_TITLE} placeholder
+ * survives untouched so templates can be rendered in two passes.
+ *
+ * @param {string} text - Plain-text title.
+ * @returns {string}
+ */
+function titleText(text) {
+    return escapeHtml(String(text));
+}
+
+/**
+ * Stops text from being treated as a template placeholder.
+ *
+ * renderTemplate resolves placeholders by plain text search, in order, over the
+ * whole page, so Discord-controlled text containing a literal "{$SESSION_ID}"
+ * (a message, an embed's url, a username) would be swapped for the viewer's real
+ * session ID by the page-level render, and a link built from it would leak the
+ * session. Apply this to HTML built from outside text before a page template
+ * receives it. The entity renders as the same character in the browser.
+ *
+ * @param {string} html - HTML (or text) that may contain "{$".
+ * @returns {string}
+ */
+function neutralizePlaceholders(html) {
+    return String(html ?? '').replace(/\{\$/g, '{&#36;');
+}
+
+/**
  * Replaces multiple template placeholders in a string.
  *
  * @param {string} template - The template string with {$PLACEHOLDER} tags.
@@ -95,8 +123,6 @@ function renderTemplate(template, data) {
     if (!template) return '';
     if (!data) data = {};
 
-    const isCachingPass = Object.keys(data).length === 0;
-
     // Global template variables
     const globalData = {
         DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
@@ -104,15 +130,18 @@ function renderTemplate(template, data) {
         DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent(
             (process.env.DISCORD_REDIRECT_URL || '').trim()
         ),
-        PAGE_TITLE:
-            data.PAGE_TITLE ??
-            (isCachingPass ? '{$PAGE_TITLE}' : 'Discross - Use Discord Anywhere'),
-        SEO_METADATA: data.SEO_METADATA ?? (isCachingPass ? '{$SEO_METADATA}' : ''),
+        // Without a title, leave the placeholder so a later pass (or the response
+        // wrapper in index.ts) supplies it; filling a default here would bake it
+        // in before the page knows its real name.
+        PAGE_TITLE: titleText(data.PAGE_TITLE ?? '{$PAGE_TITLE}'),
+        SEO_METADATA: data.SEO_METADATA ?? '{$SEO_METADATA}',
         COMMON_HEAD: getTemplate('head', 'partials'),
     };
 
-    // Merge global data with provided data (provided data takes precedence)
-    const mergedData = { ...globalData, ...data };
+    // Merge global data with provided data (provided data takes precedence), but
+    // never let the raw title overwrite the escaped one: it lands in <title>, and
+    // callers pass plain text that can include server names and query strings.
+    const mergedData = { ...globalData, ...data, PAGE_TITLE: globalData.PAGE_TITLE };
 
     let result = template;
     for (const [key, value] of Object.entries(mergedData)) {
@@ -126,18 +155,11 @@ function renderTemplate(template, data) {
     }
 
     // Secondary pass for global templates that might have injected more placeholders
-    if (result.includes('{$PAGE_TITLE}')) {
-        result = result
-            .split('{$PAGE_TITLE}')
-            .join(
-                data.PAGE_TITLE ??
-                    (isCachingPass ? '{$PAGE_TITLE}' : 'Discross - Use Discord Anywhere')
-            );
+    if (result.includes('{$PAGE_TITLE}') && data.PAGE_TITLE !== undefined) {
+        result = result.split('{$PAGE_TITLE}').join(globalData.PAGE_TITLE);
     }
-    if (result.includes('{$SEO_METADATA}')) {
-        result = result
-            .split('{$SEO_METADATA}')
-            .join(data.SEO_METADATA ?? (isCachingPass ? '{$SEO_METADATA}' : ''));
+    if (result.includes('{$SEO_METADATA}') && data.SEO_METADATA !== undefined) {
+        result = result.split('{$SEO_METADATA}').join(data.SEO_METADATA);
     }
 
     return result;
@@ -275,9 +297,33 @@ function generateSEOMetadata(
         Object.assign(jsonLd, options.schemaExtra);
     }
 
-    html += `\n    <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`;
+    // The page's own query string (e.g. a weather city) reaches this JSON, so keep
+    // '</script>' and HTML comments from ending the block early.
+    const jsonLdText = JSON.stringify(jsonLd)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026')
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029');
+    html += `\n    <script type="application/ld+json">${jsonLdText}</script>`;
 
     return html;
+}
+
+/**
+ * The title and SEO tags a page passes to renderTemplate.
+ *
+ * @param {object} req - Node.js IncomingMessage.
+ * @param {string} title - Plain-text page title.
+ * @param {string} description - Plain-text description.
+ * @param {object} [extra] - Extra generateSEOMetadata options (e.g. { noindex: true }).
+ * @returns {{PAGE_TITLE: string, SEO_METADATA: string}}
+ */
+function pageMeta(req, title, description, extra = {}) {
+    return {
+        PAGE_TITLE: title,
+        SEO_METADATA: generateSEOMetadata(req, { title, description, ...extra }),
+    };
 }
 
 function escapeHtml(text) {
@@ -913,10 +959,12 @@ function isCrossSiteRequest(req) {
 module.exports = {
     getTemplate,
     renderTemplate,
+    neutralizePlaceholders,
     isCrossSiteRequest,
     render,
     loadAndRenderPageTemplate,
     generateSEOMetadata,
+    pageMeta,
     isValidSnowflake,
     isBotReady,
     getBaseUrl,

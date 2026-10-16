@@ -5,6 +5,7 @@ const {
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
+    pageMeta,
 } = require('./utils');
 const escape = require('escape-html');
 const auth = require('../src/authentication');
@@ -79,6 +80,14 @@ exports.processSetup2FA = async function (bot, req, res, args) {
         SEND_CODE_URL: sendCodeUrl,
         ERROR: errorHtml,
         WHITE_THEME_ENABLED: getPageThemeAttr(req),
+        ...pageMeta(
+            req,
+            totpEnabled
+                ? 'Disable Two-Factor Authentication - Discross'
+                : 'Set Up Two-Factor Authentication - Discross',
+            'Manage two-factor authentication for your Discross account.',
+            { noindex: true }
+        ),
     });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);
@@ -140,6 +149,9 @@ exports.handleSetup2FA = async function (bot, req, res, body, discordID) {
         MENU_OPTIONS: menuOptions,
         BACKUP_CODES_LIST: codesHtml,
         WHITE_THEME_ENABLED: getPageThemeAttr(req),
+        ...pageMeta(req, 'Backup Codes - Discross', 'Save your Discross two-factor backup codes.', {
+            noindex: true,
+        }),
     });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);

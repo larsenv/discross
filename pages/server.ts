@@ -1,9 +1,4 @@
 'use strict';
-const fs = require('fs');
-const path = require('path');
-const { SnowTransfer } = require('snowtransfer');
-const sharp = require('sharp');
-const sanitizer = require('path-sanitizer').default;
 const escape = require('escape-html');
 const UAParser = require('ua-parser-js');
 const auth = require('../src/authentication');
@@ -275,12 +270,6 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
         // Acquire lock for this user to prevent race conditions where users might see other users' servers
         await lock.acquire(discordID, async () => {
-            // Trigger background refresh if we're on the main server list and bot is ready
-            if (!args[2] && clientIsReady) {
-                // We don't await this to keep the page load fast
-                refreshDiscordServers(bot, discordID).catch(console.warn);
-            }
-
             const data = auth.queryAll('SELECT * FROM servers WHERE discordID=?', [discordID]);
 
             for (const serverData of data) {
@@ -536,112 +525,4 @@ function addUserAgentDisplay(response, req) {
         : '';
 
     return renderTemplate(response, { USER_AGENT: userAgentDisplay });
-}
-
-async function refreshDiscordServers(bot, discordID) {
-    const tokens = auth.getDiscordTokens(discordID);
-    if (!tokens || !tokens.discord_refresh_token) return;
-
-    // Only refresh if token is expired or expires in the next 5 minutes
-    const now = Math.floor(Date.now() / 1000);
-    let accessToken = tokens.discord_access_token;
-
-    const { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET } = require('../index');
-
-    if (!tokens.discord_token_expires || tokens.discord_token_expires < now + 300) {
-        if (!DISCORD_CLIENT_SECRET) {
-            console.error('DISCORD_CLIENT_SECRET not configured, cannot refresh token');
-            return;
-        }
-
-        try {
-            const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
-                method: 'POST',
-                body: new URLSearchParams({
-                    client_id: DISCORD_CLIENT_ID,
-                    client_secret: DISCORD_CLIENT_SECRET,
-                    grant_type: 'refresh_token',
-                    refresh_token: tokens.discord_refresh_token,
-                }),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-            });
-            const tokenData = await tokenResponse.json();
-            if (tokenData.access_token) {
-                accessToken = tokenData.access_token;
-                auth.saveDiscordTokens(
-                    discordID,
-                    tokenData.access_token,
-                    tokenData.refresh_token,
-                    now + (tokenData.expires_in || 0)
-                );
-            } else {
-                console.warn('Failed to refresh Discord token:', tokenData);
-                return;
-            }
-        } catch (err) {
-            console.warn('Error refreshing Discord token:', err);
-            return;
-        }
-    }
-
-    if (!accessToken) return;
-
-    try {
-        const oauthClient = new SnowTransfer(`Bearer ${accessToken}`);
-        const guilds = await oauthClient.user.getGuilds();
-        const filteredServers = guilds.filter((e) => bot.client.guilds.cache.has(e.id));
-        const readyServers = filteredServers.map(function (e) {
-            return { serverID: e.id, discordID: discordID, icon: e.icon };
-        });
-        auth.insertServers(readyServers);
-
-        // Handle icons (minimal version of what's in index.js)
-        for (const server of readyServers) {
-            if (server.icon) {
-                const iconDir = path.resolve(`pages/static/ico/server`, sanitizer(server.serverID));
-                const iconPath = path.resolve(
-                    iconDir,
-                    sanitizer(
-                        `${server.icon.startsWith('a_') ? server.icon.substring(2) : server.icon}.gif`
-                    )
-                );
-
-                if (!fs.existsSync(iconPath)) {
-                    await fs.promises.mkdir(iconDir, { recursive: true });
-                    if (server.icon.startsWith('a_')) {
-                        const iconData = await (
-                            await fetch(
-                                `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.gif?size=128`
-                            )
-                        ).arrayBuffer();
-                        await fs.promises.writeFile(iconPath, Buffer.from(iconData));
-                    } else {
-                        const iconData = await (
-                            await fetch(
-                                `https://cdn.discordapp.com/icons/${server.serverID}/${server.icon}.png?size=128`
-                            )
-                        ).arrayBuffer();
-                        await sharp(Buffer.from(iconData)).toFile(iconPath);
-                    }
-                }
-            }
-        }
-    } catch (err: any) {
-        if (
-            err.code === 429 ||
-            err.httpStatus === 429 ||
-            (err.message &&
-                (err.message.includes('401: Unauthorized') ||
-                    err.message.includes('rate limited') ||
-                    err.message.includes('limitadas')))
-        ) {
-            console.warn(
-                `Discord API rate limited or unauthorized during guild refresh for user ${discordID}: ${err.message}`
-            );
-            return;
-        }
-        console.error('Error refreshing Discord guilds:', err);
-    }
 }
