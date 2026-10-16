@@ -1,7 +1,6 @@
 'use strict';
 
 const auth = require('../src/authentication');
-const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
 const {
@@ -76,8 +75,8 @@ exports.guestSend = async function guestSend(bot, req, res) {
         return;
     }
 
-    // Guests have no Discord account to age-verify, so NSFW channels are
-    // never sendable by a guest regardless of the guest-channel setting.
+    // Anonymous guests can never post in age-restricted channels, whatever
+    // the guest-channel setting.
     if (isNsfwChannel(channel)) {
         res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
         res.end();

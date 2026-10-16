@@ -4,7 +4,7 @@ const TurndownService = require('turndown');
 const { emojify } = require('discord-emoji-converter');
 const auth = require('./authentication');
 const bot = require('./bot');
-const Discord = require('discord');
+const Discord = require('discord.js');
 const escapeHtml = require('escape-html');
 const crypto = require('crypto');
 
@@ -126,9 +126,14 @@ exports.handleInboundWebhook = async function (req, res) {
         try {
             const { data, error } = await resend.emails.receiving.get(emailId);
             if (error) {
-                const errMsg = error.message || (typeof error === 'object' ? JSON.stringify(error) : String(error));
+                const errMsg =
+                    error.message ||
+                    (typeof error === 'object' ? JSON.stringify(error) : String(error));
                 if (error.statusCode === 401 || errMsg.includes('restricted to only send')) {
-                    console.warn('Resend API key is restricted to send-only; cannot fetch inbound email body:', errMsg);
+                    console.warn(
+                        'Resend API key is restricted to send-only; cannot fetch inbound email body:',
+                        errMsg
+                    );
                 } else {
                     console.error('Failed to retrieve received email from Resend API:', errMsg);
                 }
@@ -137,9 +142,13 @@ exports.handleInboundWebhook = async function (req, res) {
             }
             emailData = data;
         } catch (err) {
-            const errMsg = err.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+            const errMsg =
+                err.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
             if (err.statusCode === 401 || errMsg.includes('restricted to only send')) {
-                console.warn('Resend API key is restricted to send-only; cannot fetch inbound email body:', errMsg);
+                console.warn(
+                    'Resend API key is restricted to send-only; cannot fetch inbound email body:',
+                    errMsg
+                );
             } else {
                 console.error('Failed to retrieve received email from Resend API:', errMsg);
             }
@@ -171,7 +180,7 @@ exports.handleInboundWebhook = async function (req, res) {
 
     const toAddresses = Array.isArray(to) ? to : [to];
 
-    for (let toAddress of toAddresses) {
+    for (const toAddress of toAddresses) {
         const [prefix, domain] = toAddress.split('@');
 
         if (domain !== EMAIL_DOMAIN) continue;
@@ -220,11 +229,6 @@ exports.handleInboundWebhook = async function (req, res) {
             .setColor('#5865F2')
             .setFooter({ text: `To: ${toAddress}` })
             .setTimestamp();
-
-        // Handle attachments if resend webhook provides them
-        const files = [];
-        // Resend webhook doesn't pass raw attachments easily, but if they exist in payload:
-        // (Depends on Resend webhook config, typically they might be links or base64)
 
         const row = new Discord.ActionRowBuilder().addComponents(
             new Discord.ButtonBuilder()

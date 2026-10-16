@@ -11,7 +11,7 @@ const otplib = require('otplib');
 const qrcode = require('qrcode');
 const crypto = require('crypto');
 const webauthn = require('./webauthn');
-const { getTemplate, renderTemplate } = require('../pages/utils');
+const { getTemplate, renderTemplate, toLocalPath } = require('../pages/utils');
 
 // --- WebAuthn challenge store ------------------------------------------------
 // Passkey ceremonies are two requests (options → verify). We must remember the
@@ -94,6 +94,16 @@ function setup() {
         queryRun('ALTER TABLE users ADD COLUMN discord_refresh_token TEXT');
         queryRun('ALTER TABLE users ADD COLUMN discord_token_expires INTEGER');
     } catch (_) {}
+    // One-time migration: Discord OAuth tokens were only kept for the removed
+    // NSFW age check. Nothing reads them any more, so don't keep them around.
+    try {
+        queryRun('CREATE TABLE discord_tokens_cleared_v1 (done INTEGER)');
+        queryRun(
+            'UPDATE users SET discord_access_token=NULL, discord_refresh_token=NULL, discord_token_expires=NULL'
+        );
+    } catch {
+        // Migration already ran
+    }
     queryRun('CREATE TABLE IF NOT EXISTS sessions (discordID TEXT, sessionID STRING, expires INT)');
     queryRun('CREATE TABLE IF NOT EXISTS webhooks (serverID TEXT, webhookID TEXT, token STRING)');
     queryRun(
@@ -631,7 +641,7 @@ exports.checkAuth = async function (req, res, noRedirect) {
     }
 
     if (!noRedirect) {
-        res.writeHead(sessionIDToCheck ? 301 : 303, {
+        res.writeHead(303, {
             Location: `/login.html?redirect=${encodeURIComponent(req.url)}`,
         });
         res.end();
@@ -655,21 +665,16 @@ exports.handleLoginRegister = async function (req, res, body) {
             const result = await exports.login(params.username, params.password, params.totp_code);
             if (result.status === 'success') {
                 const cookieExpiry = new Date(Date.now() + expiryTime * 1000).toUTCString();
+                // Only ever redirect to a path on this site: the session ID is
+                // appended below, so an off-site target would leak it.
                 const redirectBase = (() => {
-                    try {
-                        const redirectUrl = new URL(
-                            params.redirect || '/server/',
-                            'http://localhost'
-                        );
-                        redirectUrl.searchParams.delete('sessionID');
-                        return (
-                            redirectUrl.pathname +
-                            (redirectUrl.search || '') +
-                            (redirectUrl.hash || '')
-                        );
-                    } catch {
-                        return params.redirect || '/server/';
-                    }
+                    const local = new URL(
+                        toLocalPath(params.redirect || '/server/', '/server/'),
+                        'http://localhost'
+                    );
+                    local.searchParams.delete('sessionID');
+                    local.hash = '';
+                    return local.pathname + local.search;
                 })();
                 const sep = redirectBase.includes('?') ? '&' : '?';
                 const redirectPath = `${redirectBase}${sep}sessionID=${encodeURIComponent(result.sessionID)}#end`;
@@ -708,7 +713,7 @@ exports.handleLoginRegister = async function (req, res, body) {
             }
             const result = await exports.createUser(id, params.username, params.password);
             if (result.status === 'success') {
-                res.writeHead(301, { Location: '/login.html' });
+                res.writeHead(303, { Location: '/login.html' });
                 res.end();
             } else {
                 req.url = `/register.html?errortext=${encodeURIComponent(result.reason)}`;
@@ -783,20 +788,6 @@ exports.toggleGuestChannel = function (channelID) {
         queryRun('INSERT INTO guest_channels VALUES (?)', [channelID]);
         return true;
     }
-};
-
-exports.saveDiscordTokens = function (discordID, accessToken, refreshToken, expiresAt) {
-    return queryRun(
-        'UPDATE users SET discord_access_token=?, discord_refresh_token=?, discord_token_expires=? WHERE discordID=?',
-        [accessToken, refreshToken, expiresAt, discordID]
-    );
-};
-
-exports.getDiscordTokens = function (discordID) {
-    return querySingle(
-        'SELECT discord_access_token, discord_refresh_token, discord_token_expires FROM users WHERE discordID=?',
-        [discordID]
-    );
 };
 
 exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'localhost') {

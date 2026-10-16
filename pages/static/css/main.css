@@ -961,20 +961,22 @@ canvas {
 
 /* Discord styled timestamps */
 .discord-timestamp {
-    background: #2b2e59;
+    /* Discord shows <t:...> timestamps as a subtle grey pill, not a mention */
+    background: #2c2d32;
     border-radius: 3px;
     font-size: 17px;
     color: #dcddde;
     white-space: nowrap;
 }
 
-/* Spoiler blocks */
+/* Spoiler blocks: a solid block until clicked, like Discord */
 .spoiler-box {
     padding-bottom: 0;
     cursor: pointer;
     border-radius: 3px;
     border-spacing: 0;
     overflow: hidden;
+    background: #45464e;
 }
 .spoiler-box.spoiler-revealed {
     background: #26262b;
@@ -1061,6 +1063,9 @@ body.light-theme,
 .light-theme pre code {
     background: transparent !important;
     border: none !important;
+}
+.light-theme .discord-quote {
+    color: #4e5058;
 }
 .light-theme .embed-content {
     background: #ffffff;
@@ -1157,8 +1162,17 @@ body.light-theme,
 .light-theme hr {
     border-color: #e3e5e8;
 }
+.edited-marker {
+    font-size: 10px;
+    color: #8d8e96;
+    white-space: nowrap;
+}
+.light-theme .edited-marker {
+    color: #5c5e66;
+}
+
 .light-theme .discord-timestamp {
-    background: #dcdef9;
+    background: #e6e6e8;
     color: #323339;
 }
 .light-theme .spoiler-box {
@@ -1329,8 +1343,8 @@ body.amoled-theme,
     background: #1d1d20;
 }
 .amoled-theme .discord-timestamp {
-    background: #1d204c;
-    color: #94a8ff;
+    background: #1d1d20;
+    color: #dcdcdf;
 }
 
 /* ================================================================

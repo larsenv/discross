@@ -1,21 +1,26 @@
 'use strict';
-const { isNsfwBlocked } = require('./nsfwUtils');
 const fs = require('fs');
 const https = require('https');
-const bot = require('../src/bot');
-const discord = require('discord');
 const auth = require('../src/authentication');
 const { formidable } = require('formidable');
 const {
     isBotReady,
-    getTemplate,
-    renderTemplate,
     render,
     sanitizeWebhookUsername,
+    canSendInChannel,
+    buildAllowedMentions,
 } = require('./utils');
 const { getOrCreateWebhook } = require('./webhookCache');
 const { checkSlowMode, recordSend } = require('./slowMode');
 const mime = require('mime-types');
+
+// The message lands inside an inline <script>, so emit it as a JS string
+// literal rather than splicing raw text into quotes.
+function renderAlertBack({ MESSAGE }) {
+    return render('misc/script-alert-back', {
+        MESSAGE: JSON.stringify(String(MESSAGE)).replace(/</g, '\\u003c'),
+    });
+}
 
 // Upload file to x0.at and return the URL
 async function uploadToTransfer(filePath, filename) {
@@ -185,7 +190,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                 if (isTraditionalSubmission) {
                     res.writeHead(503, { 'Content-Type': 'text/html' });
                     res.end(
-                        render('misc/script-alert-back', {
+                        renderAlertBack({
                             MESSAGE: 'Bot is not connected',
                         })
                     );
@@ -209,7 +214,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         if (isTraditionalSubmission) {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
                             res.end(
-                                render('misc/script-alert-back', {
+                                renderAlertBack({
                                     MESSAGE: 'Failed to parse upload',
                                 })
                             );
@@ -231,7 +236,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(400, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    render('misc/script-alert-back', {
+                                    renderAlertBack({
                                         MESSAGE: 'Invalid channel',
                                     })
                                 );
@@ -255,7 +260,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(400, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    render('misc/script-alert-back', {
+                                    renderAlertBack({
                                         MESSAGE: errorMsg,
                                     })
                                 );
@@ -310,17 +315,12 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         const channel = await bot.client.channels.fetch(channelId);
                         const member = await channel.guild.members.fetch(discordID);
 
-                        if (
-                            !member
-                                .permissionsIn(channel)
-                                .has(discord.PermissionFlagsBits.SendMessages) ||
-                            (await isNsfwBlocked(channel, discordID))
-                        ) {
+                        if (!(await canSendInChannel(member, channel, discordID))) {
                             cleanup();
                             if (isTraditionalSubmission) {
                                 res.writeHead(403, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    render('misc/script-alert-back', {
+                                    renderAlertBack({
                                         MESSAGE: 'No permission to send messages',
                                     })
                                 );
@@ -345,7 +345,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             const message = `This channel is in slow mode. Please wait ${slowModeCheck.retryAfterSeconds}s before sending another message.`;
                             if (isTraditionalSubmission) {
                                 res.writeHead(429, { 'Content-Type': 'text/html' });
-                                res.end(render('misc/script-alert-back', { MESSAGE: message }));
+                                res.end(renderAlertBack({ MESSAGE: message }));
                             } else {
                                 res.writeHead(429, { 'Content-Type': 'application/json' });
                                 res.end(JSON.stringify({ success: false, error: message }));
@@ -366,7 +366,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(403, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    render('misc/script-alert-back', {
+                                    renderAlertBack({
                                         MESSAGE:
                                             'Failed to send message. Discross needs "Manage Webhooks" permission.',
                                     })
@@ -398,7 +398,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    render('misc/script-alert-back', {
+                                    renderAlertBack({
                                         MESSAGE: 'Failed to upload file: ' + uploadError.message,
                                     })
                                 );
@@ -419,9 +419,16 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         // Delete temp file after successful upload
                         cleanup();
 
-                        // Send message with just the x0.at URL as a link
+                        // Send any text typed alongside the file, then the x0.at link.
+                        // Trim the text (never the link) to fit Discord's 2000 limit.
+                        const link = String(transferUrl);
+                        const maxTextLength = Math.max(0, 2000 - link.length - 1);
+                        const content = cleanMessage
+                            ? `${cleanMessage.slice(0, maxTextLength)}\n${link}`
+                            : link;
                         const sendOptions: any = {
-                            content: transferUrl,
+                            content,
+                            allowedMentions: buildAllowedMentions(content, member, channel),
                             username: sanitizeWebhookUsername(
                                 member.displayName || member.user.tag
                             ),
@@ -463,7 +470,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                             if (isTraditionalSubmission) {
                                 res.writeHead(500, { 'Content-Type': 'text/html' });
                                 res.end(
-                                    render('misc/script-alert-back', {
+                                    renderAlertBack({
                                         MESSAGE: 'Error: ' + error.message,
                                     })
                                 );
@@ -486,7 +493,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
             if (isTraditionalSubmission) {
                 res.writeHead(500, { 'Content-Type': 'text/html' });
                 res.end(
-                    render('misc/script-alert-back', {
+                    renderAlertBack({
                         MESSAGE: 'Internal Server Error',
                     })
                 );

@@ -12,24 +12,6 @@ const auth = require('../src/authentication');
 const setup2fa_template = loadAndRenderPageTemplate('setup-2fa', 'auth');
 const disable2fa_template = loadAndRenderPageTemplate('disable-2fa', 'auth');
 const backup_codes_template = loadAndRenderPageTemplate('backup-codes', 'auth');
-const error_template = getTemplate('error', 'login');
-const logged_in_template = getTemplate('logged-in', 'index');
-
-function injectMenuAndError(response, username, parsedUrl, sessionParam) {
-    const menuOptions = render('index/logged-in', { USER: escape(username || '') });
-    const errorText = parsedUrl.searchParams.get('errortext');
-    const errorHtml = errorText
-        ? render('login/error', {
-              ERROR_MESSAGE: escape(errorText).replaceAll('\n', getTemplate('br', 'misc')),
-          })
-        : '';
-
-    return renderTemplate(response, {
-        MENU_OPTIONS: menuOptions,
-        SESSION_PARAM: sessionParam,
-        ERROR: errorHtml,
-    });
-}
 
 exports.processSetup2FA = async function (bot, req, res, args) {
     const discordID = await auth.checkAuth(req, res, false);

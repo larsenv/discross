@@ -1,8 +1,7 @@
 'use strict';
 
-const { PermissionFlagsBits } = require('discord');
 const { buildMessagesHtml } = require('./messageRenderer');
-const { getClientIP, getTimezoneFromIP } = require('../src/timezoneUtils');
+const { getTimezoneFromIP } = require('../src/timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const notFound = require('./notFound');
 const {

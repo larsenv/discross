@@ -23,8 +23,13 @@ function isPrivateIp(ip) {
     if (type === 6) {
         const lower = ip.toLowerCase();
         if (lower === '::1' || lower === '::') return true;
-        if (lower.startsWith('fe80') || lower.startsWith('fc') || lower.startsWith('fd'))
-            return true;
+        if (/^fe[89ab]/.test(lower) || lower.startsWith('fc') || lower.startsWith('fd'))
+            return true; // link-local fe80::/10, unique-local fc00::/7
+        // NAT64 (64:ff9b::/96) embeds an IPv4 destination the gateway will reach.
+        if (lower.startsWith('64:ff9b:')) {
+            const embedded = extractMappedIpv4(lower.replace(/^64:ff9b:(0:)*:?/, '::'));
+            return embedded ? isPrivateIpv4(embedded) : true;
+        }
         // IPv4-mapped / -compatible addresses (::ffff:a.b.c.d or the hex form
         // ::ffff:7f00:1) resolve to a v4 destination — validate the embedded v4.
         const embedded = extractMappedIpv4(lower);
@@ -59,6 +64,8 @@ function isPrivateIpv4(ip) {
     if (a === 172 && b >= 16 && b <= 31) return true; // 172.16/12
     if (a === 192 && b === 168) return true; // 192.168/16
     if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT 100.64/10
+    if (a === 192 && b === 0 && p[2] === 0) return true; // IETF protocol assignments
+    if (a === 198 && (b === 18 || b === 19)) return true; // benchmarking 198.18/15
     if (a >= 224) return true; // multicast / reserved
     return false;
 }
@@ -115,6 +122,12 @@ const imageCache = new Map();
 // Browser-side cache lifetime for proxied images (24 hours)
 const CACHE_CONTROL = 'public, max-age=86400';
 
+// Upstream bodies are buffered in memory for conversion, so cap their size and
+// how long we wait for them; otherwise one URL pointing at a huge or endless
+// response could exhaust memory or tie up sockets.
+const MAX_UPSTREAM_BYTES = 25 * 1024 * 1024;
+const UPSTREAM_TIMEOUT_MS = 20 * 1000;
+
 function cacheSet(key, value) {
     if (imageCache.size >= MAX_CACHE_SIZE) {
         // Delete the oldest (first-inserted) entry
@@ -163,6 +176,7 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
 
     const options = {
         lookup: safeLookup,
+        timeout: UPSTREAM_TIMEOUT_MS,
         headers: {
             'User-Agent':
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -186,8 +200,24 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
                 res.end(EMPTY_GIF);
                 return;
             }
+            const declaredLength = parseInt(proxyRes.headers['content-length'] || '0', 10);
+            if (declaredLength > MAX_UPSTREAM_BYTES) {
+                proxyRes.destroy();
+                res.writeHead(200, {
+                    'Content-Type': 'image/gif',
+                    'Content-Length': EMPTY_GIF.length,
+                });
+                res.end(EMPTY_GIF);
+                return;
+            }
             const chunks = [];
+            let receivedBytes = 0;
             proxyRes.on('data', (chunk) => {
+                receivedBytes += chunk.length;
+                if (receivedBytes > MAX_UPSTREAM_BYTES) {
+                    proxyRes.destroy(new Error('Upstream image too large'));
+                    return;
+                }
                 chunks.push(chunk);
             });
             proxyRes
@@ -264,6 +294,7 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
                 })
                 .on('error', (err) => {
                     console.log('Error fetching image:', err.message || err);
+                    if (res.headersSent) return;
                     res.writeHead(500, { 'Content-Type': 'text/html' });
                     if (
                         (err.message || err).toString().includes('error reading from remote stream')
@@ -274,8 +305,12 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
                     }
                 });
         })
+        .on('timeout', function () {
+            this.destroy(new Error('Upstream image request timed out'));
+        })
         .on('error', (err) => {
             console.log('Image proxy request error:', err.message || err);
+            if (res.headersSent) return;
             res.writeHead(500, { 'Content-Type': 'text/html' });
             if ((err.message || err).toString().includes('error reading from remote stream')) {
                 res.end(getTemplate('proxy-timeout-error', 'misc'));

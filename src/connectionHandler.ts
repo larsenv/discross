@@ -96,8 +96,8 @@ async function canListenToChannel(discordID, channelID) {
     const { isNsfwChannel } = require('../pages/nsfwUtils');
 
     // Guest-enabled channels are viewable without an account (parity with the
-    // HTTP guest channel view), but a guest has no Discord account to
-    // age-verify, so NSFW channels stay off-limits to them regardless.
+    // HTTP guest channel view), but age-restricted channels stay off-limits to
+    // anonymous guests regardless.
     if (!discordID) {
         if (!auth.isGuestChannel(channelID)) return false;
         if (!bot.client) return false;
@@ -205,7 +205,8 @@ async function processMessage(ws, state, message) {
 }
 
 exports.startWsServer = function (server) {
-    const wss = new WebSocket.Server({ server });
+    // Clients only ever send short AUTH/LISTEN/RECONNECT commands.
+    const wss = new WebSocket.Server({ server, maxPayload: 4 * 1024 });
     wss.on('connection', function connection(ws) {
         /** @type {ClientState} */
         const state = {

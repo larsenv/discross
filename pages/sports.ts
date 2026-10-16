@@ -25,7 +25,6 @@ const BG_UPCOMING = '#2f3136'; // default dark — upcoming row
 
 const sports_template = loadAndRenderPageTemplate('sports');
 
-const logged_in_template = getTemplate('logged-in', 'index');
 const logged_out_template = getTemplate('logged-out', 'index');
 
 // NBA first — in full regular season; NFL last since it's off-season in early spring

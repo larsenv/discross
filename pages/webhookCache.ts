@@ -45,7 +45,8 @@ async function getOrCreateWebhook(channel, guildID) {
     } catch (err) {
         if (err.code === 50013) {
             throw new Error(
-                'Discross requires the "Manage Webhooks" permission in this channel to send messages.'
+                'Discross requires the "Manage Webhooks" permission in this channel to send messages.',
+                { cause: err }
             );
         }
         throw err;

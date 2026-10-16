@@ -4,7 +4,7 @@ const { renderDiscordMarkdown } = require('./discordMarkdown');
 const { formatDateWithTimezone } = require('../src/timezoneUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { processUnicodeEmojiInText, cacheCustomEmoji } = require('./emojiUtils');
-const { renderTemplate, parseCookies, getTemplate, render } = require('./utils');
+const { renderTemplate, getTemplate, render, resolveThemeValue } = require('./utils');
 
 const embed_template = getTemplate('embed', 'message');
 
@@ -83,8 +83,8 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
  * @returns {string} HTML string representing all embeds
  */
 function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTimezone = null) {
-    const cookies = parseCookies(req);
-    const themeValue = parseInt(cookies.whiteThemeCookie, 10) || 0;
+    // URL ?theme= wins over the cookie, for cookieless consoles.
+    const themeValue = resolveThemeValue(req);
 
     // Apply theme colors: 1=light, otherwise dark/amoled
     const embedHead = themeValue === 1 ? '#000000' : '#ffffff';

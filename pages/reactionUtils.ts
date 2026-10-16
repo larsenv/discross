@@ -1,7 +1,7 @@
 'use strict';
 // Shared utility functions for processing and rendering reactions
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
-const { renderTemplate, getTemplate, render } = require('./utils');
+const { renderTemplate, render } = require('./utils');
 
 // Function to process and format reactions
 function processReactions(

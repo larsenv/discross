@@ -9,16 +9,16 @@ const {
     loadAndRenderPageTemplate,
     getTemplate,
     generateSEOMetadata,
+    toLocalPath,
 } = require('./utils');
 
 const login_template = loadAndRenderPageTemplate('login', 'auth');
-const error_template = getTemplate('error', 'login');
 const logged_out_template = getTemplate('logged-out', 'index');
 
 exports.processLogin = async function (bot, req, res, args) {
     const discordID = await auth.checkAuth(req, res, true); // true means that the user isn't redirected to the login page
     if (discordID) {
-        res.writeHead(301, { Location: '/server/', 'Content-Type': 'text/html' });
+        res.writeHead(302, { Location: '/server/', 'Content-Type': 'text/html' });
         res.end(
             render('misc/redirect-page', {
                 REDIRECT_URL: '/server/',
@@ -27,7 +27,7 @@ exports.processLogin = async function (bot, req, res, args) {
     } else {
         const parsedurl = new URL(req.url, 'http://localhost');
         const rawRedirect = parsedurl.searchParams.get('redirect');
-        const redirectUrl = rawRedirect ? rawRedirect.replaceAll('"', '%22') : '/server/';
+        const redirectUrl = escape(rawRedirect ? toLocalPath(rawRedirect, '/server/') : '/server/');
         const rawErrorText = parsedurl.searchParams.get('errortext');
         const errorHtml = rawErrorText
             ? render('login/error', {

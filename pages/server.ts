@@ -8,7 +8,7 @@ const escape = require('escape-html');
 const UAParser = require('ua-parser-js');
 const auth = require('../src/authentication');
 const emojiRegex = require('./twemojiRegex').regex;
-const { ChannelType, PermissionFlagsBits } = require('discord');
+const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode } = require('./emojiUtils');
 const {
@@ -26,27 +26,10 @@ const {
 // Templates for viewing the channels in a server
 const server_template = loadAndRenderPageTemplate('server');
 
-const text_channel_template = getTemplate('text-channel', 'channellist');
-const announcement_channel_template = getTemplate('announcement-channel', 'channellist');
-const category_channel_template = getTemplate('category-channel', 'channellist');
-const voice_channel_template = getTemplate('voice-channel', 'channellist');
-const thread_channel_template = getTemplate('thread-channel', 'channellist');
-const thread_group_header_template = getTemplate('thread-group-header', 'channellist');
-const forum_channel_template = getTemplate('forum-channel', 'channellist');
-const locked_channel_template = getTemplate('locked-channel', 'channellist');
-const rules_channel_template = getTemplate('rules-channel', 'channellist');
-const nsfw_channel_template = getTemplate('nsfw-channel', 'channellist');
-const { isNsfwChannel } = require('./nsfwUtils');
-const { isAgeVerified } = require('./ageVerification');
-
-const server_icon_template = getTemplate('server-icon', 'server');
-
 const server_list_only_template = getTemplate('server-list-only', 'server');
 const sync_warning_template = getTemplate('sync-warning', 'server');
 const no_images_warning_template = getTemplate('no-images-warning', 'server');
 const images_enabled_template = getTemplate('images-enabled', 'server');
-
-const logged_in_template = getTemplate('logged-in', 'index');
 
 const cachedMembers = {}; // TODO: Find a better way
 const MAX_CACHED_MEMBERS = 250; // evict oldest user's data when the cap is hit
@@ -64,7 +47,6 @@ const lock = new AsyncLock();
 async function processServerChannels(server, member, response, sessionParam) {
     try {
         const discordID = member.id;
-        const ageVerified = await isAgeVerified(discordID);
 
         // Fetch active threads for this server
         const activeThreadsList = await server.channels
@@ -175,12 +157,7 @@ async function processServerChannels(server, member, response, sessionParam) {
                     const canSendMessages = member
                         .permissionsIn(item)
                         .has(PermissionFlagsBits.SendMessages, true);
-                    if (isNsfwChannel(item) && !ageVerified) {
-                        channelList += render('channellist/nsfw-channel', {
-                            CHANNEL_NAME: escapedName,
-                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
-                        });
-                    } else if (!canSendMessages) {
+                    if (!canSendMessages) {
                         channelList += render('channellist/locked-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
@@ -203,12 +180,7 @@ async function processServerChannels(server, member, response, sessionParam) {
 
                     const isRulesChannel = item.name.toLowerCase().includes('rule');
 
-                    if (isNsfwChannel(item) && !ageVerified) {
-                        channelList += render('channellist/nsfw-channel', {
-                            CHANNEL_NAME: escapedName,
-                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
-                        });
-                    } else if (isRulesChannel) {
+                    if (isRulesChannel) {
                         channelList += render('channellist/rules-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
@@ -268,7 +240,6 @@ async function processServerChannels(server, member, response, sessionParam) {
 exports.processServer = async function (bot, req, res, args, discordID) {
     try {
         let serverList = '';
-        let serversDeleted = 0; // Track if servers were deleted due to sync issues
         const clientIsReady = isBotReady(bot);
 
         if (!clientIsReady) {
@@ -326,7 +297,6 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                                 server.id,
                                 discordID,
                             ]);
-                            serversDeleted++;
                             continue;
                         }
                     }
@@ -353,7 +323,6 @@ exports.processServer = async function (bot, req, res, args, discordID) {
                     if (clientIsReady) {
                         // bot is connected and the guild truly isn't in cache -> safe to delete
                         auth.queryRun('DELETE FROM servers WHERE serverID=?', [serverID]);
-                        serversDeleted++;
                     } else {
                         // bot not ready / not connected: do not delete the server row; treat as temporarily missing
                         console.warn(
@@ -373,9 +342,6 @@ exports.processServer = async function (bot, req, res, args, discordID) {
             USER_ID: discordID,
             USER_NAME: escape(username),
         };
-
-        // syncNeeded already parsed via parsedUrl above
-        const syncNeeded = parsedUrl.searchParams.get('sync_needed');
 
         let serverName = '';
         if (args[2]) {
@@ -574,7 +540,7 @@ async function refreshDiscordServers(bot, discordID) {
     const now = Math.floor(Date.now() / 1000);
     let accessToken = tokens.discord_access_token;
 
-    const { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URL } = require('../index');
+    const { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET } = require('../index');
 
     if (!tokens.discord_token_expires || tokens.discord_token_expires < now + 300) {
         if (!DISCORD_CLIENT_SECRET) {
@@ -658,12 +624,12 @@ async function refreshDiscordServers(bot, discordID) {
         }
     } catch (err: any) {
         if (
-            (err.code === 429 || err.httpStatus === 429) ||
-            (err.message && (
-                err.message.includes('401: Unauthorized') ||
-                err.message.includes('rate limited') ||
-                err.message.includes('limitadas')
-            ))
+            err.code === 429 ||
+            err.httpStatus === 429 ||
+            (err.message &&
+                (err.message.includes('401: Unauthorized') ||
+                    err.message.includes('rate limited') ||
+                    err.message.includes('limitadas')))
         ) {
             console.warn(
                 `Discord API rate limited or unauthorized during guild refresh for user ${discordID}: ${err.message}`
@@ -673,4 +639,3 @@ async function refreshDiscordServers(bot, discordID) {
         console.error('Error refreshing Discord guilds:', err);
     }
 }
-

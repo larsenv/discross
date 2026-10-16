@@ -10,6 +10,7 @@ const connectionHandler = require('./src/connectionHandler');
 const mail = require('./src/mail');
 const sharp = require('sharp');
 const sanitizer = require('path-sanitizer').default;
+const escapeHtml = require('escape-html');
 const Sentry = require('@sentry/node');
 
 const options = {};
@@ -110,7 +111,16 @@ exports.DISCORD_CLIENT_ID = DISCORD_CLIENT_ID;
 exports.DISCORD_CLIENT_SECRET = DISCORD_CLIENT_SECRET;
 exports.DISCORD_REDIRECT_URL = DISCORD_REDIRECT_URL;
 
-const { isValidSnowflake, getTemplate, resolveThemeValue } = require('./pages/utils');
+const {
+    isValidSnowflake,
+    getTemplate,
+    renderTemplate,
+    getPageThemeAttr,
+    loadAndRenderPageTemplate,
+    resolveThemeValue,
+} = require('./pages/utils');
+
+const messagePageTemplate = loadAndRenderPageTemplate('message');
 
 // create a server object:
 const server = http.createServer(options);
@@ -352,7 +362,7 @@ async function handlePost(req, res) {
     req.on('end', async () => {
         if (bodyTooLarge) return; // already responded with 413
         try {
-            let body = Buffer.concat(bodyChunks).toString();
+            const body = Buffer.concat(bodyChunks).toString();
             if (parsedurl === '/api/inbound/mail') {
                 try {
                     req.rawBody = body;
@@ -893,20 +903,13 @@ async function handleDiscordOAuth(req, res, parsedurl) {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             });
             const tokenData = await tokenResponse.json();
-            if (tokenData.access_token) {
-                accessToken = tokenData.access_token;
-                tokenType = tokenData.token_type || 'Bearer';
-                auth.saveDiscordTokens(
-                    discordID,
-                    tokenData.access_token,
-                    tokenData.refresh_token,
-                    Math.floor(Date.now() / 1000) + (tokenData.expires_in || 0)
-                );
-                // Drop any stale "unverified" result so the new token is checked immediately
-                require('./pages/ageVerification').clearAgeVerificationCache(discordID);
-            } else {
-                throw new Error('Failed to exchange code: ' + JSON.stringify(tokenData));
+            if (!tokenData.access_token) {
+                console.error('Discord OAuth code exchange failed:', tokenData);
+                throw new Error('Discord did not accept the authorization. Please try again.');
             }
+            // The token is only used for this one server-list sync and is never stored.
+            accessToken = tokenData.access_token;
+            tokenType = tokenData.token_type || 'Bearer';
         }
 
         if (!accessToken) {
@@ -978,7 +981,7 @@ async function handleDiscordOAuth(req, res, parsedurl) {
         res.end(
             getTemplate('generic-error', 'misc').replace(
                 '{{ERROR_DETAILS}}',
-                e.message || 'OAuth authentication failed.'
+                escapeHtml(e.message || 'OAuth authentication failed.')
             )
         );
     }
@@ -1017,6 +1020,69 @@ async function handleImageProxy(req, res, parsedurl, args) {
     }
 }
 
+// Most error responses are short HTML fragments (e.g. "The bot isn't
+// connected"). Sent bare they render as unstyled text on a white page, so any
+// text/html body that isn't a full document is wrapped in the site's message
+// page, keeping the header, theme and a way back.
+const MESSAGE_PAGE_HEADINGS = {
+    400: 'Something looks off',
+    401: 'You need to log in',
+    403: "You can't do that here",
+    404: 'Not found',
+    413: 'That was too large',
+    429: 'Slow down',
+    500: 'Something went wrong',
+    502: 'Discord is having trouble',
+    503: 'Discross is reconnecting',
+};
+
+function wrapHtmlFragments(req, res) {
+    const originalEnd = res.end;
+    res.end = function (chunk, ...rest) {
+        try {
+            const body = Buffer.isBuffer(chunk) ? null : chunk;
+            const contentType = String(res.getHeader('Content-Type') || '');
+            if (
+                typeof body === 'string' &&
+                body.trim() &&
+                contentType.startsWith('text/html') &&
+                !res.getHeader('Content-Length') &&
+                !/<html[\s>]|<!doctype/i.test(body)
+            ) {
+                const heading =
+                    MESSAGE_PAGE_HEADINGS[res.statusCode] ||
+                    (res.statusCode >= 400 ? 'Something went wrong' : 'Discross');
+                chunk = renderTemplate(messagePageTemplate, {
+                    WHITE_THEME_ENABLED: getPageThemeAttr(req),
+                    HEADING: heading,
+                    MESSAGE: body,
+                    PAGE_TITLE: `${heading} - Discross`,
+                });
+            }
+        } catch (err) {
+            console.error('Failed to wrap HTML fragment:', err);
+        }
+        return originalEnd.call(this, chunk, ...rest);
+    };
+}
+
+// Session IDs are UUIDv4s. Anything else in a ?sessionID= parameter is dropped
+// before routing so a crafted value can never be echoed back into a page.
+const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function stripInvalidSessionParam(req) {
+    if (!req.url.includes('sessionID')) return;
+    const url = new URL(req.url, 'http://localhost');
+    const values = url.searchParams.getAll('sessionID');
+    if (values.length === 0 || (values.length === 1 && SESSION_ID_PATTERN.test(values[0]))) {
+        return;
+    }
+    const valid = values.find((value) => SESSION_ID_PATTERN.test(value));
+    url.searchParams.delete('sessionID');
+    if (valid) url.searchParams.set('sessionID', valid);
+    req.url = url.pathname + url.search;
+}
+
 server.on('request', async (req, res) => {
     // Security headers applied to every response. Set via setHeader (not
     // writeHead) so they persist through the many writeHead calls downstream.
@@ -1025,8 +1091,20 @@ server.on('request', async (req, res) => {
     // full URL in the Referer header to external images/links.
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Pages are only ever framed by Discross itself (webapp.html, the OAuth
+    // sync iframe), so refuse cross-origin framing to prevent clickjacking.
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    wrapHtmlFragments(req, res);
 
     if (req.url.startsWith('//')) {
+        res.writeHead(400, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('invalid-request-url', 'misc'));
+        return;
+    }
+
+    try {
+        stripInvalidSessionParam(req);
+    } catch {
         res.writeHead(400, { 'Content-Type': 'text/html' });
         res.end(getTemplate('invalid-request-url', 'misc'));
         return;
@@ -1050,7 +1128,7 @@ server.on('request', async (req, res) => {
 
 server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-        console.error(`Port 4000 is already in use. Failed to start server.`);
+        console.error(`Port ${PORT} is already in use. Failed to start server.`);
         process.exit(1);
     } else {
         console.error('Server error:', err);

@@ -1,3 +1,4 @@
+/* global insertEmoji, setHoverBg, clearBg -- defined in channel.js */
 'use strict';
 (function () {
     var quickNames = [
@@ -142,7 +143,7 @@
         for (var catName in window.EMOJI_CATEGORIES) {
             if (!Object.prototype.hasOwnProperty.call(window.EMOJI_CATEGORIES, catName)) continue;
 
-            var h3 = document.createElement('h3');
+            h3 = document.createElement('h3');
             h3.innerHTML = catName;
             h3.style.margin = '12px 4px 4px 4px';
             h3.style.color = '#8e9297';
@@ -150,7 +151,7 @@
             h3.style.textTransform = 'uppercase';
             container.appendChild(h3);
 
-            var div = document.createElement('div');
+            div = document.createElement('div');
             div.style.display = 'block';
 
             var cat = window.EMOJI_CATEGORIES[catName];

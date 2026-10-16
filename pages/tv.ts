@@ -370,7 +370,7 @@ function smartTitleCase(str) {
     var smallWords = ['of', 'the', 'and', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'a', 'an'];
 
     // 1. Process chunks separated by spaces, commas, or parentheses
-    var result = str.replace(/([a-z0-9\-]+)|([^a-z0-9\-]+)/gi, function (match, word, sep, index) {
+    var result = str.replace(/([a-z0-9-]+)|([^a-z0-9-]+)/gi, function (match, word, sep, index) {
         if (sep) return sep;
 
         // If the "word" contains hyphens, split and process each part
@@ -414,7 +414,7 @@ function smartTitleCase(str) {
             if (
                 other.indexOf(p) !== -1 &&
                 other.length > p.length &&
-                (acronyms.indexOf(p.toLowerCase()) !== -1 || /^[kwcx][a-z0-9\-]+$/i.test(p))
+                (acronyms.indexOf(p.toLowerCase()) !== -1 || /^[kwcx][a-z0-9-]+$/i.test(p))
             ) {
                 isRedundant = true;
                 break;
@@ -434,7 +434,7 @@ function parseLineupChannels(html, date) {
 
     // 1. Find all station link matches first to determine boundaries
     var stationLinkRegex =
-        /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/stations\/(([a-z0-9\-]+)\/(\d+))(?:\/\d{4}-\d{2}-\d{2})?"/gi;
+        /href="(?:https?:\/\/(?:www\.)?tvpassport\.com)?\/tv-listings\/stations\/(([a-z0-9-]+)\/(\d+))(?:\/\d{4}-\d{2}-\d{2})?"/gi;
 
     var matches = [];
     var m;
@@ -466,7 +466,7 @@ function parseLineupChannels(html, date) {
 
         // a. Try to find the callsign from a CDN image URL
         var logoMatch = context.match(
-            /(?:src|data-src|data-original)="(?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[^"\/]+\/([a-z0-9\-]+)\.(?:png|jpg|gif|svg)/i
+            /(?:src|data-src|data-original)="(?:https?:)?\/\/cdn\.tvpassport\.com\/image\/station\/[^"/]+\/([a-z0-9-]+)\.(?:png|jpg|gif|svg)/i
         );
         if (logoMatch) {
             callsign = logoMatch[1];
@@ -738,12 +738,12 @@ async function serveMainPage(
     var contentHtml = '';
 
     // Sanitize ZIP: keep alphanumeric and space/hyphen only
-    var cleanZip = zip.replace(/[^a-zA-Z0-9 \-]/g, '').trim();
+    var cleanZip = zip.replace(/[^a-zA-Z0-9 -]/g, '').trim();
     if (cleanZip) {
         if (lineup) {
             // Step 2: fetch channel grid for selected lineup.
             // TVPassport lineup pages live at /lineups/set/{lineupId}?tz=America/New_York
-            var cleanLineup = lineup.replace(/[^a-zA-Z0-9_\-]/g, '');
+            var cleanLineup = lineup.replace(/[^a-zA-Z0-9_-]/g, '');
             if (cleanLineup) {
                 try {
                     var cookie = await fetchCookie();
@@ -860,7 +860,7 @@ async function serveStationPage(
     }
 
     // Sanitize station ID: allow slug chars, digits, and single forward slashes
-    var cleanId = stationId.replace(/[^a-zA-Z0-9\-_\/]/g, '');
+    var cleanId = stationId.replace(/[^a-zA-Z0-9_/-]/g, '');
 
     var contentHtml = '';
     var stationName = '';
@@ -896,8 +896,8 @@ async function serveStationPage(
     }
 
     // Build back URL preserving zip/lineup/date parameters
-    var backZip = (parsedUrl.searchParams.get('zip') || '').replace(/[^a-zA-Z0-9 \-]/g, '').trim();
-    var backLineup = (parsedUrl.searchParams.get('lineup') || '').replace(/[^a-zA-Z0-9_\-\/]/g, '');
+    var backZip = (parsedUrl.searchParams.get('zip') || '').replace(/[^a-zA-Z0-9 -]/g, '').trim();
+    var backLineup = (parsedUrl.searchParams.get('lineup') || '').replace(/[^a-zA-Z0-9_/-]/g, '');
     var backSessionSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '';
     var backUrl = buildUrl(
         '/tv',

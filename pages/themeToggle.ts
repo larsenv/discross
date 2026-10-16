@@ -1,5 +1,5 @@
 'use strict';
-const { parseCookies } = require('./utils');
+const { parseCookies, toLocalPath } = require('./utils');
 exports.toggleTheme = function toggleTheme(req, res) {
     try {
         const parsedUrl = new URL(req.url, 'http://localhost');
@@ -31,7 +31,7 @@ exports.toggleTheme = function toggleTheme(req, res) {
             '/';
         const refererUrl = new URL(returnTarget, 'http://dummy.local');
         refererUrl.searchParams.set('theme', String(nextTheme));
-        const location = refererUrl.pathname + refererUrl.search;
+        const location = toLocalPath(refererUrl.pathname + refererUrl.search);
 
         const oneYear = 365 * 24 * 60 * 60 * 1000;
         const expires = new Date(Date.now() + oneYear).toUTCString();
