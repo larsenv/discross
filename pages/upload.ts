@@ -8,6 +8,7 @@ const {
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
+    pageMeta,
 } = require('./utils');
 
 const upload_template = loadAndRenderPageTemplate('upload');
@@ -39,6 +40,12 @@ exports.processUpload = async function processUpload(bot, req, res, args, discor
         CHANNEL_NAME: escape(channelName),
         SESSION_ID: escape(urlSessionID),
         SESSION_PARAM: sessionParam,
+        ...pageMeta(
+            req,
+            `Upload a File to #${channelName} - Discross`,
+            'Upload a file to a Discord channel with Discross.',
+            { noindex: true }
+        ),
     });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(final);

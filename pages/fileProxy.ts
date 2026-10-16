@@ -16,6 +16,10 @@ function safeContentType(upstreamType) {
     return ACTIVE_CONTENT_TYPE.test(type.trim()) ? 'text/plain; charset=utf-8' : type;
 }
 
+// Idle time allowed on the upstream socket. Media streams keep data flowing, so
+// this only trips on stalled connections that would otherwise pin a socket.
+const UPSTREAM_IDLE_TIMEOUT_MS = 30 * 1000;
+
 exports.fileProxy = async function fileProxy(res, urlStr, req, redirects = 0) {
     if (redirects > 5) {
         if (!res.headersSent) {
@@ -42,8 +46,10 @@ exports.fileProxy = async function fileProxy(res, urlStr, req, redirects = 0) {
     reqHeaders['User-Agent'] = 'Discross/1.0';
 
     const client = urlStr.startsWith('http:') ? http : https;
-    client
-        .get(urlStr, { headers: reqHeaders, lookup: safeLookup }, (proxyRes) => {
+    const upstream = client.get(
+        urlStr,
+        { headers: reqHeaders, lookup: safeLookup, timeout: UPSTREAM_IDLE_TIMEOUT_MS },
+        (proxyRes) => {
             if (
                 [301, 302, 303, 307, 308].includes(proxyRes.statusCode) &&
                 proxyRes.headers['location']
@@ -72,17 +78,28 @@ exports.fileProxy = async function fileProxy(res, urlStr, req, redirects = 0) {
                 responseHeaders['Accept-Ranges'] = proxyRes.headers['accept-ranges'];
 
             res.writeHead(proxyRes.statusCode, responseHeaders);
+            // A body that dies part-way can't be repaired once headers are out;
+            // dropping the connection tells the browser it was cut short.
+            proxyRes.on('error', () => res.destroy());
             proxyRes.pipe(res);
-        })
-        .on('error', (err) => {
-            console.error('Error fetching file:', err);
-            if (!res.headersSent) {
-                res.writeHead(500, { 'Content-Type': 'text/html' });
-                if ((err.message || err).toString().includes('error reading from remote stream')) {
-                    res.end(getTemplate('proxy-timeout-error', 'misc'));
-                } else {
-                    res.end(getTemplate('generic-error', 'misc'));
-                }
+        }
+    );
+
+    // Stop pulling from the origin as soon as the visitor goes away (a seek in
+    // a video, a closed tab) or the origin stalls.
+    res.on('close', () => upstream.destroy());
+    upstream.on('timeout', () => upstream.destroy(new Error('Upstream file request timed out')));
+    upstream.on('error', (err) => {
+        console.error('Error fetching file:', err);
+        if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/html' });
+            if ((err.message || err).toString().includes('error reading from remote stream')) {
+                res.end(getTemplate('proxy-timeout-error', 'misc'));
+            } else {
+                res.end(getTemplate('generic-error', 'misc'));
             }
-        });
+        } else {
+            res.destroy();
+        }
+    });
 };

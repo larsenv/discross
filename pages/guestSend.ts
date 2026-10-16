@@ -8,7 +8,6 @@ const {
     isBotReady,
     isCrossSiteRequest,
     parseCookies,
-    getBaseUrl,
     sanitizeGuestName,
     sanitizeWebhookUsername,
     getTemplate,
@@ -35,18 +34,16 @@ exports.guestSend = async function guestSend(bot, req, res) {
     const rawName = parsedUrl.searchParams.get('guest_name') || cookies.guest_name || '';
     const guestName = sanitizeGuestName(rawName);
 
-    const baseUrl = getBaseUrl(req);
-
     // Validate channel id
     if (!isValidSnowflake(channelId)) {
-        res.writeHead(302, { Location: baseUrl + '/' });
+        res.writeHead(302, { Location: '/' });
         res.end();
         return;
     }
 
     // Check guest mode is enabled for this channel
     if (!auth.isGuestChannel(channelId)) {
-        res.writeHead(302, { Location: baseUrl + '/' });
+        res.writeHead(302, { Location: '/' });
         res.end();
         return;
     }
@@ -55,7 +52,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
     // HMAC-signed at issue time (see guestCaptcha.issueCaptchaPass), so a client
     // can't skip the captcha by setting a static value by hand.
     if (!guestName || !verifyCaptchaPass(cookies.guest_captcha)) {
-        res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
+        res.writeHead(302, { Location: '/channels/' + channelId });
         res.end();
         return;
     }
@@ -70,7 +67,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
     // Fetch channel
     const channel = await bot.client.channels.fetch(channelId).catch(() => null);
     if (!channel) {
-        res.writeHead(302, { Location: baseUrl + '/' });
+        res.writeHead(302, { Location: '/' });
         res.end();
         return;
     }
@@ -78,7 +75,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
     // Anonymous guests can never post in age-restricted channels, whatever
     // the guest-channel setting.
     if (isNsfwChannel(channel)) {
-        res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
+        res.writeHead(302, { Location: '/channels/' + channelId });
         res.end();
         return;
     }
@@ -88,7 +85,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
         // Deduplicate: if this nonce was already processed, skip sending
         const nonce = parsedUrl.searchParams.get('nonce') || '';
         if (checkAndMarkNonce(nonce)) {
-            res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
+            res.writeHead(302, { Location: '/channels/' + channelId });
             res.end();
             return;
         }
@@ -137,6 +134,6 @@ exports.guestSend = async function guestSend(bot, req, res) {
         bot.addToCache(message);
     }
 
-    res.writeHead(302, { Location: baseUrl + '/channels/' + channelId });
+    res.writeHead(302, { Location: '/channels/' + channelId });
     res.end();
 };

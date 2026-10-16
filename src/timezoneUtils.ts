@@ -293,6 +293,25 @@ function formatForwardedTimestamp(date, timezone) {
  * @param {string|null} timezone - Timezone string or null for default
  * @returns {string} - Formatted timestamp string
  */
+// Newer ICU versions already put "at" and a narrow no-break space inside
+// toLocaleString output, so date and time are formatted separately and joined
+// by hand; the no-break space renders as a box on some older consoles.
+function formatDatePart(date, timeZone, withWeekday) {
+    return date.toLocaleDateString('en-US', {
+        timeZone,
+        ...(withWeekday ? { weekday: 'long' } : {}),
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+}
+
+function formatTimePart(date, timeZone) {
+    return date
+        .toLocaleTimeString('en-US', { timeZone, hour: 'numeric', minute: '2-digit', hour12: true })
+        .replace(/[\u202f\u00a0]/g, ' ');
+}
+
 function formatDiscordTimestamp(unixTimestamp, format, timezone) {
     try {
         const date = new Date(unixTimestamp * 1000);
@@ -312,48 +331,9 @@ function formatDiscordTimestamp(unixTimestamp, format, timezone) {
                     hour12: true,
                 });
             case 'f': // Long date/time: March 18, 2026 at 3:06 PM
-                return (
-                    date
-                        .toLocaleString('en-US', {
-                            timeZone: userTimezone,
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                        })
-                        .replace(',', '') +
-                    ' at ' +
-                    date.toLocaleString('en-US', {
-                        timeZone: userTimezone,
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                    })
-                );
+                return `${formatDatePart(date, userTimezone, false)} at ${formatTimePart(date, userTimezone)}`;
             case 'F': // Full date/time: Wednesday, March 18, 2026 at 3:06 PM
-                return (
-                    date
-                        .toLocaleString('en-US', {
-                            timeZone: userTimezone,
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                        })
-                        .replace(',', '') +
-                    ' at ' +
-                    date.toLocaleString('en-US', {
-                        timeZone: userTimezone,
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                    })
-                );
+                return `${formatDatePart(date, userTimezone, true)} at ${formatTimePart(date, userTimezone)}`;
             case 'R': {
                 // Relative time, worded like Discord: "5 minutes ago" / "in 5 minutes"
                 const diffNow = date.getTime() - now.getTime();

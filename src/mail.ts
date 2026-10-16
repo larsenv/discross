@@ -224,7 +224,7 @@ exports.handleInboundWebhook = async function (req, res) {
 
         const embed = new Discord.EmbedBuilder()
             .setTitle(subject ? subject.substring(0, 256) : 'No Subject')
-            .setAuthor({ name: from })
+            .setAuthor({ name: String(from).substring(0, 256) })
             .setDescription(description || 'No content')
             .setColor('#5865F2')
             .setFooter({ text: `To: ${toAddress}` })

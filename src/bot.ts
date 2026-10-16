@@ -64,7 +64,10 @@ const client = new Discord.Client({
         MessageManager: 0,
         GuildMemberManager: { maxSize: 200, keepOverLimit: keepClientEntry },
         UserManager: { maxSize: 200, keepOverLimit: keepClientEntry },
-        ReactionManager: 0,
+        // Reactions are rendered from message.reactions.cache, so it can't be zero:
+        // a size-0 cache stores nothing and every reaction disappears. Discord
+        // allows at most 20 distinct reactions per message, so 25 is already bounded.
+        ReactionManager: 25,
         ReactionUserManager: 0,
         PresenceManager: 0,
     }),

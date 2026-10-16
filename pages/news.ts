@@ -14,6 +14,7 @@ const {
     loadAndRenderPageTemplate,
     getTemplate,
     generateSEOMetadata,
+    pageMeta,
 } = require('./utils');
 
 const auth = require('../src/authentication');
@@ -551,7 +552,13 @@ exports.processNews = async function processNews(req, res, args, discordID) {
                 : '',
         ].join('');
 
+        const newsTitle = tag === DEFAULT_TOPIC ? 'Top News - Discross' : `${tag} News - Discross`;
         const final = renderTemplate(news_template, {
+            ...pageMeta(
+                req,
+                newsTitle,
+                'Read the latest headlines from AP News on any device with Discross.'
+            ),
             MENU_OPTIONS: menuOptions,
             WHITE_THEME_ENABLED: theme.themeClass,
             TAG_DISPLAY: displayTag,

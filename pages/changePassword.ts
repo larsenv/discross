@@ -4,6 +4,7 @@ const {
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     getTemplate,
+    pageMeta,
 } = require('./utils');
 const escape = require('escape-html');
 const auth = require('../src/authentication');
@@ -56,6 +57,12 @@ exports.processChangePassword = async function (bot, req, res, args) {
         SEND_CODE_URL: sendCodeUrl,
         ERROR: errorHtml,
         WHITE_THEME_ENABLED: getPageThemeAttr(req),
+        ...pageMeta(
+            req,
+            'Change Password - Discross',
+            'Change the password for your Discross account.',
+            { noindex: true }
+        ),
     });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(response);

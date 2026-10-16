@@ -21,11 +21,19 @@ const { getTemplate, renderTemplate, toLocalPath } = require('../pages/utils');
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const _passkeyChallenges = new Map();
 
+// /passkey/options?type=login is open to anonymous callers, so the store has to
+// stay bounded however fast challenges are requested.
+const MAX_PASSKEY_CHALLENGES = 5000;
+
 function storePasskeyChallenge(challengeB64url, meta) {
     // Opportunistic cleanup of expired challenges.
     const now = Date.now();
     for (const [key, val] of _passkeyChallenges) {
         if (val.expires <= now) _passkeyChallenges.delete(key);
+    }
+    // Maps iterate in insertion order, so the first keys are the oldest.
+    while (_passkeyChallenges.size >= MAX_PASSKEY_CHALLENGES) {
+        _passkeyChallenges.delete(_passkeyChallenges.keys().next().value);
     }
     _passkeyChallenges.set(challengeB64url, { ...meta, expires: now + CHALLENGE_TTL_MS });
 }
@@ -232,6 +240,10 @@ const LOGIN_MAX_FAILS = 10;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const CODE_MAX_FAILS = 5;
 const CODE_WINDOW_MS = 10 * 60 * 1000;
+// Registration and account-reset codes aren't tied to an account until they're
+// matched, so failures are counted per client and across the whole server.
+const SIGNUP_CODE_MAX_FAILS_PER_CLIENT = 10;
+const SIGNUP_CODE_MAX_FAILS_GLOBAL = 100;
 
 // --- Validation Helpers ---
 
@@ -394,7 +406,7 @@ exports.createVerificationCode = async function (discordID) {
     if (match) {
         return match.code;
     }
-    const generatedCode = uuidv4().slice(0, 8) + 'a' + uuidv4().slice(9, 10);
+    const generatedCode = crypto.randomBytes(5).toString('hex');
     queryRun('INSERT INTO verificationcodes VALUES (?,?,?)', [
         discordID,
         generatedCode,
@@ -403,14 +415,47 @@ exports.createVerificationCode = async function (discordID) {
     return generatedCode;
 };
 
-exports.checkVerificationCode = async function (code) {
+/**
+ * The address to rate-limit a request by. Behind a reverse proxy the socket is
+ * always the proxy, and the first X-Forwarded-For entry is whatever the client
+ * chose to send, so use the last hop: the one our own proxy appended.
+ */
+function rateLimitClientKey(req) {
+    const forwarded = String(req?.headers?.['x-forwarded-for'] || '');
+    const lastHop = forwarded.split(',').pop().trim();
+    return lastHop || req?.socket?.remoteAddress || 'unknown';
+}
+
+/**
+ * Looks up the Discord account a register/forgot verification code belongs to.
+ * Guessing is throttled so the 10-character code can't be brute-forced to claim
+ * or reset someone else's account.
+ *
+ * @param {string} code - The code the visitor typed.
+ * @param {object} [req] - The request, used to throttle per client.
+ * @returns {Promise<string|false>} The Discord ID, or false for an unknown code or a throttled caller.
+ */
+exports.checkVerificationCode = async function (code, req) {
+    const clientKey = `signupcode:${rateLimitClientKey(req)}`;
+    const globalKey = 'signupcode:global';
+    if (
+        isRateLimited(clientKey, SIGNUP_CODE_MAX_FAILS_PER_CLIENT) ||
+        isRateLimited(globalKey, SIGNUP_CODE_MAX_FAILS_GLOBAL)
+    ) {
+        return false;
+    }
     const time = unixTime();
     queryRun('DELETE FROM verificationcodes WHERE NOT expires > ?', [time]);
     const match = querySingle(
         'SELECT DISTINCT discordID FROM verificationcodes WHERE code=? AND expires > ?',
-        [code, time]
+        [String(code || '').trim(), time]
     );
-    return match ? match.discordID : false;
+    if (!match) {
+        registerFailure(clientKey, CODE_WINDOW_MS);
+        registerFailure(globalKey, CODE_WINDOW_MS);
+        return false;
+    }
+    return match.discordID;
 };
 
 /*
@@ -708,7 +753,7 @@ exports.handleLoginRegister = async function (req, res, body) {
                 await require('../pages/register').processRegister(null, req, res, []);
                 return;
             }
-            const id = await exports.checkVerificationCode(params.token);
+            const id = await exports.checkVerificationCode(params.token, req);
             if (!id) {
                 req.url = `/register.html?errortext=${encodeURIComponent('Invalid verification code!\nType ^connect on a server with the Discross bot.')}`;
                 await require('../pages/register').processRegister(null, req, res, []);
@@ -728,7 +773,7 @@ exports.handleLoginRegister = async function (req, res, body) {
         }
     } else if (req.url === '/forgot') {
         if (params.token) {
-            const id = await exports.checkVerificationCode(params.token);
+            const id = await exports.checkVerificationCode(params.token, req);
             if (!id) {
                 req.url = `/forgot.html?errortext=${encodeURIComponent('Invalid verification code!\nType ^connect on a server with the Discross bot.')}`;
                 await require('../pages/forgot').processForgot(null, req, res, []);

@@ -27,12 +27,32 @@ function generateCaptcha() {
         question = `What is ${a} * ${b}?`;
     }
 
+    // The token goes into the page, so it must not contain the answer. Instead
+    // the signature covers the answer plus a random nonce and the timestamp;
+    // verifyCaptcha recomputes it from whatever the visitor typed.
     const timestamp = Date.now();
-    const payload = `${answer}:${timestamp}`;
-    const sig = crypto.createHmac('sha256', CAPTCHA_SECRET).update(payload).digest('hex');
-    const token = `${payload}:${sig}`;
+    const nonce = crypto.randomBytes(8).toString('hex');
+    const token = `${timestamp}:${nonce}:${signCaptcha(answer, timestamp, nonce)}`;
 
     return { question, token };
+}
+
+function signCaptcha(answer, timestamp, nonce) {
+    return crypto
+        .createHmac('sha256', CAPTCHA_SECRET)
+        .update(`captcha:${answer}:${timestamp}:${nonce}`)
+        .digest('hex');
+}
+
+// Buffer.from(x, 'hex') silently drops trailing junk, so validate the shape
+// first; otherwise a signature with extra characters appended would still match.
+function safeEqualHex(provided, expected) {
+    if (typeof provided !== 'string' || !/^[0-9a-f]+$/i.test(provided)) return false;
+    const a = Buffer.from(provided, 'hex');
+    const b = Buffer.from(expected, 'hex');
+    return (
+        provided.length === expected.length && a.length === b.length && crypto.timingSafeEqual(a, b)
+    );
 }
 
 function verifyCaptcha(userAnswer, token) {
@@ -45,7 +65,7 @@ function verifyCaptcha(userAnswer, token) {
         return false;
     }
 
-    const [expectedAnswer, timestampStr, expectedSig] = parts;
+    const [timestampStr, nonce, providedSig] = parts;
     const timestamp = parseInt(timestampStr, 10);
     if (isNaN(timestamp)) {
         return false;
@@ -56,16 +76,8 @@ function verifyCaptcha(userAnswer, token) {
         return false;
     }
 
-    const payload = `${expectedAnswer}:${timestampStr}`;
-    const recomputedSig = crypto.createHmac('sha256', CAPTCHA_SECRET).update(payload).digest('hex');
-
-    const buf1 = Buffer.from(expectedSig, 'hex');
-    const buf2 = Buffer.from(recomputedSig, 'hex');
-    if (buf1.length !== buf2.length || !crypto.timingSafeEqual(buf1, buf2)) {
-        return false;
-    }
-
-    return String(userAnswer).trim() === expectedAnswer;
+    const expectedSig = signCaptcha(String(userAnswer).trim(), timestampStr, nonce);
+    return safeEqualHex(providedSig, expectedSig);
 }
 
 // --- Signed "captcha passed" cookie ------------------------------------------
@@ -98,9 +110,7 @@ function verifyCaptchaPass(cookieValue) {
         .createHmac('sha256', CAPTCHA_SECRET)
         .update(`pass:${timestampStr}`)
         .digest('hex');
-    const a = Buffer.from(providedSig, 'hex');
-    const b = Buffer.from(expectedSig, 'hex');
-    return a.length === b.length && crypto.timingSafeEqual(a, b);
+    return safeEqualHex(providedSig, expectedSig);
 }
 
 module.exports = {

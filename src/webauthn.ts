@@ -200,6 +200,10 @@ function verifyAssertion(response, expected) {
     const authDataBuf = Buffer.from(response.authenticatorData, 'base64');
     const authData = parseAuthData(authDataBuf);
     if (!authData.userPresent) throw new Error('User not present');
+    // A passkey sign-in replaces both the password and the 2FA code, so it must
+    // be backed by a PIN or biometric. The options ask for userVerification
+    // "required", but only the authenticator's own flag proves it happened.
+    if (!authData.userVerified) throw new Error('User verification required');
     assertRpIdHash(authData.rpIdHash, expected.expectedRpId);
 
     // Signed data = authenticatorData || SHA-256(clientDataJSON)

@@ -120,6 +120,7 @@ const {
     resolveThemeValue,
     toLocalPath,
     isCrossSiteRequest,
+    generateSEOMetadata,
 } = require('./pages/utils');
 
 const messagePageTemplate = loadAndRenderPageTemplate('message');
@@ -302,6 +303,17 @@ async function senddrawingAsync(req, res, body) {
 
 async function handlePost(req, res) {
     const parsedurl = new URL(req.url, 'http://localhost').pathname;
+
+    // Every POST here is a form or fetch from one of our own pages, except the
+    // Resend webhook, which is a server-to-server call that carries no Fetch
+    // Metadata. SameSite=Lax already keeps the session cookie off cross-site
+    // POSTs; this also stops login, registration and the other cookieless
+    // endpoints from being driven by a hostile page.
+    if (parsedurl !== '/api/inbound/mail' && isCrossSiteRequest(req)) {
+        res.writeHead(403, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('no-permission', 'misc'));
+        return;
+    }
 
     // Handle file upload BEFORE reading body (formidable needs raw stream)
     if (parsedurl === '/uploadFile') {
@@ -999,12 +1011,11 @@ async function handleDiscordOAuth(req, res, parsedurl) {
 
             const state = query.get('state') || '';
             const returnPath = state.startsWith('return:') ? state.slice(7) : '';
-            if (
-                returnPath.startsWith('/') &&
-                !returnPath.startsWith('//') &&
-                !returnPath.includes('\\')
-            ) {
-                res.writeHead(302, { Location: returnPath });
+            if (returnPath.startsWith('/')) {
+                // toLocalPath drops anything that could make the target off-site,
+                // such as the tab in "/<TAB>/evil.example" that browsers strip
+                // before resolving the Location header into "//evil.example".
+                res.writeHead(302, { Location: toLocalPath(returnPath, '/server/') });
                 res.end();
             } else if (state === 'sync') {
                 res.writeHead(200, { 'Content-Type': 'text/html' });
@@ -1036,7 +1047,11 @@ async function handleImageProxy(req, res, parsedurl, args) {
         const fullImageUrl = Buffer.from(encodedUrl, 'base64').toString();
         await imageProxy(req, res, fullImageUrl, isFull);
     } else if (args[2] === 'sticker') {
-        const stickerId = args[3].replace(/\.[^.]*$/, '');
+        const stickerId = (args[3] || '').replace(/\.[^.]*$/, '');
+        if (!isValidSnowflake(stickerId)) {
+            await notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
+            return;
+        }
         await imageProxy(
             req,
             res,
@@ -1046,6 +1061,10 @@ async function handleImageProxy(req, res, parsedurl, args) {
     } else if (args[2] === 'app-icon') {
         const appId = args[3];
         const iconFile = args[4] || '';
+        if (!isValidSnowflake(appId) || !/^[A-Za-z0-9_]+\.[a-z]{3,4}$/.test(iconFile)) {
+            await notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
+            return;
+        }
         await imageProxy(
             req,
             res,
@@ -1078,6 +1097,21 @@ const MESSAGE_PAGE_HEADINGS = {
     503: 'Discross is reconnecting',
 };
 
+const DEFAULT_PAGE_TITLE = 'Discross - Use Discord Anywhere';
+
+// Pages that never name themselves still carry {$PAGE_TITLE}/{$SEO_METADATA} in
+// the shared head. Only the <head> is touched, so text in the page body (such as
+// a chat message) can never trigger the substitution.
+function fillHeadDefaults(req, html) {
+    const headEnd = html.search(/<\/head>/i);
+    if (headEnd === -1) return html;
+    const head = html
+        .slice(0, headEnd)
+        .replace('{$PAGE_TITLE}', escapeHtml(DEFAULT_PAGE_TITLE))
+        .replace('{$SEO_METADATA}', () => generateSEOMetadata(req));
+    return head + html.slice(headEnd);
+}
+
 function wrapHtmlFragments(req, res) {
     const originalEnd = res.end;
     res.end = function (chunk, ...rest) {
@@ -1103,6 +1137,13 @@ function wrapHtmlFragments(req, res) {
                     MESSAGE: body,
                     PAGE_TITLE: `${heading} - Discross`,
                 });
+            }
+            if (
+                typeof chunk === 'string' &&
+                String(res.getHeader('Content-Type') || '').startsWith('text/html') &&
+                (chunk.includes('{$PAGE_TITLE}') || chunk.includes('{$SEO_METADATA}'))
+            ) {
+                chunk = fillHeadDefaults(req, chunk);
             }
         } catch (err) {
             console.error('Failed to wrap HTML fragment:', err);
@@ -1139,6 +1180,13 @@ server.on('request', async (req, res) => {
     // Pages are only ever framed by Discross itself (webapp.html, the OAuth
     // sync iframe), so refuse cross-origin framing to prevent clickjacking.
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    // The pages rely on inline scripts and styles for legacy-console support, so
+    // this can't restrict script sources. It still stops injected markup from
+    // re-pointing <base>, posting forms off-site or framing the site elsewhere.
+    res.setHeader(
+        'Content-Security-Policy',
+        "base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    );
     wrapHtmlFragments(req, res);
 
     if (req.url.startsWith('//')) {

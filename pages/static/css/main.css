@@ -276,6 +276,13 @@ pre code {
     padding-right: 12px;
     padding-top: 2px;
 }
+/* The <colgroup> in each message template pins the avatar column. Fixed table
+   layouts (phones, 3DS) read column widths from the first row, and a reply's
+   indicator row is a single colspan=2 cell that would otherwise split the two
+   columns evenly, squeezing replies into half the width of ordinary messages. */
+.message-avatar-col {
+    width: 52px;
+}
 .author-avatar {
     width: 40px;
     height: 40px;
@@ -311,6 +318,10 @@ pre code {
     font-size: 17px;
     line-height: 24px;
     word-wrap: break-word;
+    /* "anywhere" (unlike break-word) also shrinks the min-content width, so a
+       long unbroken string wraps inside its table cell instead of stretching
+       the whole page. Older browsers ignore it and keep word-wrap above. */
+    overflow-wrap: anywhere;
     max-width: 100%;
 }
 .messagecontent p {
@@ -324,6 +335,7 @@ pre code {
 .messagecontent a {
     color: #00b0f4;
     word-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 .messagecontent .message-link {
     color: inherit;
@@ -441,8 +453,8 @@ pre code {
     padding: 8px 12px;
     vertical-align: top;
     width: 100%;
-    overflow-wrap: break-word;
     word-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 
 /* ================================================================
@@ -973,7 +985,22 @@ canvas {
     border-radius: 3px;
     font-size: 17px;
     color: #dcddde;
-    white-space: nowrap;
+}
+
+/* Form rows made of fixed-width inputs (TV zip/date, search) can't fit a phone;
+   on narrow screens let their cells wrap onto further lines instead. */
+@media screen and (max-width: 480px) {
+    tr.wrap-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+    tr.wrap-row > td {
+        display: block;
+        padding-left: 0 !important;
+        padding-right: 8px;
+        padding-bottom: 8px;
+    }
 }
 
 /* Spoiler blocks: a solid block until clicked, like Discord */
@@ -3082,6 +3109,43 @@ html.client-new3ds #canvas-wrapper {
     #wrapper > table:first-child font[size='7'] {
         font-size: 18px !important;
     }
+    /* The 64px logo cell is the other half of what makes the header wider than a
+       320px phone. */
+    #wrapper > table:first-child td:first-child {
+        width: 40px !important;
+        min-width: 0 !important;
+    }
+    #wrapper > table:first-child img[src*='logo'] {
+        width: 40px !important;
+        height: 40px !important;
+    }
+}
+
+/* The four-column stocks and currency tables are wider than a 320px phone. */
+@media screen and (max-width: 340px) {
+    table[style*='max-width: 580px'] td,
+    table[style*='max-width: 580px'] th {
+        padding-left: 2px !important;
+        padding-right: 2px !important;
+    }
+    table[style*='max-width: 580px'] font {
+        font-size: 13px !important;
+    }
+}
+
+/* First-generation iPhone SE and similar: Login + Register + the theme button
+   still don't fit beside the wordmark without a little more room. */
+@media screen and (max-width: 340px) {
+    #wrapper > table:first-child font[size='7'] {
+        font-size: 15px !important;
+    }
+    #wrapper > table:first-child font[size='4'] {
+        font-size: 12px !important;
+    }
+    #wrapper > table:first-child td {
+        padding-left: 0 !important;
+        padding-right: 4px !important;
+    }
 }
 
 /* Nintendo 3DS / New 3DS XL — safe width & scrolling rules.
@@ -3297,13 +3361,29 @@ html.client-psp .message-author-cell {
 html.client-3ds .message-avatar-cell,
 html.client-new3ds .message-avatar-cell,
 html.client-dsi .message-avatar-cell,
-html.client-psp .message-avatar-cell {
+html.client-psp .message-avatar-cell,
+html.client-3ds .message-avatar-col,
+html.client-new3ds .message-avatar-col,
+html.client-dsi .message-avatar-col,
+html.client-psp .message-avatar-col {
     display: none !important;
 }
 
+/* With the avatar column gone, the content column is the whole table. */
+html.client-3ds .message-content-col,
+html.client-new3ds .message-content-col,
+html.client-dsi .message-content-col,
+html.client-psp .message-content-col {
+    width: 100%;
+}
+
 @media screen and (max-width: 360px) {
-    .message-avatar-cell {
+    .message-avatar-cell,
+    .message-avatar-col {
         display: none;
+    }
+    .message-content-col {
+        width: 100%;
     }
 }
 
