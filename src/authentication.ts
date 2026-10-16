@@ -104,6 +104,9 @@ function setup() {
     } catch {
         // Migration already ran
     }
+    queryRun(
+        'CREATE TABLE IF NOT EXISTS age_confirmations (discordID TEXT PRIMARY KEY, confirmed INT)'
+    );
     queryRun('CREATE TABLE IF NOT EXISTS sessions (discordID TEXT, sessionID STRING, expires INT)');
     queryRun('CREATE TABLE IF NOT EXISTS webhooks (serverID TEXT, webhookID TEXT, token STRING)');
     queryRun(
@@ -774,6 +777,21 @@ exports.setChannelPreference = function (discordID, serverID, categoryID, collap
         console.error('Error setting channel preference:', err);
         return { success: false, error: err.message };
     }
+};
+
+// Discord's OAuth never reveals whether an account is age-verified, so
+// age-restricted channels are gated behind a one-time "I am 18 or older"
+// confirmation stored per Discross account.
+exports.hasConfirmedAdult = function (discordID) {
+    if (!discordID) return false;
+    return !!querySingle('SELECT 1 FROM age_confirmations WHERE discordID=?', [discordID]);
+};
+
+exports.confirmAdult = function (discordID) {
+    queryRun('INSERT OR REPLACE INTO age_confirmations (discordID, confirmed) VALUES (?,?)', [
+        discordID,
+        unixTime(),
+    ]);
 };
 
 exports.isGuestChannel = function (channelID) {

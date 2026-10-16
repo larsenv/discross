@@ -22,6 +22,7 @@ const {
 const { getTimezoneFromIP } = require('../src/timezoneUtils');
 const { isLegacyClient } = require('./userAgentUtils');
 const { buildMessagesHtml } = require('./messageRenderer');
+const { sendAgeGateIfNeeded } = require('./nsfwUtils');
 
 exports.processChannel = async function processChannel(bot, req, res, args, discordID) {
     const parsedUrl = new URL(req.url, 'http://localhost');
@@ -96,6 +97,8 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
             res.end(getTemplate('join-server-to-view', 'misc'));
             return;
         }
+
+        if (sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
 
         const canView = await canViewChannel(member, botMember, chnl, discordID);
 

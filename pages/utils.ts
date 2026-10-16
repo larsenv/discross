@@ -808,9 +808,9 @@ async function canViewChannel(member, botMember, chnl, discordID) {
         return false;
     }
 
-    // Anonymous guests never see age-restricted channels.
-    const { isNsfwChannel } = require('./nsfwUtils');
-    if (!discordID && isNsfwChannel(chnl)) return false;
+    // Age-restricted channels need a confirmed adult; anonymous guests never qualify.
+    const { isNsfwBlocked } = require('./nsfwUtils');
+    if (isNsfwBlocked(chnl, discordID)) return false;
 
     // Thread membership check: if member is provided, they must be a member to view
     if (chnl.isThread() && member) {
