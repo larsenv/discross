@@ -910,6 +910,9 @@ async function handleGet(req, res) {
                 const themeValue = discordID ? resolveThemeValue(req) : 0;
                 const theme = themeValue === 1 ? 'light' : themeValue === 2 ? 'amoled' : 'dark';
                 await handleServerIcon(bot, res, args[3], iconHash, theme);
+            } else {
+                // Anything else under /ico/ would otherwise never get a response.
+                await notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
             }
             break;
         default:

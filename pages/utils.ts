@@ -859,8 +859,10 @@ async function canViewChannel(member, botMember, chnl, discordID, { skipAgeGate 
     const { isNsfwBlocked } = require('./nsfwUtils');
     if (!skipAgeGate && isNsfwBlocked(chnl, discordID)) return false;
 
-    // Thread membership check: if member is provided, they must be a member to view
-    if (chnl.isThread() && member) {
+    // Public threads are readable by anyone who can see the parent channel; private
+    // threads need membership (or Manage Threads, as in Discord).
+    if (chnl.isThread() && member && chnl.type === ChannelType.PrivateThread) {
+        if (member.permissionsIn(chnl).has(PermissionFlagsBits.ManageThreads, true)) return true;
         try {
             await chnl.members.fetch(member.id);
             return true;

@@ -51,7 +51,7 @@ const message_forwarded_mentioned_template = getTemplate(
 // Shared templates (same as channel.js)
 const first_message_content_template = getTemplate('first-message-content', 'message');
 const merged_message_content_template = getTemplate('merged-message-content', 'message');
-const mention_template = getTemplate('mention', 'message');
+const mention_template = getTemplate('mention', 'message').trim();
 const input_template = getTemplate('input', 'channel');
 const input_disabled_template = getTemplate('input-disabled', 'channel');
 const no_message_history_template = getTemplate('no-message-history', 'channel');

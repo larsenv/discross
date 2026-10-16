@@ -1155,6 +1155,20 @@ body.light-theme,
     margin-left: 0 !important;
     padding-left: 8px !important;
 }
+/* File and audio cards carry dark inline colours for legacy browsers. */
+.light-theme .download,
+.light-theme .audio-player {
+    background: #f2f3f5 !important;
+    border: 1px solid #e3e5e8 !important;
+}
+.light-theme .download .name,
+.light-theme .audio-player a {
+    color: #0067e0 !important;
+}
+.light-theme .download .size,
+.light-theme .audio-player font {
+    color: #5c5e66 !important;
+}
 .light-theme a {
     color: #0067e0;
 }
@@ -1330,6 +1344,11 @@ body.amoled-theme,
     background: #20160a;
     margin-left: 0 !important;
     padding-left: 8px !important;
+}
+.amoled-theme .download,
+.amoled-theme .audio-player {
+    background: #0a0a0a !important;
+    border: 1px solid #1e1f22 !important;
 }
 .amoled-theme pre,
 .amoled-theme code {
@@ -3276,10 +3295,13 @@ html.client-psp .server-rail {
         overflow-wrap: break-word !important;
     }
 
+    /* Break inside a link only when it can't fit on a line of its own (long URLs);
+       break-all split short link text such as "Discord" mid-word. The 3DS/PSP
+       rules below keep break-all because those engines lack "anywhere". */
     #msgcontainer a {
         word-wrap: break-word !important;
-        word-break: break-all !important;
-        overflow-wrap: break-word !important;
+        word-break: normal !important;
+        overflow-wrap: anywhere !important;
     }
 
     /* 2-column header: author shrinks, meta stays at right */
