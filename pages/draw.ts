@@ -97,6 +97,8 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             const botMember = await chnl.guild.members.fetch(bot.client.user.id);
             const member = await chnl.guild.members.fetch(discordID);
 
+            if (require('./nsfwUtils').sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
+
             const canView = await require('./utils').canViewChannel(
                 member,
                 botMember,

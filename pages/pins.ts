@@ -69,6 +69,8 @@ exports.processPins = async function processPins(bot, req, res, args, discordID)
             return;
         }
 
+        if (require('./nsfwUtils').sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
+
         const canView = await require('./utils').canViewChannel(member, botMember, chnl, discordID);
         if (!canView) {
             res.writeHead(403, { 'Content-Type': 'text/html' });

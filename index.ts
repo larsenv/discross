@@ -118,6 +118,7 @@ const {
     getPageThemeAttr,
     loadAndRenderPageTemplate,
     resolveThemeValue,
+    toLocalPath,
 } = require('./pages/utils');
 
 const messagePageTemplate = loadAndRenderPageTemplate('message');
@@ -395,6 +396,28 @@ async function handlePost(req, res) {
                     res.writeHead(401, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
                 }
+            } else if (parsedurl === '/nsfw/confirm') {
+                const discordID = await auth.checkAuth(req, res, true);
+                if (!discordID) {
+                    res.writeHead(303, { Location: '/login.html' });
+                    res.end();
+                    return;
+                }
+                const form = new URLSearchParams(body);
+                if (
+                    !auth.verifyActionToken(
+                        auth.getRequestSessionID(req),
+                        'nsfwconfirm',
+                        form.get('token')
+                    )
+                ) {
+                    res.writeHead(403, { 'Content-Type': 'text/html' });
+                    res.end(getTemplate('no-permission', 'misc'));
+                    return;
+                }
+                auth.confirmAdult(discordID);
+                res.writeHead(303, { Location: toLocalPath(form.get('return') || '/server/') });
+                res.end();
             } else if (parsedurl === '/senddrawing') {
                 await senddrawingAsync(req, res, body);
             } else if (
@@ -1049,7 +1072,10 @@ function wrapHtmlFragments(req, res) {
                 !res.getHeader('Content-Length') &&
                 !/<html[\s>]|<!doctype/i.test(body)
             ) {
+                // A page can name its own heading (e.g. the 18+ gate) by setting
+                // res.pageHeading before it responds.
                 const heading =
+                    res.pageHeading ||
                     MESSAGE_PAGE_HEADINGS[res.statusCode] ||
                     (res.statusCode >= 400 ? 'Something went wrong' : 'Discross');
                 chunk = renderTemplate(messagePageTemplate, {

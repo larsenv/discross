@@ -168,6 +168,8 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
                 return;
             }
 
+            if (require('./nsfwUtils').sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
+
             const canView = await require('./utils').canViewChannel(
                 member,
                 botMember,

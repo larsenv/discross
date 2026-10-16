@@ -9,6 +9,7 @@ const UAParser = require('ua-parser-js');
 const auth = require('../src/authentication');
 const emojiRegex = require('./twemojiRegex').regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
+const { isNsfwChannel } = require('./nsfwUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode } = require('./emojiUtils');
 const {
@@ -182,6 +183,11 @@ async function processServerChannels(server, member, response, sessionParam) {
 
                     if (isRulesChannel) {
                         channelList += render('channellist/rules-channel', {
+                            CHANNEL_NAME: escapedName,
+                            CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
+                        });
+                    } else if (isNsfwChannel(item)) {
+                        channelList += render('channellist/nsfw-channel', {
                             CHANNEL_NAME: escapedName,
                             CHANNEL_LINK: `../channels/${item.id}${sessionParam}#end`,
                         });
