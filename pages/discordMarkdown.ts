@@ -92,15 +92,20 @@ function renderDiscordMarkdown(text, options: { barColor?: string; timezone?: st
 
     text = text.replace(/\u2018|\u2019/g, "'").replace(/\u201C|\u201D/g, '"');
 
-    text = text.replace(/\*\*\s+(.+?)\s+\*\*/g, '**$1**');
-    text = text.replace(/\*\*\s+(.+?)\*\*/g, '**$1**');
-    text = text.replace(/\*\*(.+?)\s+\*\*/g, '**$1**');
-    text = text.replace(/__\s+(.+?)\s+__/g, '__$1__');
-    text = text.replace(/__\s+(.+?)__/g, '__$1__');
-    text = text.replace(/__(.+?)\s+__/g, '__$1__');
-    text = text.replace(/\*(?!\*)\s+(.+?)\s+\*(?!\*)/g, '*$1*');
-    text = text.replace(/\*(?!\*)\s+(.+?)\*(?!\*)/g, '*$1*');
-    text = text.replace(/\*(?!\*)(.+?)\s+\*(?!\*)/g, '*$1*');
+    // Tidy stray spaces just inside emphasis markers. The captured text must not
+    // cross another marker or a newline: with a lazy `.+?` a match could run from
+    // one span into the next and swallow the space before it, so
+    // "**a**! some *b*" lost the space before *b*.
+    text = text
+        .replace(/(?<!\*)\*\*\s+([^*\n]+?)\s+\*\*/g, '**$1**')
+        .replace(/(?<!\*)\*\*\s+([^*\n]+?)\*\*/g, '**$1**')
+        .replace(/(?<!\*)\*\*([^*\n]+?)\s+\*\*/g, '**$1**')
+        .replace(/(?<!_)__\s+([^_\n]+?)\s+__/g, '__$1__')
+        .replace(/(?<!_)__\s+([^_\n]+?)__/g, '__$1__')
+        .replace(/(?<!_)__([^_\n]+?)\s+__/g, '__$1__')
+        .replace(/(?<!\*)\*(?!\*)\s+([^*\n]+?)\s+\*(?!\*)/g, '*$1*')
+        .replace(/(?<!\*)\*(?!\*)\s+([^*\n]+?)\*(?!\*)/g, '*$1*')
+        .replace(/(?<!\*)\*(?!\*)([^*\n]+?)\s+\*(?!\*)/g, '*$1*');
 
     const codePlaceholders = [];
     const underlinePlaceholders = [];

@@ -791,7 +791,7 @@ function httpsGet(options, maxRedirects) {
  * @param {import('discord.js').BaseGuildTextChannel|import('discord.js').AnyThreadChannel} chnl - The channel.
  * @returns {Promise<boolean>} True if viewable, false otherwise.
  */
-async function canViewChannel(member, botMember, chnl, discordID) {
+async function canViewChannel(member, botMember, chnl, discordID, { skipAgeGate = false } = {}) {
     const { PermissionFlagsBits, ChannelType } = require('discord.js');
 
     if (!botMember || !chnl) return false;
@@ -809,8 +809,9 @@ async function canViewChannel(member, botMember, chnl, discordID) {
     }
 
     // Age-restricted channels need a confirmed adult; anonymous guests never qualify.
+    // Page routes pass skipAgeGate so they can run the 18+ prompt themselves.
     const { isNsfwBlocked } = require('./nsfwUtils');
-    if (isNsfwBlocked(chnl, discordID)) return false;
+    if (!skipAgeGate && isNsfwBlocked(chnl, discordID)) return false;
 
     // Thread membership check: if member is provided, they must be a member to view
     if (chnl.isThread() && member) {
@@ -896,19 +897,15 @@ function render(path, data = {}) {
  * Kept deliberately narrow to preserve legacy-console support:
  *  - Legacy clients don't send `Sec-Fetch-Site` at all → allowed (can't tell).
  *  - `same-origin` / `same-site` / `none` (typed URL, bookmark) → allowed.
- *  - Requests authenticated by an explicit `?sessionID=` in the URL are a bearer
- *    credential the attacker doesn't possess, not an ambient cookie, so they are
- *    not a CSRF vector and are allowed regardless.
+ *
+ * A `?sessionID=` in the URL is NOT an exemption. checkAuth prefers the cookie,
+ * so an attacker can add any sessionID value to a cross-site link and the
+ * victim's cookie still authenticates the request.
  *
  * @param {object} req - Node.js IncomingMessage.
  * @returns {boolean} True if the request should be rejected as cross-site.
  */
 function isCrossSiteRequest(req) {
-    try {
-        if (new URL(req.url, 'http://localhost').searchParams.get('sessionID')) return false;
-    } catch (e) {
-        // fall through — treat as no URL session
-    }
     const site = req.headers && req.headers['sec-fetch-site'];
     return site === 'cross-site';
 }

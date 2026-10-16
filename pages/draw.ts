@@ -97,19 +97,22 @@ exports.processDraw = async function processDraw(bot, req, res, args, discordID)
             const botMember = await chnl.guild.members.fetch(bot.client.user.id);
             const member = await chnl.guild.members.fetch(discordID);
 
-            if (require('./nsfwUtils').sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
-
             const canView = await require('./utils').canViewChannel(
                 member,
                 botMember,
                 chnl,
-                discordID
+                discordID,
+                { skipAgeGate: true }
             );
             if (!canView) {
                 res.writeHead(403, { 'Content-Type': 'text/html' });
                 res.end(getTemplate('draw-permission-error', 'misc'));
                 return;
             }
+
+            // Checked after the view test so the gate never names a channel the caller
+            // can't open.
+            if (require('./nsfwUtils').sendAgeGateIfNeeded(req, res, chnl, discordID)) return;
 
             const userAgentStr = req.headers['user-agent'] || '';
             const isWii =
