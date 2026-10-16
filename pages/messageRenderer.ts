@@ -142,6 +142,77 @@ function getSystemMessageText(item) {
     return SYSTEM_MESSAGE_TEXT[item.type] ?? 'performed an action';
 }
 
+// Inline templates (mention pills) end with the file's newline, which would render
+// as a space before following punctuation; trim it off.
+function renderInline(path, data) {
+    return render(path, data).trim();
+}
+
+// Twemoji shown in the avatar column of a system message row, like Discord's icons.
+const SYSTEM_MESSAGE_ICONS = {
+    6: '1f4cc',
+    7: '27a1',
+    8: '1f48e',
+    9: '1f48e',
+    10: '1f48e',
+    11: '1f48e',
+    12: '27a1',
+    18: '1f9f5',
+    21: '1f9f5',
+};
+
+// System types whose content is a plain value (thread name, boost count, followed
+// channel) folded into the sentence instead of being shown as a message body.
+const SYSTEM_TYPES_WITH_PLAIN_CONTENT = new Set([8, 9, 10, 11, 12, 18, 21]);
+
+/**
+ * Text of rendered message HTML with tags stripped (images count as one
+ * character), used to tell whether a message has anything visible.
+ */
+function visibleTextOf(html) {
+    return html
+        .replace(/<img\b[^>]*>/gi, 'x')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/**
+ * Whether a system message renders as its own compact row (icon, author, action,
+ * time) rather than inside an author group. Ones with embeds or attachments,
+ * such as AutoMod alerts and poll results, keep the full message layout.
+ */
+function isStandaloneSystemMessage(item, rawText) {
+    if (item.embeds?.length || item.embeds?.size) return false;
+    if (item.attachments?.size || item.attachments?.length) return false;
+    return SYSTEM_TYPES_WITH_PLAIN_CONTENT.has(item.type) || visibleTextOf(rawText).length === 0;
+}
+
+function getSystemRowText(item) {
+    const content = escape(normalizeWeirdUnicode(item.content || '')).trim();
+    if ((item.type === 18 || item.type === 21) && content)
+        return `started a thread: <b>${content}</b>`;
+    if (item.type === 12 && content) return `added <b>${content}</b> to this channel`;
+    const boosts = Number(item.content);
+    if (item.type >= 8 && item.type <= 11 && boosts > 1)
+        return `${SYSTEM_MESSAGE_TEXT[item.type]} (${boosts} boosts)`;
+    return getSystemMessageText(item);
+}
+
+function renderSystemMessageRow(item, member, authorText, replyText, clientTimezone) {
+    const icon = SYSTEM_MESSAGE_ICONS[item.type];
+    return render('channel/system-message-row', {
+        ICON: icon
+            ? `<img src="/resources/twemoji/${icon}.gif" class="system-message-icon" width="16" height="16" alt="" />`
+            : '',
+        AUTHOR_NAME: formatAuthorName(getDisplayName(member, item.author)),
+        AUTHOR_COLOR: getMemberColor(member, authorText),
+        COLOR: replyText,
+        TEXT: getSystemRowText(item),
+        DATE: formatDateWithTimezone(item.createdAt, clientTimezone),
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -657,6 +728,7 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
                     // YouTube embeds get a red sidebar for flair.
                     richEmbeds.push({
                         color: 0xfd001b,
+                        provider: embed.provider,
                         author: embed.author,
                         title: embed.title,
                         url: embed.url,
@@ -671,6 +743,7 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
                     });
                 } else if (isVimeo || isOtherVideo) {
                     richEmbeds.push({
+                        provider: embed.provider,
                         author: embed.author,
                         title: embed.title,
                         url: embed.url,
@@ -711,6 +784,7 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
             // YouTube is rendered as a rich embed but with its thumbnail promoted to a large image.
             richEmbeds.push({
                 color: 0xfd001b,
+                provider: embed.provider,
                 author: embed.author,
                 title: embed.title,
                 url: embed.url,
@@ -726,6 +800,7 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
         } else if (isVimeo || isOtherVideo) {
             // Video platforms are rendered as rich embeds but with thumbnails promoted to large images.
             richEmbeds.push({
+                provider: embed.provider,
                 author: embed.author,
                 title: embed.title,
                 url: embed.url,
@@ -987,7 +1062,7 @@ function renderPollResultEmbed(embed) {
         WINNER_EMOJI: emojiPart,
         WINNER_TEXT: escape(winnerText),
         WINNER_VOTES: escape(winnerVotes),
-        TOTAL_VOTES: escape(totalVotes),
+        TOTAL_VOTES: `${escape(totalVotes)} vote${totalVotes === '1' ? '' : 's'}`,
     });
 }
 
@@ -1058,7 +1133,7 @@ function renderGameMentionCard(app, isLight, imagesCookie) {
         app.icon && imagesCookie === 1
             ? `/imageProxy/app-icon/${app.id}/${app.icon}.png`
             : GAME_MENTION_FALLBACK_ICON;
-    return render('channel/game-mention', {
+    return renderInline('channel/game-mention', {
         APP_ID: app.id,
         ICON_URL: escape(iconUrl),
         GAME_NAME: escape(normalizeWeirdUnicode(app.name)),
@@ -1121,7 +1196,7 @@ function roleMentionPill(role, tmpl_mention) {
         const r = parseInt(hex.slice(1, 3), 16),
             g = parseInt(hex.slice(3, 5), 16),
             b = parseInt(hex.slice(5, 7), 16);
-        return render('channel/role-mention-colored', {
+        return renderInline('channel/role-mention-colored', {
             HEX: hex,
             R: r.toString(),
             G: g.toString(),
@@ -1129,7 +1204,7 @@ function roleMentionPill(role, tmpl_mention) {
             NAME: name,
         });
     }
-    return render('channel/role-mention-plain', { NAME: name });
+    return renderInline('channel/role-mention-plain', { NAME: name });
 }
 
 /**
@@ -1242,7 +1317,7 @@ async function resolveChannelMentions(messagetext, bot, chnl) {
         if (!ch) return match;
         if (ch.type === ChannelType.GuildForum || ch.type === ChannelType.GuildMedia)
             return '#' + escape(normalizeWeirdUnicode(ch.name));
-        return render('channel/channel-mention', {
+        return renderInline('channel/channel-mention', {
             CHANNEL_URL: `/channels/${ch.id}`,
             CHANNEL_NAME: escape(normalizeWeirdUnicode(ch.name)),
         });
@@ -1627,6 +1702,9 @@ async function resolveReplyData(
             // Discord. Falls back to the reference's messageId when the message
             // itself couldn't be fetched (e.g. deleted).
             messageId: replyMessage?.id ?? item.reference?.messageId ?? null,
+            // Neither the message nor its author could be found: Discord shows
+            // "Original message was deleted" rather than a name.
+            deleted: !replyMessage && !replyUser,
         };
     } catch (err) {
         console.error('Could not process reply data:', err);
@@ -1641,6 +1719,20 @@ function buildReplyIndicator(
     imagesCookie = 0,
     channelId = ''
 ) {
+    if (replyData.deleted)
+        return render('channel/reply-container', {
+            CONTENT: render('channel/reply-with-content', {
+                BAR_COLOR: barColor,
+                AUTHOR_COLOR: replyText,
+                AT_SIGN: '',
+                AUTHOR_NAME: '',
+                CONTENT_TD: render('channel/reply-content-cell', {
+                    REPLY_TEXT: replyText,
+                    REPLY_PREVIEW: '<i>Original message was deleted</i>',
+                }),
+            }),
+        });
+
     // `content` arrives as ready HTML (mention pills already rendered by the same
     // pipeline a normal message uses), so only collapse whitespace *between*
     // tags — never touch the tags themselves, and never re-encode it.
@@ -1815,10 +1907,15 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
     const baseHtml = (() => {
         // A continuation block is a group that starts mid-way through a multi-message block
         // (e.g. if the first message in the fetch was actually a merged message).
-        if (state.isContinuationBlock && !state.isForwarded && !state.lastMentioned)
-            return renderTemplate(templates.messageContinuation, {
-                '{$MESSAGE_CONTENT}': state.currentmessage,
-            });
+        // Groups are also split where a ping starts or ends (see renderMessages), so only
+        // the pinging messages are highlighted, as in Discord.
+        if (state.isContinuationBlock && !state.isForwarded)
+            return renderTemplate(
+                state.lastMentioned
+                    ? templates.messageContinuationMentioned
+                    : templates.messageContinuation,
+                { '{$MESSAGE_CONTENT}': state.currentmessage }
+            );
 
         // Mentioned messages get a yellow-ish background/highlight.
         if (state.isForwarded && state.lastMentioned)
@@ -2095,13 +2192,16 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         firstMessageContent: getTemplate('first-message-content', 'message'),
         mergedMessageContent: getTemplate('merged-message-content', 'message'),
         editedMarker: getTemplate('edited-marker', 'message'),
-        mention: getTemplate('mention', 'message'),
-        mentionHighlighted: getTemplate('mention', 'message'),
+        // Inline templates: drop the file's trailing newline, which would render as
+        // a space before following punctuation ("@name ,").
+        mention: getTemplate('mention', 'message').trim(),
+        mentionHighlighted: getTemplate('mention', 'message').trim(),
         fileDownload: getTemplate('file-download', 'channel'),
         reactions: getTemplate('reactions', 'message'),
         reaction: getTemplate('reaction', 'message'),
         dateSeparator: getTemplate('date-separator', 'message'),
         messageContinuation: getTemplate('message-continuation', 'message'),
+        messageContinuationMentioned: getTemplate('message-continuation-mentioned', 'message'),
         activityBanner: getTemplate('activity-banner', 'channel'),
         ...overrideTemplates,
     };
@@ -2272,16 +2372,26 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
         const currentMember = await ensureMemberData(item, chnl.guild, memberCache);
 
         // Date Separators: Insert a visual "March 15, 2024" bar when the day changes.
-        if (areDifferentDays(item.createdAt, state.lastmessagedate, clientTimezone))
-            response += renderTemplate(templates.dateSeparator, {
-                '{$DATE_SEPARATOR}': formatDateSeparator(item.createdAt, clientTimezone),
-            });
+        // Appended once any group split below has been flushed, so it stays in order.
+        const dateSeparatorHtml = areDifferentDays(
+            item.createdAt,
+            state.lastmessagedate,
+            clientTimezone
+        )
+            ? renderTemplate(templates.dateSeparator, {
+                  '{$DATE_SEPARATOR}': formatDateSeparator(item.createdAt, clientTimezone),
+              })
+            : '';
 
         state.lastmessagedate = item.createdAt;
 
+        // System messages (pins, boosts, "started a thread", ...) carry references to
+        // the pinned message or the thread; those are not replies or forwards.
+        const isSystem = !isNormalMessage(item.type);
+
         // Forwarded Messages: Extract content from reference or snapshots.
         const fwdData =
-            item.reference?.type === MessageReferenceType.Forward
+            !isSystem && item.reference?.type === MessageReferenceType.Forward
                 ? await resolveForwardData(
                       item,
                       chnl,
@@ -2301,7 +2411,7 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
         // Replies: Extract the referenced message and its author.
         const rplyData =
-            item.reference && !isForwarded
+            item.reference && !isForwarded && !isSystem
                 ? await resolveReplyData(
                       item,
                       chnl,
@@ -2341,6 +2451,49 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             (currentIsDiscross && currentUserAgent !== state.lastUserAgent) ||
             (!currentIsDiscross && state.lastIsDiscross);
 
+        // Pins, boosts, thread notices and the like sit on their own compact row
+        // between groups, so close the open group first.
+        if (isSystem && isStandaloneSystemMessage(item, rawText)) {
+            if (state.currentmessage !== '') {
+                response += flushMessageGroup(
+                    state,
+                    templates,
+                    authorText,
+                    replyText,
+                    barColor,
+                    channelId
+                );
+                state.currentmessage = '';
+            }
+            response +=
+                dateSeparatorHtml +
+                `<a id="msg-${item.id}" name="msg-${item.id}"></a>` +
+                renderSystemMessageRow(item, currentMember, authorText, replyText, clientTimezone);
+            // The next message opens a new group under its own header.
+            state.lastauthor = undefined;
+            state.lastInteraction = false;
+            state.lastForwarded = false;
+            state.lastIsDiscross = false;
+            state.lastUserAgent = null;
+            continue;
+        }
+
+        // Only the messages that ping you are highlighted, so split the group
+        // where a ping starts or stops; the rest continues without a new header.
+        if (state.currentmessage !== '' && !startsNewGroup && isMentioned !== state.lastMentioned) {
+            response += flushMessageGroup(
+                state,
+                templates,
+                authorText,
+                replyText,
+                barColor,
+                channelId
+            );
+            state.currentmessage = '';
+        }
+
+        response += dateSeparatorHtml;
+
         // Apply "First" or "Merged" content templates.
         // First: Includes the message text and potential reactions.
         // Merged: Just appends the text below the previous message in the same group.
@@ -2374,15 +2527,9 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             '{$MESSAGE_REACTIONS}': finalReactionsHtml,
         });
 
-        // 6. Handle System Messages.
-        const isSystem = !isNormalMessage(item.type);
-
+        // 6. Handle System Messages that keep the full layout (see isStandaloneSystemMessage).
         // Strip HTML to see if the message actually has visible content.
-        const visibleText = rawText
-            .replace(/<img\b[^>]*>/gi, 'x')
-            .replace(/<[^>]*>/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
+        const visibleText = visibleTextOf(rawText);
 
         // Skip empty normal messages that have no attachments/embeds.
         if (

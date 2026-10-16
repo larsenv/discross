@@ -75,6 +75,14 @@ function processEmojiInHTML(text, imagesCookie, animationsCookie) {
 }
 
 /**
+ * Icon URL of an embed author or footer. discord.js embeds expose `iconURL`;
+ * raw API payloads (e.g. from search results) use `icon_url`.
+ */
+function embedIconUrl(part) {
+    return part ? part.iconURL || part.icon_url || part.proxyIconURL || part.proxy_icon_url : null;
+}
+
+/**
  * Process Discord embeds into HTML
  * @param {Array} embeds - Array of Discord embed objects
  * @param {number} imagesCookie - Cookie value indicating if images should be displayed (1 = yes, 0 = no)
@@ -89,6 +97,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
     // Apply theme colors: 1=light, otherwise dark/amoled
     const embedHead = themeValue === 1 ? '#000000' : '#ffffff';
     const embedText = themeValue === 1 ? '#000000' : '#dcddde';
+    const embedMuted = themeValue === 1 ? '#4e5058' : '#b5bac1';
     const embedBarColor = '#808080';
 
     if (!embeds || embeds.length === 0) {
@@ -107,22 +116,46 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
                 }
             }
 
+            // Process embed provider (e.g. "YouTube"), shown above the author like Discord
+            const providerName = embed.provider?.name
+                ? escape(normalizeWeirdUnicode(embed.provider.name))
+                : '';
+            const providerHtml = providerName
+                ? render('embed/provider', {
+                      COLOR: embedMuted,
+                      CONTENT: embed.provider.url
+                          ? render('embed/author-link', {
+                                URL: escape(proxyExternalFileUrl(embed.provider.url)),
+                                CONTENT: providerName,
+                            })
+                          : providerName,
+                  })
+                : '';
+
             // Process embed author
-            const authorContent = embed.author
+            const authorContent = embed.author?.name
                 ? render('embed/author', {
                       COLOR: embedHead,
                       NAME: escape(normalizeWeirdUnicode(embed.author.name)),
                   })
                 : '';
-            const authorHtml =
-                embed.author && authorContent
-                    ? embed.author.url
-                        ? render('embed/author-link', {
-                              URL: escape(proxyExternalFileUrl(embed.author.url)),
-                              CONTENT: authorContent,
-                          })
-                        : authorContent
-                    : '';
+            const authorIconUrl = embedIconUrl(embed.author);
+            const authorHtml = authorContent
+                ? render('embed/author-row', {
+                      ICON:
+                          authorIconUrl && imagesCookie === 1
+                              ? render('embed/author-icon', {
+                                    URL: escape(proxyExternalImageUrl(authorIconUrl)),
+                                })
+                              : '',
+                      CONTENT: embed.author.url
+                          ? render('embed/author-link', {
+                                URL: escape(proxyExternalFileUrl(embed.author.url)),
+                                CONTENT: authorContent,
+                            })
+                          : authorContent,
+                  })
+                : '';
 
             // Process embed title
             const titleContent = embed.title
@@ -234,10 +267,11 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
             // Process embed footer
             const footerHtml = (() => {
                 if (!embed.footer && !embed.timestamp) return '';
+                const footerIconUrl = embedIconUrl(embed.footer);
                 const footerIconHtml =
-                    embed.footer && embed.footer.icon_url && imagesCookie === 1
+                    footerIconUrl && imagesCookie === 1
                         ? render('embed/footer-icon', {
-                              URL: proxyExternalImageUrl(embed.footer.icon_url),
+                              URL: escape(proxyExternalImageUrl(footerIconUrl)),
                           })
                         : '';
                 const footerText = embed.footer
@@ -265,7 +299,7 @@ function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTi
 
             const embedHtml = renderTemplate(embed_template, {
                 '{$EMBED_COLOR}': embedColor,
-                '{$EMBED_AUTHOR}': authorHtml,
+                '{$EMBED_AUTHOR}': providerHtml + authorHtml,
                 '{$EMBED_TITLE}': titleHtml,
                 '{$EMBED_DESCRIPTION}': descriptionHtml,
                 '{$EMBED_FIELDS}': fieldsHtml,

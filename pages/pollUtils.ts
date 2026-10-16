@@ -77,7 +77,7 @@ function processPoll(poll, imagesCookie) {
                           return renderTemplate(poll_answer_template, {
                               '{$ANSWER_TEXT}': escapeHtml(answer.text || ''),
                               '{$ANSWER_EMOJI}': buildPollEmojiHtml(answer._emoji, imagesCookie),
-                              '{$VOTE_COUNT}': voteCount,
+                              '{$VOTE_COUNT}': `${voteCount} vote${voteCount === 1 ? '' : 's'}`,
                               '{$VOTE_PERCENTAGE}': votePercentage,
                               '{$BORDER_COLOR}': borderColor,
                               '{$FILL_COLOR}': fillColor,
