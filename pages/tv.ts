@@ -681,7 +681,6 @@ exports.processTV = async function processTV(req, res) {
     var subpath = parsedUrl.pathname.replace(/^\/tv\/?/, '').replace(/\/$/, '');
     var urlSessionID = parsedUrl.searchParams.get('sessionID') || '';
     var sessionSuffix = urlSessionID ? '&sessionID=' + encodeURIComponent(urlSessionID) : '';
-    var sessionParam = urlSessionID ? '?sessionID=' + encodeURIComponent(urlSessionID) : '';
     var themeClass = getThemeClass(req, parsedUrl);
     var menuHtml = discordID
         ? renderTemplate(logged_in_template, { USER: escape(await auth.getUsername(discordID)) })
@@ -689,30 +688,11 @@ exports.processTV = async function processTV(req, res) {
 
     // Station schedule sub-page: /tv/station/{slug}/{id}
     if (subpath.startsWith('station/')) {
-        return serveStationPage(
-            req,
-            res,
-            parsedUrl,
-            subpath,
-            themeClass,
-            menuHtml,
-            urlSessionID,
-            sessionParam,
-            sessionSuffix
-        );
+        return serveStationPage(res, parsedUrl, subpath, themeClass, menuHtml, urlSessionID);
     }
 
     // Main page: ZIP/provider search + channel grid
-    return serveMainPage(
-        req,
-        res,
-        parsedUrl,
-        themeClass,
-        menuHtml,
-        urlSessionID,
-        sessionParam,
-        sessionSuffix
-    );
+    return serveMainPage(req, res, parsedUrl, themeClass, menuHtml, urlSessionID, sessionSuffix);
 };
 
 // -------
@@ -725,7 +705,6 @@ async function serveMainPage(
     themeClass,
     menuHtml,
     urlSessionID,
-    sessionParam,
     sessionSuffix
 ) {
     var zip = (parsedUrl.searchParams.get('zip') || '').trim().slice(0, ZIP_MAX_LENGTH);
@@ -841,17 +820,7 @@ async function serveMainPage(
 // -------
 // Station schedule sub-page: /tv/station/{slug}/{id}
 // -------
-async function serveStationPage(
-    req,
-    res,
-    parsedUrl,
-    subpath,
-    themeClass,
-    menuHtml,
-    urlSessionID,
-    sessionParam,
-    sessionSuffix
-) {
+async function serveStationPage(res, parsedUrl, subpath, themeClass, menuHtml, urlSessionID) {
     // subpath = "station/{slug}/{id}", e.g. "station/nbc-wnbc-new-york-ny/1767"
     var stationId = subpath.replace(/^station\//, '').slice(0, STATION_ID_MAX_LENGTH);
     var date = (parsedUrl.searchParams.get('date') || '').trim();

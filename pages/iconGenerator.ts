@@ -115,7 +115,5 @@ async function generatePlaceholderIconAsGif(serverName, theme = 'dark') {
 }
 
 module.exports = {
-    generateAcronym,
-    generatePlaceholderIcon,
     generatePlaceholderIconAsGif,
 };

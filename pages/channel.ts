@@ -73,8 +73,7 @@ exports.processChannel = async function processChannel(bot, req, res, args, disc
         cookieTheme,
         urlImages,
         cookieImages,
-        querySkinTone,
-        cookieSkinTone
+        querySkinTone
     );
 
     try {

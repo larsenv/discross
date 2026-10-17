@@ -185,7 +185,7 @@ function renderEmbedGallery(images, spoiler) {
  * @param {string|null} clientTimezone - User's timezone for date formatting
  * @returns {string} HTML string representing all embeds
  */
-function processEmbeds(req, embeds, imagesCookie, animationsCookie = 1, clientTimezone = null) {
+function processEmbeds(embeds, imagesCookie, animationsCookie = 1, clientTimezone = null) {
     if (!embeds || embeds.length === 0) {
         return '';
     }
@@ -378,7 +378,6 @@ module.exports = {
     processEmojiInHTML,
     proxyExternalImageUrl,
     proxyExternalFileUrl,
-    embedMediaUrl,
     embedType,
     plainEmbed,
 };
