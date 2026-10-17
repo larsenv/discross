@@ -743,6 +743,84 @@ pre code {
     margin-bottom: 8px;
 }
 
+/* Attachment cards, styled after Discord's: a type icon chosen from the file
+   extension, the name as the download link (ellipsised) and the size below.
+   Audio cards add the player underneath. */
+.file-card {
+    width: 100%;
+    max-width: 432px;
+    margin-top: 8px;
+    padding: 0;
+    background: #252529;
+    border: 1px solid #36373d;
+    border-radius: 8px;
+    table-layout: fixed;
+    border-collapse: separate;
+}
+div.file-card {
+    padding: 16px;
+    box-sizing: border-box;
+}
+.file-card-header {
+    width: 100%;
+    table-layout: fixed;
+    padding: 0;
+}
+.file-card > tbody > tr > td,
+.file-card > tr > td {
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+/* Fixed table layouts size a column by its width alone, so the gaps around
+   the icon are image margins rather than cell padding. */
+.file-card-icon {
+    width: 54px;
+    padding-left: 0;
+    padding-right: 0;
+}
+div.file-card .file-card-icon {
+    width: 38px;
+}
+.file-card-icon img {
+    display: block;
+    width: 30px;
+    height: 40px;
+    margin: 0 8px 0 16px;
+}
+div.file-card .file-card-icon img {
+    margin-left: 0;
+}
+.file-card-info {
+    padding-right: 16px;
+    overflow: hidden;
+}
+.file-card-name {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 16px;
+    line-height: 20px;
+}
+.file-card-name font {
+    color: #00a8fc;
+}
+.file-card-link,
+.messagecontent a.file-card-link {
+    text-decoration: none;
+}
+.file-card-link:hover {
+    text-decoration: underline;
+}
+.file-card-size {
+    font-size: 12px;
+    line-height: 16px;
+}
+.file-card-player {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+}
+
 /* ================================================================
    9. REACTIONS
    ================================================================ */
@@ -1478,18 +1556,15 @@ body.light-theme,
     padding-left: 8px !important;
 }
 /* File and audio cards carry dark inline colours for legacy browsers. */
-.light-theme .download,
-.light-theme .audio-player {
-    background: #f2f3f5 !important;
-    border: 1px solid #e3e5e8 !important;
+.light-theme .file-card {
+    background: #f9f9fa;
+    border-color: #e3e5e8;
 }
-.light-theme .download .name,
-.light-theme .audio-player a {
-    color: #0067e0 !important;
+.light-theme .file-card-name font {
+    color: #006ce7;
 }
-.light-theme .download .size,
-.light-theme .audio-player font {
-    color: #5c5e66 !important;
+.light-theme .file-card-size font {
+    color: #5c5e66;
 }
 .light-theme a {
     color: #0067e0;
@@ -1681,10 +1756,9 @@ body.amoled-theme,
     margin-left: 0 !important;
     padding-left: 8px !important;
 }
-.amoled-theme .download,
-.amoled-theme .audio-player {
-    background: #0a0a0a !important;
-    border: 1px solid #1e1f22 !important;
+.amoled-theme .file-card {
+    background: #0a0a0a;
+    border-color: #1e1f22;
 }
 .amoled-theme pre,
 .amoled-theme code {
@@ -3513,6 +3587,14 @@ html.client-psp .server-rail {
    the whole row past the viewport on narrow screens. With max-width:0 the cell
    takes only the leftover space and truncates, so it's responsive by default
    and needs no per-device width. */
+/* The quoted author's avatar between the reply connector and their name. */
+.reply-avatar {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    border-radius: 50%;
+    vertical-align: -3px;
+}
 .reply-content-cell {
     max-width: 0 !important;
     width: 100% !important;
