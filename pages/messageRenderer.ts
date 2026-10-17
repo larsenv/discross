@@ -19,6 +19,7 @@ const {
 } = require('../src/timezoneUtils');
 const { processEmbeds, plainEmbed, embedType } = require('./embedUtils');
 const { renderMosaic, mosaicImage } = require('./mosaicUtils');
+const { fileIconType } = require('./fileIcons');
 const { renderComponents, isComponentsV2, messageComponents } = require('./componentUtils');
 const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
@@ -238,13 +239,6 @@ function urlMatchesDomain(url, domain) {
     } catch {
         return false;
     }
-}
-
-function truncateFileName(name) {
-    if (name.length <= 30) return name;
-    const ext = name.replace(/(.*\.)(.*)$/, '$2');
-    const base = name.replace(/(.*\.)(.*)$/, '$1').slice(0, 25);
-    return `${base}...${ext}`;
 }
 
 function truncateText(text, maxLength) {
@@ -529,12 +523,12 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download, 
             // Modern clients get HTML5 <audio> player with controls.
             // Legacy clients will fall back to the <embed> tag inside tmpl_audio_player.
             const card = renderTemplate(tmpl_audio_player, {
-                '{$FILE_NAME}': escape(truncateFileName(attachment.name || 'audio')),
+                '{$FILE_NAME}': escape(attachment.name || 'audio'),
                 '{$FILE_SIZE}': formatFileSize(attachment.size || 0),
                 '{$FILE_LINK}': escape(url),
                 '{$MIME_TYPE}': escape(mimeType),
             });
-            result = (result ? result + getTemplate('br', 'misc') : '') + card;
+            result += card;
         } else {
             // Render a file download card for non-images or if images are disabled.
             const card = renderTemplate(tmpl_file_download, {
@@ -542,12 +536,13 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download, 
                 // into the card's HTML, so an attachment named like
                 // `x"><img src=x onerror=...>` would otherwise execute for every
                 // viewer of the channel (matches the audio branch above).
-                '{$FILE_NAME}': escape(truncateFileName(attachment.name || 'file')),
+                '{$FILE_NAME}': escape(attachment.name || 'file'),
                 '{$FILE_SIZE}': formatFileSize(attachment.size || 0),
+                '{$FILE_ICON}': fileIconType(attachment.name),
                 // Videos are not supported for inline playback yet, so they are just downloads.
-                '{$FILE_LINK}': url,
+                '{$FILE_LINK}': escape(url),
             });
-            result = (result ? result + getTemplate('br', 'misc') : '') + card;
+            result += card;
         }
     }
 
@@ -1666,6 +1661,7 @@ async function resolveReplyData(
             author: getDisplayName(replyMember, replyUser),
             authorId: replyUser?.id,
             authorColor: getMemberColor(replyMember, authorText),
+            avatarUrl: replyUser ? getDisplayAvatarURL(replyMember, replyUser) : null,
             mentionsPing:
                 item.mentions?.repliedUser !== null &&
                 item.mentions?.repliedUser !== undefined &&
@@ -1689,6 +1685,17 @@ async function resolveReplyData(
     }
 }
 
+/**
+ * Discord shows the quoted author's (or command user's) avatar at 16px between
+ * the reply connector and their name.
+ */
+function renderMiniAvatar(avatarUrl, imagesCookie) {
+    if (!avatarUrl || imagesCookie !== 1) return '';
+    return render('channel/reply-avatar', {
+        AVATAR_URL: escape(`/imageProxy/external/${Buffer.from(avatarUrl).toString('base64')}`),
+    });
+}
+
 function buildReplyIndicator(
     replyData,
     replyText,
@@ -1701,6 +1708,7 @@ function buildReplyIndicator(
             CONTENT: render('channel/reply-with-content', {
                 BAR_COLOR: barColor,
                 AUTHOR_COLOR: replyText,
+                MINI_AVATAR: '',
                 AT_SIGN: '',
                 AUTHOR_NAME: '',
                 CONTENT_TD: render('channel/reply-content-cell', {
@@ -1759,6 +1767,7 @@ function buildReplyIndicator(
     const replyContent = render('channel/reply-with-content', {
         BAR_COLOR: barColor,
         AUTHOR_COLOR: replyData.authorColor,
+        MINI_AVATAR: renderMiniAvatar(replyData.avatarUrl, imagesCookie),
         AT_SIGN: replyData.mentionsPing ? '@' : '',
         AUTHOR_NAME: formatAuthorName(replyData.author),
         CONTENT_TD: contentTd,
@@ -1797,6 +1806,7 @@ async function resolveInteractionData(item, chnl, memberCache, authorText) {
         return {
             author: getDisplayName(member, user),
             authorColor: getMemberColor(member, authorText),
+            avatarUrl: getDisplayAvatarURL(member, user),
             commandName: item.interaction.commandName,
         };
     } catch (err) {
@@ -1805,9 +1815,15 @@ async function resolveInteractionData(item, chnl, memberCache, authorText) {
     }
 }
 
-function buildInteractionIndicator(interactionData, textColor, barColor = '#808080') {
+function buildInteractionIndicator(
+    interactionData,
+    textColor,
+    barColor = '#808080',
+    imagesCookie = 0
+) {
     const content = render('channel/interaction-indicator', {
         BAR_COLOR: barColor,
+        MINI_AVATAR: renderMiniAvatar(interactionData.avatarUrl, imagesCookie),
         AUTHOR_COLOR: interactionData.authorColor,
         AUTHOR_NAME: formatAuthorName(interactionData.author),
         TEXT_COLOR: textColor,
@@ -1955,7 +1971,12 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
               channelId
           )
         : state.lastInteraction
-          ? buildInteractionIndicator(state.lastInteractionData, replyText, barColor)
+          ? buildInteractionIndicator(
+                state.lastInteractionData,
+                replyText,
+                barColor,
+                state.imagesCookie
+            )
           : '';
 
     const replyIndicator = indicatorContent
@@ -2063,8 +2084,9 @@ async function renderMessageContent(item, context) {
             clientTimezone,
             renderFileCard: (name, size, url) =>
                 renderTemplate(templates.fileDownload, {
-                    '{$FILE_NAME}': escape(truncateFileName(name)),
+                    '{$FILE_NAME}': escape(name),
                     '{$FILE_SIZE}': formatFileSize(size),
+                    '{$FILE_ICON}': fileIconType(name),
                     '{$FILE_LINK}': escape(url),
                 }),
         });

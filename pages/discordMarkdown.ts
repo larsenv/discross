@@ -231,8 +231,30 @@ function renderDiscordMarkdown(text, options: { barColor?: string; timezone?: st
         processedLines.push(`\uE000BLOCKQUOTE${index}\uE001`);
     }
 
-    text = processedLines.join('\n');
-    let rendered = md.render(text).trim();
+    // Discord maps every newline to a line break, so a blank line between two
+    // lines of text is an empty line (and three newlines are two empty lines).
+    // Markdown would instead start a new paragraph and collapse any run of
+    // blank lines into one gap, so each blank line between ordinary text
+    // becomes a marker line that keeps the paragraph going and renders empty.
+    // Blank lines beside block elements (headers, lists, quotes, code) keep
+    // the paragraph break, whose margin already spaces them like Discord.
+    const isBlockLine = (line) =>
+        /^(?:HEADER|BULLETLIST|BLOCKQUOTE|SUBTEXT|CODEBLOCK)\d+$/.test(line.trim());
+    const nonBlank = processedLines.map((line) => line.trim() !== '');
+    const linesWithBlanks = processedLines.map((line, i) => {
+        if (nonBlank[i]) return line;
+        const prev = nonBlank.lastIndexOf(true, i);
+        const next = nonBlank.indexOf(true, i);
+        if (prev === -1 || next === -1) return line;
+        if (isBlockLine(processedLines[prev]) || isBlockLine(processedLines[next])) return line;
+        return 'BLANK';
+    });
+
+    text = linesWithBlanks.join('\n');
+    let rendered = md
+        .render(text)
+        .trim()
+        .replace(/BLANK/g, '');
 
     // Remove redundant <br> tags before and after block-level placeholders that markdown-it adds due to breaks:true
     rendered = rendered.replace(
