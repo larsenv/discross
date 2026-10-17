@@ -162,11 +162,14 @@ const SYSTEM_MESSAGE_ICONS = {
     12: '27a1',
     18: '1f9f5',
     21: '1f9f5',
+    46: '1f4ca',
 };
 
 // System types whose content is a plain value (thread name, boost count, followed
 // channel) folded into the sentence instead of being shown as a message body.
 const SYSTEM_TYPES_WITH_PLAIN_CONTENT = new Set([8, 9, 10, 11, 12, 18, 21]);
+
+const MESSAGE_TYPE_POLL_RESULT = 46;
 
 /**
  * Text of rendered message HTML with tags stripped (images count as one
@@ -186,6 +189,8 @@ function visibleTextOf(html) {
  * such as AutoMod alerts and poll results, keep the full message layout.
  */
 function isStandaloneSystemMessage(item, rawText) {
+    // Poll results are a system line with the result card beneath it.
+    if (item.type === MESSAGE_TYPE_POLL_RESULT) return true;
     if (item.embeds?.length || item.embeds?.size) return false;
     if (messageComponents(item).length) return false;
     if (item.attachments?.size || item.attachments?.length) return false;
@@ -193,6 +198,13 @@ function isStandaloneSystemMessage(item, rawText) {
 }
 
 function getSystemRowText(item) {
+    if (item.type === MESSAGE_TYPE_POLL_RESULT) {
+        const embed = item.embeds?.[0] ?? item.embeds?.first?.();
+        const question = pollResultFields(embed)['poll_question_text'];
+        return question
+            ? `'s poll <b>${escape(normalizeWeirdUnicode(question))}</b> has closed.`
+            : "'s poll has closed.";
+    }
     const content = escape(normalizeWeirdUnicode(item.content || '')).trim();
     if ((item.type === 18 || item.type === 21) && content)
         return `started a thread: <b>${content}</b>`;
@@ -203,8 +215,20 @@ function getSystemRowText(item) {
     return getSystemMessageText(item);
 }
 
-function renderSystemMessageRow(item, member, authorText, replyText, clientTimezone) {
+function renderSystemMessageRow(
+    item,
+    member,
+    authorText,
+    replyText,
+    clientTimezone,
+    imagesCookie = 1
+) {
     const icon = SYSTEM_MESSAGE_ICONS[item.type];
+    const text = getSystemRowText(item);
+    const pollEmbed =
+        item.type === MESSAGE_TYPE_POLL_RESULT
+            ? (item.embeds?.[0] ?? item.embeds?.first?.())
+            : null;
     return render('channel/system-message-row', {
         ICON: icon
             ? `<img src="/resources/twemoji/${icon}.gif" class="system-message-icon" width="16" height="16" alt="" />`
@@ -212,8 +236,12 @@ function renderSystemMessageRow(item, member, authorText, replyText, clientTimez
         AUTHOR_NAME: formatAuthorName(getDisplayName(member, item.author)),
         AUTHOR_COLOR: getMemberColor(member, authorText),
         COLOR: replyText,
-        TEXT: getSystemRowText(item),
+        // A possessive ("'s poll ...") attaches straight to the name.
+        TEXT: text.startsWith("'") ? text : ' ' + text,
         DATE: formatDateWithTimezone(item.createdAt, clientTimezone),
+        EXTRA: pollEmbed
+            ? renderPollResultEmbed(pollEmbed, imagesCookie, item.reference?.messageId ?? null)
+            : '',
     });
 }
 
@@ -785,7 +813,8 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
         } else if (type === 'poll_result') {
             // Discord native poll results are sent as special embeds.
             result =
-                (result ? result + getTemplate('br', 'misc') : '') + renderPollResultEmbed(embed);
+                (result ? result + getTemplate('br', 'misc') : '') +
+                renderPollResultEmbed(embed, imagesCookie);
         } else if (type === 'auto_moderation_message') {
             richEmbeds.push(autoModerationEmbed(embed));
         } else if (isVideo) {
@@ -1011,29 +1040,69 @@ function renderActivityBanner(item, context) {
 }
 
 /**
- * Renders a poll result summary from a Discord poll embed.
- *
- * @param {object} embed - The poll result embed object.
- * @returns {string} The rendered poll result HTML.
+ * Fields of a poll result embed (Discord sends them as name/value pairs).
  */
-function renderPollResultEmbed(embed) {
-    const fieldMap = {};
-    (embed.fields ?? []).forEach((f) => {
+function pollResultFields(embed): Record<string, string> {
+    const fieldMap: Record<string, string> = {};
+    (embed?.fields ?? []).forEach((f) => {
         fieldMap[f.name] = f.value;
     });
-    const question = fieldMap['poll_question_text'] ?? '';
+    return fieldMap;
+}
+
+/**
+ * Renders the card Discord shows under a "poll has closed" message: the
+ * winning answer with a check and its share of the vote, or a note that the
+ * poll tied or got no votes, plus a button that jumps to the poll.
+ *
+ * @param {object} embed - The poll result embed object.
+ * @param {number} imagesCookie - User preference for images (1 = enabled).
+ * @param {string|null} pollMessageId - ID of the poll message, for "View Poll".
+ * @returns {string} The rendered poll result HTML.
+ */
+function renderPollResultEmbed(embed, imagesCookie = 1, pollMessageId = null) {
+    const fieldMap = pollResultFields(embed);
     const winnerText = fieldMap['victor_answer_text'] ?? '';
-    const winnerEmoji = fieldMap['victor_answer_emoji_name'] ?? '';
-    const winnerVotes = fieldMap['victor_answer_votes'] ?? '0';
-    const totalVotes = fieldMap['total_votes'] ?? '0';
-    const emojiPart = winnerEmoji ? escape(winnerEmoji) + ' ' : '';
+    const winnerVotes = Number(fieldMap['victor_answer_votes'] ?? 0);
+    const totalVotes = Number(fieldMap['total_votes'] ?? 0);
+
+    let winner;
+    let detail = '';
+    if (totalVotes === 0) {
+        winner = 'There were no votes';
+    } else if (!winnerText) {
+        winner = 'The results were tied';
+    } else {
+        const emojiId = fieldMap['victor_answer_emoji_id'];
+        const emojiName = fieldMap['victor_answer_emoji_name'];
+        let emoji = '';
+        if (emojiId && imagesCookie === 1) {
+            const animated = fieldMap['victor_answer_emoji_animated'] === 'true';
+            emoji = render('channel/emoji-custom', {
+                EMOJI_ID: escape(emojiId),
+                EXT: animated ? 'gif' : 'png',
+                PX: '20',
+                STYLE: 'width: 1.25em; height: 1.25em; vertical-align: -0.25em; margin-right: 4px;',
+            });
+        } else if (emojiName) {
+            emoji =
+                (imagesCookie === 1
+                    ? processUnicodeEmojiInText(escape(emojiName), 20, '1.25em')
+                    : escape(emojiName)) + ' ';
+        }
+        winner = emoji + escape(winnerText) + getTemplate('poll-result-check', 'channel').trim();
+        const percent = Math.round((winnerVotes / totalVotes) * 100);
+        detail = render('channel/poll-result-detail', {
+            TEXT: `Winning answer \u00b7 ${percent}%`,
+        });
+    }
 
     return render('channel/poll-result', {
-        QUESTION: escape(question),
-        WINNER_EMOJI: emojiPart,
-        WINNER_TEXT: escape(winnerText),
-        WINNER_VOTES: escape(winnerVotes),
-        TOTAL_VOTES: `${escape(totalVotes)} vote${totalVotes === '1' ? '' : 's'}`,
+        WINNER: winner,
+        DETAIL: detail,
+        VIEW_POLL: pollMessageId
+            ? render('channel/poll-result-view', { HREF: `#msg-${escape(pollMessageId)}` })
+            : '',
     });
 }
 
@@ -2444,7 +2513,14 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             response +=
                 dateSeparatorHtml +
                 `<a id="msg-${item.id}" name="msg-${item.id}"></a>` +
-                renderSystemMessageRow(item, currentMember, authorText, replyText, clientTimezone);
+                renderSystemMessageRow(
+                    item,
+                    currentMember,
+                    authorText,
+                    replyText,
+                    clientTimezone,
+                    imagesCookie
+                );
             // The next message opens a new group under its own header.
             state.lastauthor = undefined;
             state.lastInteraction = false;

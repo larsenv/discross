@@ -24,14 +24,28 @@ function buildPollEmojiHtml(emoji, imagesCookie) {
     }
     if (emoji.name) {
         return render('message/partials/poll-emoji-text', {
-            NAME: emoji.name,
+            NAME: escapeHtml(emoji.name),
         });
     }
     return '';
 }
 
 /**
- * Process a poll and render it as HTML
+ * Time left before a poll closes, as Discord words it ("5h left").
+ * @param {number} ms - Milliseconds remaining
+ */
+function formatTimeLeft(ms) {
+    const minutes = Math.max(1, Math.ceil(ms / 60000));
+    if (minutes >= 24 * 60) return `${Math.floor(minutes / (24 * 60))}d left`;
+    if (minutes >= 60) return `${Math.floor(minutes / 60)}h left`;
+    return `${minutes}m left`;
+}
+
+/**
+ * Process a poll and render it as HTML, laid out like Discord's poll card:
+ * question, how many answers may be picked, one row per answer with its
+ * share of the vote as a fill bar, and a footer with the vote count and
+ * time left (or "Poll closed"). Discross can't vote, so results always show.
  * @param {Poll} poll - The Discord.js Poll object
  * @param {number} imagesCookie - Whether images are enabled (0 or 1)
  * @returns {string} HTML string for the poll
@@ -40,72 +54,55 @@ function processPoll(poll, imagesCookie) {
     if (!poll) return '';
 
     try {
-        // Check if poll has ended
         const now = Date.now();
-        const isEnded = poll.expiresTimestamp && poll.expiresTimestamp < now;
+        const isEnded =
+            !!poll.resultsFinalized || (!!poll.expiresTimestamp && poll.expiresTimestamp < now);
 
-        // Calculate total votes across all answers
-        const totalVotes =
-            poll.answers?.size > 0
-                ? (Array.from(poll.answers.values()) as any[]).reduce(
-                      (sum, a) => sum + (a.voteCount || 0),
-                      0
-                  )
-                : 0;
+        const answers = poll.answers?.size > 0 ? (Array.from(poll.answers.values()) as any[]) : [];
+        const totalVotes = answers.reduce((sum, a) => sum + (a.voteCount || 0), 0);
+        const maxVotes = answers.reduce((max, a) => Math.max(max, a.voteCount || 0), 0);
 
-        // Find max votes for winning highlight
-        const maxVotes =
-            totalVotes > 0
-                ? Math.max(
-                      ...(Array.from(poll.answers.values()) as any[]).map((a) => a.voteCount || 0)
-                  )
-                : 0;
-
-        // Process each answer
         const answersHtml =
-            poll.answers?.size > 0
-                ? (Array.from(poll.answers.values()) as any[])
+            answers.length > 0
+                ? answers
                       .map((answer) => {
                           const voteCount = answer.voteCount || 0;
                           const votePercentage =
                               totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-
-                          const isWinner = isEnded && voteCount === maxVotes && maxVotes > 0;
-                          const borderColor = isWinner ? '#23a559' : 'transparent';
-                          const fillColor = isWinner ? '#1f3d2f' : '#3f4147';
+                          // Once a poll closes Discord outlines every answer that
+                          // tied for the most votes in green.
+                          const isWinner = isEnded && maxVotes > 0 && voteCount === maxVotes;
 
                           return renderTemplate(poll_answer_template, {
                               '{$ANSWER_TEXT}': escapeHtml(answer.text || ''),
                               '{$ANSWER_EMOJI}': buildPollEmojiHtml(answer._emoji, imagesCookie),
                               '{$VOTE_COUNT}': `${voteCount} vote${voteCount === 1 ? '' : 's'}`,
                               '{$VOTE_PERCENTAGE}': votePercentage,
-                              '{$BORDER_COLOR}': borderColor,
-                              '{$FILL_COLOR}': fillColor,
+                              '{$WINNER_CLASS}': isWinner ? ' poll-answer-winner' : '',
                           });
                       })
                       .join('')
                 : getTemplate('poll-no-answers', 'misc');
 
-        // Create footer with poll metadata
         const footerParts = [`${totalVotes} vote${totalVotes !== 1 ? 's' : ''}`];
-
-        if (poll.allowMultiselect) {
-            footerParts.push('Multiple choice');
-        }
-
         if (isEnded) {
             footerParts.push('Poll closed');
         } else if (poll.expiresTimestamp) {
-            footerParts.push(`Ends ${new Date(poll.expiresTimestamp).toLocaleDateString()}`);
+            footerParts.push(formatTimeLeft(poll.expiresTimestamp - now));
         }
 
-        const pollHtml = renderTemplate(poll_template, {
+        return renderTemplate(poll_template, {
             '{$POLL_QUESTION}': escapeHtml(poll.question?.text || 'Poll'),
+            '{$POLL_SUBTITLE}': isEnded
+                ? ''
+                : render('message/poll-subtitle', {
+                      TEXT: poll.allowMultiselect
+                          ? 'Select one or more answers'
+                          : 'Select one answer',
+                  }),
             '{$POLL_ANSWERS}': answersHtml,
-            '{$POLL_FOOTER}': escapeHtml(footerParts.join(' • ')),
+            '{$POLL_FOOTER}': escapeHtml(footerParts.join(' \u00b7 ')),
         });
-
-        return pollHtml;
     } catch (error) {
         console.error('Error processing poll:', error);
         return render('message/partials/poll-error', {

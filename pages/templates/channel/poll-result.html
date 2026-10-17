@@ -1,4 +1,9 @@
-<div style="font-size: 14px; color: #b9bbbe; margin-top: 4px">
-  Poll ended: <b>{$QUESTION}</b><br />Winner: {$WINNER_EMOJI}<b>{$WINNER_TEXT}</b>
-  ({$WINNER_VOTES}/{$TOTAL_VOTES})
-</div>
+<table class="poll-result" cellpadding="0" cellspacing="0">
+  <tr>
+    <td class="poll-result-info" valign="middle">
+      <div class="poll-result-winner">{$WINNER}</div>
+      {$DETAIL}
+    </td>
+    {$VIEW_POLL}
+  </tr>
+</table>
