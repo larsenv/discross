@@ -5,7 +5,8 @@ const net = require('net');
 const dns = require('dns').promises;
 const dnsLookup = require('dns').lookup;
 const sharp = require('sharp');
-const { getTemplate } = require('./utils'); // Assuming utils.js exists and exports getTemplate
+const { getTemplate } = require('./utils');
+const { isLegacyClient } = require('./userAgentUtils');
 
 // --- SSRF protection ----------------------------------------------------------
 // The /imageProxy/external/ endpoint fetches arbitrary client-supplied URLs.
@@ -150,8 +151,23 @@ function detectBufferMimeType(buf) {
     return 'image/gif';
 }
 
+/**
+ * Browsers that can show WebP say so in their image Accept header; the Wii,
+ * 3DS, PSP and old desktop browsers never do. Those keep the small 256-colour
+ * GIFs, while modern browsers get WebP sized for Discord's display limits
+ * (550x350 inline, at 2x for high-DPI screens).
+ */
+function wantsModernImage(req) {
+    const accept = String(req?.headers?.accept || '');
+    return /image\/webp/i.test(accept) && !isLegacyClient(req?.headers?.['user-agent']);
+}
+
+const LEGACY_SIZE = { inline: 256, full: 1024 };
+const MODERN_SIZE = { inline: { width: 1100, height: 700 }, full: { width: 2560, height: 2560 } };
+
 exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) {
-    const cacheKey = fullSize ? URL + ':full' : URL;
+    const modern = wantsModernImage(req);
+    const cacheKey = (fullSize ? URL + ':full' : URL) + (modern ? ':webp' : '');
     // Serve from in-memory cache if available
     if (imageCache.has(cacheKey)) {
         const cached = imageCache.get(cacheKey);
@@ -161,6 +177,7 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
             'Content-Type': contentType,
             'Content-Length': cachedBuffer.length,
             'Cache-Control': CACHE_CONTROL,
+            Vary: 'Accept, User-Agent',
         });
         res.end(cachedBuffer);
         return;
@@ -235,48 +252,32 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
                         return;
                     }
                     try {
-                        let processedBuffer;
-                        if (fullSize) {
-                            // Still convert to GIF for compatibility, but don't resize down to 256
-                            // We might still want to cap it at a reasonable "full" size for legacy browsers, e.g. 1024
-                            processedBuffer = await sharp(buffer, {
-                                animated: true,
-                                limitInputPixels: MAX_INPUT_PIXELS,
-                            })
-                                .resize({
-                                    width: 1024,
-                                    height: 1024,
-                                    fit: 'inside',
-                                    withoutEnlargement: true,
-                                })
-                                .toFormat('gif', { colors: 256 })
-                                .toBuffer()
-                                .catch(() => {
-                                    console.warn(
-                                        'Could not convert full-size image, sending original'
-                                    );
-                                    return buffer;
-                                });
-                        } else {
-                            // Resize options: cap all images at 256x256 to keep transfers small for Wii Internet Channel
-                            const resizeOptions = {
-                                width: 256,
-                                height: 256,
-                                fit: 'inside',
-                                withoutEnlargement: true,
-                            };
-                            processedBuffer = await sharp(buffer, {
-                                animated: true,
-                                limitInputPixels: MAX_INPUT_PIXELS,
-                            })
-                                .resize(resizeOptions)
-                                .toFormat('gif', { colors: 256 })
-                                .toBuffer()
-                                .catch(() => {
-                                    console.warn('Could not convert image, sending original');
-                                    return buffer;
-                                });
-                        }
+                        const image = sharp(buffer, {
+                            animated: true,
+                            limitInputPixels: MAX_INPUT_PIXELS,
+                        });
+                        const bounds = modern
+                            ? MODERN_SIZE[fullSize ? 'full' : 'inline']
+                            : {
+                                  width: LEGACY_SIZE[fullSize ? 'full' : 'inline'],
+                                  height: LEGACY_SIZE[fullSize ? 'full' : 'inline'],
+                              };
+                        const resized = image.resize({
+                            ...bounds,
+                            fit: 'inside',
+                            withoutEnlargement: true,
+                        });
+                        const processedBuffer = await (
+                            modern
+                                ? resized.webp({ quality: fullSize ? 90 : 82, effort: 4 })
+                                : // GIF keeps transfers small for the Wii Internet Channel.
+                                  resized.toFormat('gif', { colors: 256 })
+                        )
+                            .toBuffer()
+                            .catch(() => {
+                                console.warn('Could not convert image, sending original');
+                                return buffer;
+                            });
                         let contentType = 'image/gif';
                         if (processedBuffer === buffer) {
                             contentType = detectBufferMimeType(buffer);
@@ -289,6 +290,7 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
                             'Content-Type': contentType,
                             'Content-Length': processedBuffer.length,
                             'Cache-Control': CACHE_CONTROL,
+                            Vary: 'Accept, User-Agent',
                         });
                         res.end(processedBuffer);
                     } catch (error) {

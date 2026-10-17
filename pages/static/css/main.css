@@ -933,37 +933,57 @@ table.poll-result a.poll-result-button:visited {
     text-decoration: none;
 }
 
+/* Stickers show at Discord's 160px. */
+.sticker-image {
+    display: block;
+    width: 160px;
+    height: 160px;
+    margin-top: 4px;
+    object-fit: contain;
+}
+
+/* Inline images are capped at Discord's 550x350 on wide screens. */
+@media screen and (min-width: 700px) {
+    .standard-image {
+        max-width: 550px;
+    }
+}
+
 /* ================================================================
    9. REACTIONS
    ================================================================ */
 
+.reactions {
+    margin-top: 4px;
+}
+/* Discord's reaction pill: a rounded chip with a 16px emoji and a bold
+   count. Super reactions get their own pill outlined in the burst colour. */
 .reaction {
     display: inline-block;
     padding: 2px 6px;
-    background: #26262b;
-    border: 1px solid #3a3d42; /* solid fallback for IE8 which doesn't support rgba() */
-    border: 1px solid rgba(79, 84, 92, 0.3);
-    border-radius: 4px;
-    margin-top: 4px;
-    margin-right: 4px;
-    margin-bottom: 4px;
+    margin: 0 4px 4px 0;
+    background: #2b2d31;
+    border: 1px solid #2b2d31;
+    border-radius: 8px;
+    line-height: 18px;
+    vertical-align: top;
+    white-space: nowrap;
 }
 .reaction img {
     width: 16px;
     height: 16px;
-    vertical-align: middle;
+    vertical-align: -3px;
 }
 .reaction-count {
-    color: #abacb2;
-    font-size: 12px;
-    margin-left: 4px;
-    font-weight: bold;
+    margin-left: 6px;
+    color: #dbdee1;
+    font-size: 14px;
+    font-weight: 600;
     font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
-
-/* Reactions inside embed messages */
-.embed-reactions .reaction {
-    background: #39312a;
+.reaction-burst {
+    border-color: #5865f2;
+    background: #2f3045;
 }
 
 /* ================================================================
@@ -1645,15 +1665,15 @@ body.light-theme,
     background: rgba(0, 0, 0, 0.08);
 }
 .light-theme .reaction {
-    background: #efeff0;
-    border-color: #ccc;
-    border-color: rgba(79, 84, 92, 0.15);
+    background: #ebebed;
+    border-color: #ebebed;
 }
 .light-theme .reaction-count {
-    color: #62636d;
+    color: #313338;
 }
-.light-theme .embed-reactions .reaction {
-    background: #efe9e3;
+.light-theme .reaction-burst {
+    background: #e7e8fb;
+    border-color: #5865f2;
 }
 .light-theme .mention {
     color: #2e3c88;
@@ -1799,14 +1819,15 @@ body.amoled-theme,
     background: rgba(255, 255, 255, 0.08) !important;
 }
 .amoled-theme .reaction {
-    background: #1d1d20;
-    border-color: #222;
+    background: #141416;
+    border-color: #141416;
 }
 .amoled-theme .reaction-count {
-    color: #9e9ea5;
+    color: #dbdee1;
 }
-.amoled-theme .embed-reactions .reaction {
-    background: #312a21;
+.amoled-theme .reaction-burst {
+    background: #191a2b;
+    border-color: #5865f2;
 }
 .amoled-theme .embed-content {
     background: #141416;
@@ -4182,7 +4203,7 @@ html.client-psp .light-theme .messagecontent font {
         font-size: calc(16px * var(--ui-scale, 1));
     }
     .reaction-count {
-        font-size: calc(12px * var(--ui-scale, 1));
+        font-size: calc(14px * var(--ui-scale, 1));
     }
     .message-input-field {
         font-size: var(--ui-font-size, 16px);

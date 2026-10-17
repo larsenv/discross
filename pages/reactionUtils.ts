@@ -1,7 +1,32 @@
 'use strict';
 // Shared utility functions for processing and rendering reactions
 const { unicodeToTwemojiCode, cacheCustomEmoji } = require('./emojiUtils');
+const escapeHtml = require('escape-html');
 const { renderTemplate, render } = require('./utils');
+
+const REACTION_EMOJI_STYLE = 'width: 16px; height: 16px; vertical-align: -3px;';
+
+function renderReactionEmoji(emoji, imagesCookie, animationsCookie) {
+    if (emoji?.id) {
+        if (imagesCookie !== 1) return `:${escapeHtml(emoji.name || '')}:`;
+        cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
+        return render('channel/emoji-custom', {
+            EMOJI_ID: emoji.id,
+            EXT: emoji.animated && animationsCookie === 1 ? 'gif' : 'png',
+            PX: '16',
+            STYLE: REACTION_EMOJI_STYLE,
+        });
+    }
+    if (emoji?.name) {
+        if (imagesCookie !== 1) return escapeHtml(emoji.name);
+        return render('channel/emoji-twemoji', {
+            CODE: unicodeToTwemojiCode(emoji.name),
+            PX: '16',
+            STYLE: REACTION_EMOJI_STYLE,
+        });
+    }
+    return '';
+}
 
 // Function to process and format reactions
 function processReactions(
@@ -20,72 +45,48 @@ function processReactions(
             return '';
         }
 
-        const reactionsHtml = (Array.from(reactionCollection.values()) as any[]).reduce(
-            (acc, reaction) => {
+        const reactionsHtml = (Array.from(reactionCollection.values()) as any[])
+            .map((reaction) => {
                 try {
                     const emoji = reaction.emoji;
-                    const count = reaction.count;
+                    const emojiHtml = renderReactionEmoji(emoji, imagesCookie, animationsCookie);
+                    // Skip if the emoji couldn't be rendered at all.
+                    if (!emojiHtml) return '';
 
-                    // Determine if it's a super reaction based on burst colors
-                    const isSuperReaction =
-                        reaction.burst_colors && reaction.burst_colors.length > 0;
+                    // Discord shows super reactions as their own pill, outlined in
+                    // the emoji's burst colour, next to the normal reactions.
+                    const details = reaction.countDetails ?? reaction.count_details;
+                    const burst = details?.burst ?? 0;
+                    const normal = details ? (details.normal ?? 0) : reaction.count || 0;
+                    const burstColor = (reaction.burstColors ?? reaction.burst_colors ?? [])[0];
 
-                    // Set background and border colors
-                    const backgroundColor = isSuperReaction
-                        ? 'rgba(88, 101, 242, 0.15)'
-                        : 'rgba(79, 84, 92, 0.16)';
-                    const borderColor = isSuperReaction
-                        ? 'rgba(88, 101, 242, 0.4)'
-                        : 'rgba(79, 84, 92, 0.24)';
-
-                    const emojiHtml = (() => {
-                        if (emoji.id) {
-                            if (imagesCookie === 1) {
-                                const extension =
-                                    emoji.animated && animationsCookie === 1 ? 'gif' : 'png';
-                                cacheCustomEmoji(emoji.id, emoji.name, emoji.animated);
-                                return render('channel/emoji-custom', {
-                                    EMOJI_ID: emoji.id,
-                                    EXT: extension,
-                                    PX: '21',
-                                    STYLE: 'width: 21px; height: 21px; vertical-align: middle;',
-                                });
-                            }
-                            return `:${emoji.name}:`;
-                        }
-                        if (emoji.name) {
-                            if (imagesCookie === 1) {
-                                const output = unicodeToTwemojiCode(emoji.name);
-                                return render('channel/emoji-twemoji', {
-                                    CODE: output,
-                                    PX: '21',
-                                    STYLE: 'width: 21px; height: 21px; vertical-align: middle;',
-                                });
-                            }
-                            return emoji.name;
-                        }
-                        return '';
-                    })();
-
-                    // Build the reaction HTML - skip if emoji couldn't be processed
-                    if (emojiHtml) {
-                        const reactionHtml = renderTemplate(reaction_template, {
+                    let html = '';
+                    if (burst > 0) {
+                        html += renderTemplate(reaction_template, {
                             EMOJI: emojiHtml,
-                            COUNT: count,
-                            REACTION_BG: backgroundColor,
-                            REACTION_BORDER: borderColor,
+                            COUNT: burst,
+                            CLASS: ' reaction-burst',
+                            STYLE: /^#[0-9a-f]{6}$/i.test(burstColor || '')
+                                ? ` style="border-color: ${burstColor};"`
+                                : '',
                         });
-                        return acc + reactionHtml;
                     }
-                    return acc;
+                    if (normal > 0 || burst === 0) {
+                        html += renderTemplate(reaction_template, {
+                            EMOJI: emojiHtml,
+                            COUNT: normal || reaction.count || 0,
+                            CLASS: '',
+                            STYLE: '',
+                        });
+                    }
+                    return html;
                 } catch (err) {
                     console.error('Error processing individual reaction:', err);
                     // Continue processing other reactions even if one fails
-                    return acc;
+                    return '';
                 }
-            },
-            ''
-        );
+            })
+            .join('');
 
         if (reactionsHtml) {
             return renderTemplate(reactions_template, { REACTIONS: reactionsHtml });

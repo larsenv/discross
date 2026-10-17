@@ -1055,10 +1055,12 @@ async function handleImageProxy(req, res, parsedurl, args) {
             await notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
             return;
         }
+        // GIF stickers live at .gif; PNG and APNG stickers at .png.
+        const stickerExt = /\.gif$/i.test(args[3] || '') ? 'gif' : 'png';
         await imageProxy(
             req,
             res,
-            `https://media.discordapp.net/stickers/${stickerId}.png`,
+            `https://media.discordapp.net/stickers/${stickerId}.${stickerExt}`,
             isFull
         );
     } else if (args[2] === 'app-icon') {

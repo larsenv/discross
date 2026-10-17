@@ -605,6 +605,9 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) 
  * @returns {string} The HTML with stickers appended.
  */
 
+const STICKER_FORMAT_LOTTIE = 3;
+const STICKER_FORMAT_GIF = 4;
+
 function renderStickers(messagetext, item, imagesCookie) {
     let result = messagetext || '';
     const stickers = item?.stickers;
@@ -619,8 +622,17 @@ function renderStickers(messagetext, item, imagesCookie) {
     for (const sticker of list) {
         if (!sticker) continue;
         const sep = result ? getTemplate('br', 'misc') : '';
-        if (imagesCookie === 1) {
-            result += sep + renderTemplate(tmpl_sticker, { STICKER_ID: sticker.id });
+        // Lottie stickers (format 3) are vector animations with no image on the
+        // CDN to show, so they fall back to their name like images-off mode.
+        const format = sticker.format ?? sticker.format_type;
+        if (imagesCookie === 1 && format !== STICKER_FORMAT_LOTTIE) {
+            result +=
+                sep +
+                renderTemplate(tmpl_sticker, {
+                    STICKER_ID: sticker.id,
+                    EXT: format === STICKER_FORMAT_GIF ? 'gif' : 'png',
+                    STICKER_NAME: escape(sticker.name ?? 'Sticker'),
+                });
         } else {
             result +=
                 sep +
@@ -2567,16 +2579,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
             animationsCookie
         );
 
-        const hasEmbeds = !!(item.embeds?.length || item.embeds?.size);
-
-        // Adjust reaction spacing if embeds are present.
-        const finalReactionsHtml =
-            hasEmbeds && reactionsHtml
-                ? reactionsHtml.replace('class="reactions"', 'class="reactions embed-reactions"')
-                : reactionsHtml;
-
         const withReactions = renderTemplate(wrappedText, {
-            '{$MESSAGE_REACTIONS}': finalReactionsHtml,
+            '{$MESSAGE_REACTIONS}': reactionsHtml,
         });
 
         // 6. Handle System Messages that keep the full layout (see isStandaloneSystemMessage).
