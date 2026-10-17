@@ -193,37 +193,6 @@ pre code {
 }
 
 /* ================================================================
-   4. HEADER
-   ================================================================ */
-
-.header-table {
-    width: 100%;
-}
-.header-title {
-    font-size: 2.625rem;
-    font-family: 'rodin', Arial, Helvetica, sans-serif;
-    color: #dddddd;
-}
-.header-menu {
-    width: 100%;
-    text-align: right;
-    font-size: 1.5rem;
-    font-family: 'rodin', Arial, Helvetica, sans-serif;
-    color: #dddddd;
-}
-.header-menu a,
-.header-menu-link {
-    color: #dddddd;
-    text-decoration: none;
-    font-size: 1.125rem;
-    font-family: 'rodin', Arial, Helvetica, sans-serif;
-}
-.header-user-info {
-    color: #aaaaaa;
-    font-size: 0.75rem;
-}
-
-/* ================================================================
    5. LAYOUT / CONTAINERS
    ================================================================ */
 
@@ -290,7 +259,6 @@ pre code {
     object-fit: cover;
     display: block;
 }
-.message-author,
 .message-author-font {
     font-weight: 600;
     cursor: pointer;
@@ -298,7 +266,6 @@ pre code {
     color: #ffffff;
     display: inline;
 }
-.message-date,
 .message-date-font {
     font-size: 12px;
     color: #81828a;
@@ -909,20 +876,6 @@ div.file-card .file-card-icon img {
     width: 100%;
 }
 
-.icon-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    width: 32px;
-    height: 32px;
-    border-radius: 4px;
-    display: inline-block;
-}
-.icon-button:hover {
-    background: rgba(255, 255, 255, 0.06);
-}
-
 .message-action-btn {
     display: inline-block;
     vertical-align: middle;
@@ -1139,7 +1092,6 @@ textarea:focus {
    15. SERVER PAGE COMPONENTS
    ================================================================ */
 
-.server-sidebar,
 .server-main {
     vertical-align: top;
 }
@@ -1390,18 +1342,9 @@ body.light-theme,
     background: #fbfbfb !important;
     color: #323339 !important;
 }
-.light-theme .content-padding,
-.light-theme .scrollable-content {
+.light-theme .content-padding {
     background: #fbfbfb;
     color: #323339;
-}
-.light-theme .header-title,
-.light-theme .header-menu,
-.light-theme .header-menu-link {
-    color: #323339;
-}
-.light-theme .header-user-info {
-    color: #4f5660;
 }
 .light-theme .message {
     border-color: #e3e5e8 !important;
@@ -1416,14 +1359,8 @@ body.light-theme,
 .light-theme .message:hover {
     background: #f2f3f5 !important;
 }
-.light-theme .message-author {
-    color: #323339;
-}
 .light-theme .message-author-font {
     color: #323339 !important;
-}
-.light-theme .message-date {
-    color: #70718a;
 }
 .light-theme .message-date-font {
     color: #70718a !important;
@@ -1445,9 +1382,6 @@ body.light-theme,
 }
 .light-theme .message-input-bar-wrapper {
     background: #ebedef !important;
-}
-.light-theme .icon-button:hover {
-    background: rgba(0, 0, 0, 0.08);
 }
 .light-theme .message-action-btn {
     background: #fbfbfb !important;
@@ -1641,14 +1575,8 @@ body.amoled-theme,
     background: #09090a !important;
     color: #dcdcdf !important;
 }
-.amoled-theme .content-padding,
-.amoled-theme .scrollable-content {
+.amoled-theme .content-padding {
     background: #09090a;
-    color: #dcdcdf;
-}
-.amoled-theme .header-title,
-.amoled-theme .header-menu,
-.amoled-theme .header-menu-link {
     color: #dcdcdf;
 }
 .amoled-theme .message {
@@ -1673,21 +1601,12 @@ body.amoled-theme,
 .amoled-theme .message:hover {
     background: rgba(255, 255, 255, 0.05) !important;
 }
-.amoled-theme .message-author {
-    color: #dcdcdf;
-}
-.amoled-theme .message-date {
-    color: #767780;
-}
 .amoled-theme .message-date-font {
     color: #767780 !important;
 }
 .amoled-theme .message-form-container {
     background: #09090a !important;
     border-top-color: #333333 !important;
-}
-.amoled-theme .icon-button:hover {
-    background: rgba(255, 255, 255, 0.08) !important;
 }
 .amoled-theme .message-action-btn:hover {
     background: rgba(255, 255, 255, 0.08) !important;
@@ -1939,7 +1858,7 @@ html.page-food body {
     min-height: 100%;
 }
 
-/* Override themes.css which sets #wrapper to #303338; keep it matching body */
+/* Keep the drawing page's wrapper matching its body. */
 html.page-draw #wrapper {
     background: #1a1a1e;
 }

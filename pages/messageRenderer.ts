@@ -467,11 +467,10 @@ const AUDIO_MIME = {
  * @param {object} item - The Discord message object containing attachments.
  * @param {number} imagesCookie - User preference for showing images (1 = enabled).
  * @param {string} tmpl_file_download - The template for file download cards.
- * @param {object} req - The incoming HTTP request (used for UA detection).
  * @returns {string} The HTML with attachments appended to the message text.
  */
 
-function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download, req) {
+function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download) {
     let result = messagetext || '';
     const attachments = item?.attachments;
 
@@ -807,7 +806,7 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
 
     // Process all collected rich embeds at once.
     if (richEmbeds.length > 0) {
-        result += processEmbeds(req, richEmbeds, imagesCookie, animationsCookie, clientTimezone);
+        result += processEmbeds(richEmbeds, imagesCookie, animationsCookie, clientTimezone);
     }
 
     return result;
@@ -1157,11 +1156,10 @@ async function resolveGameMentions(messagetext, req, tmpl_mention, compact = fal
  * Renders a role mention pill with appropriate coloring.
  *
  * @param {object} role - The Discord role object.
- * @param {string} tmpl_mention - The base mention template.
  * @returns {string} The HTML for the role mention pill.
  */
 
-function roleMentionPill(role, tmpl_mention) {
+function roleMentionPill(role) {
     const name = escape('@' + normalizeWeirdUnicode(role.name));
     if (role.color !== 0) {
         const hex = role.hexColor;
@@ -1216,11 +1214,7 @@ function renderKnownMentions(messagetext, item, discordID, member, templates) {
         if (Array.isArray(roles)) {
             for (const role of roles) {
                 if (!role) continue;
-                const tmpl =
-                    member && member.roles.cache?.has(role.id)
-                        ? templates.mentionHighlighted
-                        : templates.mention;
-                result = result.split(`&lt;@&amp;${role.id}&gt;`).join(roleMentionPill(role, tmpl));
+                result = result.split(`&lt;@&amp;${role.id}&gt;`).join(roleMentionPill(role));
             }
         }
     }
@@ -1268,11 +1262,10 @@ async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_men
  *
  * @param {string} messagetext - The text to process.
  * @param {object} bot - The bot instance.
- * @param {object} chnl - The current Discord channel object.
  * @returns {Promise<string>} The text with channel mentions resolved.
  */
 
-async function resolveChannelMentions(messagetext, bot, chnl) {
+async function resolveChannelMentions(messagetext, bot) {
     const unresolvedIds = [...messagetext.matchAll(/&lt;#(\d{16,20})&gt;/g)]
         .map((m) => m[1])
         .filter((id) => !bot.client.channels.cache.has(id));
@@ -1560,23 +1553,11 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
  * @param {Map} memberCache - Cache of fetched members.
  * @param {object} bot - The bot instance.
  * @param {number} imagesCookie - User preference for images.
- * @param {number} animationsCookie - User preference for animations.
- * @param {string} barColor - CSS color for the side bar.
  * @param {string} authorText - CSS color for author names.
  * @returns {Promise<object|null>} Resolved reply data or null.
  */
 
-async function resolveReplyData(
-    item,
-    chnl,
-    memberCache,
-    bot,
-    imagesCookie,
-    animationsCookie,
-    barColor,
-    authorText,
-    context
-) {
+async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, authorText, context) {
     try {
         const replyMessage =
             (item.reference?.messageId && chnl.messages?.cache?.get(item.reference.messageId)) ||
@@ -1638,7 +1619,7 @@ async function resolveReplyData(
                   let html = he.encode(flat.trim(), { useNamedReferences: true });
                   html = renderKnownMentions(html, replyMessage, discordID, member, templates);
                   html = await resolveRemainingMentions(html, chnl, memberCache, templates.mention);
-                  html = await resolveChannelMentions(html, bot, chnl);
+                  html = await resolveChannelMentions(html, bot);
                   html = await resolveGameMentions(
                       html,
                       req,
@@ -1696,13 +1677,7 @@ function renderMiniAvatar(avatarUrl, imagesCookie) {
     });
 }
 
-function buildReplyIndicator(
-    replyData,
-    replyText,
-    barColor = '#808080',
-    imagesCookie = 0,
-    channelId = ''
-) {
+function buildReplyIndicator(replyData, replyText, barColor = '#808080', imagesCookie = 0) {
     if (replyData.deleted)
         return render('channel/reply-container', {
             CONTENT: render('channel/reply-with-content', {
@@ -1963,13 +1938,7 @@ function flushMessageGroup(state, templates, authorText, replyText, barColor, ch
     // avatar's rowspan) so the avatar still lines up with the username row beneath it
     // instead of being pulled up to the top of the indicator.
     const indicatorContent = state.lastReply
-        ? buildReplyIndicator(
-              state.lastReplyData,
-              replyText,
-              barColor,
-              state.imagesCookie,
-              channelId
-          )
+        ? buildReplyIndicator(state.lastReplyData, replyText, barColor, state.imagesCookie)
         : state.lastInteraction
           ? buildInteractionIndicator(
                 state.lastInteractionData,
@@ -2051,7 +2020,7 @@ async function renderMessageContent(item, context) {
     // file components, so Discord doesn't list them again underneath.
     const withAttachments = isComponentsV2(item)
         ? withEmojis
-        : renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload, req);
+        : renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload);
 
     const withStickers = renderStickers(withAttachments, item, imagesCookie);
 
@@ -2103,7 +2072,7 @@ async function renderMessageContent(item, context) {
         templates.mention
     );
 
-    const withChannelMentions = await resolveChannelMentions(withRemainingMentions, bot, chnl);
+    const withChannelMentions = await resolveChannelMentions(withRemainingMentions, bot);
 
     const withGameMentions = await resolveGameMentions(
         withChannelMentions,
@@ -2125,11 +2094,9 @@ async function renderMessageContent(item, context) {
         if (Array.isArray(roles)) {
             for (const role of roles) {
                 if (!role) continue;
-                const hasRole = member && member.roles.cache?.has(role.id);
-                const tmpl = hasRole ? templates.mentionHighlighted : templates.mention;
                 withRoleMentions = withRoleMentions
                     .split(`&lt;@&amp;${role.id}&gt;`)
-                    .join(roleMentionPill(role, tmpl));
+                    .join(roleMentionPill(role));
             }
         }
     }
@@ -2429,8 +2396,6 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
                       memberCache,
                       bot,
                       imagesCookie,
-                      animationsCookie,
-                      barColor,
                       authorText,
                       context
                   )

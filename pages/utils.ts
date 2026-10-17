@@ -457,7 +457,6 @@ function resolveTheme(req) {
  * @param {string|null} urlImages - Images preference from URL params (null if absent).
  * @param {string|undefined} cookieImages - images cookie value (undefined if absent).
  * @param {string|null} urlSkinTone - Skin tone preference from URL params (null if absent).
- * @param {string|undefined} cookieSkinTone - emojiSkinTone cookie value (undefined if absent).
  * @returns {string} Query string (e.g. "?sessionID=abc&theme=1") or empty string.
  */
 function buildSessionParam(
@@ -466,8 +465,7 @@ function buildSessionParam(
     cookieTheme,
     urlImages,
     cookieImages,
-    urlSkinTone = null,
-    cookieSkinTone = undefined
+    urlSkinTone = null
 ) {
     const parts = [];
     if (urlSessionID) parts.push('sessionID=' + encodeURIComponent(urlSessionID));
@@ -898,10 +896,6 @@ async function canSendInChannel(member, chnl, discordID) {
     return canViewChannel(member, chnl.guild.members.me, chnl, discordID);
 }
 
-function reportError(message, error) {
-    console.error(message, error);
-}
-
 /**
  * Loads and renders a template in one call.
  *
@@ -990,7 +984,6 @@ module.exports = {
     httpsGet,
     formatChangePct,
     changeColor,
-    reportError,
     canViewChannel,
     canSendInChannel,
 };

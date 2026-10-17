@@ -124,8 +124,7 @@ exports.processChannelReply = async function processChannelReply(bot, req, res, 
         whiteThemeCookie,
         urlImages,
         imagesCookieValue,
-        querySkinTone,
-        cookieSkinTone
+        querySkinTone
     );
 
     const themeObj = resolveTheme(req);

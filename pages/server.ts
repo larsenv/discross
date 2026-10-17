@@ -298,18 +298,7 @@ exports.processServer = async function (bot, req, res, args, discordID) {
 
                     // Construct server list HTML if the member is valid
                     if (member && member.user) {
-                        const imagesCookie =
-                            urlImages !== null
-                                ? parseInt(urlImages, 10)
-                                : imagesCookieForParam !== undefined
-                                  ? parseInt(imagesCookieForParam, 10)
-                                  : 1;
-                        const serverHTML = createServerHTML(
-                            server,
-                            member,
-                            imagesCookie,
-                            sessionParam
-                        );
+                        const serverHTML = createServerHTML(server, sessionParam);
                         serverList += serverHTML;
                     }
                 } else {
@@ -478,7 +467,7 @@ function applyUserPreferences(response, req) {
     });
 }
 
-function createServerHTML(server, member, imagesCookie, sessionParam) {
+function createServerHTML(server, sessionParam) {
     const serverName = server.name
         .replace(/<a?:[^:]+:\d+>/g, '')
         .replace(emojiRegex, '')

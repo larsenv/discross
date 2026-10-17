@@ -182,7 +182,7 @@ async function renderMessageSearchResults(
             if (!content && msg.attachments?.length) content = '[attachment]';
 
             const embedsHtml = msg.embeds?.length
-                ? processEmbeds(req, msg.embeds, imagesCookie, 1, clientTimezone)
+                ? processEmbeds(msg.embeds, imagesCookie, 1, clientTimezone)
                 : '';
 
             const timestamp = msg.timestamp

@@ -37,7 +37,7 @@ function strReplace(string, needle, replacement) {
 /**
  * Apply common template fields like session ID, cart count, and theme.
  */
-function applyCommonFields(html, req, templates, theme, sessionData) {
+function applyCommonFields(html, req, theme, sessionData) {
     const { persistentParam, persistentSuffix, urlSessionID } = sessionData;
 
     html = strReplace(html, '{$SESSION_PARAM}', persistentParam);
@@ -432,7 +432,7 @@ exports.handleGet = async function (bot, req, res, discordID) {
             seoOptions.description ||
             "Order pizza from Domino's through Discross, the universal Discord client.";
 
-        let result = applyCommonFields(html, req, templates, theme, sessionData);
+        let result = applyCommonFields(html, req, theme, sessionData);
         result = renderTemplate(result, {
             PAGE_TITLE: pageTitle,
             SEO_METADATA: generateSEOMetadata(req, {
