@@ -788,6 +788,151 @@ div.file-card .file-card-icon img {
     margin-top: 8px;
 }
 
+/* Polls, after Discord's card: question, how many answers may be picked,
+   one row per answer with its share of the vote as a fill bar (winners
+   outlined in green once the poll closes), and a vote count / time footer. */
+.poll {
+    max-width: 440px;
+    margin-top: 8px;
+    padding: 16px;
+    background: #252529;
+    border: 1px solid #36373d;
+    border-radius: 8px;
+}
+.poll-question {
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 600;
+    color: #f2f3f5;
+}
+.poll-subtitle {
+    margin-top: 4px;
+    font-size: 14px;
+    line-height: 18px;
+    color: #b5bac1;
+}
+.poll-answers {
+    margin-top: 12px;
+}
+.poll-answer {
+    position: relative;
+    margin-bottom: 8px;
+    background: #1e1f22;
+    border: 1px solid #1e1f22;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.poll-answer-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100%;
+    background: #2e2f34;
+}
+.poll-answer-content {
+    position: relative;
+    padding: 0;
+}
+.poll-answer-text {
+    padding: 12px 8px 12px 16px;
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #dbdee1;
+    word-wrap: break-word;
+}
+.poll-answer-emoji {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    vertical-align: -4px;
+}
+.poll-answer-stats {
+    padding: 12px 16px 12px 8px;
+    text-align: right;
+    white-space: nowrap;
+}
+.poll-answer-votes {
+    margin-right: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #dbdee1;
+}
+.poll-answer-percent {
+    font-size: 16px;
+    font-weight: 600;
+    color: #f2f3f5;
+}
+.poll-answer-winner {
+    border-color: #23a559;
+}
+.poll-answer-winner .poll-answer-fill {
+    background: #1d3a29;
+    background: rgba(35, 165, 89, 0.2);
+}
+.poll-footer {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 18px;
+    color: #949ba4;
+}
+.poll-result {
+    width: 100%;
+    max-width: 432px;
+    margin-top: 8px;
+    padding: 0;
+    background: #252529;
+    border: 1px solid #36373d;
+    border-radius: 8px;
+    border-collapse: separate;
+}
+.poll-result-info {
+    padding: 12px 8px 12px 16px;
+}
+.poll-result-winner {
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 600;
+    color: #f2f3f5;
+}
+.poll-result-check {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background: #23a559;
+    color: #ffffff;
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+    vertical-align: 1px;
+}
+.poll-result-detail {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #949ba4;
+}
+.poll-result-action {
+    width: 1%;
+    padding: 12px 16px 12px 8px;
+    white-space: nowrap;
+}
+table.poll-result a.poll-result-button,
+table.poll-result a.poll-result-button:visited {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: #4e5058;
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 16px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
 /* ================================================================
    9. REACTIONS
    ================================================================ */
@@ -1410,6 +1555,41 @@ body.light-theme,
 .light-theme .embed-color-bar {
     background-color: #e3e5e8;
 }
+.light-theme .poll,
+.light-theme .poll-result {
+    background: #f9f9fa;
+    border-color: #e3e5e8;
+}
+.light-theme .poll-question,
+.light-theme .poll-answer-percent,
+.light-theme .poll-result-winner {
+    color: #060607;
+}
+.light-theme .poll-subtitle,
+.light-theme .poll-footer,
+.light-theme .poll-result-detail {
+    color: #5c5e66;
+}
+.light-theme .poll-answer {
+    background: #ebebed;
+    border-color: #ebebed;
+}
+.light-theme .poll-answer-fill {
+    background: #dcdde0;
+}
+.light-theme .poll-answer-winner {
+    border-color: #23a559;
+}
+.light-theme .poll-answer-winner .poll-answer-fill {
+    background: #c8ebd5;
+}
+.light-theme .poll-answer-text,
+.light-theme .poll-answer-votes {
+    color: #313338;
+}
+.light-theme table.poll-result a.poll-result-button {
+    background: #6d6f78;
+}
 .light-theme .component-container {
     background: #ffffff;
     border-color: #e3e5e8;
@@ -1634,6 +1814,24 @@ body.amoled-theme,
 }
 .amoled-theme .embed-color-bar {
     background-color: #222;
+}
+.amoled-theme .poll,
+.amoled-theme .poll-result {
+    background: #0a0a0a;
+    border-color: #1e1f22;
+}
+.amoled-theme .poll-answer {
+    background: #141416;
+    border-color: #141416;
+}
+.amoled-theme .poll-answer-fill {
+    background: #222226;
+}
+.amoled-theme .poll-answer-winner {
+    border-color: #23a559;
+}
+.amoled-theme .poll-answer-winner .poll-answer-fill {
+    background: #13301f;
 }
 .amoled-theme .component-container {
     background: #141416;
