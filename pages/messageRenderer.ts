@@ -17,7 +17,9 @@ const {
     formatForwardedTimestamp,
     replaceDiscordTimestamps,
 } = require('../src/timezoneUtils');
-const { processEmbeds } = require('./embedUtils');
+const { processEmbeds, plainEmbed, embedType } = require('./embedUtils');
+const { renderMosaic, mosaicImage } = require('./mosaicUtils');
+const { renderComponents, isComponentsV2, messageComponents } = require('./componentUtils');
 const { processReactions } = require('./reactionUtils');
 const { processPoll } = require('./pollUtils');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
@@ -184,6 +186,7 @@ function visibleTextOf(html) {
  */
 function isStandaloneSystemMessage(item, rawText) {
     if (item.embeds?.length || item.embeds?.size) return false;
+    if (messageComponents(item).length) return false;
     if (item.attachments?.size || item.attachments?.length) return false;
     return SYSTEM_TYPES_WITH_PLAIN_CONTENT.has(item.type) || visibleTextOf(rawText).length === 0;
 }
@@ -345,7 +348,8 @@ function hasNonTextContent(message) {
         message.stickers?.size ||
         message.stickers?.length ||
         message.embeds?.size ||
-        message.embeds?.length
+        message.embeds?.length ||
+        messageComponents(message).length
     );
 }
 
@@ -551,23 +555,17 @@ function renderAttachments(messagetext, item, imagesCookie, tmpl_file_download, 
     // Images are rendered in a separate loop so they always appear at the bottom.
     if (imageData.length === 1) {
         const data = imageData[0];
-        result += data.isSpoiler
+        const imageHtml = data.isSpoiler
             ? renderTemplate(tmpl_spoiler, { IMAGE_URL: data.url })
             : renderTemplate(tmpl_normal_image, { IMAGE_URL: data.url });
+        // The templates open with a line break to drop the image below any text;
+        // with no text above it, that break is a blank line under the author name
+        // that Discord doesn't have.
+        result += result.trim() ? imageHtml : imageHtml.replace(/^\s*<br\s*\/?>/i, '');
     } else if (imageData.length > 1) {
-        let galleryContent = '';
-        const tmpl_gallery_item = getTemplate('gallery-item', 'channel');
-        for (const data of imageData) {
-            if (data.isSpoiler) {
-                galleryContent += renderTemplate(tmpl_spoiler, { IMAGE_URL: data.url });
-            } else {
-                galleryContent += renderTemplate(tmpl_gallery_item, { IMAGE_URL: data.url });
-            }
-        }
-        result += render('channel/image-gallery', {
-            COUNT: imageData.length,
-            GALLERY_CONTENT: galleryContent,
-        });
+        result += renderMosaic(
+            imageData.map((data) => mosaicImage(escape(data.url), data.isSpoiler))
+        );
     }
 
     return result;
@@ -664,11 +662,60 @@ function replaceOrAppendMedia(messagetext, embedUrl, imgHtml) {
 }
 
 /**
+ * True when a message (discord.js or raw API shape) carries the given flag bit.
+ */
+function hasMessageFlag(item, bit) {
+    const flags = item?.flags;
+    if (flags == null) return false;
+    if (typeof flags.has === 'function') return flags.has(bit);
+    const n = typeof flags === 'object' ? Number(flags.bitfield) : Number(flags);
+    return Number.isFinite(n) && (n & bit) !== 0;
+}
+
+const MESSAGE_FLAG_SUPPRESS_EMBEDS = 1 << 2;
+
+/**
+ * URLs the author wrapped in a spoiler (`||https://...||`). Discord hides the
+ * media of those links' embeds behind a spoiler too.
+ */
+function spoileredUrls(content) {
+    const urls = new Set();
+    for (const [, inner] of (content || '').matchAll(/\|\|([\s\S]+?)\|\|/g)) {
+        for (const [url] of inner.matchAll(/https?:\/\/[^\s<>|]+/g)) {
+            urls.add(url.replace(/\/$/, ''));
+        }
+    }
+    return urls;
+}
+
+/**
+ * AutoMod alert embeds carry their details as name/value pairs. Discord shows
+ * the flagged message with the matched keyword and rule beneath it.
+ */
+function autoModerationEmbed(embed) {
+    const fieldMap: Record<string, string> = {};
+    (embed.fields ?? []).forEach((f) => {
+        fieldMap[f.name] = f.value;
+    });
+    const footer = [
+        fieldMap.keyword ? `Keyword: ${fieldMap.keyword}` : null,
+        fieldMap.rule_name ? `Rule: ${fieldMap.rule_name}` : null,
+    ]
+        .filter(Boolean)
+        .join(' • ');
+    return {
+        description: embed.description,
+        footer: footer ? { text: footer } : null,
+    };
+}
+
+/**
  * Processes and renders message embeds (Tenor, Giphy, YouTube, and rich embeds).
  *
- * Special handling is provided for common GIF and video services to inline them
- * as static (proxied) images for compatibility with older browsers.
- * Other rich embeds are delegated to `processEmbeds`.
+ * GIF services and bare image links are inlined as static (proxied) images in
+ * place of the link, as Discord does. Video embeds keep their card with the
+ * thumbnail promoted to a large image behind a play button. Everything else is
+ * delegated to `processEmbeds`.
  *
  * @param {string} messagetext - The current message HTML.
  * @param {object} item - The Discord message object containing embeds.
@@ -682,13 +729,18 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
     let result = messagetext || '';
 
     if (!item?.embeds?.length) return result;
+    if (hasMessageFlag(item, MESSAGE_FLAG_SUPPRESS_EMBEDS)) return result;
 
+    const showImages = imagesCookie === 1;
+    const spoilers = spoileredUrls(item.content);
     const richEmbeds = [];
 
     for (const embed of item.embeds) {
         if (!embed) continue;
 
-        // 1. Detect special media providers
+        const type = embedType(embed);
+        const spoiler = !!embed.url && spoilers.has(embed.url.replace(/\/$/, ''));
+
         const isTenor =
             (embed.provider?.name === 'Tenor' || urlMatchesDomain(embed.url, 'tenor.com')) &&
             embed.thumbnail?.url;
@@ -702,134 +754,59 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
             urlMatchesDomain(embed.url, 'youtube.com') ||
             urlMatchesDomain(embed.url, 'youtu.be');
 
-        const isVimeo =
-            embed.provider?.name === 'Vimeo' || urlMatchesDomain(embed.url, 'vimeo.com');
-
-        const isOtherVideo =
-            ['Streamable', 'Twitch', 'TikTok', 'Instagram', 'Twitter', 'Twitter (X)', 'X'].includes(
-                embed.provider?.name
-            ) ||
-            urlMatchesDomain(embed.url, 'streamable.com') ||
+        // Embedded players (YouTube, Vimeo, Twitch, Streamable) show no
+        // description in Discord; social posts with video keep their text.
+        const isPlayer =
+            isYouTube ||
+            ['Vimeo', 'Twitch', 'Streamable'].includes(embed.provider?.name) ||
+            urlMatchesDomain(embed.url, 'vimeo.com') ||
             urlMatchesDomain(embed.url, 'twitch.tv') ||
-            urlMatchesDomain(embed.url, 'clips.twitch.tv') ||
-            urlMatchesDomain(embed.url, 'tiktok.com') ||
-            urlMatchesDomain(embed.url, 'vxtiktok.com') ||
-            urlMatchesDomain(embed.url, 'instagram.com') ||
-            urlMatchesDomain(embed.url, 'ddinstagram.com') ||
-            urlMatchesDomain(embed.url, 'twitter.com') ||
-            urlMatchesDomain(embed.url, 'x.com') ||
-            urlMatchesDomain(embed.url, 'fxtwitter.com') ||
-            urlMatchesDomain(embed.url, 'vxtwitter.com');
+            urlMatchesDomain(embed.url, 'streamable.com');
 
-        // If images are disabled, we only show text-based rich embeds (including YouTube meta).
-        if (imagesCookie !== 1) {
-            if (!isTenor && !isGiphy) {
-                if (isYouTube) {
-                    // YouTube embeds get a red sidebar for flair.
-                    richEmbeds.push({
-                        color: 0xfd001b,
-                        provider: embed.provider,
-                        author: embed.author,
-                        title: embed.title,
-                        url: embed.url,
-                        description: null,
-                        fields: embed.fields,
-                        image: embed.image,
-                        thumbnail: embed.thumbnail,
-                        footer: embed.footer,
-                        timestamp: embed.timestamp,
-                        data: embed.data,
-                        isVideo: true,
-                    });
-                } else if (isVimeo || isOtherVideo) {
-                    richEmbeds.push({
-                        provider: embed.provider,
-                        author: embed.author,
-                        title: embed.title,
-                        url: embed.url,
-                        description: null,
-                        fields: embed.fields,
-                        image: embed.image,
-                        thumbnail: embed.thumbnail,
-                        footer: embed.footer,
-                        timestamp: embed.timestamp,
-                        data: embed.data,
-                        isVideo: true,
-                    });
-                } else {
-                    richEmbeds.push(embed);
-                }
-            }
+        const isVideo = type === 'video' || !!(embed.video?.url || embed.video?.proxyURL);
 
-            continue;
-        }
+        // GIFs and bare image links replace the link in the text.
+        const inlineUrl = isTenor
+            ? embed.thumbnail.url
+            : isGiphy
+              ? (embed.image?.url ?? embed.thumbnail?.url)
+              : type === 'image' || type === 'gifv'
+                ? (embed.thumbnail?.url ?? embed.image?.url)
+                : null;
 
-        // 2. Inline rendering for Tenor/Giphy (Static image proxy)
-        if (isTenor) {
+        if (isTenor || isGiphy || type === 'image' || type === 'gifv') {
+            if (!showImages || !inlineUrl) continue;
+            const alt = isTenor ? 'Tenor GIF' : isGiphy ? 'GIPHY GIF' : 'Image';
+            const { proxied, tag } = buildProxiedImageTag(inlineUrl, alt);
             result = replaceOrAppendMedia(
                 result,
                 embed.url,
-                buildProxiedImageTag(embed.thumbnail.url, 'Tenor GIF').tag
+                spoiler
+                    ? render('channel/spoiler-image', { IMAGE_URL: proxied }).replace(
+                          /^\s*<br\s*\/?>/i,
+                          ''
+                      )
+                    : tag
             );
-        } else if (isGiphy) {
-            const rawUrl = embed.image?.url ?? embed.thumbnail?.url;
-
-            if (rawUrl)
-                result = replaceOrAppendMedia(
-                    result,
-                    embed.url,
-                    buildProxiedImageTag(rawUrl, 'GIPHY GIF').tag
-                );
-        } else if (isYouTube) {
-            // YouTube is rendered as a rich embed but with its thumbnail promoted to a large image.
-            richEmbeds.push({
-                color: 0xfd001b,
-                provider: embed.provider,
-                author: embed.author,
-                title: embed.title,
-                url: embed.url,
-                description: null,
-                fields: embed.fields,
-                image: embed.image ?? embed.thumbnail,
-                thumbnail: null,
-                footer: embed.footer,
-                timestamp: embed.timestamp,
-                data: embed.data,
-                isVideo: true,
-            });
-        } else if (isVimeo || isOtherVideo) {
-            // Video platforms are rendered as rich embeds but with thumbnails promoted to large images.
-            richEmbeds.push({
-                provider: embed.provider,
-                author: embed.author,
-                title: embed.title,
-                url: embed.url,
-                description: null,
-                fields: embed.fields,
-                image: embed.image ?? embed.thumbnail,
-                thumbnail: null,
-                footer: embed.footer,
-                timestamp: embed.timestamp,
-                data: embed.data,
-                isVideo: true,
-            });
-        } else if (embed.data?.type === 'poll_result') {
+        } else if (type === 'poll_result') {
             // Discord native poll results are sent as special embeds.
             result =
                 (result ? result + getTemplate('br', 'misc') : '') + renderPollResultEmbed(embed);
-        } else if (embed.data?.type === 'image' || embed.data?.type === 'gifv') {
-            // Raw image/GIFV embeds are inlined directly.
-            const rawUrl = embed.thumbnail?.url ?? embed.image?.url;
-
-            if (rawUrl)
-                result = replaceOrAppendMedia(
-                    result,
-                    embed.url,
-                    buildProxiedImageTag(rawUrl, 'Image').tag
-                );
+        } else if (type === 'auto_moderation_message') {
+            richEmbeds.push(autoModerationEmbed(embed));
+        } else if (isVideo) {
+            const plain = plainEmbed(embed);
+            richEmbeds.push({
+                ...plain,
+                color: plain.color ?? (isYouTube ? 0xff0000 : null),
+                description: isPlayer ? null : plain.description,
+                image: plain.image ?? plain.thumbnail,
+                thumbnail: null,
+                isVideo: true,
+                spoiler,
+            });
         } else {
-            // Everything else goes to the general-purpose rich embed processor.
-            richEmbeds.push(embed);
+            richEmbeds.push({ ...plainEmbed(embed), spoiler });
         }
     }
 
@@ -2049,13 +2026,11 @@ async function renderMessageContent(item, context) {
 
     const withEmojis = renderEmojis(withDiscordTimestamps, item, imagesCookie, animationsCookie);
 
-    const withAttachments = renderAttachments(
-        withEmojis,
-        item,
-        imagesCookie,
-        templates.fileDownload,
-        req
-    );
+    // Components V2 messages place their attachments through media gallery and
+    // file components, so Discord doesn't list them again underneath.
+    const withAttachments = isComponentsV2(item)
+        ? withEmojis
+        : renderAttachments(withEmojis, item, imagesCookie, templates.fileDownload, req);
 
     const withStickers = renderStickers(withAttachments, item, imagesCookie);
 
@@ -2080,8 +2055,22 @@ async function renderMessageContent(item, context) {
 
     const withPoll = item?.poll ? withInvites + processPoll(item.poll, imagesCookie) : withInvites;
 
+    const withComponents =
+        withPoll +
+        renderComponents(item, {
+            imagesCookie,
+            animationsCookie,
+            clientTimezone,
+            renderFileCard: (name, size, url) =>
+                renderTemplate(templates.fileDownload, {
+                    '{$FILE_NAME}': escape(truncateFileName(name)),
+                    '{$FILE_SIZE}': formatFileSize(size),
+                    '{$FILE_LINK}': escape(url),
+                }),
+        });
+
     const activityBanner = renderActivityBanner(item, context);
-    const withActivity = withPoll + activityBanner;
+    const withActivity = withComponents + activityBanner;
 
     const withKnownMentions = renderKnownMentions(withActivity, item, discordID, member, templates);
 

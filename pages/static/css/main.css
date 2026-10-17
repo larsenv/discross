@@ -417,6 +417,9 @@ pre code {
    8. EMBEDS
    ================================================================ */
 
+/* Mirrors Discord's embed: a 4px colour bar, then a padded card whose main
+   column (provider, author, title, description, fields) sits beside an
+   optional 80px thumbnail, followed by the large image and the footer. */
 .embed {
     margin-top: 8px;
     max-width: 520px;
@@ -427,15 +430,6 @@ pre code {
 }
 .video-embed {
     max-width: 432px;
-}
-.video-embed .embed-content {
-    padding: 6px 10px;
-}
-.video-embed .embed-content > div {
-    margin-top: 4px !important;
-}
-.video-embed .embed-content > div:first-child {
-    margin-bottom: 4px !important;
 }
 .embed-color-bar {
     display: table-cell;
@@ -450,11 +444,303 @@ pre code {
     border: 1px solid #474851;
     border-left: none;
     border-radius: 0 4px 4px 0;
-    padding: 8px 12px;
+    padding: 0 16px 16px 12px;
     vertical-align: top;
     width: 100%;
     word-wrap: break-word;
     overflow-wrap: anywhere;
+    color: #dbdee1;
+    font-size: 14px;
+    line-height: 1.375;
+}
+.embed-main {
+    overflow: hidden;
+    zoom: 1;
+}
+.embed-clear {
+    clear: both;
+    height: 0;
+    font-size: 0;
+    line-height: 0;
+    overflow: hidden;
+}
+.embed-provider,
+.embed-author,
+.embed-title,
+.embed-description,
+.embed-fields,
+.embed-footer {
+    margin-top: 8px;
+}
+.embed-provider {
+    font-size: 12px;
+    line-height: 16px;
+    color: #b5bac1;
+}
+.embed-author {
+    font-size: 14px;
+    line-height: 24px;
+    font-weight: 600;
+    color: #f2f3f5;
+}
+.embed-author-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+.embed-author-name {
+    vertical-align: middle;
+}
+.embed .embed-content a.embed-author-link,
+.embed .embed-content a.embed-author-link:visited {
+    color: inherit;
+    text-decoration: none;
+}
+.embed .embed-content a.embed-author-link:hover {
+    text-decoration: underline;
+}
+.embed-title {
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 600;
+    color: #f2f3f5;
+}
+.embed .embed-content a.embed-title-link,
+.embed .embed-content a.embed-title-link:visited {
+    color: #00a8fc;
+    text-decoration: none;
+}
+.embed .embed-content a.embed-title-link:hover {
+    text-decoration: underline;
+}
+.embed-description {
+    font-size: 14px;
+    line-height: 18px;
+    color: #dbdee1;
+}
+.embed-field-row {
+    table-layout: fixed;
+    margin-top: 8px;
+    padding: 0;
+}
+.embed-fields .embed-field-row:first-child {
+    margin-top: 0;
+}
+.embed-field {
+    padding-right: 8px;
+    vertical-align: top;
+}
+.embed-field-name {
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 600;
+    color: #f2f3f5;
+    margin-bottom: 2px;
+}
+.embed-field-value {
+    font-size: 14px;
+    line-height: 18px;
+    color: #dbdee1;
+}
+.embed-thumbnail {
+    float: right;
+    margin: 8px 0 0 16px;
+}
+.embed-thumbnail img {
+    display: block;
+    max-width: 80px;
+    max-height: 80px;
+    border-radius: 4px;
+}
+.embed-media {
+    margin-top: 16px;
+}
+.embed-image-link {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+}
+.embed-image {
+    display: block;
+    max-width: 100%;
+    max-height: 300px;
+    height: auto;
+    border-radius: 4px;
+}
+.video-embed .embed-image {
+    width: 400px;
+    max-height: none;
+}
+.embed-play {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
+    border-radius: 50%;
+    background: #000000;
+    background: rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+    font-size: 20px;
+    line-height: 48px;
+    text-align: center;
+    text-indent: 3px;
+}
+.embed-footer {
+    font-size: 12px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #dbdee1;
+}
+.embed-footer-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+.embed-footer span {
+    vertical-align: middle;
+}
+.embed-footer-separator {
+    margin: 0 4px;
+}
+
+/* Message components: bot buttons and select menus (classic action rows) and
+   Components V2 layouts. Discross can't send interactions, so non-link
+   buttons and menus render as static, Discord-styled controls. */
+.components {
+    max-width: 520px;
+}
+.component-row {
+    margin-top: 4px;
+}
+.component-button,
+.messagecontent a.component-button {
+    display: inline-block;
+    margin: 4px 8px 0 0;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #ffffff;
+    text-decoration: none;
+    white-space: nowrap;
+    vertical-align: top;
+    cursor: default;
+}
+.messagecontent a.component-button {
+    cursor: pointer;
+}
+.component-button-primary,
+.component-button-premium {
+    background: #5865f2;
+}
+.component-button-secondary {
+    background: #4e5058;
+}
+.component-button-success {
+    background: #248046;
+}
+.component-button-danger {
+    background: #da373c;
+}
+.component-disabled {
+    opacity: 0.5;
+}
+.component-link-icon {
+    margin-left: 6px;
+    font-size: 12px;
+}
+.component-select {
+    width: 100%;
+    max-width: 400px;
+    margin-top: 4px;
+    padding: 0;
+    background: #1e1f22;
+    border: 1px solid #1e1f22;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 20px;
+    color: #dbdee1;
+}
+.component-select-text {
+    padding: 8px;
+}
+.component-select-placeholder {
+    color: #949ba4;
+}
+.component-select-caret {
+    width: 24px;
+    padding-right: 8px;
+    text-align: right;
+    color: #b5bac1;
+}
+.component-container {
+    margin-top: 8px;
+    padding: 16px;
+    background: #252529;
+    border: 1px solid #474851;
+    border-radius: 8px;
+}
+.component-container-spoiler {
+    cursor: pointer;
+}
+.component-container-spoiler .component-container-content {
+    filter: blur(16px);
+}
+.component-container-content > :first-child,
+.component-container-content > .component-text:first-child > :first-child {
+    margin-top: 0;
+}
+.component-text {
+    margin-top: 8px;
+}
+.components > .component-text:first-child {
+    margin-top: 0;
+}
+.component-section {
+    margin-top: 8px;
+    padding: 0;
+}
+.component-section-accessory {
+    width: 1%;
+    padding-left: 16px;
+    white-space: nowrap;
+}
+.component-section-accessory .component-button {
+    margin-top: 0;
+}
+.component-thumbnail {
+    width: 85px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.component-gallery,
+.component-file {
+    margin-top: 8px;
+}
+.component-gallery .mosaic,
+.component-gallery .standard-image {
+    margin-top: 0;
+}
+.component-separator-small {
+    padding: 8px 0 0;
+}
+.component-separator-large {
+    padding: 16px 0 8px;
+}
+.component-separator-line {
+    height: 0;
+    border-top: 1px solid #3f4147;
+    margin-bottom: 0;
+}
+.component-separator-large .component-separator-line {
+    margin-bottom: 8px;
 }
 
 /* ================================================================
@@ -1107,6 +1393,42 @@ body.light-theme,
 .light-theme .embed-content {
     background: #ffffff;
     border-color: #e3e5e8;
+    color: #313338;
+}
+.light-theme .embed-color-bar {
+    background-color: #e3e5e8;
+}
+.light-theme .component-container {
+    background: #ffffff;
+    border-color: #e3e5e8;
+}
+.light-theme .component-button-secondary {
+    background: #6d6f78;
+}
+.light-theme .component-select {
+    background: #ebebed;
+    border-color: #e3e5e8;
+    color: #313338;
+}
+.light-theme .component-separator-line {
+    border-top-color: #e3e5e8;
+}
+.light-theme .embed-provider {
+    color: #4e5058;
+}
+.light-theme .embed-author,
+.light-theme .embed-title,
+.light-theme .embed-field-name {
+    color: #060607;
+}
+.light-theme .embed-description,
+.light-theme .embed-field-value,
+.light-theme .embed-footer {
+    color: #313338;
+}
+.light-theme .embed .embed-content a.embed-title-link,
+.light-theme .embed .embed-content a.embed-title-link:visited {
+    color: #006ce7;
 }
 .light-theme .forwarded-block-cell {
     border-left-color: #c4c9ce;
@@ -1315,6 +1637,20 @@ body.amoled-theme,
 .amoled-theme .embed-content {
     background: #141416;
     border-color: #222;
+}
+.amoled-theme .embed-color-bar {
+    background-color: #222;
+}
+.amoled-theme .component-container {
+    background: #141416;
+    border-color: #222;
+}
+.amoled-theme .component-select {
+    background: #0a0a0a;
+    border-color: #222;
+}
+.amoled-theme .component-separator-line {
+    border-top-color: #222;
 }
 .amoled-theme .forwarded-block-cell {
     border-left-color: #3b3c43;
@@ -2944,152 +3280,84 @@ html.client-new3ds #canvas-wrapper {
    19. IMAGE GALLERIES
    ================================================================ */
 
-.image-gallery {
-    display: block;
+/* Discord's multi-image mosaic (see mosaicUtils.ts). Each row is a fixed
+   table; tiles hold their shape with padding-top, and the image fills the
+   tile absolutely. Only the mosaic's outer corners are rounded. */
+.mosaic {
     width: 100%;
     max-width: 520px;
-    margin-top: 8px;
-    font-size: 0; /* Remove whitespace between inline-block elements */
-}
-
-/* Modern grid support */
-@supports (display: grid) {
-    .image-gallery {
-        display: grid;
-        gap: 4px;
-    }
-    .gallery-item {
-        width: auto !important;
-        margin: 0 !important;
-    }
-    /* Grid configurations */
-    .gallery-2 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .gallery-3 {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    .gallery-4 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .gallery-5,
-    .gallery-6 {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    .gallery-7,
-    .gallery-8,
-    .gallery-9,
-    .gallery-10 {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-.gallery-item {
-    display: inline-block;
-    vertical-align: top;
-    position: relative;
+    margin-top: 4px;
+    border-radius: 8px;
     overflow: hidden;
-    width: 32%; /* Fallback for 3 columns */
-    margin: 0.5%;
+}
+.mosaic-row {
+    table-layout: fixed;
+    border-collapse: collapse;
+    padding: 0;
+    margin: 0;
+}
+/* 1px around every tile makes 2px gaps; the inner wrapper's -1px margin
+   pushes the outer edge padding under the clipped, rounded border. */
+.mosaic-inner {
+    margin: -1px;
+}
+.mosaic-cell {
+    padding: 1px;
+    vertical-align: top;
+}
+.mosaic-tile {
+    position: relative;
+    height: 0;
+    overflow: hidden;
     background: #2f3136;
-    border-radius: 4px;
 }
-
-/* Force square aspect ratio */
-.gallery-item:before {
-    content: '';
-    display: block;
-    padding-top: 100%;
-}
-
-.gallery-item a {
+.mosaic-link {
     position: absolute;
     top: 0;
     left: 0;
-    bottom: 0;
     right: 0;
+    bottom: 0;
+    display: block;
+    overflow: hidden;
 }
-
-.gallery-image {
+.mosaic-image {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
+    border: 0;
 }
-
-/* Adjustments for different counts in fallback mode */
-.gallery-2 .gallery-item {
-    width: 49%;
+.mosaic-spoiler {
+    cursor: pointer;
 }
-.gallery-4 .gallery-item {
-    width: 49%;
+.mosaic-spoiler .mosaic-image {
+    filter: blur(16px);
 }
-
-/* Handle spoilers inside gallery */
-.image-gallery .spoiler-box {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
+.mosaic-spoiler-label {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    margin-top: -10px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: #ffffff;
 }
-.image-gallery .spoiler-box br {
+.mosaic-spoiler-revealed {
+    cursor: auto;
+}
+.mosaic-spoiler-revealed .mosaic-image {
+    filter: none;
+}
+.mosaic-spoiler-revealed .mosaic-spoiler-label {
     display: none;
 }
-.image-gallery .spoiler-box td {
-    width: 100%;
-    height: 100%;
-}
-.image-gallery .spoiler-box img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    max-width: none !important;
-    max-height: none !important;
-}
-
-/* Fallback for aspect ratio when :before trick fails or images are broken */
-.gallery-image {
-    min-width: 200px;
-    min-height: 150px;
-}
-
-/* Fallback for aspect ratio when :before trick fails or images are broken */
-.gallery-image {
-    min-width: 200px;
-    min-height: 150px;
-}
-
-.gallery-item {
-    background: #2f3136 !important;
-    min-width: 150px !important;
-    min-height: 150px !important;
-}
-
-.gallery-image {
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 150px !important;
-    min-height: 150px !important;
-    object-fit: cover !important;
-    display: block !important;
-}
-
-/* Absolute fallback for gallery items to ensure visibility */
-.gallery-item {
-    display: inline-block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-.gallery-item a,
-.gallery-image {
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Final attempt to fix image visibility */
-.gallery-image {
-    min-width: 200px !important;
-    min-height: 150px !important;
+.embed .mosaic {
+    max-width: 400px;
+    margin-top: 0;
 }
 
 /* Mobile optimizations for small viewports (e.g. iPhone 17 402px) */
@@ -3106,21 +3374,6 @@ html.client-new3ds #canvas-wrapper {
     }
     .nav-spacer {
         display: none !important;
-    }
-    /* Adjust gallery to 2 columns on mobile */
-    .image-gallery {
-        display: block !important;
-        text-align: center;
-    }
-    .gallery-item {
-        width: 48% !important;
-        margin: 1% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-    }
-    .gallery-image {
-        min-width: 0 !important;
-        min-height: 0 !important;
     }
 }
 
