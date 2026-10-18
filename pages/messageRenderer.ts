@@ -853,6 +853,24 @@ function renderEmbeds(messagetext, item, req, imagesCookie, animationsCookie, cl
     return result;
 }
 
+// Invites and scheduled events linked in messages, cached briefly so a page
+// with an invite doesn't wait on Discord for it on every load. Misses (null)
+// are cached too, so a dead invite isn't retried each time.
+const LINK_LOOKUP_TTL_MS = 5 * 60 * 1000;
+const LINK_LOOKUP_MAX = 500;
+const _inviteCache = new Map();
+const _eventCache = new Map();
+
+async function cachedLookup(cache, key, fetcher) {
+    const hit = cache.get(key);
+    if (hit && Date.now() - hit.at < LINK_LOOKUP_TTL_MS) return hit.value;
+    const value = await fetcher();
+    cache.delete(key);
+    if (cache.size >= LINK_LOOKUP_MAX) cache.delete(cache.keys().next().value);
+    cache.set(key, { value, at: Date.now() });
+    return value;
+}
+
 /**
  * Detects Discord event links in message content and renders them as embeds.
  *
@@ -886,7 +904,9 @@ async function renderDiscordEvents(messagetext, item, bot, imagesCookie, clientT
             const guild = bot.client.guilds.cache.get(guildId);
             if (!guild) continue;
 
-            const event = await guild.scheduledEvents.fetch(eventId).catch(() => null);
+            const event = await cachedLookup(_eventCache, `${guildId}:${eventId}`, () =>
+                guild.scheduledEvents.fetch(eventId).catch(() => null)
+            );
             if (!event) continue;
 
             const iconUrl = guild.iconURL({ size: 128 });
@@ -966,7 +986,9 @@ async function renderDiscordInvites(messagetext, item, bot, imagesCookie) {
         processedInvites.add(inviteCode);
 
         try {
-            const invite = await bot.client.fetchInvite(inviteCode).catch(() => null);
+            const invite = await cachedLookup(_inviteCache, inviteCode, () =>
+                bot.client.fetchInvite(inviteCode).catch(() => null)
+            );
             if (!invite || !invite.guild) continue;
 
             const iconUrl = invite.guild.iconURL({ size: 128 });
@@ -1452,7 +1474,7 @@ async function resolveForwardData(
     barColor
 ) {
     try {
-        const fwdMsg = await item.fetchReference();
+        const fwdMsg = await fetchReferencedMessage(item, bot);
 
         const fwdMember = fwdMsg.author?.bot
             ? null
@@ -1627,6 +1649,58 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
 }
 
 /**
+ * Fetches the message a reply or forward points at, through the bot's message
+ * cache when it has one so repeat page loads don't refetch it from Discord.
+ *
+ * @param {object} item - The Discord message holding the reference.
+ * @param {object} bot - The bot instance.
+ * @returns {Promise<object>} The referenced message.
+ */
+function fetchReferencedMessage(item, bot) {
+    const { channelId, messageId } = item.reference || {};
+    if (!messageId || typeof bot?.getMessageCached !== 'function') {
+        return item.fetchReference();
+    }
+    return bot.getMessageCached(channelId, messageId);
+}
+
+/**
+ * Warms the caches the render loop reads from, all at once instead of one
+ * Discord round-trip per message: reply and forward targets, then the members
+ * behind every message and target. The loop then finds them already cached.
+ *
+ * @param {Array} messages - Messages about to be rendered.
+ * @param {object} chnl - The Discord channel object.
+ * @param {object} bot - The bot instance.
+ * @param {Map} memberCache - This render pass's member cache.
+ */
+async function prefetchMessageData(messages, chnl, bot, memberCache) {
+    if (!chnl?.guild) return;
+
+    const referenced = await Promise.all(
+        messages
+            .filter((msg) => msg.reference?.messageId)
+            .map((msg) => fetchReferencedMessage(msg, bot).catch(() => null))
+    );
+
+    // One lookup per author, keyed the way ensureMemberData keys its cache.
+    // Bot-authored reply/forward targets are rendered without a member.
+    const byAuthor = new Map();
+    const targets = referenced.filter((msg) => msg?.author && !msg.author.bot);
+    for (const msg of [...messages, ...targets]) {
+        if (!msg?.author) continue;
+        const isAppWebhook =
+            msg.webhookId && msg.applicationId && msg.webhookId === msg.applicationId;
+        const key =
+            msg.webhookId && !isAppWebhook ? `webhook:${msg.author.username}` : msg.author.id;
+        if (!byAuthor.has(key)) byAuthor.set(key, msg);
+    }
+    await Promise.allSettled(
+        [...byAuthor.values()].map((msg) => ensureMemberData(msg, chnl.guild, memberCache))
+    );
+}
+
+/**
  * Resolves and processes data for message replies.
  *
  * @param {object} item - The Discord message object.
@@ -1642,7 +1716,7 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, auth
     try {
         const replyMessage =
             (item.reference?.messageId && chnl.messages?.cache?.get(item.reference.messageId)) ||
-            (await item.fetchReference().catch(() => null));
+            (await fetchReferencedMessage(item, bot).catch(() => null));
 
         const replyUser = replyMessage?.author ?? item.mentions?.repliedUser;
 
@@ -2317,6 +2391,8 @@ exports.buildMessagesHtml = async function buildMessagesHtml(params) {
 
     // memberCache is used to avoid redundant Discord API calls for avatars/names within this render pass.
     const memberCache = new Map();
+
+    await prefetchMessageData(messages, chnl, bot, memberCache);
 
     const context = {
         bot,

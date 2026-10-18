@@ -11,6 +11,14 @@ const cachelength = 100; // Length of message history
 const msghistory = new Map();
 const MSGHISTORY_MAX_CHANNELS = 100; // Max number of channels to keep in history cache
 
+// Messages fetched one at a time (reply and forward targets), keyed by message
+// ID. discord.js's own message cache is disabled, so without this every reply
+// on a page refetched its target from Discord on every load.
+const refMessages = new Map();
+const REF_MESSAGES_MAX = 2000;
+const REF_MESSAGE_TTL_MS = 10 * 60 * 1000;
+const refMessageFetches = new Map(); // in-flight fetches, so concurrent loads share one request
+
 async function safeReply(msg, content) {
     try {
         return await msg.reply(content);
@@ -62,8 +70,10 @@ const client = new Discord.Client({
     makeCache: Discord.Options.cacheWithLimits({
         ...Discord.Options.DefaultMakeCacheSettings,
         MessageManager: 0,
-        GuildMemberManager: { maxSize: 200, keepOverLimit: keepClientEntry },
-        UserManager: { maxSize: 200, keepOverLimit: keepClientEntry },
+        // Shared by every guild: too small a cap and each page load refetches
+        // the authors it renders. A cached member is a few KB, so this stays small.
+        GuildMemberManager: { maxSize: 2000, keepOverLimit: keepClientEntry },
+        UserManager: { maxSize: 2000, keepOverLimit: keepClientEntry },
         // Reactions are rendered from message.reactions.cache, so it can't be zero:
         // a size-0 cache stores nothing and every reaction disappears. Discord
         // allows at most 20 distinct reactions per message, so 25 is already bounded.
@@ -636,12 +646,16 @@ client.on('messageUpdate', async function (oldMsg, newMsg) {
     ) {
         msghistory.get(newMsg.channel.id).set(newMsg.id, newMsg);
     }
+    if (refMessages.has(newMsg.id)) {
+        refMessages.set(newMsg.id, { msg: newMsg, at: Date.now() });
+    }
 });
 
 client.on('messageDelete', async function (msg) {
     if (msg.channel && msghistory.has(msg.channel.id)) {
         msghistory.get(msg.channel.id).delete(msg.id);
     }
+    refMessages.delete(msg.id);
 });
 
 client.on('messageDeleteBulk', async function (messages) {
@@ -649,6 +663,7 @@ client.on('messageDeleteBulk', async function (messages) {
         if (msg.channel && msghistory.has(msg.channel.id)) {
             msghistory.get(msg.channel.id).delete(msg.id);
         }
+        refMessages.delete(msg.id);
     });
 });
 
@@ -815,6 +830,38 @@ exports.getHistoryCached = async function (chnl, desiredLimit, beforeId, aroundI
         }
     }
     return Array.from(msghistory.get(chnl.id).values());
+};
+
+// Fetches one message the way Message#fetchReference does, but answers from
+// the channel history or the recent-reference cache when it can. Throws like
+// fetchReference when the channel or message can't be reached.
+exports.getMessageCached = async function (channelId, messageId) {
+    const fromHistory = msghistory.get(channelId)?.get(messageId);
+    if (fromHistory) return fromHistory;
+
+    const cached = refMessages.get(messageId);
+    if (cached && Date.now() - cached.at < REF_MESSAGE_TTL_MS) return cached.msg;
+
+    const pending = refMessageFetches.get(messageId);
+    if (pending) return pending;
+
+    const fetchPromise = (async () => {
+        const channel = client.channels.resolve(channelId);
+        if (!channel) throw new Error(`Channel ${channelId} is not available`);
+        const msg = await channel.messages.fetch(messageId);
+        refMessages.delete(messageId);
+        if (refMessages.size >= REF_MESSAGES_MAX) {
+            refMessages.delete(refMessages.keys().next().value);
+        }
+        refMessages.set(messageId, { msg, at: Date.now() });
+        return msg;
+    })();
+    refMessageFetches.set(messageId, fetchPromise);
+    try {
+        return await fetchPromise;
+    } finally {
+        refMessageFetches.delete(messageId);
+    }
 };
 
 // Discord's message search (GET /guilds/{id}/messages/search) isn't part of
