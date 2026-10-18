@@ -4,7 +4,13 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
     {
-        ignores: ['node_modules/**', 'dist/**', 'db/**', 'pages/static/js/emojiList.js'],
+        ignores: [
+            'node_modules/**',
+            'dist/**',
+            'db/**',
+            'pages/static/js/emojiList.js',
+            'pages/static/js/emojiKeywords.js',
+        ],
     },
     {
         files: ['**/*.ts'],
