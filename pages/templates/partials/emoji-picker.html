@@ -18,10 +18,17 @@
             </div>
           </div>
 
+          <!-- Emoji search (needs JS, hidden without it via noscript) -->
+          <noscript><style>.emoji-search-wrapper{display:none}</style></noscript>
+          <div class="emoji-search-wrapper" style="margin-top: 8px;">
+            <input type="text" id="emoji-search" placeholder="Search emoji" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="width: 100%; box-sizing: border-box; padding: 8px 10px; background: #202225; color: #dcddde; border: 1px solid #202225; border-radius: 4px; font-size: 14px;">
+          </div>
+
           <div id="emoji-expanded" style="height: 350px; overflow-y: scroll; background: #36393f; border: 1px solid #202225; border-radius: 4px; padding: 8px; margin-top: 8px; text-align: left;">
             <div id="emoji-container">
                {$EMOJI_EXPANDED_HTML}
             </div>
+            <div id="emoji-search-results" style="display: none"></div>
           </div>
         </details>
       </td>
