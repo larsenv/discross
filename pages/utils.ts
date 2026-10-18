@@ -33,20 +33,48 @@ const CSS_VERSION = (function () {
  * server-side fixes are deployed, making all JS changes invisible to the device.
  */
 function getDrawJsVersion() {
-    try {
-        return String(Math.trunc(fs.statSync('pages/static/js/draw.js').mtimeMs));
-    } catch (err) {
-        return String(Date.now());
-    }
+    return getFileVersion('pages/static/js/draw.js');
 }
 
 function getChannelJsVersion() {
-    try {
-        return String(Math.trunc(fs.statSync('pages/static/js/channel.js').mtimeMs));
-    } catch (err) {
-        return String(Date.now());
+    return getFileVersion('pages/static/js/channel.js');
+}
+
+// mtime tokens and processed templates, kept in memory so rendering a page
+// doesn't hit the disk once per template. Both are dropped whenever anything
+// under pages/templates or pages/static/js changes (see watchTemplateFiles).
+const fileVersionCache = new Map();
+const templateCache = new Map();
+
+function getFileVersion(filePath) {
+    let version = fileVersionCache.get(filePath);
+    if (version === undefined) {
+        try {
+            version = String(Math.trunc(fs.statSync(filePath).mtimeMs));
+        } catch (err) {
+            version = String(Date.now());
+        }
+        fileVersionCache.set(filePath, version);
+    }
+    return version;
+}
+
+function clearTemplateCache() {
+    templateCache.clear();
+    fileVersionCache.clear();
+}
+
+function watchTemplateFiles() {
+    for (const dir of ['pages/templates', 'pages/static/js']) {
+        try {
+            fs.watch(dir, { recursive: true, persistent: false }, clearTemplateCache);
+        } catch (err) {
+            console.error(`Failed to watch ${dir} for template changes:`, err);
+        }
     }
 }
+
+watchTemplateFiles();
 
 /**
  * Loads a component template from the pages/templates folder.
@@ -58,12 +86,15 @@ function getChannelJsVersion() {
 function getTemplate(name, folder = 'channel') {
     const folderPath = folder ? `${folder}/` : '';
     const filePath = `pages/templates/${folderPath}${name}.html`;
+    const cached = templateCache.get(filePath);
+    if (cached !== undefined) return cached;
     try {
         let content = fs.readFileSync(filePath, 'utf-8');
         // Cache-bust the stylesheet so legacy browsers re-fetch it when it changes.
         content = content.replace('/css/main.css', `/css/main.css?v=${CSS_VERSION}`);
         content = content.replace('/js/draw.js"', `/js/draw.js?v=${getDrawJsVersion()}"`);
         content = content.replace('/js/channel.js"', `/js/channel.js?v=${getChannelJsVersion()}"`);
+        templateCache.set(filePath, content);
         return content;
     } catch (err) {
         console.error(`Failed to load template ${filePath}:`, err);
@@ -151,6 +182,7 @@ function renderTemplate(template, data) {
             normalizedKey = normalizedKey.slice(2, -1);
         }
         const placeholder = `{$${normalizedKey}}`;
+        if (!result.includes(placeholder)) continue;
         result = result.split(placeholder).join(value ?? '');
     }
 
