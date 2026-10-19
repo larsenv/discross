@@ -409,6 +409,38 @@ async function handlePost(req, res) {
                     res.writeHead(401, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
                 }
+            } else if (parsedurl === '/reorderServers') {
+                const discordID = await auth.checkAuth(req, res, true);
+                if (!discordID) {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: 'Not authenticated' }));
+                    return;
+                }
+                let order;
+                try {
+                    order = JSON.parse(body).order;
+                } catch (err) {
+                    order = null;
+                }
+                // Only accept servers this user actually has.
+                const owned = {};
+                for (const row of auth.queryAll('SELECT serverID FROM servers WHERE discordID=?', [
+                    discordID,
+                ])) {
+                    owned[row.serverID] = true;
+                }
+                if (
+                    !Array.isArray(order) ||
+                    order.length > 500 ||
+                    !order.every((id) => typeof id === 'string' && owned[id])
+                ) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, error: 'Invalid order' }));
+                    return;
+                }
+                const result = auth.setServerOrder(discordID, order);
+                res.writeHead(result.success ? 200 : 500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(result));
             } else if (parsedurl === '/nsfw/confirm') {
                 const discordID = await auth.checkAuth(req, res, true);
                 if (!discordID) {

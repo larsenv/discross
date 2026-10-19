@@ -258,3 +258,106 @@ window.onload = function () {
         }
     }
 };
+
+// Drag-and-drop reordering of the server rail. Purely progressive: only wired up
+// when the browser has HTML5 drag-and-drop, addEventListener, JSON and XHR;
+// older browsers keep plain links and the saved order is still applied
+// server-side when the page renders.
+(function () {
+    function init() {
+        if (
+            !document.querySelectorAll ||
+            !document.addEventListener ||
+            !window.JSON ||
+            !window.XMLHttpRequest ||
+            !('draggable' in document.createElement('div'))
+        ) {
+            return;
+        }
+        var links = document.querySelectorAll('.server-rail a.server-link');
+        if (!links.length) return;
+        var dragged = null;
+
+        function currentOrder() {
+            var out = [];
+            var all = document.querySelectorAll('.server-rail a.server-link');
+            for (var i = 0; i < all.length; i++) {
+                out.push(all[i].getAttribute('data-server-id'));
+            }
+            return out;
+        }
+
+        function save() {
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/reorderServers', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.send(JSON.stringify({ order: currentOrder() }));
+            } catch (e) {
+                // best effort
+            }
+        }
+
+        // Each tile is <a>, then its <br>; move them together.
+        function move(el, before) {
+            var br = nextElemSibling(el);
+            var parent = el.parentNode;
+            var ref = before;
+            parent.insertBefore(el, ref);
+            if (br && br.tagName === 'BR') parent.insertBefore(br, ref);
+        }
+
+        function wire(a) {
+            a.setAttribute('draggable', 'true');
+            a.addEventListener('dragstart', function (e) {
+                dragged = a;
+                addClass(a, 'server-dragging');
+                if (e.dataTransfer) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    try {
+                        e.dataTransfer.setData('text/plain', a.getAttribute('data-server-id'));
+                    } catch (err) {
+                        // IE only allows 'Text'
+                        e.dataTransfer.setData('Text', a.getAttribute('data-server-id'));
+                    }
+                }
+            });
+            a.addEventListener('dragover', function (e) {
+                if (!dragged || dragged === a) return;
+                e.preventDefault();
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+            });
+            a.addEventListener('drop', function (e) {
+                e.preventDefault();
+                if (!dragged || dragged === a) return;
+                var list = document.querySelectorAll('.server-rail a.server-link');
+                var from = -1;
+                var to = -1;
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i] === dragged) from = i;
+                    if (list[i] === a) to = i;
+                }
+                if (from < to) {
+                    // dropping downward: place after target tile (and its <br>)
+                    var after = nextElemSibling(a);
+                    if (after && after.tagName === 'BR') after = nextElemSibling(after);
+                    move(dragged, after);
+                } else {
+                    move(dragged, a);
+                }
+                save();
+            });
+            a.addEventListener('dragend', function () {
+                if (dragged) removeClass(dragged, 'server-dragging');
+                dragged = null;
+            });
+        }
+
+        for (var i = 0; i < links.length; i++) wire(links[i]);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, false);
+    } else {
+        init();
+    }
+})();

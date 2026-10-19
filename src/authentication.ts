@@ -127,6 +127,9 @@ function setup() {
         'CREATE TABLE IF NOT EXISTS channel_preferences (discordID TEXT, serverID TEXT, channelID TEXT, collapsed INTEGER DEFAULT 0, PRIMARY KEY (discordID, serverID, channelID))'
     );
     queryRun(
+        'CREATE TABLE IF NOT EXISTS server_order (discordID TEXT, serverID TEXT, position INTEGER, PRIMARY KEY (discordID, serverID))'
+    );
+    queryRun(
         'CREATE TABLE IF NOT EXISTS pending_totp (discordID TEXT PRIMARY KEY, secret TEXT, expires INT)'
     );
     queryRun(
@@ -802,6 +805,33 @@ exports.insertServers = function (items) {
         for (const item of items) serversQuery.run(item);
     });
     return transaction(items);
+};
+
+exports.getServerOrder = function (discordID) {
+    const order = {};
+    for (const row of queryAll('SELECT serverID, position FROM server_order WHERE discordID=?', [
+        discordID,
+    ])) {
+        order[row.serverID] = row.position;
+    }
+    return order;
+};
+
+exports.setServerOrder = function (discordID, serverIDs) {
+    try {
+        const stmt = db.prepare(
+            'INSERT OR REPLACE INTO server_order (discordID, serverID, position) VALUES (?, ?, ?)'
+        );
+        db.transaction(function (ids) {
+            ids.forEach(function (id, i) {
+                stmt.run(discordID, id, i);
+            });
+        })(serverIDs);
+        return { success: true };
+    } catch (err) {
+        console.error('Error setting server order:', err);
+        return { success: false, error: err.message };
+    }
 };
 
 exports.getChannelPreferences = function (discordID, serverID) {

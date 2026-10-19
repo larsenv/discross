@@ -4283,3 +4283,8 @@ html.client-wii.page-server #wrapper td {
     margin-top: 0 !important;
     padding-top: 0 !important;
 }
+
+/* Server rail drag-and-drop reordering */
+.server-link.server-dragging {
+    opacity: 0.4;
+}
