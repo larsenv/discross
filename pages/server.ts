@@ -271,6 +271,15 @@ exports.processServer = async function (bot, req, res, args, discordID) {
         // Acquire lock for this user to prevent race conditions where users might see other users' servers
         await lock.acquire(discordID, async () => {
             const data = auth.queryAll('SELECT * FROM servers WHERE discordID=?', [discordID]);
+            // Saved drag-and-drop order; servers without one keep their original
+            // relative order after the ordered ones (sort is stable).
+            const serverOrder = auth.getServerOrder(discordID);
+            const posOf = (id) => (id in serverOrder ? serverOrder[id] : Infinity);
+            data.sort((a, b) => {
+                const pa = posOf(a.serverID);
+                const pb = posOf(b.serverID);
+                return pa === pb ? 0 : pa < pb ? -1 : 1;
+            });
 
             for (const serverData of data) {
                 const serverID = serverData.serverID;
@@ -479,6 +488,7 @@ function createServerHTML(server, sessionParam) {
 
     return render('server/server-icon', {
         SERVER_ICON_URL: iconUrl,
+        SERVER_ID: server.id,
         SERVER_URL: './' + server.id + (sessionParam || ''),
         SERVER_NAME: escape(normalizeWeirdUnicode(serverName)),
     });
