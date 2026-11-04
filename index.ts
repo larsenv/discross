@@ -993,7 +993,10 @@ async function handleDiscordOAuth(req, res, parsedurl) {
             });
             const tokenData = await tokenResponse.json();
             if (!tokenData.access_token) {
-                console.error('Discord OAuth code exchange failed:', tokenData);
+                // invalid_grant just means the code expired or was already used; not a bug.
+                const logFn =
+                    tokenData && tokenData.error === 'invalid_grant' ? console.warn : console.error;
+                logFn('Discord OAuth code exchange failed:', JSON.stringify(tokenData));
                 throw new Error('Discord did not accept the authorization. Please try again.');
             }
             // The token is only used for this one server-list sync and is never stored.

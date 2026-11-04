@@ -430,7 +430,12 @@ const RANDOM_EMOJIS = ['1f62d', '1f480', '2764-fe0f', '1f44d', '1f64f', '1f389',
  * @returns {number}
  */
 function resolveThemeValue(req) {
-    const urlTheme = new URL(req.url, 'http://localhost').searchParams.get('theme');
+    let urlTheme = null;
+    try {
+        urlTheme = new URL(req.url, 'http://localhost').searchParams.get('theme');
+    } catch {
+        // Malformed request URL (e.g. "//"): fall through to the cookie / default theme.
+    }
     if (urlTheme !== null) {
         const n = parseInt(urlTheme, 10);
         return Number.isNaN(n) ? 0 : n;
