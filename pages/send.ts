@@ -1,7 +1,7 @@
 'use strict';
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
-const { getOrCreateWebhook } = require('./webhookCache');
+const { getOrCreateWebhook, sendWithWebhook } = require('./webhookCache');
 const {
     isValidSnowflake,
     isBotReady,
@@ -188,7 +188,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
                 sendOptions.threadId = channel.id;
             }
 
-            const message = await webhook.send(sendOptions);
+            const message = await sendWithWebhook(webhook, channel, channel.guild.id, sendOptions);
             delivered = true;
             recordSend(channel, discordID);
 

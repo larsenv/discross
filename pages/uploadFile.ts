@@ -11,7 +11,7 @@ const {
     canSendInChannel,
     buildAllowedMentions,
 } = require('./utils');
-const { getOrCreateWebhook } = require('./webhookCache');
+const { getOrCreateWebhook, sendWithWebhook } = require('./webhookCache');
 const { checkSlowMode, recordSend } = require('./slowMode');
 const mime = require('mime-types');
 
@@ -442,7 +442,7 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         if (channel.isThread()) {
                             sendOptions.threadId = channel.id;
                         }
-                        const message = await webhook.send(sendOptions);
+                        const message = await sendWithWebhook(webhook, channel, channel.guild.id, sendOptions);
                         recordSend(channel, discordID);
 
                         const userAgentStr = req.headers['user-agent'];

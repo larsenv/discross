@@ -2,7 +2,7 @@
 
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
-const { getOrCreateWebhook } = require('./webhookCache');
+const { getOrCreateWebhook, sendWithWebhook } = require('./webhookCache');
 const {
     isValidSnowflake,
     isBotReady,
@@ -120,7 +120,7 @@ exports.guestSend = async function guestSend(bot, req, res) {
         if (channel.isThread()) {
             sendOptions.threadId = channel.id;
         }
-        const message = await webhook.send(sendOptions);
+        const message = await sendWithWebhook(webhook, channel, channel.guild.id, sendOptions);
         recordSend(channel, guestSenderKey);
 
         const userAgent = req.headers['user-agent'];

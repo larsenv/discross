@@ -74,8 +74,12 @@ function isPrivateIP(ip) {
 function getTimezoneFromIP(req) {
     const { parseCookies } = require('../pages/utils');
     const cookies = parseCookies(req);
-    const parsedUrl = new URL(req.url, 'http://localhost');
-    const queryTimezone = parsedUrl.searchParams.get('timezone');
+    let queryTimezone = null;
+    try {
+        queryTimezone = new URL(req.url, 'http://localhost').searchParams.get('timezone');
+    } catch {
+        // Malformed request URL: ignore the query parameter.
+    }
 
     // 1. Check for 'timezone' cookie
     if (cookies.timezone && cookies.timezone !== 'null') {

@@ -2,7 +2,7 @@
 const sharp = require('sharp');
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
-const { getOrCreateWebhook } = require('./webhookCache');
+const { getOrCreateWebhook, sendWithWebhook } = require('./webhookCache');
 const {
     resolveMentions,
     resolveNameMentions,
@@ -238,7 +238,7 @@ exports.sendDrawing = async function sendDrawing(bot, req, res, args, discordID,
             webhookOptions.threadId = channel.id;
         }
 
-        const message = await webhook.send(webhookOptions);
+        const message = await sendWithWebhook(webhook, channel, channel.guild.id, webhookOptions);
         recordSend(channel, discordID);
 
         const userAgentStr = req.headers['user-agent'];

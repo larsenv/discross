@@ -53,4 +53,23 @@ async function getOrCreateWebhook(channel, guildID) {
     }
 }
 
-module.exports = { getOrCreateWebhook };
+/**
+ * Sends through a cached webhook. If Discord reports the webhook no longer exists
+ * (10015 Unknown Webhook, e.g. it was deleted by a moderator), evict the stale cache
+ * entry, create/fetch a fresh webhook and retry once.
+ */
+async function sendWithWebhook(webhook, channel, guildID, options) {
+    try {
+        return await webhook.send(options);
+    } catch (err) {
+        if (err && err.code === 10015) {
+            const webhookChannel = channel.isThread() && channel.parent ? channel.parent : channel;
+            _webhookCache.delete(webhookChannel.id);
+            const fresh = await getOrCreateWebhook(channel, guildID);
+            return fresh.send(options);
+        }
+        throw err;
+    }
+}
+
+module.exports = { getOrCreateWebhook, sendWithWebhook };
