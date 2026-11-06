@@ -1,4 +1,5 @@
 'use strict';
+const escapeHtml = require('escape-html');
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook, sendWithWebhook } = require('./webhookCache');
@@ -231,7 +232,7 @@ exports.sendMessage = async function sendMessage(bot, req, req_res, args, discor
         req_res.end(
             getTemplate('generic-error', 'misc').replace(
                 '{{ERROR_DETAILS}}',
-                err.message || 'Unknown error occurred while sending message.'
+                escapeHtml(err.message || 'Unknown error occurred while sending message.')
             )
         );
     } finally {
