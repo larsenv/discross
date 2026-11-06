@@ -19,9 +19,11 @@ async function getOrCreateWebhook(channel, guildID) {
 
     try {
         const existingWebhooks = await webhookChannel.fetchWebhooks();
+        // Match on the owner's ID, not their name: any member can call
+        // themselves "Discross" and create a webhook of their own.
+        const botUserId = webhookChannel.client?.user?.id;
         let webhook = existingWebhooks.find(
-            (w) =>
-                w.owner && (w.owner.username === 'discross beta' || w.owner.username === 'Discross')
+            (w) => w.owner && botUserId && w.owner.id === botUserId && w.token
         );
 
         if (!webhook) {

@@ -17,8 +17,8 @@ RUN npm install && npm cache clean --force
 COPY index.ts .
 COPY src src
 COPY pages pages
-# Copy secrets if they exist (will ignore if not copied gracefully with a glob or just rely on dockerignore)
-COPY secrets* secrets/
+# Secrets (.env, TLS keys) are never baked into the image: pass them in as
+# environment variables or mount them at run time.
 
 USER node
 

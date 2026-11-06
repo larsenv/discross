@@ -7,6 +7,19 @@ const auth = require('./authentication');
 const connectionHandler = require('./connectionHandler');
 const mail = require('./mail');
 
+// Cooldown between verification emails for the mail registration form.
+const MAIL_VERIFICATION_COOLDOWN_MS = 2 * 60 * 1000;
+const mailVerificationSentAt = new Map(); // discordID -> timestamp
+setInterval(
+    () => {
+        const cutoff = Date.now() - MAIL_VERIFICATION_COOLDOWN_MS;
+        for (const [key, at] of mailVerificationSentAt) {
+            if (at < cutoff) mailVerificationSentAt.delete(key);
+        }
+    },
+    10 * 60 * 1000
+).unref();
+
 const cachelength = 100; // Length of message history
 const msghistory = new Map();
 const MSGHISTORY_MAX_CHANNELS = 100; // Max number of channels to keep in history cache
@@ -403,6 +416,18 @@ client.on('interactionCreate', async (interaction) => {
                         flags: Discord.MessageFlags.Ephemeral,
                     });
                 }
+
+                // Each click would otherwise email the typed address again, so
+                // the form could be used to bomb somebody's inbox.
+                const lastSent = mailVerificationSentAt.get(interaction.user.id) || 0;
+                if (Date.now() - lastSent < MAIL_VERIFICATION_COOLDOWN_MS) {
+                    return interaction.reply({
+                        content:
+                            'A verification email was sent recently. Please check your inbox (and spam folder) and wait a couple of minutes before requesting another one.',
+                        flags: Discord.MessageFlags.Ephemeral,
+                    });
+                }
+                mailVerificationSentAt.set(interaction.user.id, Date.now());
 
                 const code = auth.createMailVerificationCode(interaction.user.id, prefix, backup);
                 const sent = await mail.sendVerificationEmail(

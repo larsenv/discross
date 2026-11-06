@@ -23,157 +23,118 @@ function renderAlertBack({ MESSAGE }) {
     });
 }
 
+const UPLOAD_MAX_RETRIES = 3;
+const RETRYABLE_STATUSES = [429, 500, 502, 503, 504];
+const RETRYABLE_CODES = ['EAI_AGAIN', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_FAIL', 'EPIPE'];
+
+// One attempt at posting the file to x0.at. The file is streamed from disk
+// rather than read into memory: uploads can be up to 498 MB, and a few of them
+// in flight at once used to be enough to exhaust the process.
+function uploadAttempt(filePath, fileSize, head, tail, boundary) {
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        const settle = (fn, value) => {
+            if (settled) return;
+            settled = true;
+            fn(value);
+        };
+
+        const options = {
+            hostname: 'x0.at',
+            port: 443,
+            path: '/',
+            method: 'POST',
+            headers: {
+                'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                'Content-Length': head.length + fileSize + tail.length,
+                'User-Agent': 'Discross/1.0',
+                Accept: '*/*',
+            },
+            // Set a high timeout for large files (30 minutes)
+            timeout: 30 * 60 * 1000,
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                // The reply is a short URL; anything bigger is not a reply we want.
+                if (data.length < 4096) data += chunk;
+            });
+            res.on('end', () => {
+                if (res.statusCode === 200) {
+                    const x0Url = data.trim();
+                    // Validate that the response is a valid URL
+                    if (!x0Url || !x0Url.startsWith('https://x0.at/')) {
+                        settle(reject, new Error(`Invalid URL received from x0.at: ${x0Url}`));
+                        return;
+                    }
+                    settle(resolve, x0Url);
+                } else {
+                    const err: any = new Error(
+                        `Upload failed with status ${res.statusCode}: ${data}`
+                    );
+                    err.retryable = RETRYABLE_STATUSES.includes(res.statusCode);
+                    settle(reject, err);
+                }
+            });
+        });
+
+        req.on('error', (err: any) => {
+            // Transient DNS / network errors are retried (fixes DISCROS-3Y: EAI_AGAIN)
+            err.retryable = RETRYABLE_CODES.includes(err.code);
+            settle(reject, err);
+        });
+
+        req.on('timeout', () => {
+            req.destroy();
+            // Retry on timeout (fixes DISCROS-43: Upload timeout)
+            const err: any = new Error('Upload timeout - file may be too large');
+            err.retryable = true;
+            settle(reject, err);
+        });
+
+        req.write(head);
+        const stream = fs.createReadStream(filePath);
+        stream.on('error', (err) => {
+            req.destroy();
+            settle(reject, new Error(`Failed to read file: ${err.message}`));
+        });
+        stream.on('end', () => req.end(tail));
+        stream.pipe(req, { end: false });
+    });
+}
+
 // Upload file to x0.at and return the URL
 async function uploadToTransfer(filePath, filename) {
-    return new Promise((resolve, reject) => {
-        const contentType = mime.lookup(filename) || 'application/octet-stream';
-        const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const contentType = mime.lookup(filename) || 'application/octet-stream';
+    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const { size: fileSize } = await fs.promises.stat(filePath);
 
-        // Read the entire file into memory (x0.at limit is 1024MB, fine for Buffer up to form limit)
-        fs.readFile(filePath, (readErr, fileBuffer) => {
-            if (readErr) {
-                reject(new Error(`Failed to read file: ${readErr.message}`));
-                return;
-            }
+    // Build the multipart/form-data framing; the file body itself is streamed.
+    const boundary = '----X0Boundary' + Date.now().toString(16);
+    const head = Buffer.from(
+        `--${boundary}\r\n` +
+            `Content-Disposition: form-data; name="keep_name"\r\n\r\n` +
+            `1\r\n` +
+            `--${boundary}\r\n` +
+            `Content-Disposition: form-data; name="file"; filename="${sanitizedFilename}"\r\n` +
+            `Content-Type: ${contentType}\r\n\r\n`
+    );
+    const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
 
-            // Build multipart/form-data body
-            const boundary = '----X0Boundary' + Date.now().toString(16);
-
-            const parts = [];
-
-            // keep_name field
-            parts.push(
-                Buffer.from(
-                    `--${boundary}\r\n` +
-                        `Content-Disposition: form-data; name="keep_name"\r\n\r\n` +
-                        `1\r\n`
-                )
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await uploadAttempt(filePath, fileSize, head, tail, boundary);
+        } catch (err) {
+            if (attempt >= UPLOAD_MAX_RETRIES || !err.retryable) throw err;
+            const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, ...
+            console.warn(
+                `Upload attempt ${attempt} failed (${err.message}), retrying in ${delay}ms...`
             );
-
-            // file field header
-            parts.push(
-                Buffer.from(
-                    `--${boundary}\r\n` +
-                        `Content-Disposition: form-data; name="file"; filename="${sanitizedFilename}"\r\n` +
-                        `Content-Type: ${contentType}\r\n\r\n`
-                )
-            );
-
-            // file content
-            parts.push(fileBuffer);
-
-            // closing boundary
-            parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
-
-            const body = Buffer.concat(parts);
-
-            const options = {
-                hostname: 'x0.at',
-                port: 443,
-                path: '/',
-                method: 'POST',
-                headers: {
-                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                    'Content-Length': body.length,
-                    'User-Agent': 'Discross/1.0',
-                    Accept: '*/*',
-                },
-                // Set a high timeout for large files (30 minutes)
-                timeout: 30 * 60 * 1000,
-            };
-
-            const MAX_RETRIES = 3;
-            let attempt = 0;
-
-            function tryUpload() {
-                attempt++;
-                let attemptSettled = false;
-
-                const req = https.request(options, (res) => {
-                    let data = '';
-
-                    res.on('data', (chunk) => {
-                        data += chunk;
-                    });
-
-                    res.on('end', () => {
-                        if (attemptSettled) return;
-                        attemptSettled = true;
-
-                        if (res.statusCode === 200) {
-                            const x0Url = data.trim();
-
-                            // Validate that the response is a valid URL
-                            if (!x0Url || !x0Url.startsWith('https://x0.at/')) {
-                                reject(new Error(`Invalid URL received from x0.at: ${x0Url}`));
-                                return;
-                            }
-
-                            resolve(x0Url);
-                        } else if (
-                            attempt < MAX_RETRIES &&
-                            [429, 500, 502, 503, 504].includes(res.statusCode)
-                        ) {
-                            const delay = Math.pow(2, attempt) * 1000;
-                            console.warn(
-                                `Upload attempt ${attempt} failed with status ${res.statusCode}, retrying in ${delay}ms...`
-                            );
-                            setTimeout(tryUpload, delay);
-                        } else {
-                            reject(
-                                new Error(`Upload failed with status ${res.statusCode}: ${data}`)
-                            );
-                        }
-                    });
-                });
-
-                req.on('error', (err) => {
-                    if (attemptSettled) return;
-                    attemptSettled = true;
-
-                    // Retry on transient DNS / network errors (fixes DISCROS-3Y: EAI_AGAIN)
-                    if (
-                        attempt < MAX_RETRIES &&
-                        (err.code === 'EAI_AGAIN' ||
-                            err.code === 'ECONNRESET' ||
-                            err.code === 'ETIMEDOUT' ||
-                            err.code === 'ENOTFOUND' ||
-                            err.code === 'EAI_FAIL' ||
-                            err.code === 'EPIPE')
-                    ) {
-                        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, ...
-                        console.warn(
-                            `Upload attempt ${attempt} failed (${err.code}), retrying in ${delay}ms...`
-                        );
-                        setTimeout(tryUpload, delay);
-                    } else {
-                        reject(err);
-                    }
-                });
-
-                req.on('timeout', () => {
-                    if (attemptSettled) return;
-                    attemptSettled = true;
-                    req.destroy();
-
-                    // Retry on timeout (fixes DISCROS-43: Upload timeout)
-                    if (attempt < MAX_RETRIES) {
-                        const delay = Math.pow(2, attempt) * 1000;
-                        console.warn(
-                            `Upload attempt ${attempt} timed out, retrying in ${delay}ms...`
-                        );
-                        setTimeout(tryUpload, delay);
-                    } else {
-                        reject(new Error('Upload timeout - file may be too large'));
-                    }
-                });
-
-                req.end(body);
-            }
-
-            tryUpload();
-        });
-    });
+            await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+    }
 }
 
 const AsyncLock = require('async-lock');
@@ -442,7 +403,12 @@ exports.uploadFile = async function uploadFile(bot, req, res, args, discordID) {
                         if (channel.isThread()) {
                             sendOptions.threadId = channel.id;
                         }
-                        const message = await sendWithWebhook(webhook, channel, channel.guild.id, sendOptions);
+                        const message = await sendWithWebhook(
+                            webhook,
+                            channel,
+                            channel.guild.id,
+                            sendOptions
+                        );
                         recordSend(channel, discordID);
 
                         const userAgentStr = req.headers['user-agent'];

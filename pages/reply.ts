@@ -1,4 +1,5 @@
 'use strict';
+const escapeHtml = require('escape-html');
 const auth = require('../src/authentication');
 const { convertEmoji } = require('./emojiConvert');
 const { getOrCreateWebhook } = require('./webhookCache');
@@ -176,7 +177,7 @@ exports.replyMessage = async function replyMessage(bot, req, res, args, discordI
         res.end(
             getTemplate('generic-error', 'misc').replace(
                 '{{ERROR_DETAILS}}',
-                (err as Error).message || 'Unknown error occurred while replying.'
+                escapeHtml((err as Error).message || 'Unknown error occurred while replying.')
             )
         );
     }

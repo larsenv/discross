@@ -239,7 +239,8 @@ setInterval(
     10 * 60 * 1000
 ).unref();
 
-const LOGIN_MAX_FAILS = 10;
+const LOGIN_MAX_FAILS = 10; // per username + client
+const LOGIN_ACCOUNT_MAX_FAILS = 100; // per username, across all clients
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const CODE_MAX_FAILS = 5;
 const CODE_WINDOW_MS = 10 * 60 * 1000;
@@ -315,14 +316,27 @@ exports.createUser = async function (discordID, username, password) {
     }
 };
 
-exports.login = async function (username, password, totpToken) {
-    const rateKey = `login:${(username || '').toLowerCase()}`;
-    if (isRateLimited(rateKey, LOGIN_MAX_FAILS)) {
+exports.login = async function (username, password, totpToken, req) {
+    // Failures are counted per username AND client, so one bad actor can't
+    // lock somebody else out of their account with ten wrong passwords. A
+    // second, much higher ceiling per username still stops a guess spread
+    // across many addresses.
+    const account = (username || '').toLowerCase();
+    const clientKey = `login:${account}:${rateLimitClientKey(req)}`;
+    const accountKey = `login-account:${account}`;
+    if (
+        isRateLimited(clientKey, LOGIN_MAX_FAILS) ||
+        isRateLimited(accountKey, LOGIN_ACCOUNT_MAX_FAILS)
+    ) {
         return {
             status: 'error',
             reason: 'Too many failed login attempts. Please wait a few minutes and try again.',
         };
     }
+    const failed = () => {
+        registerFailure(clientKey, LOGIN_WINDOW_MS);
+        registerFailure(accountKey, LOGIN_WINDOW_MS);
+    };
     const match = querySingle('SELECT DISTINCT * FROM users WHERE username=?', [username]);
     // Use one generic message for both "no such user" and "wrong password" so
     // the response can't be used to enumerate which usernames exist. Still run
@@ -330,13 +344,13 @@ exports.login = async function (username, password, totpToken) {
     // timing roughly constant.
     if (!match) {
         await bcrypt.compare(password || '', DUMMY_PASSWORD_HASH);
-        registerFailure(rateKey, LOGIN_WINDOW_MS);
+        failed();
         return { status: 'error', reason: 'Incorrect username or password!' };
     }
 
     const correctPassword = await bcrypt.compare(password, match.hashedPassword);
     if (!correctPassword) {
-        registerFailure(rateKey, LOGIN_WINDOW_MS);
+        failed();
         return { status: 'error', reason: 'Incorrect username or password!' };
     }
 
@@ -344,7 +358,7 @@ exports.login = async function (username, password, totpToken) {
     if (match.totp_secret) {
         const code = (totpToken || '').trim();
         if (!code) {
-            registerFailure(rateKey, LOGIN_WINDOW_MS);
+            failed();
             return { status: 'error', reason: 'Invalid 2FA code!' };
         }
         // Try TOTP first (only if it looks like a 6-digit code), then fall back to backup code
@@ -353,12 +367,13 @@ exports.login = async function (username, password, totpToken) {
             : false;
         const codeAccepted = totpValid || (await verifyBackupCode(match.discordID, code));
         if (!codeAccepted) {
-            registerFailure(rateKey, LOGIN_WINDOW_MS);
+            failed();
             return { status: 'error', reason: 'Invalid 2FA code!' };
         }
     }
 
-    clearFailures(rateKey);
+    clearFailures(clientKey);
+    clearFailures(accountKey);
     const sessionID = uuidv4();
     const expiresAt = unixTime() + expiryTime;
     queryRun('INSERT INTO sessions VALUES (?,?,?)', [match.discordID, sessionID, expiresAt]);
@@ -713,7 +728,12 @@ exports.handleLoginRegister = async function (req, res, body) {
 
     if (req.url === '/login') {
         if (params.username && params.password) {
-            const result = await exports.login(params.username, params.password, params.totp_code);
+            const result = await exports.login(
+                params.username,
+                params.password,
+                params.totp_code,
+                req
+            );
             if (result.status === 'success') {
                 const cookieExpiry = new Date(Date.now() + expiryTime * 1000).toUTCString();
                 // Only ever redirect to a path on this site: the session ID is
@@ -782,8 +802,13 @@ exports.handleLoginRegister = async function (req, res, body) {
                 await require('../pages/forgot').processForgot(null, req, res, []);
                 return;
             }
+            // Everything that can log this Discord ID in has to go, not just the
+            // password: a passkey registered while the account was compromised
+            // would otherwise keep working after the owner re-registers.
             queryRun('DELETE FROM users WHERE discordID = ?', [id]);
             queryRun('DELETE FROM sessions WHERE discordID = ?', [id]);
+            queryRun('DELETE FROM passkeys WHERE discordID = ?', [id]);
+            queryRun('DELETE FROM action_codes WHERE discordID = ?', [id]);
             queryRun('DELETE FROM verificationcodes WHERE discordID = ?', [id]);
             queryRun('DELETE FROM servers WHERE discordID = ?', [id]);
             queryRun('DELETE FROM backup_codes WHERE discordID = ?', [id]);
@@ -794,6 +819,11 @@ exports.handleLoginRegister = async function (req, res, body) {
             req.url = `/forgot.html?errortext=${encodeURIComponent('Please fill the code!')}`;
             await require('../pages/forgot').processForgot(null, req, res, []);
         }
+    } else {
+        // Any other POST would otherwise never get a response and hold the
+        // connection open until it times out.
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.end(getTemplate('not-found', 'misc'));
     }
 };
 
@@ -922,17 +952,11 @@ exports.getPasskeyOptions = function (discordID, type = 'register', rpId = 'loca
             requireResidentKey: true,
             userVerification: 'preferred',
         };
-    } else {
-        const credentials = queryAll('SELECT credentialID FROM passkeys WHERE discordID = ?', [
-            discordID,
-        ]);
-        if (credentials.length > 0) {
-            options.allowCredentials = credentials.map((row) => ({
-                id: Array.from(Buffer.from(row.credentialID, 'base64url')),
-                type: 'public-key',
-            }));
-        }
     }
+    // No allowCredentials on login: passkeys are registered as discoverable
+    // (resident) credentials, so the authenticator finds them by RP ID. Listing
+    // them here would tell an anonymous caller which usernames exist and hand
+    // out their credential IDs.
     return options;
 };
 

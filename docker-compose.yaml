@@ -4,7 +4,7 @@ services:
         build:
             context: .
         environment:
-            TOKEN: ${TOKEN}
+            DISCORD_TOKEN: ${DISCORD_TOKEN}
         volumes:
             - ./db:/usr/src/app/db
         ports:

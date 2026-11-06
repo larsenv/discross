@@ -259,11 +259,46 @@ exports.handleInboundWebhook = async function (req, res) {
     res.end(JSON.stringify({ success: true }));
 };
 
+// Outbound mail goes out from this domain's reputation, so every account gets
+// a daily send allowance. Counted in memory; a restart resets it, which errs on
+// the side of letting people send.
+const MAIL_DAILY_LIMIT = 50;
+const MAIL_WINDOW_MS = 24 * 60 * 60 * 1000;
+const _sendCounts = new Map(); // discordID -> { count, resetAt }
+
+function takeSendAllowance(discordID) {
+    const now = Date.now();
+    const bucket = _sendCounts.get(discordID);
+    if (!bucket || bucket.resetAt <= now) {
+        _sendCounts.set(discordID, { count: 1, resetAt: now + MAIL_WINDOW_MS });
+        return true;
+    }
+    if (bucket.count >= MAIL_DAILY_LIMIT) return false;
+    bucket.count += 1;
+    return true;
+}
+
+setInterval(
+    () => {
+        const now = Date.now();
+        for (const [key, bucket] of _sendCounts) {
+            if (bucket.resetAt <= now) _sendCounts.delete(key);
+        }
+    },
+    60 * 60 * 1000
+).unref();
+
 // Send an outbound email (Reply)
 exports.sendEmail = async function (discordID, toAddress, subject, textContent, attachments = []) {
     const user = auth.getMailUser(discordID);
     if (!user || !user.active) {
         return { success: false, error: 'You do not have an active mail account.' };
+    }
+    if (!takeSendAllowance(discordID)) {
+        return {
+            success: false,
+            error: `You have reached the limit of ${MAIL_DAILY_LIMIT} emails per day. Please try again tomorrow.`,
+        };
     }
 
     // Convert markdown to HTML basic formatting

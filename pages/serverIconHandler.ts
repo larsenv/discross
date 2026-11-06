@@ -2,11 +2,41 @@
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
-const sanitizer = require('path-sanitizer').default;
 const { generatePlaceholderIconAsGif } = require('./iconGenerator');
-const { getTemplate } = require('./utils');
+const { getTemplate, isValidSnowflake } = require('./utils');
 
 // Note: Using built-in fetch API (Node.js 18+)
+
+// Discord icon hashes are hex, with an "a_" prefix for animated ones. The
+// handler is reachable without logging in, so both path parts are checked
+// before they are used in a file path or a CDN URL.
+const ICON_HASH_PATTERN = /^(a_)?[a-f0-9]{1,64}$/i;
+
+// Placeholders are generated per request (the server name can change) and kept
+// only in memory. Writing them to disk let anyone fill the disk with one file
+// per made-up /ico/server/<id>/<hash>.gif path.
+const PLACEHOLDER_CACHE_MAX = 500;
+const placeholderCache = new Map();
+
+function cachePlaceholder(key, buffer) {
+    if (placeholderCache.size >= PLACEHOLDER_CACHE_MAX) {
+        placeholderCache.delete(placeholderCache.keys().next().value);
+    }
+    placeholderCache.set(key, buffer);
+}
+
+function serveGif(res, buffer) {
+    res.writeHead(200, {
+        'Content-Type': 'image/gif',
+        'Cache-Control': 'public, max-age=86400',
+    });
+    res.end(buffer);
+}
+
+function serveNotFound(res) {
+    res.writeHead(404, { 'Content-Type': 'text/html' });
+    res.end(getTemplate('icon-not-found', 'misc'));
+}
 
 /**
  * Handle server icon requests with fallback to Discord CDN and placeholder generation
@@ -17,84 +47,77 @@ const { getTemplate } = require('./utils');
  * @param {string} theme - Theme: 'dark', 'light', or 'amoled'
  */
 async function handleServerIcon(bot, res, serverID, iconHash, theme = 'dark') {
-    const iconDir = path.resolve('pages/static/ico/server', sanitizer(serverID));
-    const iconPath = path.resolve(iconDir, sanitizer(`${iconHash}.gif`));
+    if (!isValidSnowflake(serverID) || !ICON_HASH_PATTERN.test(iconHash || '')) {
+        serveNotFound(res);
+        return;
+    }
+
+    // Only servers the bot is actually in get an icon. Anything else would be
+    // an outbound CDN request and a cached file for a guild that never
+    // appears in anyone's server list.
+    const guild = bot?.client?.guilds?.cache?.get(serverID);
+    if (!guild) {
+        serveNotFound(res);
+        return;
+    }
+
+    const iconDir = path.resolve('pages/static/ico/server', serverID);
+    const iconPath = path.resolve(iconDir, `${iconHash}.gif`);
 
     // Check if icon exists locally
     if (fs.existsSync(iconPath)) {
         // Serve the existing icon
         try {
-            const iconData = await fs.promises.readFile(iconPath);
-            res.writeHead(200, {
-                'Content-Type': 'image/gif',
-                'Cache-Control': 'public, max-age=86400',
-            });
-            res.end(iconData);
+            serveGif(res, await fs.promises.readFile(iconPath));
             return;
         } catch (err) {
             console.error('Error reading icon file:', err);
         }
     }
 
-    // Icon doesn't exist locally, try to fetch from Discord CDN
-    try {
-        // Try animated GIF first, then fall back to static PNG
-        const gifUrl = `https://cdn.discordapp.com/icons/${serverID}/a_${iconHash}.gif?size=128`;
-        const pngUrl = `https://cdn.discordapp.com/icons/${serverID}/${iconHash}.png?size=128`;
-        const gifResponse = await fetch(gifUrl);
-        const [iconUrl, response] = gifResponse.ok
-            ? [gifUrl, gifResponse]
-            : [pngUrl, await fetch(pngUrl)];
+    // Icon doesn't exist locally, try to fetch from Discord CDN. Only the hash
+    // Discord reports for this guild is fetched and cached; a stale or made-up
+    // hash falls through to the placeholder.
+    if (guild.icon && guild.icon.replace(/^a_/, '') === iconHash.replace(/^a_/, '')) {
+        try {
+            const isAnimated = guild.icon.startsWith('a_');
+            const iconUrl = `https://cdn.discordapp.com/icons/${serverID}/${guild.icon}.${isAnimated ? 'gif' : 'png'}?size=128`;
+            const response = await fetch(iconUrl);
 
-        if (response.ok) {
-            const arrayBuffer = await response.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
+            if (response.ok) {
+                const buffer = Buffer.from(await response.arrayBuffer());
 
-            // Create directory if it doesn't exist
-            await fs.promises.mkdir(iconDir, { recursive: true });
+                // Create directory if it doesn't exist
+                await fs.promises.mkdir(iconDir, { recursive: true });
 
-            // Convert to GIF and save
-            const gifBuffer = iconUrl.endsWith('.gif')
-                ? buffer
-                : await sharp(buffer).gif().toBuffer();
+                // Convert to GIF and save
+                const gifBuffer = isAnimated ? buffer : await sharp(buffer).gif().toBuffer();
 
-            await fs.promises.writeFile(iconPath, gifBuffer);
+                await fs.promises.writeFile(iconPath, gifBuffer);
 
-            // Serve the icon
-            res.writeHead(200, {
-                'Content-Type': 'image/gif',
-                'Cache-Control': 'public, max-age=86400',
-            });
-            res.end(gifBuffer);
-            return;
+                serveGif(res, gifBuffer);
+                return;
+            }
+        } catch (err) {
+            console.error('Error fetching icon from Discord CDN:', err);
         }
-    } catch (err) {
-        console.error('Error fetching icon from Discord CDN:', err);
     }
 
-    // Fallback: generate placeholder icon
+    // Fallback: generate placeholder icon (in memory only)
     try {
-        // Get server name from bot client (if available)
-        const serverName = bot?.client?.guilds?.cache?.get(serverID)?.name ?? 'Server';
-
-        const placeholderBuffer = await generatePlaceholderIconAsGif(serverName, theme);
-
-        // Save placeholder to cache
-        await fs.promises.mkdir(iconDir, { recursive: true });
-        await fs.promises.writeFile(iconPath, placeholderBuffer);
-
-        // Serve the placeholder
-        res.writeHead(200, {
-            'Content-Type': 'image/gif',
-            'Cache-Control': 'public, max-age=86400',
-        });
-        res.end(placeholderBuffer);
+        const serverName = guild.name ?? 'Server';
+        const cacheKey = `${serverID}:${theme}:${serverName}`;
+        let placeholderBuffer = placeholderCache.get(cacheKey);
+        if (!placeholderBuffer) {
+            placeholderBuffer = await generatePlaceholderIconAsGif(serverName, theme);
+            cachePlaceholder(cacheKey, placeholderBuffer);
+        }
+        serveGif(res, placeholderBuffer);
     } catch (err) {
         console.error('Error generating placeholder icon:', err);
 
         // Last resort: return 404
-        res.writeHead(404, { 'Content-Type': 'text/html' });
-        res.end(getTemplate('icon-not-found', 'misc'));
+        serveNotFound(res);
     }
 }
 
