@@ -227,10 +227,22 @@ const ANCIENT_KEYWORDS = [
     'Mosaic/',
 ];
 
+// Old consoles and handhelds with their own tuned layouts (PSP NetFront, the
+// Wii/DS/3DS Opera builds, PS2/PS3) keep the normal pages.
+const TUNED_LEGACY = /PlayStation|PSP|Nintendo|Nitro|EGBrowser/;
+// Crawlers, link unfurlers and HTTP libraries: never downgrade, they read the
+// <meta> tags and gain nothing from simpler markup.
+const NON_BROWSER =
+    /bot|crawl|spider|slurp|preview|externalhit|unfurl|curl|wget|python|java\/|okhttp|go-http|node-fetch|axios|undici|headless/i;
+
 /**
  * Returns true for browsers that only understand plain HTML 3.2. Besides the
- * known names, any client still sending a pre-"Mozilla/5.0" UA that is not
- * Internet Explorer or Opera (both cope with modern markup well enough) counts.
+ * known names above this covers, whatever the device:
+ *   - Netscape 1-4 and other pre-"Mozilla/5.0" browsers (Palm Blazer, iCab 2,
+ *     Kindle 1/2 NetFront, ...);
+ *   - Internet Explorer 1-4 and Opera 1-6;
+ *   - anything that does not claim to be Mozilla or Opera at all (Lynx, Links,
+ *     w3m, Dillo, AvantGo, WAP and i-mode phones, old BlackBerrys, ...).
  *
  * @param {string} userAgent
  * @returns {boolean}
@@ -238,7 +250,17 @@ const ANCIENT_KEYWORDS = [
 function isAncientClient(userAgent) {
     if (!userAgent) return false;
     if (ANCIENT_KEYWORDS.some((keyword) => userAgent.includes(keyword))) return true;
-    return /^Mozilla\/[1-4]\./.test(userAgent) && !/MSIE|Opera|Trident/.test(userAgent);
+    if (TUNED_LEGACY.test(userAgent) || NON_BROWSER.test(userAgent)) return false;
+
+    const msie = userAgent.match(/MSIE (\d+)/);
+    if (msie) return parseInt(msie[1], 10) <= 4;
+    const opera = userAgent.match(/Opera[/ ](\d+)/);
+    if (opera) return parseInt(opera[1], 10) <= 6;
+    if (/Trident\//.test(userAgent)) return false;
+
+    const mozilla = userAgent.match(/^Mozilla\/(\d+)/);
+    if (mozilla) return parseInt(mozilla[1], 10) < 5;
+    return true;
 }
 
 module.exports = {
