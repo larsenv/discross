@@ -73,6 +73,8 @@ const MESSAGE_LIMIT_OVERRIDES = {
     psvita: 50,
     xbox360: 50,
     psp: 50,
+    // 33.6k/56k modem and 16 MB of RAM.
+    dreamcast: 15,
 };
 
 const SYSTEM_MESSAGE_TEXT = {

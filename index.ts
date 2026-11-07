@@ -122,6 +122,8 @@ const {
     isCrossSiteRequest,
     generateSEOMetadata,
 } = require('./pages/utils');
+const { isAncientClient } = require('./pages/userAgentUtils');
+const { downgradeHtml } = require('./pages/retroHtml');
 
 const messagePageTemplate = loadAndRenderPageTemplate('message');
 
@@ -1184,6 +1186,14 @@ function wrapHtmlFragments(req, res) {
                 (chunk.includes('{$PAGE_TITLE}') || chunk.includes('{$SEO_METADATA}'))
             ) {
                 chunk = fillHeadDefaults(req, chunk);
+            }
+            if (
+                isAncientClient(req.headers['user-agent']) &&
+                (typeof chunk === 'string' || Buffer.isBuffer(chunk)) &&
+                String(res.getHeader('Content-Type') || '').startsWith('text/html') &&
+                !res.getHeader('Content-Length')
+            ) {
+                chunk = downgradeHtml(chunk.toString());
             }
         } catch (err) {
             console.error('Failed to wrap HTML fragment:', err);
