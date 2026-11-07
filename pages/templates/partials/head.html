@@ -5,6 +5,15 @@
 {$SEO_METADATA}
 
 <script>
+  // Browsers without the W3C DOM (DreamPassport/XDP, Netscape 4, IE 4 and
+  // older) get the plain HTML pages even when their User-Agent hides them.
+  // Kept to JavaScript 1.1 and in its own block so nothing below can stop it.
+  if (!document.getElementById && document.cookie.indexOf('simple=0') == -1 && location.search.indexOf('simple=') == -1) {
+    location.replace('/simple?mode=on&return=' + escape(location.pathname + location.search));
+  }
+</script>
+
+<script>
   (function() {
     var ua = navigator.userAgent;
     var isDSi = ua.indexOf('Nintendo DSi') !== -1;

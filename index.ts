@@ -122,8 +122,8 @@ const {
     isCrossSiteRequest,
     generateSEOMetadata,
 } = require('./pages/utils');
-const { isAncientClient } = require('./pages/userAgentUtils');
-const { downgradeHtml } = require('./pages/retroHtml');
+const { downgradeHtml, wantsSimpleHtml } = require('./pages/retroHtml');
+const { setSimpleMode, showUserAgent } = require('./pages/simpleMode');
 
 const messagePageTemplate = loadAndRenderPageTemplate('message');
 
@@ -639,6 +639,12 @@ async function handleGet(req, res) {
         }
         case 'switchtheme':
             toggleTheme(req, res);
+            break;
+        case 'simple':
+            setSimpleMode(req, res);
+            break;
+        case 'ua':
+            showUserAgent(req, res);
             break;
         case 'toggleImages':
             toggleImages(req, res);
@@ -1188,7 +1194,7 @@ function wrapHtmlFragments(req, res) {
                 chunk = fillHeadDefaults(req, chunk);
             }
             if (
-                isAncientClient(req.headers['user-agent']) &&
+                wantsSimpleHtml(req) &&
                 (typeof chunk === 'string' || Buffer.isBuffer(chunk)) &&
                 String(res.getHeader('Content-Type') || '').startsWith('text/html') &&
                 !res.getHeader('Content-Length')

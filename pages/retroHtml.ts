@@ -160,7 +160,6 @@ function downgradeHtml(html) {
     html = html.replace(/<link\b[^>]*>/gi, '');
     html = html.replace(/<style\b[\s\S]*?<\/style>/gi, '');
     html = html.replace(/<!--[\s\S]*?-->/g, '');
-    html = html.replace(/<meta\b(?![^>]*http-equiv)[^>]*>/gi, '');
 
     html = removeElements(
         html,
@@ -186,4 +185,24 @@ function downgradeHtml(html) {
         .join('');
 }
 
-module.exports = { downgradeHtml };
+const { isAncientClient } = require('./userAgentUtils');
+
+/**
+ * The simple-HTML choice for this request: an explicit ?simple=1/0 wins (for
+ * browsers without cookies), then the "simple" cookie set by /simple, then the
+ * User-Agent.
+ */
+function wantsSimpleHtml(req) {
+    let param = null;
+    try {
+        param = new URL(req.url, 'http://localhost').searchParams.get('simple');
+    } catch {
+        // Malformed URL: fall back to the cookie / User-Agent.
+    }
+    if (param === '1' || param === '0') return param === '1';
+    const cookie = (req.headers.cookie || '').match(/(?:^|;\s*)simple=([01])/);
+    if (cookie) return cookie[1] === '1';
+    return isAncientClient(req.headers['user-agent']);
+}
+
+module.exports = { downgradeHtml, wantsSimpleHtml };
