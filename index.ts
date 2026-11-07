@@ -1161,6 +1161,33 @@ function fillHeadDefaults(req, html) {
 }
 
 function wrapHtmlFragments(req, res) {
+    // Pages differ between the normal and the simple HTML (User-Agent or the
+    // "simple" cookie), so browsers must not reuse one for the other. Old
+    // console browsers cache aggressively, so simple pages are never cached.
+    const originalWriteHead = res.writeHead;
+    res.writeHead = function (statusCode, ...args) {
+        try {
+            const headers = args.find((arg) => arg && typeof arg === 'object');
+            const type = String(
+                (headers && (headers['Content-Type'] || headers['content-type'])) ||
+                    res.getHeader('Content-Type') ||
+                    ''
+            );
+            if (type.startsWith('text/html')) {
+                res.setHeader('Vary', 'User-Agent, Cookie');
+                if (wantsSimpleHtml(req)) {
+                    if (headers) {
+                        delete headers['Cache-Control'];
+                        delete headers['cache-control'];
+                    }
+                    res.setHeader('Cache-Control', 'no-cache');
+                }
+            }
+        } catch (err) {
+            console.error('Failed to set HTML cache headers:', err);
+        }
+        return originalWriteHead.call(this, statusCode, ...args);
+    };
     const originalEnd = res.end;
     res.end = function (chunk, ...rest) {
         try {
