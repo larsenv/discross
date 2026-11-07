@@ -35,7 +35,9 @@ const CLIENTS = [
     {
         id: 'dreamcast',
         name: 'Sega Dreamcast',
-        keywords: ['Sega Dreamcast', 'Planetweb', 'DreamKey'],
+        // DreamPassport is the Japanese NetFront browser; the homebrew XDP web
+        // browser is built on it and keeps its User-Agent.
+        keywords: ['Dreamcast', 'Planetweb', 'DreamKey', 'DreamPassport', 'XDP'],
         isLegacy: true,
     },
     { id: 'arc', name: 'Arc', keywords: ['Arc/'] },
@@ -207,10 +209,40 @@ function parseUserAgent(userAgent) {
  */
 function isLegacyClient(userAgent) {
     const client = parseUserAgent(userAgent);
-    return !!(client && client.isLegacy);
+    return !!(client && client.isLegacy) || isAncientClient(userAgent);
+}
+
+// HTML 3.2-era browsers: no <button>, no usable CSS (display:none, sizes set in
+// style="" are ignored) and too little memory or bandwidth for the big
+// stylesheet and scripts. See retroHtml.ts.
+const ANCIENT_KEYWORDS = [
+    'Dreamcast',
+    'Planetweb',
+    'DreamKey',
+    'DreamPassport',
+    'XDP',
+    'Sega Saturn',
+    'WebTV',
+    'NCSA_Mosaic',
+    'Mosaic/',
+];
+
+/**
+ * Returns true for browsers that only understand plain HTML 3.2. Besides the
+ * known names, any client still sending a pre-"Mozilla/5.0" UA that is not
+ * Internet Explorer or Opera (both cope with modern markup well enough) counts.
+ *
+ * @param {string} userAgent
+ * @returns {boolean}
+ */
+function isAncientClient(userAgent) {
+    if (!userAgent) return false;
+    if (ANCIENT_KEYWORDS.some((keyword) => userAgent.includes(keyword))) return true;
+    return /^Mozilla\/[1-4]\./.test(userAgent) && !/MSIE|Opera|Trident/.test(userAgent);
 }
 
 module.exports = {
     parseUserAgent,
     isLegacyClient,
+    isAncientClient,
 };
