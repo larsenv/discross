@@ -73,16 +73,48 @@ exports.setHTTPS = function (ishttps) {
 const db = new sqlite3('db/discross.db');
 console.info('Connected to the database.');
 
+// better-sqlite3 runs on the main thread, so a slow write stalls every request.
+// The default journal waits for the disk on each commit; write-ahead logging
+// with synchronous=NORMAL does not, and stays safe from corruption (a power cut
+// can only lose the last few commits). It adds discross.db-wal and
+// discross.db-shm next to the database; copy all three for a live backup.
+try {
+    db.pragma('journal_mode = WAL');
+    db.pragma('synchronous = NORMAL');
+} catch (err) {
+    console.warn('Could not switch the database to write-ahead logging:', err);
+}
+
+// Compiled statements, keyed by their SQL text. Preparing a statement parses
+// and plans it, which takes longer than running most of the queries here.
+const statements = new Map();
+const STATEMENT_CACHE_MAX = 500;
+
+function prepare(sql) {
+    let statement = statements.get(sql);
+    if (!statement) {
+        statement = db.prepare(sql);
+        // Schema changes run once at startup and aren't worth keeping.
+        if (
+            statements.size < STATEMENT_CACHE_MAX &&
+            /^\s*(SELECT|INSERT|UPDATE|DELETE)\b/i.test(sql)
+        ) {
+            statements.set(sql, statement);
+        }
+    }
+    return statement;
+}
+
 function queryRun(sql, params = []) {
-    return db.prepare(sql).run(...params);
+    return prepare(sql).run(...params);
 }
 
 function querySingle(sql, params = []) {
-    return db.prepare(sql).get(...params);
+    return prepare(sql).get(...params);
 }
 
 function queryAll(sql, params = []) {
-    return db.prepare(sql).all(...params);
+    return prepare(sql).all(...params);
 }
 
 function unixTime() {
@@ -188,6 +220,25 @@ function setup() {
     queryRun(
         'CREATE TABLE IF NOT EXISTS mail_blocks (discordID TEXT, blocked_email TEXT, PRIMARY KEY(discordID, blocked_email))'
     );
+
+    // These tables have no primary key, so every lookup read the whole table:
+    // the session check on each request, the webhook check for each rendered
+    // message, a user's server list.
+    for (const [name, target] of [
+        ['idx_sessions_sessionID', 'sessions (sessionID)'],
+        ['idx_sessions_discordID', 'sessions (discordID)'],
+        ['idx_sessions_expires', 'sessions (expires)'],
+        ['idx_users_discordID', 'users (discordID)'],
+        ['idx_users_username', 'users (username)'],
+        ['idx_servers_discordID', 'servers (discordID)'],
+        ['idx_webhooks_webhookID', 'webhooks (webhookID)'],
+        ['idx_webhooks_serverID', 'webhooks (serverID)'],
+        ['idx_verificationcodes_discordID', 'verificationcodes (discordID)'],
+        ['idx_backup_codes_discordID', 'backup_codes (discordID)'],
+        ['idx_passkeys_discordID', 'passkeys (discordID)'],
+    ]) {
+        queryRun(`CREATE INDEX IF NOT EXISTS ${name} ON ${target}`);
+    }
 }
 
 setup();
@@ -830,7 +881,7 @@ exports.handleLoginRegister = async function (req, res, body) {
 // --- Preference & Server Management ---
 
 exports.insertServers = function (items) {
-    const serversQuery = db.prepare('INSERT OR IGNORE INTO servers VALUES (@serverID, @discordID)');
+    const serversQuery = prepare('INSERT OR IGNORE INTO servers VALUES (@serverID, @discordID)');
     const transaction = db.transaction(function (items) {
         for (const item of items) serversQuery.run(item);
     });
@@ -849,7 +900,7 @@ exports.getServerOrder = function (discordID) {
 
 exports.setServerOrder = function (discordID, serverIDs) {
     try {
-        const stmt = db.prepare(
+        const stmt = prepare(
             'INSERT OR REPLACE INTO server_order (discordID, serverID, position) VALUES (?, ?, ?)'
         );
         db.transaction(function (ids) {

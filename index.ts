@@ -3,6 +3,7 @@ require('./src/instrument');
 require('dotenv').config({ quiet: true });
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const mime = require('mime-types').lookup;
 const { SnowTransfer } = require('snowtransfer');
 const bot = require('./src/bot');
@@ -124,6 +125,12 @@ const {
 } = require('./pages/utils');
 const { downgradeHtml, wantsSimpleHtml } = require('./pages/retroHtml');
 const { setSimpleMode, showUserAgent } = require('./pages/simpleMode');
+const {
+    enableCompression,
+    pickEncoding,
+    isCompressibleType,
+    compressForCache,
+} = require('./src/compression');
 
 const messagePageTemplate = loadAndRenderPageTemplate('message');
 
@@ -131,113 +138,176 @@ const messagePageTemplate = loadAndRenderPageTemplate('message');
 const server = http.createServer(options);
 connectionHandler.startWsServer(server);
 
-// In-memory cache for static files served via servePage()
-// Cache entry format: { data: Buffer, mtime: Date }
+// In-memory cache for static files served via servePage(). Each entry holds
+// the file's bytes (with the client-side placeholders filled in), the
+// validators browsers revalidate against, and compressed copies made on demand.
 const staticFileCache = new Map();
 const STATIC_CACHE_MAX_FILES = 2000; // max distinct files to cache (FIFO eviction)
 const STATIC_CACHE_MAX_BYTES = 1024 * 1024; // skip caching individual files larger than 1 MB
+const STATIC_CACHE_CONTROL = 'public, max-age=3600';
+// A cached file is trusted for this long before its mtime is checked again, so
+// a burst of requests (a page pulling in dozens of emoji images) doesn't stat
+// the disk once per request.
+const STATIC_REVALIDATE_MS = 1000;
+// Compressing a tiny file saves nothing once the headers are counted.
+const STATIC_COMPRESS_MIN_BYTES = 1024;
 
-async function servePage(filename, res, type, textToReplace, replacement, req) {
-    if (!type) {
-        type = mime(filename);
+// The served text depends on these two settings as well as on the file, so they
+// are part of the ETag: a changed setting must not be answered with a 304.
+const STATIC_ENV_TAG = crypto
+    .createHash('sha1')
+    .update(`${DISCORD_CLIENT_ID}\n${DISCORD_REDIRECT_URL}`)
+    .digest('hex')
+    .slice(0, 8);
+
+function isTextType(type) {
+    return (
+        !!type &&
+        (type.startsWith('text/') ||
+            type === 'application/javascript' ||
+            type === 'application/json' ||
+            type === 'image/svg+xml')
+    );
+}
+
+async function readStaticData(entry) {
+    const data = await fs.promises.readFile(entry.filename);
+    if (!entry.isText) return data;
+    // Always apply global replacements for client-side JS and other static files
+    const content = data
+        .toString()
+        .replaceAll('{{DISCORD_CLIENT_ID}}', DISCORD_CLIENT_ID)
+        .replaceAll('{{DISCORD_REDIRECT_URL}}', DISCORD_REDIRECT_URL);
+    return Buffer.from(content, 'utf8');
+}
+
+// Looks a static file up, from memory when it hasn't changed on disk. Throws
+// (like fs.readFile) when the path is missing or is a directory.
+async function getStaticEntry(filename) {
+    const now = Date.now();
+    const cached = staticFileCache.get(filename);
+    if (cached && now - cached.checkedAt < STATIC_REVALIDATE_MS) return cached;
+
+    let stats;
+    try {
+        stats = await fs.promises.stat(filename);
+    } catch (err) {
+        staticFileCache.delete(filename);
+        throw err;
     }
+    if (!stats.isFile()) {
+        staticFileCache.delete(filename);
+        throw Object.assign(new Error(`Not a file: ${filename}`), { code: 'EISDIR' });
+    }
+    if (cached && cached.mtimeMs === stats.mtimeMs && cached.size === stats.size) {
+        cached.checkedAt = now;
+        return cached;
+    }
+
+    const type = mime(filename);
+    const entry = {
+        filename,
+        type,
+        isText: isTextType(type),
+        mtimeMs: stats.mtimeMs,
+        size: stats.size,
+        etag: `W/"${stats.size.toString(16)}-${Math.trunc(stats.mtimeMs).toString(16)}-${STATIC_ENV_TAG}"`,
+        lastModified: new Date(stats.mtimeMs).toUTCString(),
+        checkedAt: now,
+        data: null, // filled in below for files small enough to keep in memory
+        encoded: {}, // 'br' / 'gzip' -> Promise<Buffer>
+    };
+    staticFileCache.delete(filename);
+    if (stats.size <= STATIC_CACHE_MAX_BYTES) {
+        entry.data = await readStaticData(entry);
+        if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
+            staticFileCache.delete(staticFileCache.keys().next().value);
+        }
+        staticFileCache.set(filename, entry);
+    }
+    return entry;
+}
+
+// Whether the browser's cached copy is still the current one.
+function isNotModified(req, entry) {
+    const noneMatch = req.headers['if-none-match'];
+    if (noneMatch) {
+        const bare = (tag) => tag.trim().replace(/^W\//, '');
+        return (
+            noneMatch.trim() === '*' ||
+            noneMatch.split(',').some((tag) => bare(tag) === bare(entry.etag))
+        );
+    }
+    const since = Date.parse(req.headers['if-modified-since'] || '');
+    // HTTP dates have whole seconds; the file's mtime has milliseconds.
+    return !Number.isNaN(since) && since >= Math.floor(entry.mtimeMs / 1000) * 1000;
+}
+
+function compressedStaticData(entry, data, encoding) {
+    if (!entry.encoded[encoding]) {
+        entry.encoded[encoding] = compressForCache(data, encoding).catch((err) => {
+            delete entry.encoded[encoding];
+            throw err;
+        });
+    }
+    return entry.encoded[encoding];
+}
+
+async function servePage(filename, res, req) {
     if (filename.endsWith('/')) {
         filename += 'index.html';
     }
 
-    // Serve from in-memory cache for plain (non-templated) requests
-    if (!textToReplace && staticFileCache.has(filename)) {
-        const cacheEntry = staticFileCache.get(filename);
-
-        // Check if file has been modified since caching
-        try {
-            const stats = fs.statSync(filename);
-            if (stats.mtime.getTime() === cacheEntry.mtime.getTime()) {
-                // File unchanged, serve from cache
-                res.writeHead(200, {
-                    'Content-Type': type,
-                    'Cache-Control': 'public, max-age=3600',
-                });
-                return res.end(cacheEntry.data);
-            }
-            // File modified, remove from cache and continue to read from disk
-            staticFileCache.delete(filename);
-        } catch (err) {
-            // If we can't stat the file, invalidate cache and continue
-            staticFileCache.delete(filename);
-            if (typeof sentryEnabled !== 'undefined' && sentryEnabled) Sentry.captureException(err);
+    let entry;
+    try {
+        entry = await getStaticEntry(filename);
+    } catch (err) {
+        //try to find something
+        if (filename.endsWith('index.html')) {
+            return notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
         }
+        return servePage(filename + '/index.html', res, req);
     }
 
-    fs.readFile(filename, function (err, data) {
-        if (err) {
-            //try to find something
-            if (filename.endsWith('index.html')) {
-                return notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
-            } else {
-                servePage(filename + '/index.html', res, undefined, undefined, undefined, req);
-                return;
-            }
+    // HTML is sent as text with no length, so the response wrappers can still
+    // rework it (plain markup for ancient browsers) and compress it.
+    if (String(entry.type).startsWith('text/html')) {
+        const data = entry.data ?? (await readStaticData(entry));
+        res.writeHead(200, { 'Content-Type': entry.type, 'Cache-Control': STATIC_CACHE_CONTROL });
+        return res.end(data.toString());
+    }
+
+    const compressible = isCompressibleType(entry.type);
+    const headers: Record<string, string | number> = {
+        'Content-Type': entry.type,
+        'Cache-Control': STATIC_CACHE_CONTROL,
+        ETag: entry.etag,
+        'Last-Modified': entry.lastModified,
+    };
+    if (compressible) headers.Vary = 'Accept-Encoding';
+
+    if (isNotModified(req, entry)) {
+        res.writeHead(304, headers);
+        return res.end();
+    }
+
+    let body = entry.data ?? (await readStaticData(entry));
+    const encoding =
+        compressible && body.length >= STATIC_COMPRESS_MIN_BYTES ? pickEncoding(req) : null;
+    if (encoding) {
+        try {
+            // Only files held in memory keep their compressed copies.
+            body = await (entry.data
+                ? compressedStaticData(entry, body, encoding)
+                : compressForCache(body, encoding));
+            headers['Content-Encoding'] = encoding;
+        } catch (err) {
+            console.error('Could not compress static file, sending it as is:', filename, err);
         }
-        res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
-
-        const isText =
-            type &&
-            (type.startsWith('text/') ||
-                type === 'application/javascript' ||
-                type === 'application/json' ||
-                type === 'image/svg+xml');
-
-        if (isText) {
-            let content = data.toString();
-            // Always apply global replacements for client-side JS and other static files
-            content = content.replaceAll('{{DISCORD_CLIENT_ID}}', DISCORD_CLIENT_ID);
-            content = content.replaceAll('{{DISCORD_REDIRECT_URL}}', DISCORD_REDIRECT_URL);
-
-            if (textToReplace && replacement) {
-                res.end(content.replace(textToReplace, replacement));
-            } else {
-                if (data.length <= STATIC_CACHE_MAX_BYTES) {
-                    if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
-                        staticFileCache.delete(staticFileCache.keys().next().value);
-                    }
-                    // Get modification time and store in cache
-                    try {
-                        const stats = fs.statSync(filename);
-                        staticFileCache.set(filename, {
-                            data: isText ? Buffer.from(content, 'utf8') : data,
-                            mtime: stats.mtime,
-                        });
-                    } catch (err) {
-                        // If we can't stat the file, still serve it but don't cache
-                        console.warn('Could not stat file for caching:', filename, err);
-                        if (typeof sentryEnabled !== 'undefined' && sentryEnabled)
-                            Sentry.captureException(err);
-                    }
-                }
-                res.end(content);
-            }
-        } else {
-            // Binary file (fonts, images, etc.) - serve as raw buffer without replacements
-            if (data.length <= STATIC_CACHE_MAX_BYTES) {
-                if (staticFileCache.size >= STATIC_CACHE_MAX_FILES) {
-                    staticFileCache.delete(staticFileCache.keys().next().value);
-                }
-                try {
-                    const stats = fs.statSync(filename);
-                    staticFileCache.set(filename, {
-                        data: data,
-                        mtime: stats.mtime,
-                    });
-                } catch (err) {
-                    console.warn('Could not stat file for caching:', filename, err);
-                    if (typeof sentryEnabled !== 'undefined' && sentryEnabled)
-                        Sentry.captureException(err);
-                }
-            }
-            res.end(data);
-        }
-    });
+    }
+    headers['Content-Length'] = body.length;
+    res.writeHead(200, headers);
+    return res.end(body);
 }
 
 // File watching for hot-reload (monitors pages/, templates/, and static files)
@@ -253,10 +323,7 @@ function setupFileWatchers() {
     try {
         fs.watch(pagesDir, { recursive: true }, (eventType, filename) => {
             if (!filename) return;
-            const fullPath = path.join(pagesDir, filename);
-            if (staticFileCache.has(fullPath)) {
-                staticFileCache.delete(fullPath);
-            }
+            staticFileCache.delete(path.join(pagesDir, filename));
             console.log('Hot-reload:', filename);
         });
     } catch (err) {
@@ -966,7 +1033,7 @@ async function handleGet(req, res) {
                 if (filename !== staticDir && !filename.startsWith(staticDir + path.sep)) {
                     await notFound.serve404(req, res, 'Page not found.', '/', 'Back to Home');
                 } else {
-                    await servePage(filename, res, undefined, undefined, undefined, req);
+                    await servePage(filename, res, req);
                 }
             }
     }
@@ -1270,6 +1337,8 @@ server.on('request', async (req, res) => {
         'Content-Security-Policy',
         "base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
     );
+    // Compression sits underneath the HTML wrapper, so it sees the final page.
+    enableCompression(req, res);
     wrapHtmlFragments(req, res);
 
     if (req.url.startsWith('//')) {

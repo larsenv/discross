@@ -77,11 +77,15 @@ function highlightCode(code, lang) {
     }
 }
 
+// Looked up once: building an Intl.DateTimeFormat just to read the server's
+// timezone costs more than rendering a short message.
+const SYSTEM_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 function renderDiscordMarkdown(text, options: { barColor?: string; timezone?: string } = {}) {
     if (!text) return '';
 
     const barColor = options.barColor || '#808080';
-    const timezone = options.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const timezone = options.timezone || SYSTEM_TIMEZONE;
 
     // Strip the private-use marker characters used for internal placeholders
     // below. Discord allows them in message content, so without this a message

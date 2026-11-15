@@ -10,6 +10,7 @@ const {
     getMemberColor,
     ensureMemberData,
 } = require('./memberUtils');
+const { fetchMember, fetchChannel } = require('./discordLookups');
 const {
     formatDateWithTimezone,
     formatDateSeparator,
@@ -1343,11 +1344,7 @@ async function resolveRemainingMentions(messagetext, chnl, memberCache, tmpl_men
         .filter((id) => !memberCache.has(id));
     await Promise.allSettled(
         unresolvedIds.map(async (id) => {
-            try {
-                memberCache.set(id, await chnl.guild.members.fetch(id));
-            } catch {
-                memberCache.set(id, null);
-            }
+            memberCache.set(id, await fetchMember(chnl.guild, id));
         })
     );
     return messagetext.replace(/&lt;@!?(\d{16,20})&gt;/g, (match, userId) => {
@@ -1374,13 +1371,7 @@ async function resolveChannelMentions(messagetext, bot) {
     const unresolvedIds = [...messagetext.matchAll(/&lt;#(\d{16,20})&gt;/g)]
         .map((m) => m[1])
         .filter((id) => !bot.client.channels.cache.has(id));
-    await Promise.allSettled(
-        unresolvedIds.map(async (id) => {
-            try {
-                await bot.client.channels.fetch(id);
-            } catch {}
-        })
-    );
+    await Promise.allSettled(unresolvedIds.map((id) => fetchChannel(bot.client, id)));
     return messagetext.replace(/&lt;#(\d{16,20})&gt;/g, (match, id) => {
         const { ChannelType } = require('discord.js');
         const ch = bot.client.channels.cache.get(id);
@@ -1504,7 +1495,8 @@ async function resolveForwardData(
 
             if (!otherGuild) return '';
 
-            await otherGuild.members.fetch(discordID);
+            // Only name the other server to someone who is in it.
+            if (!(await fetchMember(otherGuild, discordID))) return '';
 
             return render('channel/forwarded-other-server', {
                 GUILD_NAME: escape(normalizeWeirdUnicode(otherGuild.name)),
@@ -1607,11 +1599,7 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
 
     await Promise.allSettled(
         unresolvedUserIds.map(async (id) => {
-            try {
-                memberCache.set(id, await chnl.guild.members.fetch(id));
-            } catch {
-                memberCache.set(id, null);
-            }
+            memberCache.set(id, await fetchMember(chnl.guild, id));
         })
     );
 
@@ -1624,13 +1612,7 @@ async function resolveRawMentionsForPreview(text, msg, memberCache, chnl, bot) {
         .map((m) => m[1])
         .filter((id) => !bot.client.channels.cache.has(id));
 
-    await Promise.allSettled(
-        unresolvedChannelIds.map(async (id) => {
-            try {
-                await bot.client.channels.fetch(id);
-            } catch {}
-        })
-    );
+    await Promise.allSettled(unresolvedChannelIds.map((id) => fetchChannel(bot.client, id)));
 
     text = text.replace(/<#(\d{16,20})>/g, (match, id) => {
         const ch = bot.client.channels.cache.get(id);
@@ -1738,13 +1720,10 @@ async function resolveReplyData(item, chnl, memberCache, bot, imagesCookie, auth
                 return cachedReplyMember;
             }
 
-            return chnl.guild.members
-                .fetch(replyUser.id)
-                .then((m) => {
-                    memberCache.set(replyUser.id, m);
-                    return m;
-                })
-                .catch(() => undefined);
+            const fetched = await fetchMember(chnl.guild, replyUser.id);
+            if (!fetched) return undefined;
+            memberCache.set(replyUser.id, fetched);
+            return fetched;
         })();
 
         const replyContent = replyMessage?.content
@@ -1928,13 +1907,11 @@ async function resolveInteractionData(item, chnl, memberCache, authorText) {
         const member =
             cached !== undefined
                 ? cached
-                : await chnl.guild.members
-                      .fetch(user.id)
-                      .then((m) => {
-                          memberCache.set(user.id, m);
-                          return m;
-                      })
-                      .catch(() => undefined);
+                : await fetchMember(chnl.guild, user.id).then((m) => {
+                      if (!m) return undefined;
+                      memberCache.set(user.id, m);
+                      return m;
+                  });
         return {
             author: getDisplayName(member, user),
             authorColor: getMemberColor(member, authorText),

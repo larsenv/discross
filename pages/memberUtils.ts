@@ -6,6 +6,7 @@
  */
 
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
+const { fetchMember } = require('./discordLookups');
 
 /**
  * Get the display name following Discord's order:
@@ -118,13 +119,15 @@ async function ensureMemberData(message, guild, cache = null) {
                 }
                 return message.member;
             }
-            const member = await guild.members.fetch(message.author.id);
+            // Null when the author has left the server (remembered, so the
+            // lookup isn't repeated on every page load) or the fetch failed.
+            const member = await fetchMember(guild, message.author.id);
             if (cache) {
                 cache.set(cacheKey, member);
             }
             return member;
         } catch (error) {
-            // guild.members.fetch() failed (e.g. bot lost access). Fall back to the
+            // The lookup threw (e.g. a malformed guild object). Fall back to the
             // partial message.member — role colors may not be resolved in this case.
             const fallback = message.member || null;
             if (cache) {

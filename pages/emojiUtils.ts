@@ -5,6 +5,13 @@ const sqlite3 = require('better-sqlite3');
 const emojiRegex = require('./twemojiRegex').regex;
 
 const db = new sqlite3('db/discross.db');
+// Same setting as the main connection in src/authentication: don't wait for
+// the disk on every cached emoji.
+try {
+    db.pragma('synchronous = NORMAL');
+} catch (err) {
+    console.warn('Could not relax emoji cache writes:', err);
+}
 
 // Ensure cache tables exist on this connection before preparing statements
 db.prepare(

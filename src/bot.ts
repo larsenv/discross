@@ -6,6 +6,12 @@ const https = require('https');
 const auth = require('./authentication');
 const connectionHandler = require('./connectionHandler');
 const mail = require('./mail');
+const {
+    forgetMissingMember,
+    forgetMissingChannel,
+    forgetThreadMembership,
+    forgetActiveThreads,
+} = require('../pages/discordLookups');
 
 // Cooldown between verification emails for the mail registration form.
 const MAIL_VERIFICATION_COOLDOWN_MS = 2 * 60 * 1000;
@@ -30,6 +36,10 @@ const MSGHISTORY_MAX_CHANNELS = 100; // Max number of channels to keep in histor
 const refMessages = new Map();
 const REF_MESSAGES_MAX = 2000;
 const REF_MESSAGE_TTL_MS = 10 * 60 * 1000;
+// A target Discord says is gone (deleted, or in a channel the bot can't read)
+// is remembered too, for a shorter time: a reply to a deleted message would
+// otherwise be looked up again, and fail again, on every page load.
+const REF_MESSAGE_MISS_TTL_MS = 5 * 60 * 1000;
 const refMessageFetches = new Map(); // in-flight fetches, so concurrent loads share one request
 
 async function safeReply(msg, content) {
@@ -676,6 +686,21 @@ client.on('messageUpdate', async function (oldMsg, newMsg) {
     }
 });
 
+// Lookups that came back empty are remembered for a few minutes (see
+// pages/discordLookups). When Discord tells us the answer changed, drop the
+// remembered miss so the next page load sees it straight away.
+client.on('channelCreate', (channel) => forgetMissingChannel(channel.id));
+client.on('threadCreate', (thread) => {
+    forgetMissingChannel(thread.id);
+    forgetActiveThreads(thread.guildId);
+});
+client.on('threadDelete', (thread) => forgetActiveThreads(thread.guildId));
+client.on('threadUpdate', (oldThread, newThread) => forgetActiveThreads(newThread.guildId));
+client.on('threadListSync', (threads, guild) => forgetActiveThreads(guild.id));
+client.on('threadMembersUpdate', (addedMembers, removedMembers, thread) => {
+    addedMembers.forEach((threadMember) => forgetThreadMembership(thread.id, threadMember.id));
+});
+
 client.on('messageDelete', async function (msg) {
     if (msg.channel && msghistory.has(msg.channel.id)) {
         msghistory.get(msg.channel.id).delete(msg.id);
@@ -695,6 +720,7 @@ client.on('messageDeleteBulk', async function (messages) {
 // Auto-sync server membership when GuildMembers intent is enabled
 if (guildMembersIntentEnabled) {
     client.on('guildMemberAdd', (member) => {
+        forgetMissingMember(member.guild.id, member.user.id);
         // Only add the server if the user is a registered Discross user
         const user = auth.querySingle('SELECT discordID FROM users WHERE discordID=?', [
             member.user.id,
@@ -865,21 +891,39 @@ exports.getMessageCached = async function (channelId, messageId) {
     if (fromHistory) return fromHistory;
 
     const cached = refMessages.get(messageId);
-    if (cached && Date.now() - cached.at < REF_MESSAGE_TTL_MS) return cached.msg;
+    if (cached) {
+        const age = Date.now() - cached.at;
+        if (cached.error) {
+            if (age < REF_MESSAGE_MISS_TTL_MS) throw cached.error;
+        } else if (age < REF_MESSAGE_TTL_MS) {
+            return cached.msg;
+        }
+    }
 
     const pending = refMessageFetches.get(messageId);
     if (pending) return pending;
 
-    const fetchPromise = (async () => {
-        const channel = client.channels.resolve(channelId);
-        if (!channel) throw new Error(`Channel ${channelId} is not available`);
-        const msg = await channel.messages.fetch(messageId);
+    const remember = (entry) => {
         refMessages.delete(messageId);
         if (refMessages.size >= REF_MESSAGES_MAX) {
             refMessages.delete(refMessages.keys().next().value);
         }
-        refMessages.set(messageId, { msg, at: Date.now() });
-        return msg;
+        refMessages.set(messageId, { ...entry, at: Date.now() });
+    };
+
+    const fetchPromise = (async () => {
+        const channel = client.channels.resolve(channelId);
+        if (!channel) throw new Error(`Channel ${channelId} is not available`);
+        try {
+            const msg = await channel.messages.fetch(messageId);
+            remember({ msg });
+            return msg;
+        } catch (err) {
+            // Only a definite "not there / not allowed" is kept; a timeout or
+            // rate limit is retried on the next page load.
+            if (err && (err.status === 404 || err.status === 403)) remember({ error: err });
+            throw err;
+        }
     })();
     refMessageFetches.set(messageId, fetchPromise);
     try {

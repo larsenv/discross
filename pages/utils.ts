@@ -153,48 +153,95 @@ function neutralizePlaceholders(html) {
 function renderTemplate(template, data) {
     if (!template) return '';
     if (!data) data = {};
+    // Nothing to fill in. This runs for every mention, emoji and message on a
+    // page, mostly on small fragments, so skip the work below when it can't
+    // change anything.
+    if (!template.includes('{$')) return template;
 
-    // Global template variables
-    const globalData = {
-        DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
-        DISCORD_REDIRECT_URL: (process.env.DISCORD_REDIRECT_URL || '').trim(),
-        DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent(
-            (process.env.DISCORD_REDIRECT_URL || '').trim()
-        ),
-        // Without a title, leave the placeholder so a later pass (or the response
-        // wrapper in index.ts) supplies it; filling a default here would bake it
-        // in before the page knows its real name.
-        PAGE_TITLE: titleText(data.PAGE_TITLE ?? '{$PAGE_TITLE}'),
-        SEO_METADATA: data.SEO_METADATA ?? '{$SEO_METADATA}',
-        COMMON_HEAD: getTemplate('head', 'partials'),
-    };
-
-    // Merge global data with provided data (provided data takes precedence), but
-    // never let the raw title overwrite the escaped one: it lands in <title>, and
-    // callers pass plain text that can include server names and query strings.
-    const mergedData = { ...globalData, ...data, PAGE_TITLE: globalData.PAGE_TITLE };
+    // Without a title, leave the placeholder so a later pass (or the response
+    // wrapper in index.ts) supplies it; filling a default here would bake it
+    // in before the page knows its real name. The raw title never reaches the
+    // page: it lands in <title>, and callers pass plain text that can include
+    // server names and query strings.
+    const pageTitle = titleText(data.PAGE_TITLE ?? '{$PAGE_TITLE}');
 
     let result = template;
-    for (const [key, value] of Object.entries(mergedData)) {
+    const fill = (key, value) => {
         // Normalize key: remove surrounding {$$} if present
         let normalizedKey = key;
         if (normalizedKey.startsWith('{$') && normalizedKey.endsWith('}')) {
             normalizedKey = normalizedKey.slice(2, -1);
         }
         const placeholder = `{$${normalizedKey}}`;
-        if (!result.includes(placeholder)) continue;
+        if (!result.includes(placeholder)) return;
         result = result.split(placeholder).join(value ?? '');
+    };
+
+    // Global template variables first, then the caller's, in the order given.
+    // A value the caller provides takes precedence over the global one.
+    const globals = getGlobalTemplateData();
+    for (const key of GLOBAL_TEMPLATE_KEYS) {
+        if (key === 'PAGE_TITLE') {
+            fill(key, pageTitle);
+        } else if (Object.prototype.hasOwnProperty.call(data, key)) {
+            fill(key, data[key]);
+        } else if (key === 'COMMON_HEAD') {
+            // Only looked up when the template includes the shared head.
+            if (result.includes('{$COMMON_HEAD}')) fill(key, getTemplate('head', 'partials'));
+        } else {
+            fill(key, globals[key]);
+        }
+    }
+    for (const key of Object.keys(data)) {
+        if (!GLOBAL_TEMPLATE_KEY_SET.has(key)) fill(key, data[key]);
     }
 
     // Secondary pass for global templates that might have injected more placeholders
     if (result.includes('{$PAGE_TITLE}') && data.PAGE_TITLE !== undefined) {
-        result = result.split('{$PAGE_TITLE}').join(globalData.PAGE_TITLE);
+        result = result.split('{$PAGE_TITLE}').join(pageTitle);
     }
     if (result.includes('{$SEO_METADATA}') && data.SEO_METADATA !== undefined) {
         result = result.split('{$SEO_METADATA}').join(data.SEO_METADATA);
     }
 
     return result;
+}
+
+const GLOBAL_TEMPLATE_KEYS = [
+    'DISCORD_CLIENT_ID',
+    'DISCORD_REDIRECT_URL',
+    'DISCORD_REDIRECT_URL_ENCODED',
+    'PAGE_TITLE',
+    'SEO_METADATA',
+    'COMMON_HEAD',
+];
+const GLOBAL_TEMPLATE_KEY_SET = new Set(GLOBAL_TEMPLATE_KEYS);
+
+// The values behind the global placeholders. They come from the environment,
+// which is read on every call (it can be filled in after this module loads),
+// but only re-derived when it actually changed.
+let globalTemplateData = null;
+let globalTemplateEnv = [undefined, undefined];
+
+function getGlobalTemplateData() {
+    const clientId = process.env.DISCORD_CLIENT_ID;
+    const rawRedirectUrl = process.env.DISCORD_REDIRECT_URL;
+    if (
+        !globalTemplateData ||
+        globalTemplateEnv[0] !== clientId ||
+        globalTemplateEnv[1] !== rawRedirectUrl
+    ) {
+        const redirectUrl = (rawRedirectUrl || '').trim();
+        globalTemplateEnv = [clientId, rawRedirectUrl];
+        globalTemplateData = {
+            DISCORD_CLIENT_ID: clientId,
+            DISCORD_REDIRECT_URL: redirectUrl,
+            DISCORD_REDIRECT_URL_ENCODED: encodeURIComponent(redirectUrl),
+            // Leaves the placeholder in place for the secondary pass above.
+            SEO_METADATA: '{$SEO_METADATA}',
+        };
+    }
+    return globalTemplateData;
 }
 
 /**
@@ -898,12 +945,8 @@ async function canViewChannel(member, botMember, chnl, discordID, { skipAgeGate 
     // threads need membership (or Manage Threads, as in Discord).
     if (chnl.isThread() && member && chnl.type === ChannelType.PrivateThread) {
         if (member.permissionsIn(chnl).has(PermissionFlagsBits.ManageThreads, true)) return true;
-        try {
-            await chnl.members.fetch(member.id);
-            return true;
-        } catch {
-            return false;
-        }
+        const { isThreadMember } = require('./discordLookups');
+        return isThreadMember(chnl, member.id);
     }
 
     return true;

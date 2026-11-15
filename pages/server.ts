@@ -5,6 +5,7 @@ const auth = require('../src/authentication');
 const emojiRegex = require('./twemojiRegex').regex;
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { isNsfwChannel } = require('./nsfwUtils');
+const { fetchActiveThreads, isThreadMember } = require('./discordLookups');
 const { normalizeWeirdUnicode } = require('./unicodeUtils');
 const { unicodeToTwemojiCode } = require('./emojiUtils');
 const {
@@ -44,29 +45,23 @@ async function processServerChannels(server, member, response, sessionParam) {
     try {
         const discordID = member.id;
 
-        // Fetch active threads for this server
-        const activeThreadsList = await server.channels
-            .fetchActiveThreads()
-            .then((r) => [...r.threads.values()])
-            .catch((err) => {
-                console.error('Failed to fetch active threads:', err);
-                return [];
-            });
+        // Active threads for this server. The list and each membership answer
+        // are kept for a minute (see discordLookups), so reloading the channel
+        // list doesn't wait on Discord again.
+        const activeThreadsList = await fetchActiveThreads(server).catch((err) => {
+            console.error('Failed to fetch active threads:', err);
+            return [];
+        });
 
         // For each active thread, check if this specific user is a member.
         // fetchActiveThreads() only populates the bot's own membership in the cache,
-        // so we must call thread.members.fetch(userId) per thread to check the real user.
-        // We do all checks in parallel to minimise latency.
+        // so the real user has to be looked up per thread. All checks run in
+        // parallel to minimise latency.
         const userThreadIds = new Set();
         if (activeThreadsList.length > 0) {
             await Promise.allSettled(
                 activeThreadsList.map(async (thread) => {
-                    try {
-                        await thread.members.fetch(discordID);
-                        userThreadIds.add(thread.id);
-                    } catch {
-                        // user is not a member of this thread — skip it
-                    }
+                    if (await isThreadMember(thread, discordID)) userThreadIds.add(thread.id);
                 })
             );
         }

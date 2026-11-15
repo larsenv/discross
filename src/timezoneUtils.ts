@@ -10,6 +10,35 @@ const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 // faster and safe since formatters are stateless.
 const _dateFormatterCache = new Map();
 
+// The same for the formatters behind message timestamps and date separators.
+// date.toLocaleString(locale, options) builds a new formatter on every call,
+// and a channel page formats a timestamp for every message on it.
+const _formatterCache = new Map();
+const FORMATTER_CACHE_MAX = 2000;
+
+const TIME_FORMAT = { hour: 'numeric', minute: '2-digit', hour12: true };
+const SHORT_DATE_FORMAT = { month: '2-digit', day: '2-digit', year: '2-digit' };
+const LONG_DATE_FORMAT = { month: 'long', day: 'numeric', year: 'numeric' };
+
+// Formats like date.toLocaleString('en-US', { timeZone, ...format }), and
+// throws the same RangeError for a timezone Intl doesn't know.
+function formatInTimezone(date, timeZone, format) {
+    let formatters = _formatterCache.get(timeZone);
+    if (!formatters) {
+        if (_formatterCache.size >= FORMATTER_CACHE_MAX) {
+            _formatterCache.delete(_formatterCache.keys().next().value);
+        }
+        formatters = new Map();
+        _formatterCache.set(timeZone, formatters);
+    }
+    let formatter = formatters.get(format);
+    if (!formatter) {
+        formatter = new Intl.DateTimeFormat('en-US', { timeZone, ...format });
+        formatters.set(format, formatter);
+    }
+    return formatter.format(date);
+}
+
 // Cache the system's default timezone at module load — avoids constructing a new
 // Intl.DateTimeFormat() instance on every formatDateWithTimezone/areDifferentDays call.
 const _systemTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -162,13 +191,7 @@ function formatDateWithTimezone(date, timezone) {
         const diffDays = Math.round(diffTime / MILLISECONDS_PER_DAY);
 
         // Format time part (e.g., "12:30PM")
-        const timeOptions = {
-            timeZone: userTimezone,
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-        };
-        const timeStr = date.toLocaleString('en-US', timeOptions);
+        const timeStr = formatInTimezone(date, userTimezone, TIME_FORMAT);
 
         if (diffDays === 0) {
             // Today - just show time
@@ -178,13 +201,7 @@ function formatDateWithTimezone(date, timezone) {
             return `Yesterday at ${timeStr}`;
         } else {
             // 2+ days ago - use locale-aware date format
-            const dateOptions = {
-                timeZone: userTimezone,
-                month: '2-digit',
-                day: '2-digit',
-                year: '2-digit',
-            };
-            const dateStr = date.toLocaleString('en-US', dateOptions);
+            const dateStr = formatInTimezone(date, userTimezone, SHORT_DATE_FORMAT);
             return `${dateStr}, ${timeStr}`;
         }
     } catch (err) {
@@ -204,14 +221,7 @@ function formatDateSeparator(date, timezone) {
     try {
         const userTimezone = timezone || _systemTimezone;
 
-        const options = {
-            timeZone: userTimezone,
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-        };
-
-        return date.toLocaleString('en-US', options);
+        return formatInTimezone(date, userTimezone, LONG_DATE_FORMAT);
     } catch (err) {
         console.error('Error formatting date separator:', err);
         return date.toDateString();

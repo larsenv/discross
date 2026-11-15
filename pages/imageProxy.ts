@@ -115,10 +115,18 @@ function safeLookup(hostname, options, callback) {
 // Smallest valid 1x1 transparent GIF, used as a fallback when an upstream image fails to load
 const EMPTY_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
-// In-memory cache for converted GIF buffers.
-// Bounded to MAX_CACHE_SIZE entries; oldest entry is evicted when full.
-const MAX_CACHE_SIZE = 512;
+// In-memory cache for converted images, so an avatar or emoji is downloaded
+// and converted once rather than for every visitor. Bounded by total size as
+// well as by count, and the least recently used image is dropped first, so the
+// avatars and emoji on busy channels stay cached while one-off attachments
+// age out. (It used to hold 512 images of any size, oldest first out, which a
+// single emoji-heavy page could flush.)
+const MAX_CACHE_ENTRIES = 4096;
+const MAX_CACHE_BYTES = 64 * 1024 * 1024;
+// One very large image isn't worth evicting hundreds of small ones for.
+const MAX_CACHED_IMAGE_BYTES = 4 * 1024 * 1024;
 const imageCache = new Map();
+let imageCacheBytes = 0;
 
 // Browser-side cache lifetime for proxied images (24 hours)
 const CACHE_CONTROL = 'public, max-age=86400';
@@ -132,12 +140,31 @@ const UPSTREAM_TIMEOUT_MS = 20 * 1000;
 // huge bitmap. sharp's default limit is ~268 megapixels.
 const MAX_INPUT_PIXELS = 64 * 1024 * 1024;
 
+function cacheGet(key) {
+    const hit = imageCache.get(key);
+    if (hit) {
+        // Move to the back of the Map: the front is what gets evicted.
+        imageCache.delete(key);
+        imageCache.set(key, hit);
+    }
+    return hit;
+}
+
 function cacheSet(key, value) {
-    if (imageCache.size >= MAX_CACHE_SIZE) {
-        // Delete the oldest (first-inserted) entry
-        imageCache.delete(imageCache.keys().next().value);
+    const size = value.buffer.length;
+    if (size > MAX_CACHED_IMAGE_BYTES) return;
+    const previous = imageCache.get(key);
+    if (previous) {
+        imageCacheBytes -= previous.buffer.length;
+        imageCache.delete(key);
     }
     imageCache.set(key, value);
+    imageCacheBytes += size;
+    while (imageCache.size > MAX_CACHE_ENTRIES || imageCacheBytes > MAX_CACHE_BYTES) {
+        const [oldestKey, oldest] = imageCache.entries().next().value;
+        imageCache.delete(oldestKey);
+        imageCacheBytes -= oldest.buffer.length;
+    }
 }
 
 function detectBufferMimeType(buf) {
@@ -169,9 +196,9 @@ exports.imageProxy = async function imageProxy(req, res, URL, fullSize = false) 
     const modern = wantsModernImage(req);
     const cacheKey = (fullSize ? URL + ':full' : URL) + (modern ? ':webp' : '');
     // Serve from in-memory cache if available
-    if (imageCache.has(cacheKey)) {
-        const cached = imageCache.get(cacheKey);
-        const cachedBuffer = cached.buffer || cached;
+    const cached = cacheGet(cacheKey);
+    if (cached) {
+        const cachedBuffer = cached.buffer;
         const contentType = cached.contentType || detectBufferMimeType(cachedBuffer);
         res.writeHead(200, {
             'Content-Type': contentType,
