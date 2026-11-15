@@ -1,0 +1,24 @@
+# Discross (discross.net)
+
+> Discross is an accessibility bridge that renders Discord channels as plain HTML, so Discord works on vintage computers, retro game consoles and other devices with basic web browsers. It is free and open source.
+
+## Pages
+
+- [Home](https://discross.net/): what Discross is, the supported devices, and how to log in.
+- [News](https://discross.net/news), [Weather](https://discross.net/weather), [Sports](https://discross.net/sports), [Stocks](https://discross.net/stocks), [Currency](https://discross.net/currency), [TV](https://discross.net/tv), [Movies](https://discross.net/movies), [Search](https://discross.net/search): lightweight pages that load on old browsers.
+- [Privacy policy](https://discross.net/privacy.html)
+- [Terms of service](https://discross.net/terms.html)
+- [Credits](https://discross.net/credits.html)
+
+## How it works
+
+- Add the Discross bot to a Discord server (or join the official Discross server to try it), run `/connect` to get a verification code, then register at discross.net with that code and sign in.
+- After signing in, browse your Discord servers and channels from any device. Channel pages require a login and are not public.
+
+## Supported devices
+
+Confirmed to work to some extent: iPad, iPhone, Kindle, Nintendo 3DS, DS, DSi, Switch and Wii U, Wii Internet Channel, PlayStation 3, 4, 5, PSP and Vita, Sega Dreamcast, Xbox 360 and One, and Windows 95, 98 and XP.
+
+## Source
+
+- [Code on GitHub](https://github.com/larsenv/discross)
