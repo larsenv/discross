@@ -807,7 +807,9 @@ exports.getHistoryCached = async function (chnl, desiredLimit, beforeId, aroundI
             client.channels.cache.get(chnl) ||
             (await client.channels.fetch(chnl).catch(() => null));
     }
-    if (!chnl || !chnl.id) {
+    // A category has no messages. Opening its ID as a channel used to throw
+    // here and log a stack trace on every load.
+    if (!chnl || !chnl.id || !chnl.messages) {
         return [];
     }
 

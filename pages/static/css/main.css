@@ -1087,6 +1087,14 @@ table.poll-result a.poll-result-button:visited {
     font-family: 'rodin', Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif;
     color: #dcddde;
 }
+/* With a long channel name on a narrow screen the "Message #channel" hint
+   wrapped onto a second line, which the one-row box cut in half. Browsers that
+   don't know ::placeholder skip this rule. */
+.message-input-field::placeholder {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .send-button-input {
     border: none;
     border-radius: 4px;
