@@ -7,7 +7,7 @@
         "@sentry/node": "^10.40.0",
         "async-lock": "^1.4.1",
         "bcrypt": "^6.0.0",
-        "better-sqlite3": "^12.4.1",
+        "better-sqlite3": "^13.2.0",
         "discord-emoji-converter": "^1.2.10",
         "discord.js": "^14.26.4",
         "dotenv": "^17.2.3",
