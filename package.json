@@ -25,7 +25,7 @@
         "qrcode": "^1.5.4",
         "resend": "^6.12.3",
         "sharp": "^0.35.5",
-        "snowtransfer": "^0.15.0",
+        "snowtransfer": "^0.20.0",
         "turndown": "^7.2.4",
         "ua-parser-js": "^2.0.8",
         "undici": "^8.12.4",
