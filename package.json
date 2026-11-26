@@ -10,7 +10,7 @@
         "better-sqlite3": "^13.2.0",
         "discord-emoji-converter": "^1.2.10",
         "discord.js": "^14.26.4",
-        "dotenv": "^17.2.3",
+        "dotenv": "^18.0.10",
         "escape-html": "^1.0.3",
         "formidable": "^3.5.4",
         "geoip-lite": "^2.0.3",
